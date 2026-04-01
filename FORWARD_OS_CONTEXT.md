@@ -21,14 +21,35 @@ A Vue 3 SPA (single-file, no build step) for real estate agents.
 | Google Drive | Client file storage | Auto-folders per buyer/listing |
 | GitHub | Source backup + auto-deploy | github.com/marccashin/forward-os |
 
-Tokens are stored in Marc's password manager (1Password / Notes).
+Tokens are stored in Marc's password manager.
 - GitHub Classic PAT (repo scope, no expiry): regenerate at github.com/settings/tokens/new
 - Netlify token: regenerate at app.netlify.com/user/applications
 
 ---
 
+## Repo File Manifest
+These files MUST all exist in the GitHub repo — do not delete them:
+
+| File | Purpose |
+|---|---|
+| index.html | The entire FORWARD OS app (~1.24MB) |
+| _redirects | Netlify proxy rules — CRITICAL (see below) |
+| FORWARD_OS_CONTEXT.md | This context file |
+| README.md | Repo description |
+
+### _redirects file content (NEVER remove or overwrite without care):
+```
+/fub-api/* https://api.followupboss.com/v1/:splat 200
+/* /index.html 200
+```
+- Line 1: Proxies all Follow Up Boss API calls through Netlify (avoids CORS). fubFetch() in the app calls /fub-api/... which gets forwarded to FUB's API.
+- Line 2: SPA fallback — sends all direct URL navigations to index.html so Vue Router works.
+- Without this file, FUB contact features return 404 and direct URL loads show blank pages.
+
+---
+
 ## Standard Deploy Workflow (GitHub-first)
-Pushing to GitHub auto-triggers Netlify deploy. ONE workflow = live update + backup.
+Pushing to GitHub auto-triggers Netlify deploy. ONE step = live update + backup.
 
 ### Step 1 — Fetch live file (run in forward-os.netlify.app Chrome tab):
 ```javascript
@@ -88,6 +109,11 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 - openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker
 - saveToClientFileDrive(record, recordType) — uploads to Drive via Railway
 
+### FUB Integration
+- fubFetch(path, method, body) — base function for all FUB API calls, routes through /fub-api proxy
+- fubAddNote(personId, noteText) — adds note to FUB contact
+- All FUB calls go to /fub-api/* which Netlify proxies to https://api.followupboss.com/v1/*
+
 ### Buyer Consultation Kit (bck)
 - bck._lastPDF — last generated PDF data URI
 - bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder
@@ -98,7 +124,10 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 ## Chat History Summary
 - Chat 1-3: Initial OS build (all tools, Supabase, Railway)
 - Chat 4: Crashed (context overflow from base64 chunk injection — avoid this!)
-- Chat 5: Auto-create client folders on buyer/listing creation; global Save-to-Folder; GitHub repo + Netlify connected
+- Chat 5: Auto-create client folders on buyer/listing creation; global Save-to-Folder; GitHub repo + Netlify connected; _redirects fixed (FUB API proxy was missing from new deployment)
+
+## Pending (Chat 6)
+- Migrate Client Files VIEW from localStorage to Supabase/Drive so all agents see all folders globally
 
 ---
 
@@ -107,4 +136,4 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 2. Always fetch index.html from the live Chrome tab (same-origin, no CORS)
 3. index.html is the ENTIRE app — one file, no build process
 4. Netlify publish directory = blank (serves from repo root)
-5. Add _redirects file (/* /index.html 200) if 404s appear on direct URL navigation
+5. NEVER delete or overwrite _redirects without preserving both proxy rules
