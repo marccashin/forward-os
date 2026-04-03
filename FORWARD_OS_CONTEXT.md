@@ -1,5 +1,5 @@
 # FORWARD OS — Session Context File
-> Upload this file at the start of any new FORWARD OS chat to restore full context.
+> Upload this file at the start of any new FORWARD OS Cowork chat to restore full context.
 
 ---
 
@@ -16,63 +16,62 @@ A Vue 3 SPA (single-file, no build step) for real estate agents.
 | Service | Purpose | Details |
 |---|---|---|
 | Netlify | Hosting | Site ID: 7bcc28c5-97d0-4673-abda-309325eac663 |
-| Supabase | Database | SUPABASE_URL + SUPABASE_KEY in index.html |
+| Supabase | Database | Project: forward-marketing-os (ID: ewedrgopezogifzysusn) |
 | Railway | Python backend | RAILWAY_URL in index.html |
 | Google Drive | Client file storage | Auto-folders per buyer/listing |
 | GitHub | Source backup + auto-deploy | github.com/marccashin/forward-os |
 
-Tokens are stored in Marc's password manager.
+Tokens stored in Marc's password manager.
 - GitHub Classic PAT (repo scope, no expiry): regenerate at github.com/settings/tokens/new
 - Netlify token: regenerate at app.netlify.com/user/applications
 
 ---
 
-## Repo File Manifest
-These files MUST all exist in the GitHub repo — do not delete them:
+## Repo File Manifest (never delete these)
 
 | File | Purpose |
 |---|---|
 | index.html | The entire FORWARD OS app (~1.24MB) |
-| _redirects | Netlify proxy rules — CRITICAL (see below) |
-| FORWARD_OS_CONTEXT.md | This context file |
+| _redirects | Netlify proxy rules — CRITICAL |
+| FORWARD_OS_CONTEXT.md | This file |
 | README.md | Repo description |
 
-### _redirects file content (NEVER remove or overwrite without care):
+### _redirects content (NEVER remove either line):
 ```
 /fub-api/* https://api.followupboss.com/v1/:splat 200
 /* /index.html 200
 ```
-- Line 1: Proxies all Follow Up Boss API calls through Netlify (avoids CORS). fubFetch() in the app calls /fub-api/... which gets forwarded to FUB's API.
-- Line 2: SPA fallback — sends all direct URL navigations to index.html so Vue Router works.
-- Without this file, FUB contact features return 404 and direct URL loads show blank pages.
+Line 1: Proxies FUB API calls through Netlify. fubFetch() calls /fub-api/... which forwards to FUB.
+Line 2: SPA fallback — direct URL loads go to index.html so Vue routing works.
+Without this file: FUB features return 404, direct URL navigation breaks.
 
 ---
 
 ## Standard Deploy Workflow (GitHub-first)
-Pushing to GitHub auto-triggers Netlify deploy. ONE step = live update + backup.
+Push to GitHub → Netlify auto-deploys. One step = live update + backup.
 
-### Step 1 — Fetch live file (run in forward-os.netlify.app Chrome tab):
+### Step 1 — Fetch live file (in forward-os.netlify.app Chrome tab):
 ```javascript
 fetch('/index.html', {cache:'no-store'}).then(r=>r.text()).then(t=>{window._html=t; console.log('loaded:', t.length)});
 ```
 
-### Step 2 — Apply changes (repeat for each edit):
+### Step 2 — Apply string-replace changes:
 ```javascript
 const old = `EXACT_OLD_STRING`;
 const neu = `NEW_STRING`;
-if (!window._html.includes(old)) console.error('STRING NOT FOUND - check spacing/quotes');
-else { window._html = window._html.split(old).join(neu); console.log('replaced, size:', window._html.length); }
+if (!window._html.includes(old)) console.error('NOT FOUND');
+else { window._html = window._html.split(old).join(neu); console.log('replaced:', window._html.length); }
 ```
 
-### Step 3 — Get current file SHA from GitHub:
+### Step 3 — Get current SHA:
 ```javascript
 window._ghToken = 'PASTE_GH_TOKEN_HERE';
 fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
   headers: { 'Authorization': 'token ' + window._ghToken }
-}).then(r=>r.json()).then(d=>{ window._currentSha = d.sha; console.log('SHA ready:', d.sha.slice(0,8)); });
+}).then(r=>r.json()).then(d=>{ window._currentSha = d.sha; console.log('SHA:', d.sha.slice(0,8)); });
 ```
 
-### Step 4 — Push to GitHub (Netlify auto-deploys):
+### Step 4 — Push to GitHub:
 ```javascript
 const bytes = new TextEncoder().encode(window._html);
 let binary = '';
@@ -90,44 +89,90 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 }).then(r=>r.json()).then(d=>console.log(d.commit ? 'DONE: ' + d.commit.sha.slice(0,8) : 'ERROR: ' + JSON.stringify(d)));
 ```
 
+### To update FORWARD_OS_CONTEXT.md on GitHub:
+Same pattern as above but target /contents/FORWARD_OS_CONTEXT.md instead of /contents/index.html.
+
+---
+
+## Supabase Tables
+
+### buyers
+Fields: id, agent_name, buyer_name, first_name, market_area, budget_min, budget_max, down_payment, pre_approved, pre_approval_lender, pre_approval_amount, target_neighborhoods, areas_note, home_type, home_type_note, bedrooms_min, bedrooms_note, bathrooms, parking, parking_note, outdoor_space, outdoor_note, move_in_target, urgency, urgency_note, current_status, current_note, school_district, hoa_acceptable, must_haves, deal_breakers, agent_notes, drive_folder_id, subfolder_drive_ids, created_at
+RLS: enabled (allow_all_anon policy — all operations for anon + authenticated)
+
+### properties
+Fields: id, agent_name, address, drive_folder_id, subfolder_drive_ids, created_at (+ listing fields)
+RLS: enabled (allow_all_anon policy)
+
+### property_assets, property_notes
+RLS: enabled (allow_all_anon policy)
+
 ---
 
 ## Key Vue Functions Reference
 
 ### Buyers (My Buyers tab)
 - byrBuyers / byrActiveBuyer / byrCreateBuyer()
-- Supabase table: buyers (buyer_name, email, drive_folder_id, subfolder_drive_ids)
+- byrCreateBuyer() auto-creates: Supabase record + Drive folder + client file folder entry
 
 ### Listings (My Sellers tab)
 - supaProperties / lstActiveProp / lstCreateProperty()
-- Supabase table: properties (address, drive_folder_id, subfolder_drive_ids)
+- lstCreateProperty() auto-creates: Supabase record + Drive folder + client file folder entry
 
-### Client Files
-- addPropFile(address, opts) — opts: { buyer_id, property_id, fileType }
-- findActiveClientFile() — returns file linked to active buyer/listing
-- openSaveToPropModal(type, label, data, pdfData, toolName) — auto-routes to active client file
-- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker
-- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway
+### Client Files (prop-files view) — PENDING MIGRATION
+- Current state: display/browse reads from localStorage (device-local, NOT global)
+- Saving PDFs to folders: global via Google Drive (fixed in Chat 5)
+- CHAT 6 GOAL: Migrate the CLIENT FILES VIEW to read from Supabase/Drive so all agents see all folders on all devices
+- addPropFile(address, opts) — opts: { buyer_id, property_id, fileType } — localStorage write
+- getPropFiles() / savePropFiles() — localStorage helpers (to be replaced with Supabase reads)
+- findActiveClientFile() — returns client file linked to active buyer/listing
+- openSaveToPropModal(type, label, data, pdfData, toolName) — smart save, auto-routes to active client file
+- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker (already global)
+- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway (already global)
 
 ### FUB Integration
-- fubFetch(path, method, body) — base function for all FUB API calls, routes through /fub-api proxy
+- fubFetch(path, method, body) — routes through /fub-api Netlify proxy to followupboss.com/v1
 - fubAddNote(personId, noteText) — adds note to FUB contact
-- All FUB calls go to /fub-api/* which Netlify proxies to https://api.followupboss.com/v1/*
 
 ### Buyer Consultation Kit (bck)
 - bck._lastPDF — last generated PDF data URI
-- bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder
-- bckSendToBuyer() — opens PDF for email/text
+- bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder (global)
+- bckSendToBuyer() — opens PDF for email/text attachment
 
 ---
 
-## Chat History Summary
-- Chat 1-3: Initial OS build (all tools, Supabase, Railway)
-- Chat 4: Crashed (context overflow from base64 chunk injection — avoid this!)
-- Chat 5: Auto-create client folders on buyer/listing creation; global Save-to-Folder; GitHub repo + Netlify connected; _redirects fixed (FUB API proxy was missing from new deployment)
+## Agents
+Marc Cashin, Ashling McGowan, Niki Lang, Cesar Rivera, Charlotte Lee, Shannon Casey
+Access code: forward2026 — Admin: Marc Cashin
+
+---
+
+## Chat History
+
+| Chat | Key Work |
+|---|---|
+| 1–3 | Initial OS build — all tools, Supabase, Railway backend |
+| 4 | Crashed — context overflow from base64 chunk injection (never do this) |
+| 5 | Auto-create client folders on buyer/listing creation; global Save-to-Folder + Send to Buyer on Buyer Consultation Kit; GitHub repo created + connected to Netlify; _redirects added (fixed FUB 404); Supabase RLS enabled on all tables |
+| 6 | CURRENT — Migrate Client Files VIEW from localStorage to Supabase/Drive |
+
+---
 
 ## Pending (Chat 6)
-- Migrate Client Files VIEW from localStorage to Supabase/Drive so all agents see all folders globally
+Migrate the Client Files VIEW (prop-files sidebar section, folder grid display) from localStorage to Supabase/Drive.
+- Currently: getPropFiles() reads from localStorage — only shows folders created on that specific device
+- Goal: all agents on all devices see all client folders (buyers + listings) pulled from Supabase
+- The SAVING of PDFs to folders is already global (Drive-backed). Only the VIEW/BROWSE is broken.
+- Approach: replace getPropFiles()/savePropFiles() localStorage reads with a Supabase query joining buyers + properties tables
+
+---
+
+## End of Task Protocol
+At the end of every completed task, ask Marc:
+"Should I update FORWARD_OS_CONTEXT.md on GitHub with what we just built?"
+- Yes: update this file and push to GitHub using the GitHub API workflow
+- New task given without answering: treat as No, complete new task, ask again at completion
+- Never skip asking
 
 ---
 
@@ -136,4 +181,5 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 2. Always fetch index.html from the live Chrome tab (same-origin, no CORS)
 3. index.html is the ENTIRE app — one file, no build process
 4. Netlify publish directory = blank (serves from repo root)
-5. NEVER delete or overwrite _redirects without preserving both proxy rules
+5. NEVER delete or modify _redirects without preserving both proxy rules
+6. Supabase RLS is enabled — do not disable it
