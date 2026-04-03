@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CMA Builder — FORWARD OS</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --navy: #1a2744;
+      --navy-light: #243660;
+      --gold: #c9a84c;
+      --gold-light: #e8c96a;
+      --bg: #f5f6fa;
+      --card: #ffffff;
+      --border: #dde3ef;
+      --text: #1a2744;
+      --muted: #6b7a99;
+      --green: #16a34a;
+      --red: #dc2626;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+    /* ── HEADER ── */
+    .header {
+      background: var(--navy);
+      color: white;
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .logo { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
+    .header-title { font-size: 17px; font-weight: 600; color: white; }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+    .btn-gold {
+      background: var(--gold);
+      color: var(--navy);
+      border: none;
+      border-radius: 6px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: .3px;
+      transition: background .15s;
+    }
+    .btn-gold:hover { background: var(--gold-light); }
+    .btn-navy {
+      background: var(--navy);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .btn-navy:hover { background: var(--navy-light); }
+    .btn-outline {
+      background: white;
+      color: var(--navy);
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ── LAYOUT ── */
+    .page { max-width: 1200px; margin: 0 auto; padding: 24px 20px 60px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--navy);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .badge {
+      background: var(--navy);
+      color: white;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+    .card-title .badge-gold {
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    /* ── FORM FIELDS ── */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .form-grid-wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select, .field textarea {
+      border: 1.5px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: white;
+      transition: border-color .15s;
+      width: 100%;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+    .field input[readonly] { background: #f0f4ff; color: var(--muted); }
+
+    /* ── SECTION HEADERS ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    /* ── COMPS TABLE ── */
+    .comps-wrapper { overflow-x: auto; }
+    table.comps-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.5px;
+      min-width: 960px;
+    }
+    .comps-table th {
+      background: var(--navy);
+      color: white;
+      padding: 9px 10px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .4px;
+      white-space: nowrap;
+    }
+    .comps-table th.gold { background: var(--gold); color: var(--navy); }
+    .comps-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .comps-table tr:nth-child(even) td { background: #f9fafc; }
+    .comps-table tr:hover td { background: #f0f4ff; }
+    .comps-table td input, .comps-table td select {
+      border: 1px solid #dde3ef;
+      border-radius: 4px;
+      padding: 5px 7px;
+      font-size: 12px;
+      width: 100%;
+      background: white;
+    }
+    .comps-table td input:focus, .comps-table td select:focus { outline: none; border-color: var(--gold); }
+    .comps-table td.calc { background: #f0f4ff; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
+    .comps-table td.adj-val { color: var(--green); font-weight: 600; text-align: right; }
+    .comps-table td.adj-neg { color: var(--red); font-weight: 600; text-align: right; }
+
+    /* ── VALUE SUMMARY ── */
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .value-box {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      padding: 14px 16px;
+      text-align: center;
+    }
+    .value-box.highlight {
+      background: var(--navy);
+      border-color: var(--navy);
+      color: white;
+    }
+    .value-box.gold-box {
+      background: var(--gold);
+      border-color: var(--gold);
+      color: var(--navy);
+    }
+    .value-box .vb-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .7; margin-bottom: 6px; }
+    .value-box .vb-value { font-size: 20px; font-weight: 700; }
+    .value-box.highlight .vb-label { color: rgba(255,255,255,.7); }
+    .value-box.highlight .vb-value { color: var(--gold); }
+
+    /* ── ADJUSTMENTS LEGEND ── */
+    .adj-legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .adj-row { display: flex; align-items: center; gap: 8px; }
+    .adj-row label { font-size: 11px; color: var(--muted); font-weight: 600; min-width: 130px; }
+    .adj-row input {
+      border: 1.5px solid var(--border);
+      border-radius: 5px;
+      padding: 5px 8px;
+      font-size: 12px;
+      width: 100px;
+    }
+    .adj-row input:focus { outline: none; border-color: var(--gold); }
+    .adj-row .unit { font-size: 11px; color: var(--muted); }
+
+    /* ── RATING BADGE ── */
+    .rating { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; }
+    .rating-A { background: #dcfce7; color: #166534; }
+    .rating-B { background: #dbeafe; color: #1e40af; }
+    .rating-C { background: #fef9c3; color: #854d0e; }
+    .rating-D { background: #fee2e2; color: #991b1b; }
+
+    /* ── FOOTER ── */
+    .footer-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--navy);
+      padding: 10px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    .footer-bar .est-value { color: var(--gold); font-size: 18px; font-weight: 700; }
+    .footer-bar .est-label { color: rgba(255,255,255,.6); font-size: 11px; margin-right: 6px; }
+    .footer-bar .range { color: rgba(255,255,255,.8); font-size: 13px; margin-left: 12px; }
+
+    /* ── NOTICE ── */
+    .notice {
+      background: #f0f4ff;
+      border: 1px solid #c7d2fe;
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #3730a3;
+      margin-bottom: 20px;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      .header-actions { width: 100%; display: flex; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div>
+      <div class="logo">FORWARD OS</div>
+      <div class="header-title">CMA Builder</div>
+      <div class="header-sub" id="headerSub">Comparative Market Analysis</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center;">
+    <button class="btn-outline" style="color:white;border-color:rgba(255,255,255,.3);" onclick="clearPrefill()">🔄 Reset</button>
+    <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
+  </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+  <div class="notice" id="prefillNotice" style="display:none;">
+    ✅ <strong>Property data pre-filled</strong> from your active listing. Review and adjust as needed before entering comps.
+  </div>
+
+  <!-- ── SUBJECT PROPERTY ── -->
+  <div class="card">
+    <div class="card-title">
+      🏠 Subject Property
+      <span class="badge">Step 1</span>
+    </div>
+    <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
+      <div class="field" style="grid-column:span 2;">
+        <label>Property Address</label>
+        <input type="text" id="s_address" placeholder="123 Main St" />
+      </div>
+      <div class="field">
+        <label>City</label>
+        <input type="text" id="s_city" placeholder="City" />
+      </div>
+      <div class="field">
+        <label>State</label>
+        <input type="text" id="s_state" placeholder="MD" />
+      </div>
+      <div class="field">
+        <label>ZIP</label>
+        <input type="text" id="s_zip" placeholder="20735" />
+      </div>
+      <div class="field">
+        <label>Client Name</label>
+        <input type="text" id="s_clientName" placeholder="Client Name" />
+      </div>
+    </div>
+    <div class="form-grid">
+      <div class="field">
+        <label>Property Type</label>
+        <select id="s_propType">
+          <option value="SFD">Single Family</option>
+          <option value="TH">Townhouse</option>
+          <option value="CONDO">Condo</option>
+          <option value="MF">Multi-Family</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Beds</label>
+        <input type="number" id="s_beds" placeholder="3" min="0" />
+      </div>
+      <div class="field">
+        <label>Full Baths</label>
+        <input type="number" id="s_fullBaths" placeholder="2" min="0" />
+      </div>
+      <div class="field">
+        <label>Half Baths</label>
+        <input type="number" id="s_halfBaths" placeholder="1" min="0" />
+      </div>
+      <div class="field">
+        <label>Above Grade GLA (sqft)</label>
+        <input type="number" id="s_gla" placeholder="1800" min="0" oninput="recalcAll()" />
+      </div>
+      <div class="field">
+        <label>Below Grade (sqft)</label>
+        <input type="number" id="s_below" placeholder="0" min="0" />
+      </div>
+      <div class="field">
+        <label>Year Built</label>
+        <input type="number" id="s_yearBuilt" placeholder="2002" />
+      </div>
+      <div class="field">
+        <label>Condition</label>
+        <select id="s_condition" onchange="recalcAll()">
+          <option value="A">A – Excellent</option>
+          <option value="B">B – Good</option>
+          <option value="C" selected>C – Average</option>
+          <option value="D">D – Fair</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Parking Type</label>
+        <select id="s_parkingType">
+          <option value="attached">Attached Garage</option>
+          <option value="detached">Detached Garage</option>
+          <option value="carport">Carport</option>
+          <option value="street">Street/None</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Garage Spaces</label>
+        <input type="number" id="s_parkingSpaces" placeholder="2" min="0" />
+      </div>
+      <div class="field">
+        <label>HOA / Month ($)</label>
+        <input type="number" id="s_hoaMonthly" placeholder="0" min="0" />
+      </div>
+      <div class="field">
+        <label>Condo Fee / Month ($)</label>
+        <input type="number" id="s_condoFee" placeholder="0" min="0" />
+      </div>
+      <div class="field">
+        <label>Lot Size (sqft)</label>
+        <input type="number" id="s_lotSize" placeholder="6000" min="0" />
+      </div>
+      <div class="field">
+        <label>Agent</label>
+        <input type="text" id="s_agentName" placeholder="Agent Name" />
+      </div>
+    </div>
+    <div class="field" style="margin-top:12px;">
+      <label>Notes</label>
+      <textarea id="s_notes" rows="2" placeholder="Additional notes about the subject property..." style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;resize:vertical;width:100%;"></textarea>
+    </div>
+  </div>
+
+  <!-- ── ADJUSTMENT SETTINGS ── -->
+  <div class="card">
+    <div class="card-title">
+      ⚙️ Adjustment Settings
+      <span class="badge">Step 2</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">These per-unit adjustments are applied to each comp to normalize differences with the subject property.</div>
+    <div class="adj-legend">
+      <div class="adj-row">
+        <label>GLA $/sqft adjustment</label>
+        <input type="number" id="adj_gla" value="50" step="5" oninput="recalcAll()" />
+        <span class="unit">$/sqft</span>
+      </div>
+      <div class="adj-row">
+        <label>Condition A (Excellent)</label>
+        <input type="number" id="adj_condA" value="10000" step="1000" oninput="recalcAll()" />
+        <span class="unit">$</span>
+      </div>
+      <div class="adj-row">
+        <label>Condition B (Good)</label>
+        <input type="number" id="adj_condB" value="5000" step="1000" oninput="recalcAll()" />
+        <span class="unit">$</span>
+      </div>
+      <div class="adj-row">
+        <label>Condition C (Average)</label>
+        <input type="number" id="adj_condC" value="0" step="1000" oninput="recalcAll()" />
+        <span class="unit">$ (baseline)</span>
+      </div>
+      <div class="adj-row">
+        <label>Condition D (Fair)</label>
+        <input type="number" id="adj_condD" value="-10000" step="1000" oninput="recalcAll()" />
+        <span class="unit">$</span>
+      </div>
+      <div class="adj-row">
+        <label>Garage space adjustment</label>
+        <input type="number" id="adj_garage" value="5000" step="500" oninput="recalcAll()" />
+        <span class="unit">$/space</span>
+      </div>
+      <div class="adj-row">
+        <label>Full bath adjustment</label>
+        <input type="number" id="adj_bath" value="4000" step="500" oninput="recalcAll()" />
+        <span class="unit">$/bath</span>
+      </div>
+      <div class="adj-row">
+        <label>HOA adjustment (monthly)</label>
+        <input type="number" id="adj_hoa" value="100" step="10" oninput="recalcAll()" />
+        <span class="unit">$ multiplier</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── COMPARABLE SALES ── -->
+  <div class="card">
+    <div class="card-title">
+      🏘️ Comparable Sales
+      <span class="badge">Step 3</span>
+      <span class="badge badge-gold" id="compCountBadge">0 of 6</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Enter up to 6 comparable sales. Adjustments are calculated automatically based on differences from the subject property.</div>
+    <div class="comps-wrapper">
+      <table class="comps-table" id="compsTable">
+        <thead>
+          <tr>
+            <th style="min-width:180px;">Address</th>
+            <th style="min-width:90px;">Sale Price</th>
+            <th style="min-width:70px;">GLA (sqft)</th>
+            <th style="min-width:60px;">Beds</th>
+            <th style="min-width:70px;">Full Baths</th>
+            <th style="min-width:60px;">Garage</th>
+            <th style="min-width:100px;">Condition</th>
+            <th style="min-width:80px;">HOA/Mo</th>
+            <th style="min-width:80px;">Concessions</th>
+            <th class="gold" style="min-width:85px;">$/SqFt</th>
+            <th class="gold" style="min-width:100px;">Net Adj</th>
+            <th class="gold" style="min-width:100px;">Adj Price</th>
+          </tr>
+        </thead>
+        <tbody id="compsBody">
+          <!-- rows inserted by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;">
+      <button class="btn-navy" onclick="addComp()" id="addCompBtn">+ Add Comp</button>
+    </div>
+  </div>
+
+  <!-- ── VALUE SUMMARY ── -->
+  <div class="card">
+    <div class="card-title">
+      📊 Value Estimate
+      <span class="badge">Step 4</span>
+    </div>
+    <div class="value-grid" id="valueSummary">
+      <div class="value-box">
+        <div class="vb-label">Comps Used</div>
+        <div class="vb-value" id="vCompsUsed">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">Avg Adj Price</div>
+        <div class="vb-value" id="vAvgAdj">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">Median Adj Price</div>
+        <div class="vb-value" id="vMedianAdj">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">Low Estimate</div>
+        <div class="vb-value" id="vLow">—</div>
+      </div>
+      <div class="value-box gold-box">
+        <div class="vb-label">Recommended Value</div>
+        <div class="vb-value" id="vRecommended">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">High Estimate</div>
+        <div class="vb-value" id="vHigh">—</div>
+      </div>
+      <div class="value-box highlight">
+        <div class="vb-label">Suggested List Price</div>
+        <div class="vb-value" id="vListPrice">—</div>
+      </div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div class="field">
+        <label>Agent Notes / Narrative</label>
+        <textarea id="agentNotes" rows="3" placeholder="Summarize your value conclusion, market conditions, and pricing rationale..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;width:100%;"></textarea>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- FOOTER BAR -->
+<div class="footer-bar">
+  <div style="display:flex;align-items:center;gap:6px;">
+    <span class="est-label">ESTIMATED VALUE</span>
+    <span class="est-value" id="footerValue">—</span>
+    <span class="range" id="footerRange"></span>
+  </div>
+  <div style="display:flex;gap:10px;">
+    <button class="btn-outline" onclick="saveLocal()">💾 Save Draft</button>
+    <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
+  </div>
+</div>
+
+<script>
+// ── STATE ──
+let comps = [];
+const MAX_COMPS = 6;
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  buildCompsTable();
+  loadPrefill();
+  loadDraft();
+  recalcAll();
+});
+
+// ── PREFILL FROM FORWARD OS ──
+function loadPrefill() {
+  try {
+    const raw = localStorage.getItem('cma_voice_prefill');
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    const set = (id, val) => { if (val !== undefined && val !== null && val !== '') { const el = document.getElementById(id); if (el) el.value = val; } };
+    set('s_address', d.address);
+    set('s_city', d.city);
+    set('s_state', d.state);
+    set('s_zip', d.zip);
+    set('s_beds', d.beds);
+    set('s_fullBaths', d.fullBaths);
+    set('s_halfBaths', d.halfBaths);
+    set('s_gla', d.gla);
+    set('s_below', d.below);
+    set('s_yearBuilt', d.yearBuilt);
+    set('s_hoaMonthly', d.hoaMonthly);
+    set('s_condoFee', d.condoFee);
+    set('s_lotSize', d.lotSize);
+    set('s_clientName', d.clientName);
+    set('s_agentName', d.agentName);
+    set('s_notes', d.notes);
+    if (d.condition) set('s_condition', d.condition);
+    if (d.propType) set('s_propType', d.propType);
+    if (d.parkingType) set('s_parkingType', d.parkingType);
+    if (d.parkingSpaces) set('s_parkingSpaces', d.parkingSpaces);
+    const addr = d.address ? d.address : '';
+    if (addr) {
+      document.getElementById('headerSub').textContent = addr;
+      document.getElementById('prefillNotice').style.display = 'block';
+    }
+    recalcAll();
+  } catch(e) { console.warn('prefill load error', e); }
+}
+
+function clearPrefill() {
+  if (!confirm('Reset all fields to blank?')) return;
+  localStorage.removeItem('cma_voice_prefill');
+  localStorage.removeItem('cma_draft');
+  location.reload();
+}
+
+// ── COMPS TABLE BUILD ──
+function buildCompsTable() {
+  const tbody = document.getElementById('compsBody');
+  tbody.innerHTML = '';
+  comps.forEach((_, i) => tbody.appendChild(buildCompRow(i)));
+  document.getElementById('compCountBadge').textContent = comps.length + ' of ' + MAX_COMPS;
+  document.getElementById('addCompBtn').style.display = comps.length >= MAX_COMPS ? 'none' : '';
+}
+
+function buildCompRow(i) {
+  const tr = document.createElement('tr');
+  tr.id = 'comp-row-' + i;
+  const c = comps[i];
+  const condOpts = ['A','B','C','D'].map(v => `<option value="${v}"${c.condition===v?' selected':''}>${v}</option>`).join('');
+  tr.innerHTML = `
+    <td><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="compChange(${i},'address',this.value)" /></td>
+    <td><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" onchange="compChange(${i},'salePrice',+this.value);recalcAll()" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
+    <td><input type="number" value="${c.gla||''}" placeholder="1800" min="0" onchange="compChange(${i},'gla',+this.value);recalcAll()" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
+    <td><input type="number" value="${c.beds||''}" placeholder="3" min="0" onchange="compChange(${i},'beds',+this.value);recalcAll()" /></td>
+    <td><input type="number" value="${c.fullBaths||''}" placeholder="2" min="0" step="0.5" onchange="compChange(${i},'fullBaths',+this.value);recalcAll()" /></td>
+    <td><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" onchange="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
+    <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select></td>
+    <td><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" onchange="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
+    <td><input type="number" value="${c.concessions||''}" placeholder="0" min="0" onchange="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
+    <td class="calc" id="c${i}_psf">—</td>
+    <td class="calc" id="c${i}_netAdj">—</td>
+    <td class="calc" id="c${i}_adjPrice">—</td>
+  `;
+  // Add remove button
+  const removeTd = document.createElement('td');
+  const btn = document.createElement('button');
+  btn.textContent = '✕';
+  btn.style.cssText = 'background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 6px;';
+  btn.onclick = () => removeComp(i);
+  removeTd.appendChild(btn);
+  tr.appendChild(removeTd);
+  return tr;
+}
+
+function addComp() {
+  if (comps.length >= MAX_COMPS) return;
+  comps.push({ address:'', salePrice:'', gla:'', beds:'', fullBaths:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'' });
+  buildCompsTable();
+  recalcAll();
+}
+
+function removeComp(i) {
+  comps.splice(i, 1);
+  buildCompsTable();
+  recalcAll();
+}
+
+function compChange(i, field, val) {
+  comps[i][field] = val;
+}
+
+// ── CALCULATIONS ──
+function getNum(id) { return parseFloat(document.getElementById(id)?.value) || 0; }
+function getVal(id) { return document.getElementById(id)?.value || ''; }
+
+const COND_RANK = { A: 3, B: 2, C: 1, D: 0 };
+
+function calcCondAdj(subjectCond, compCond) {
+  // Returns adjustment to add TO comp to make it equivalent to subject
+  const condValues = {
+    A: getNum('adj_condA'),
+    B: getNum('adj_condB'),
+    C: getNum('adj_condC'),
+    D: getNum('adj_condD')
+  };
+  return condValues[subjectCond] - condValues[compCond];
+}
+
+function recalcAll() {
+  const subGla = getNum('s_gla');
+  const subCond = getVal('s_condition') || 'C';
+  const subGarage = getNum('s_parkingSpaces');
+  const subBaths = getNum('s_fullBaths');
+  const subHoa = getNum('s_hoaMonthly') + getNum('s_condoFee');
+
+  const adjGla = getNum('adj_gla');
+  const adjGarage = getNum('adj_garage');
+  const adjBath = getNum('adj_bath');
+  const adjHoaMult = getNum('adj_hoa');
+
+  const adjPrices = [];
+
+  comps.forEach((c, i) => {
+  const sp = parseFloat(c.salePrice) || 0;
+    if (!sp) {
+      document.getElementById('c'+i+'_psf').textContent = '—';
+      document.getElementById('c'+i+'_netAdj').textContent = '—';
+      document.getElementById('c'+i+'_adjPrice').textContent = '—';
+      return;
+    }
+
+    const cGla = parseFloat(c.gla) || 0;
+    const cGarage = parseFloat(c.garageSpaces) || 0;
+    const cBaths = parseFloat(c.fullBaths) || 0;
+    const cHoa = parseFloat(c.hoaMonthly) || 0;
+    const cCond = c.condition || 'C';
+    const cConcess = parseFloat(c.concessions) || 0;
+
+    // GLA adjustment (comp to subject)
+    const glaAdj = subGla && cGla ? (subGla - cGla) * adjGla : 0;
+
+    // Condition adjustment
+    const condAdj = calcCondAdj(subCond, cCond);
+
+    // Garage adjustment
+    const garageAdj = (subGarage - cGarage) * adjGarage;
+
+    // Bath adjustment
+    const bathAdj = (subBaths - cBaths) * adjBath;
+
+    // HOA adjustment (monthly diff × multiplier)
+    const hoaAdj = (cHoa - subHoa) * adjHoaMult * -1;
+
+    // Concessions (seller paid — reduces effective sale price)
+    const concessAdj = cConcess;
+
+    const netAdj = glaAdj + condAdj + garageAdj + bathAdj + hoaAdj + concessAdj;
+    const adjPrice = sp + netAdj;
+    const psf = cGla > 0 ? sp / cGla : 0;
+
+    adjPrices.push(adjPrice);
+
+    const psfEl = document.getElementById('c'+i+'_psf');
+    const netEl = document.getElementById('c'+i+'_netAdj');
+    const adjEl = document.getElementById('c'+i+'_adjPrice');
+
+    if (psfEl) psfEl.textContent = psf > 0 ? '$' + psf.toFixed(0) : '—';
+
+    if (netEl) {
+      netEl.textContent = (netAdj >= 0 ? '+' : '') + fmtDollar(netAdj);
+      netEl.className = 'calc ' + (netAdj > 0 ? 'adj-val' : netAdj < 0 ? 'adj-neg' : '');
+    }
+    if (adjEl) {
+      adjEl.textContent = fmtDollar(adjPrice);
+      adjEl.className = 'calc';
+    }
+  });
+
+  updateValueSummary(adjPrices);
+}
+
+function updateValueSummary(adjPrices) {
+  const valid = adjPrices.filter(v => v > 0);
+  document.getElementById('vCompsUsed').textContent = valid.length || '—';
+
+  if (!valid.length) {
+    ['vAvgAdj','vMedianAdj','vLow','vRecommended','vHigh','vListPrice'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    document.getElementById('footerValue').textContent = '—';
+    document.getElementById('footerRange').textContent = '';
+    return;
+  }
+
+  const avg = valid.reduce((a,b) => a+b, 0) / valid.length;
+  const sorted = [...valid].sort((a,b) => a-b);
+  const median = sorted.length % 2 === 0
+    ? (sorted[sorted.length/2 - 1] + sorted[sorted.length/2]) / 2
+    : sorted[Math.floor(sorted.length/2)];
+  const low = Math.min(...valid);
+  const high = Math.max(...valid);
+  const recommended = Math.round(median / 1000) * 1000;
+  const listPrice = Math.round(recommended * 0.99 / 1000) * 1000;
+
+  document.getElementById('vAvgAdj').textContent = fmtDollar(avg);
+  document.getElementById('vMedianAdj').textContent = fmtDollar(median);
+  document.getElementById('vLow').textContent = fmtDollar(low);
+  document.getElementById('vRecommended').textContent = fmtDollar(recommended);
+  document.getElementById('vHigh').textContent = fmtDollar(high);
+  document.getElementById('vListPrice').textContent = fmtDollar(listPrice);
+
+  document.getElementById('footerValue').textContent = fmtDollar(recommended);
+  document.getElementById('footerRange').textContent =
+    '(' + fmtDollar(low) + ' – ' + fmtDollar(high) + ')';
+}
+
+function fmtDollar(n) {
+  if (!n && n !== 0) return '—';
+  return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+// ── SAVE DRAFT ──
+function saveLocal() {
+  try {
+    const draft = {
+      subject: {
+        address: getVal('s_address'), city: getVal('s_city'), state: getVal('s_state'), zip: getVal('s_zip'),
+        propType: getVal('s_propType'), beds: getVal('s_beds'), fullBaths: getVal('s_fullBaths'),
+        halfBaths: getVal('s_halfBaths'), gla: getVal('s_gla'), below: getVal('s_below'),
+        yearBuilt: getVal('s_yearBuilt'), condition: getVal('s_condition'), parkingType: getVal('s_parkingType'),
+        parkingSpaces: getVal('s_parkingSpaces'), hoaMonthly: getVal('s_hoaMonthly'),
+        condoFee: getVal('s_condoFee'), lotSize: getVal('s_lotSize'), clientName: getVal('s_clientName'),
+        agentName: getVal('s_agentName'), notes: getVal('s_notes')
+      },
+      comps,
+      adjustments: {
+        gla: getVal('adj_gla'), condA: getVal('adj_condA'), condB: getVal('adj_condB'),
+        condC: getVal('adj_condC'), condD: getVal('adj_condD'), garage: getVal('adj_garage'),
+        bath: getVal('adj_bath'), hoa: getVal('adj_hoa')
+      },
+      agentNotes: getVal('agentNotes')
+    };
+    localStorage.setItem('cma_draft', JSON.stringify(draft));
+    showToast('✅ Draft saved');
+  } catch(e) { showToast('Error saving draft'); }
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem('cma_draft');
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (draft.subject) {
+      Object.entries(draft.subject).forEach(([k, v]) => {
+        const el = document.getElementById('s_' + k);
+        if (el && v) el.value = v;
+      });
+    }
+    if (draft.adjustments) {
+      const a = draft.adjustments;
+      const setAdj = (k, v) => { const el = document.getElementById('adj_'+k); if (el && v!==undefined) el.value = v; };
+      setAdj('gla', a.gla); setAdj('condA', a.condA); setAdj('condB', a.condB);
+      setAdj('condC', a.condC); setAdj('condD', a.condD); setAdj('garage', a.garage);
+      setAdj('bath', a.bath); setAdj('hoa', a.hoa);
+    }
+    if (draft.comps && draft.comps.length) {
+      comps = draft.comps;
+      buildCompsTable();
+    }
+    if (draft.agentNotes) {
+      const el = document.getElementById('agentNotes');
+      if (el) el.value = draft.agentNotes;
+    }
+    recalcAll();
+  } catch(e) { /* ignore */ }
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  t.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#1a2744;color:white;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;';
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2500);
+}
+
+// ── PDF EXPORT ──
+function exportPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  const W = 612; const margin = 40; let y = 0;
+
+  const navy = [26, 39, 68];
+  const gold = [201, 168, 76];
+  const white = [255, 255, 255];
+  const lightGray = [245, 246, 250];
+  const midGray = [180, 190, 210];
+
+  // Header
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, W, 56, 'F');
+  doc.setTextColor(...gold);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FORWARD OS', margin, 18);
+  doc.setTextColor(...white);
+  doc.setFontSize(16);
+  doc.text('Comparative Market Analysis', margin, 36);
+  const addr = getVal('s_address') + (getVal('s_city') ? ', ' + getVal('s_city') : '') + (getVal('s_state') ? ', ' + getVal('s_state') : '');
+  doc.setFontSize(9);
+  doc.setTextColor(200, 210, 230);
+  doc.text(addr || 'Subject Property', margin, 50);
+
+  // Date / agent
+  doc.setFontSize(8);
+  doc.setTextColor(...white);
+  const agent = getVal('s_agentName');
+  const client = getVal('s_clientName');
+  const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const rightInfo = (agent ? 'Agent: ' + agent + '  ' : '') + (client ? 'Client: ' + client + '  ' : '') + dateStr;
+  doc.text(rightInfo, W - margin, 50, { align: 'right' });
+
+  y = 70;
+
+  // Subject Property section
+  doc.setFillColor(...lightGray);
+  doc.rect(margin, y, W - 2*margin, 16, 'F');
+  doc.setTextColor(...navy);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('SUBJECT PROPERTY', margin + 6, y + 11);
+  y += 20;
+
+  const subFields = [
+    ['Address', (getVal('s_address')||'—') + ', ' + (getVal('s_city')||'') + ', ' + (getVal('s_state')||'') + ' ' + (getVal('s_zip')||'')],
+    ['Property Type', getVal('s_propType')||'—'],
+    ['Beds / Baths', (getVal('s_beds')||'—') + ' bd / ' + (getVal('s_fullBaths')||'—') + ' ba'],
+    ['GLA (Above Grade)', (getVal('s_gla') ? getVal('s_gla') + ' sqft' : '—')],
+    ['Year Built', getVal('s_yearBuilt')||'—'],
+    ['Condition', getVal('s_condition')||'—'],
+    ['Garage', (getVal('s_parkingSpaces')||'0') + ' space(s) – ' + (getVal('s_parkingType')||'—')],
+    ['HOA / Mo', (getVal('s_hoaMonthly') ? '$' + getVal('s_hoaMonthly') : '$0')],
+  ];
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  const colW = (W - 2*margin) / 2 - 8;
+  subFields.forEach((f, i) => {
+  const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = margin + col * (colW + 16);
+    const rowY = y + row * 14;
+    doc.setTextColor(100, 115, 150);
+    doc.text(f[0] + ':', x, rowY);
+    doc.setTextColor(...navy);
+    doc.setFont('helvetica', 'bold');
+    doc.text(f[1], x + 90, rowY);
+    doc.setFont('helvetica', 'normal');
+  });
+  y += Math.ceil(subFields.length / 2) * 14 + 12;
+
+  // Value Summary
+  doc.setFillColor(...lightGray);
+  doc.rect(margin, y, W - 2*margin, 16, 'F');
+  doc.setTextColor(...navy);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  doc.text('VALUE ESTIMATE', margin + 6, y + 11);
+  y += 20;
+
+  const sumFields = [
+    ['Comps Used', document.getElementById('vCompsUsed').textContent],
+    ['Average Adj Price', document.getElementById('vAvgAdj').textContent],
+    ['Median Adj Price', document.getElementById('vMedianAdj').textContent],
+    ['Low Estimate', document.getElementById('vLow').textContent],
+    ['Recommended Value', document.getElementById('vRecommended').textContent],
+    ['High Estimate', document.getElementById('vHigh').textContent],
+    ['Suggested List Price', document.getElementById('vListPrice').textContent],
+  ];
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8.5);
+  sumFields.forEach((f, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const x = margin + col * (colW + 16);
+    const rowY = y + row * 14;
+    const isHighlight = f[0] === 'Recommended Value' || f[0] === 'Suggested List Price';
+    doc.setTextColor(100, 115, 150);
+    doc.text(f[0] + ':', x, rowY);
+    if (isHighlight) {
+      doc.setTextColor(...gold);
+      doc.setFont('helvetica', 'bold');
+    } else {
+      doc.setTextColor(...navy);
+      doc.setFont('helvetica', 'normal');
+    }
+    doc.text(f[1], x + 120, rowY);
+    doc.setFont('helvetica', 'normal');
+  });
+  y += Math.ceil(sumFields.length / 2) * 14 + 12;
+
+  // Comps table
+  if (comps.length) {
+    doc.setFillColor(...lightGray);
+    doc.rect(margin, y, W - 2*margin, 16, 'F');
+    doc.setTextColor(...navy);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('COMPARABLE SALES', margin + 6, y + 11);
+    y += 20;
+
+    const tHeaders = ['Address', 'Sale Price', 'GLA', 'Cond', 'Adj', 'Adj Price'];
+    const tWidths =  [160, 70, 50, 35, 70, 80];
+    doc.setFillColor(...navy);
+    doc.rect(margin, y, W - 2*margin, 14, 'F');
+    doc.setTextColor(...white);
+    doc.setFontSize(7.5);
+    let tx = margin + 4;
+    tHeaders.forEach((h, i) => { doc.text(h, tx, y + 10); tx += tWidths[i]; });
+    y += 14;
+
+    doc.setFont('helvetica', 'normal');
+    comps.forEach((c, ci) => {
+      if (!c.salePrice) return;
+      if (y > 720) { doc.addPage(); y = 40; }
+      doc.setFillColor(ci % 2 === 0 ? 255 : 250, ci % 2 === 0 ? 255 : 251, ci % 2 === 0 ? 255 : 252);
+      doc.rect(margin, y, W - 2*margin, 13, 'F');
+      doc.setTextColor(...navy);
+      doc.setFontSize(7.5);
+      tx = margin + 4;
+      const netAdj = document.getElementById('c'+ci+'_netAdj')?.textContent || '—';
+      const adjPrice = document.getElementById('c'+ci+'_adjPrice')?.textContent || '—';
+      const row = [
+        (c.address || '—').slice(0, 28),
+        c.salePrice ? '$' + parseInt(c.salePrice).toLocaleString() : '—',
+        c.gla ? c.gla + ' sf' : '—',
+        c.condition || '—',
+        netAdj,
+        adjPrice
+      ];
+      row.forEach((cell, i) => { doc.text(cell, tx, y + 9); tx += tWidths[i]; });
+      y += 13;
+    });
+    y += 10;
+  }
+
+  // Agent notes
+  const notes = getVal('agentNotes');
+  if (notes) {
+    if (y > 680) { doc.addPage(); y = 40; }
+    doc.setFillColor(...lightGray);
+    doc.rect(margin, y, W - 2*margin, 16, 'F');
+    doc.setTextColor(...navy);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('AGENT NOTES', margin + 6, y + 11);
+    y += 20;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(60, 70, 90);
+    const wrapped = doc.splitTextToSize(notes, W - 2*margin - 10);
+    doc.text(wrapped, margin + 4, y);
+  }
+
+  // Footer on last page
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= pageCount; p++) {
+    doc.setPage(p);
+    doc.setFillColor(...navy);
+    doc.rect(0, 782, W, 30, 'F');
+    doc.setTextColor(200, 210, 230);
+    doc.setFontSize(7.5);
+    doc.text('FORWARD OS — Comparative Market Analysis', margin, 800);
+    doc.text('Page ' + p + ' of ' + pageCount + '  |  ' + new Date().toLocaleDateString(), W - margin, 800, { align: 'right' });
+  }
+
+  const filename = 'CMA_' + (getVal('s_address') || 'Report').replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+  doc.save(filename);
+}
+</script>
+</body>
+</html>
