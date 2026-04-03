@@ -119,16 +119,27 @@ RLS: enabled (allow_all_anon policy)
 - supaProperties / lstActiveProp / lstCreateProperty()
 - lstCreateProperty() auto-creates: Supabase record + Drive folder + client file folder entry
 
-### Client Files (prop-files view) — PENDING MIGRATION
-- Current state: display/browse reads from localStorage (device-local, NOT global)
-- Saving PDFs to folders: global via Google Drive (fixed in Chat 5)
-- CHAT 6 GOAL: Migrate the CLIENT FILES VIEW to read from Supabase/Drive so all agents see all folders on all devices
-- addPropFile(address, opts) — opts: { buyer_id, property_id, fileType } — localStorage write
-- getPropFiles() / savePropFiles() — localStorage helpers (to be replaced with Supabase reads)
+### Client Files (prop-files view) — MIGRATED IN CHAT 6
+- propFiles = ref([]) — initialized empty, loaded from Supabase on mount
+- allAgentFiles = ref([]) — initialized empty, loaded from Supabase on mount (grouped by agent, used in admin view)
+- async loadPropFiles() — fetches ALL buyers + ALL properties from Supabase (no agent filter), merges + sorts by created_at desc, populates both propFiles and allAgentFiles. Called on mount and by refreshPropFiles().
+- async refreshPropFiles() — calls loadPropFiles()
+- addPropFile(address, opts) — still writes to localStorage (harmless legacy); view is now Supabase-backed
+- addResourceToProp(propId, resource) — localStorage write (local tool output text)
+- deleteResourceFromProp(propId, resId) — localStorage delete
+- deletePropFile(propId) — localStorage delete
+- getAllAgentsPropFiles() — legacy localStorage helper (still used as fallback in loadPropFiles catch block)
+- getPropFiles() / savePropFiles() — legacy localStorage helpers (still used as fallback)
 - findActiveClientFile() — returns client file linked to active buyer/listing
 - openSaveToPropModal(type, label, data, pdfData, toolName) — smart save, auto-routes to active client file
-- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker (already global)
-- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway (already global)
+- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker
+- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway (global)
+
+### supaRest helper (global)
+- supaRest.select(table, query) — GET with PostgREST query string e.g. 'select=id,name&order=created_at.desc'
+- supaRest.insert(table, data) — POST
+- supaRest.update(table, matchCol, matchVal, data) — PATCH
+- supaRest.upsert(table, data, onConflict) — POST with upsert
 
 ### FUB Integration
 - fubFetch(path, method, body) — routes through /fub-api Netlify proxy to followupboss.com/v1
@@ -154,16 +165,7 @@ Access code: forward2026 — Admin: Marc Cashin
 | 1–3 | Initial OS build — all tools, Supabase, Railway backend |
 | 4 | Crashed — context overflow from base64 chunk injection (never do this) |
 | 5 | Auto-create client folders on buyer/listing creation; global Save-to-Folder + Send to Buyer on Buyer Consultation Kit; GitHub repo created + connected to Netlify; _redirects added (fixed FUB 404); Supabase RLS enabled on all tables |
-| 6 | CURRENT — Migrate Client Files VIEW from localStorage to Supabase/Drive |
-
----
-
-## Pending (Chat 6)
-Migrate the Client Files VIEW (prop-files sidebar section, folder grid display) from localStorage to Supabase/Drive.
-- Currently: getPropFiles() reads from localStorage — only shows folders created on that specific device
-- Goal: all agents on all devices see all client folders (buyers + listings) pulled from Supabase
-- The SAVING of PDFs to folders is already global (Drive-backed). Only the VIEW/BROWSE is broken.
-- Approach: replace getPropFiles()/savePropFiles() localStorage reads with a Supabase query joining buyers + properties tables
+| 6 | Migrated Client Files VIEW from localStorage to Supabase — loadPropFiles() fetches all buyers + properties globally; propFiles and allAgentFiles now Supabase-backed; all agents see all folders on all devices |
 
 ---
 
