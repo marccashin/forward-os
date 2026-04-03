@@ -844,7 +844,7 @@
           </div>
           <div class="card" style="max-width:640px;">
             <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens as a full-screen tool with its own 5-step wizard, appraiser-grade adjustment methodology, and luxury print-ready PDF output.</p>
-            <a class='btn-gold' href='/cma-tool' style='display:inline-block;text-decoration:none;margin-bottom:24px;'>🔍 Open CMA Builder</a>
+            <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:24px;'>🔍 Open CMA Builder</button>
             <div style="border-top:1.5px solid #f0f0f0;padding-top:20px;">
               <h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">What's inside</h3>
               <div style="font-size:13px;color:#4b5563;line-height:2.1;">
@@ -3475,7 +3475,7 @@
                     <button class="btn-gold" @click="view='listing-desc'" style="font-size:12px;padding:8px 16px;">Go to Listing Description Writer</button>
                   </div>
                   <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
-                  <a class='btn-gold' href='/cma-tool' style='display:inline-block;text-decoration:none;margin-bottom:12px;font-size:13px;'>🔍 Open CMA Builder</a>
+                  <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:12px;font-size:13px;'>🔍 Open CMA Builder</button>
                   <div style="border-top:1px solid #f0f0f0;padding-top:12px;">
                     <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Log CMA to This Property</div>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -5624,8 +5624,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
     });
 
-    const propFiles = ref(getPropFiles());
-    const allAgentFiles = ref(getAllAgentsPropFiles());
+    const propFiles = ref([]);
+    const allAgentFiles = ref([]);
     const activePropFile = ref(null);        // currently viewing property file
     const adminViewAgent = ref(null);        // admin: currently expanded agent folder
     const newPropAddress = ref('');
@@ -6624,13 +6624,24 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (loggedIn.value && SUPABASE_URL) {
         lstFetchProperties();
         byrFetchBuyers();
+        loadPropFiles();
       }
     });
 
-    function refreshPropFiles() {
-      propFiles.value = getPropFiles();
-      allAgentFiles.value = getAllAgentsPropFiles();
+    async function loadPropFiles() {
+      try {
+        const [buyers, props] = await Promise.all([
+          supaRest.select('buyers', 'select=id,buyer_name,agent_name,drive_folder_id,subfolder_drive_ids,created_at&order=created_at.desc'),
+          supaRest.select('properties', 'select=id,address,agent_name,drive_folder_id,subfolder_drive_ids,created_at&order=created_at.desc')
+        ]);
+        const bFiles = (buyers||[]).map(b=>({id:b.id,address:b.buyer_name,createdAt:b.created_at,resources:[],agent_name:b.agent_name,drive_folder_id:b.drive_folder_id,subfolder_drive_ids:b.subfolder_drive_ids,buyer_id:b.id,recordType:'buyer'}));
+        const pFiles = (props||[]).map(p=>({id:p.id,address:p.address,createdAt:p.created_at,resources:[],agent_name:p.agent_name,drive_folder_id:p.drive_folder_id,subfolder_drive_ids:p.subfolder_drive_ids,property_id:p.id,recordType:'property'}));
+        const all = [...bFiles,...pFiles].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+        propFiles.value = all;
+        allAgentFiles.value = AGENTS.map(name=>({agent:name,files:all.filter(f=>f.agent_name===name)})).filter(g=>g.files.length>0||g.agent===ADMIN_AGENT);
+      } catch(e) { console.error('loadPropFiles:',e); propFiles.value=getPropFiles(); allAgentFiles.value=getAllAgentsPropFiles(); }
     }
+    async function refreshPropFiles() { await loadPropFiles(); }
     function createPropFile() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
@@ -6663,7 +6674,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       showToast('Resource removed.');
     }
     function findActiveClientFile() {
-      const files = getPropFiles();
+      const files = propFiles.value && propFiles.value.length ? propFiles.value : getPropFiles();
       if (byrActiveBuyer.value) {
         return files.find(f => f.buyer_id === byrActiveBuyer.value.id) || null;
       }
@@ -6829,6 +6840,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         });
         // Update local notes cache so it shows immediately in the panel
         lstNotes.cma = content;
+        _doSaveToPropertyDrive(targetProp, 'cma', 'CMA Builder', 'CMA Report', content, null).catch(()=>{});
         cmaSaved.value = true;
         setTimeout(() => { cmaSaved.value = false; }, 8000);
         cmaLogAddress.value = '';
@@ -7102,7 +7114,7 @@ CONVERSATION FLOW (follow this exactly):
 6. Before writing the description, use any information you can find online about the property and neighborhood to fill in details. Do not guess or fabricate specs.
 7. When writing the final description, include a last paragraph with local amenities and bullet points showing distance in miles from the property address.
 
-Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step.`;
+Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step. When you are ready to present the final listing description, begin your response DIRECTLY with the description copy — no preamble, acknowledgment, or commentary before the description itself.`;
     // Keep ld reactive for backward compatibility with save
     const ld = reactive({ address:'' });
 
