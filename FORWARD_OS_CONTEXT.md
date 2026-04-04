@@ -1,67 +1,186 @@
-{
-  "name": "FORWARD_OS_CONTEXT.md",
-  "path": "FORWARD_OS_CONTEXT.md",
-  "sha": "b72e0e16322c26db1d9139efc328e6c890336a09",
-  "size": 8382,
-  "url": "https://api.github.com/repos/marccashin/forward-os/contents/FORWARD_OS_CONTEXT.md?ref=main",
-  "html_url": "https://github.com/marccashin/forward-os/blob/main/FORWARD_OS_CONTEXT.md",
-  "git_url": "https://api.github.com/repos/marccashin/forward-os/git/blobs/b72e0e16322c26db1d9139efc328e6c890336a09",
-  "download_url": "https://raw.githubusercontent.com/marccashin/forward-os/main/FORWARD_OS_CONTEXT.md",
-  "type": "file",
-  "content": "IyBGT1JXQVJEIE9TIOKAlCBTZXNzaW9uIENvbnRleHQgRmlsZQo+IFVwbG9h\nZCB0aGlzIGZpbGUgYXQgdGhlIHN0YXJ0IG9mIGFueSBuZXcgRk9SV0FSRCBP\nUyBDb3dvcmsgY2hhdCB0byByZXN0b3JlIGZ1bGwgY29udGV4dC4KCi0tLQoK\nIyMgV2hhdCBpcyBGT1JXQVJEIE9TPwpBIFZ1ZSAzIFNQQSAoc2luZ2xlLWZp\nbGUsIG5vIGJ1aWxkIHN0ZXApIGZvciByZWFsIGVzdGF0ZSBhZ2VudHMuCi0g\nKipMaXZlIHNpdGU6KiogaHR0cHM6Ly9mb3J3YXJkLW9zLm5ldGxpZnkuYXBw\nCi0gKipTb3VyY2U6KiogaHR0cHM6Ly9naXRodWIuY29tL21hcmNjYXNoaW4v\nZm9yd2FyZC1vcyAobWFpbiBicmFuY2gpCi0gfjEyLDAwMCBsaW5lcyBvZiBI\nVE1ML0pTL0NTUyBpbiBhIHNpbmdsZSBpbmRleC5odG1sICh+MS4yNE1CKQoK\nLS0tCgojIyBJbmZyYXN0cnVjdHVyZQoKfCBTZXJ2aWNlIHwgUHVycG9zZSB8\nIERldGFpbHMgfAp8LS0tfC0tLXwtLS18CnwgTmV0bGlmeSB8IEhvc3Rpbmcg\nfCBTaXRlIElEOiA3YmNjMjhjNS05N2QwLTQ2NzMtYWJkYS0zMDkzMjVlYWM2\nNjMgfAp8IFN1cGFiYXNlIHwgRGF0YWJhc2UgfCBQcm9qZWN0OiBmb3J3YXJk\nLW1hcmtldGluZy1vcyAoSUQ6IGV3ZWRyZ29wZXpvZ2lmenlzdXNuKSB8Cnwg\nUmFpbHdheSB8IFB5dGhvbiBiYWNrZW5kIHwgUkFJTFdBWV9VUkwgaW4gaW5k\nZXguaHRtbCB8CnwgR29vZ2xlIERyaXZlIHwgQ2xpZW50IGZpbGUgc3RvcmFn\nZSB8IEF1dG8tZm9sZGVycyBwZXIgYnV5ZXIvbGlzdGluZyB8CnwgR2l0SHVi\nIHwgU291cmNlIGJhY2t1cCArIGF1dG8tZGVwbG95IHwgZ2l0aHViLmNvbS9t\nYXJjY2FzaGluL2ZvcndhcmQtb3MgfAoKVG9rZW5zIHN0b3JlZCBpbiBNYXJj\nJ3MgcGFzc3dvcmQgbWFuYWdlci4KLSBHaXRIdWIgQ2xhc3NpYyBQQVQgKHJl\ncG8gc2NvcGUsIG5vIGV4cGlyeSk6IHJlZ2VuZXJhdGUgYXQgZ2l0aHViLmNv\nbS9zZXR0aW5ncy90b2tlbnMvbmV3Ci0gTmV0bGlmeSB0b2tlbjogcmVnZW5l\ncmF0ZSBhdCBhcHAubmV0bGlmeS5jb20vdXNlci9hcHBsaWNhdGlvbnMKCi0t\nLQoKIyMgUmVwbyBGaWxlIE1hbmlmZXN0IChuZXZlciBkZWxldGUgdGhlc2Up\nCgp8IEZpbGUgfCBQdXJwb3NlIHwKfC0tLXwtLS18CnwgaW5kZXguaHRtbCB8\nIFRoZSBlbnRpcmUgRk9SV0FSRCBPUyBhcHAgKH4xLjI0TUIpIHwKfCBfcmVk\naXJlY3RzIHwgTmV0bGlmeSBwcm94eSBydWxlcyDigJQgQ1JJVElDQUwgfAp8\nIEZPUldBUkRfT1NfQ09OVEVYVC5tZCB8IFRoaXMgZmlsZSB8CnwgUkVBRE1F\nLm1kIHwgUmVwbyBkZXNjcmlwdGlvbiB8CgojIyMgX3JlZGlyZWN0cyBjb250\nZW50IChORVZFUiByZW1vdmUgZWl0aGVyIGxpbmUpOgpgYGAKL2Z1Yi1hcGkv\nKiBodHRwczovL2FwaS5mb2xsb3d1cGJvc3MuY29tL3YxLzpzcGxhdCAyMDAK\nLyogL2luZGV4Lmh0bWwgMjAwCmBgYApMaW5lIDE6IFByb3hpZXMgRlVCIEFQ\nSSBjYWxscyB0aHJvdWdoIE5ldGxpZnkuIGZ1YkZldGNoKCkgY2FsbHMgL2Z1\nYi1hcGkvLi4uIHdoaWNoIGZvcndhcmRzIHRvIEZVQi4KTGluZSAyOiBTUEEg\nZmFsbGJhY2sg4oCUIGRpcmVjdCBVUkwgbG9hZHMgZ28gdG8gaW5kZXguaHRt\nbCBzbyBWdWUgcm91dGluZyB3b3Jrcy4KV2l0aG91dCB0aGlzIGZpbGU6IEZV\nQiBmZWF0dXJlcyByZXR1cm4gNDA0LCBkaXJlY3QgVVJMIG5hdmlnYXRpb24g\nYnJlYWtzLgoKLS0tCgojIyBTdGFuZGFyZCBEZXBsb3kgV29ya2Zsb3cgKEdp\ndEh1Yi1maXJzdCkKUHVzaCB0byBHaXRIdWIg4oaSIE5ldGxpZnkgYXV0by1k\nZXBsb3lzLiBPbmUgc3RlcCA9IGxpdmUgdXBkYXRlICsgYmFja3VwLgoKIyMj\nIFN0ZXAgMSDigJQgRmV0Y2ggbGl2ZSBmaWxlIChpbiBmb3J3YXJkLW9zLm5l\ndGxpZnkuYXBwIENocm9tZSB0YWIpOgpgYGBqYXZhc2NyaXB0CmZldGNoKCcv\naW5kZXguaHRtbCcsIHtjYWNoZTonbm8tc3RvcmUnfSkudGhlbihyPT5yLnRl\neHQoKSkudGhlbih0PT57d2luZG93Ll9odG1sPXQ7IGNvbnNvbGUubG9nKCds\nb2FkZWQ6JywgdC5sZW5ndGgpfSk7CmBgYAoKIyMjIFN0ZXAgMiDigJQgQXBw\nbHkgc3RyaW5nLXJlcGxhY2UgY2hhbmdlczoKYGBgamF2YXNjcmlwdApjb25z\ndCBvbGQgPSBgRVhBQ1RfT0xEX1NUUklOR2A7CmNvbnN0IG5ldSA9IGBORVdf\nU1RSSU5HYDsKaWYgKCF3aW5kb3cuX2h0bWwuaW5jbHVkZXMob2xkKSkgY29u\nc29sZS5lcnJvcignTk9UIEZPVU5EJyk7CmVsc2UgeyB3aW5kb3cuX2h0bWwg\nPSB3aW5kb3cuX2h0bWwuc3BsaXQob2xkKS5qb2luKG5ldSk7IGNvbnNvbGUu\nbG9nKCdyZXBsYWNlZDonLCB3aW5kb3cuX2h0bWwubGVuZ3RoKTsgfQpgYGAK\nCiMjIyBTdGVwIDMg4oCUIEdldCBjdXJyZW50IFNIQToKYGBgamF2YXNjcmlw\ndAp3aW5kb3cuX2doVG9rZW4gPSAnUEFTVEVfR0hfVE9LRU5fSEVSRSc7CmZl\ndGNoKCdodHRwczovL2FwaS5naXRodWIuY29tL3JlcG9zL21hcmNjYXNoaW4v\nZm9yd2FyZC1vcy9jb250ZW50cy9pbmRleC5odG1sJywgewogIGhlYWRlcnM6\nIHsgJ0F1dGhvcml6YXRpb24nOiAndG9rZW4gJyArIHdpbmRvdy5fZ2hUb2tl\nbiB9Cn0pLnRoZW4ocj0+ci5qc29uKCkpLnRoZW4oZD0+eyB3aW5kb3cuX2N1\ncnJlbnRTaGEgPSBkLnNoYTsgY29uc29sZS5sb2coJ1NIQTonLCBkLnNoYS5z\nbGljZSgwLDgpKTsgfSk7CmBgYAoKIyMjIFN0ZXAgNCDigJQgUHVzaCB0byBH\naXRIdWI6CmBgYGphdmFzY3JpcHQKY29uc3QgYnl0ZXMgPSBuZXcgVGV4dEVu\nY29kZXIoKS5lbmNvZGUod2luZG93Ll9odG1sKTsKbGV0IGJpbmFyeSA9ICcn\nOwpmb3IgKGxldCBpID0gMDsgaSA8IGJ5dGVzLmxlbmd0aDsgaSArPSA4MTky\nKSBiaW5hcnkgKz0gU3RyaW5nLmZyb21DaGFyQ29kZSguLi5ieXRlcy5zdWJh\ncnJheShpLCBpKzgxOTIpKTsKd2luZG93Ll9odG1sQjY0ID0gYnRvYShiaW5h\ncnkpOwoKZmV0Y2goJ2h0dHBzOi8vYXBpLmdpdGh1Yi5jb20vcmVwb3MvbWFy\nY2Nhc2hpbi9mb3J3YXJkLW9zL2NvbnRlbnRzL2luZGV4Lmh0bWwnLCB7CiAg\nbWV0aG9kOiAnUFVUJywKICBoZWFkZXJzOiB7ICdBdXRob3JpemF0aW9uJzog\nJ3Rva2VuICcgKyB3aW5kb3cuX2doVG9rZW4sICdDb250ZW50LVR5cGUnOiAn\nYXBwbGljYXRpb24vanNvbicgfSwKICBib2R5OiBKU09OLnN0cmluZ2lmeSh7\nCiAgICBtZXNzYWdlOiAnZmVhdDogREVTQ1JJQkVfQ0hBTkdFX0hFUkUnLAog\nICAgY29udGVudDogd2luZG93Ll9odG1sQjY0LAogICAgc2hhOiB3aW5kb3cu\nX2N1cnJlbnRTaGEKICB9KQp9KS50aGVuKHI9PnIuanNvbigpKS50aGVuKGQ9\nPmNvbnNvbGUubG9nKGQuY29tbWl0ID8gJ0RPTkU6ICcgKyBkLmNvbW1pdC5z\naGEuc2xpY2UoMCw4KSA6ICdFUlJPUjogJyArIEpTT04uc3RyaW5naWZ5KGQp\nKSk7CmBgYAoKIyMjIFRvIHVwZGF0ZSBGT1JXQVJEX09TX0NPTlRFWFQubWQg\nb24gR2l0SHViOgpTYW1lIHBhdHRlcm4gYXMgYWJvdmUgYnV0IHRhcmdldCAv\nY29udGVudHMvRk9SV0FSRF9PU19DT05URVhULm1kIGluc3RlYWQgb2YgL2Nv\nbnRlbnRzL2luZGV4Lmh0bWwuCgotLS0KCiMjIFN1cGFiYXNlIFRhYmxlcwoK\nIyMjIGJ1eWVycwpGaWVsZHM6IGlkLCBhZ2VudF9uYW1lLCBidXllcl9uYW1l\nLCBmaXJzdF9uYW1lLCBtYXJrZXRfYXJlYSwgYnVkZ2V0X21pbiwgYnVkZ2V0\nX21heCwgZG93bl9wYXltZW50LCBwcmVfYXBwcm92ZWQsIHByZV9hcHByb3Zh\nbF9sZW5kZXIsIHByZV9hcHByb3ZhbF9hbW91bnQsIHRhcmdldF9uZWlnaGJv\ncmhvb2RzLCBhcmVhc19ub3RlLCBob21lX3R5cGUsIGhvbWVfdHlwZV9ub3Rl\nLCBiZWRyb29tc19taW4sIGJlZHJvb21zX25vdGUsIGJhdGhyb29tcywgcGFy\na2luZywgcGFya2luZ19ub3RlLCBvdXRkb29yX3NwYWNlLCBvdXRkb29yX25v\ndGUsIG1vdmVfaW5fdGFyZ2V0LCB1cmdlbmN5LCB1cmdlbmN5X25vdGUsIGN1\ncnJlbnRfc3RhdHVzLCBjdXJyZW50X25vdGUsIHNjaG9vbF9kaXN0cmljdCwg\naG9hX2FjY2VwdGFibGUsIG11c3RfaGF2ZXMsIGRlYWxfYnJlYWtlcnMsIGFn\nZW50X25vdGVzLCBkcml2ZV9mb2xkZXJfaWQsIHN1YmZvbGRlcl9kcml2ZV9p\nZHMsIGNyZWF0ZWRfYXQKUkxTOiBlbmFibGVkIChhbGxvd19hbGxfYW5vbiBw\nb2xpY3kg4oCUIGFsbCBvcGVyYXRpb25zIGZvciBhbm9uICsgYXV0aGVudGlj\nYXRlZCkKCiMjIyBwcm9wZXJ0aWVzCkZpZWxkczogaWQsIGFnZW50X25hbWUs\nIGFkZHJlc3MsIGRyaXZlX2ZvbGRlcl9pZCwgc3ViZm9sZGVyX2RyaXZlX2lk\ncywgY3JlYXRlZF9hdCAoKyBsaXN0aW5nIGZpZWxkcykKUkxTOiBlbmFibGVk\nIChhbGxvd19hbGxfYW5vbiBwb2xpY3kpCgojIyMgcHJvcGVydHlfYXNzZXRz\nLCBwcm9wZXJ0eV9ub3RlcwpSTFM6IGVuYWJsZWQgKGFsbG93X2FsbF9hbm9u\nIHBvbGljeSkKCi0tLQoKIyMgS2V5IFZ1ZSBGdW5jdGlvbnMgUmVmZXJlbmNl\nCgojIyMgQnV5ZXJzIChNeSBCdXllcnMgdGFiKQotIGJ5ckJ1eWVycyAvIGJ5\nckFjdGl2ZUJ1eWVyIC8gYnlyQ3JlYXRlQnV5ZXIoKQotIGJ5ckNyZWF0ZUJ1\neWVyKCkgYXV0by1jcmVhdGVzOiBTdXBhYmFzZSByZWNvcmQgKyBEcml2ZSBm\nb2xkZXIgKyBjbGllbnQgZmlsZSBmb2xkZXIgZW50cnkKCiMjIyBMaXN0aW5n\ncyAoTXkgU2VsbGVycyB0YWIpCi0gc3VwYVByb3BlcnRpZXMgLyBsc3RBY3Rp\ndmVQcm9wIC8gbHN0Q3JlYXRlUHJvcGVydHkoKQotIGxzdENyZWF0ZVByb3Bl\ncnR5KCkgYXV0by1jcmVhdGVzOiBTdXBhYmFzZSByZWNvcmQgKyBEcml2ZSBm\nb2xkZXIgKyBjbGllbnQgZmlsZSBmb2xkZXIgZW50cnkKCiMjIyBDbGllbnQg\nRmlsZXMgKHByb3AtZmlsZXMgdmlldykg4oCUIE1JR1JBVEVEIElOIENIQVQg\nNgotIHByb3BGaWxlcyA9IHJlZihbXSkg4oCUIGluaXRpYWxpemVkIGVtcHR5\nLCBsb2FkZWQgZnJvbSBTdXBhYmFzZSBvbiBtb3VudAotIGFsbEFnZW50Rmls\nZXMgPSByZWYoW10pIOKAlCBpbml0aWFsaXplZCBlbXB0eSwgbG9hZGVkIGZy\nb20gU3VwYWJhc2Ugb24gbW91bnQgKGdyb3VwZWQgYnkgYWdlbnQsIHVzZWQg\naW4gYWRtaW4gdmlldykKLSBhc3luYyBsb2FkUHJvcEZpbGVzKCkg4oCUIGZl\ndGNoZXMgQUxMIGJ1eWVycyArIEFMTCBwcm9wZXJ0aWVzIGZyb20gU3VwYWJh\nc2UgKG5vIGFnZW50IGZpbHRlciksIG1lcmdlcyArIHNvcnRzIGJ5IGNyZWF0\nZWRfYXQgZGVzYywgcG9wdWxhdGVzIGJvdGggcHJvcEZpbGVzIGFuZCBhbGxB\nZ2VudEZpbGVzLiBDYWxsZWQgb24gbW91bnQgYW5kIGJ5IHJlZnJlc2hQcm9w\nRmlsZXMoKS4KLSBhc3luYyByZWZyZXNoUHJvcEZpbGVzKCkg4oCUIGNhbGxz\nIGxvYWRQcm9wRmlsZXMoKQotIGFkZFByb3BGaWxlKGFkZHJlc3MsIG9wdHMp\nIOKAlCBzdGlsbCB3cml0ZXMgdG8gbG9jYWxTdG9yYWdlIChoYXJtbGVzcyBs\nZWdhY3kpOyB2aWV3IGlzIG5vdyBTdXBhYmFzZS1iYWNrZWQKLSBhZGRSZXNv\ndXJjZVRvUHJvcChwcm9wSWQsIHJlc291cmNlKSDigJQgbG9jYWxTdG9yYWdl\nIHdyaXRlIChsb2NhbCB0b29sIG91dHB1dCB0ZXh0KQotIGRlbGV0ZVJlc291\ncmNlRnJvbVByb3AocHJvcElkLCByZXNJZCkg4oCUIGxvY2FsU3RvcmFnZSBk\nZWxldGUKLSBkZWxldGVQcm9wRmlsZShwcm9wSWQpIOKAlCBsb2NhbFN0b3Jh\nZ2UgZGVsZXRlCi0gZ2V0QWxsQWdlbnRzUHJvcEZpbGVzKCkg4oCUIGxlZ2Fj\neSBsb2NhbFN0b3JhZ2UgaGVscGVyIChzdGlsbCB1c2VkIGFzIGZhbGxiYWNr\nIGluIGxvYWRQcm9wRmlsZXMgY2F0Y2ggYmxvY2spCi0gZ2V0UHJvcEZpbGVz\nKCkgLyBzYXZlUHJvcEZpbGVzKCkg4oCUIGxlZ2FjeSBsb2NhbFN0b3JhZ2Ug\naGVscGVycyAoc3RpbGwgdXNlZCBhcyBmYWxsYmFjaykKLSBmaW5kQWN0aXZl\nQ2xpZW50RmlsZSgpIOKAlCByZXR1cm5zIGNsaWVudCBmaWxlIGxpbmtlZCB0\nbyBhY3RpdmUgYnV5ZXIvbGlzdGluZwotIG9wZW5TYXZlVG9Qcm9wTW9kYWwo\ndHlwZSwgbGFiZWwsIGRhdGEsIHBkZkRhdGEsIHRvb2xOYW1lKSDigJQgc21h\ncnQgc2F2ZSwgYXV0by1yb3V0ZXMgdG8gYWN0aXZlIGNsaWVudCBmaWxlCi0g\nb3BlbkNsaWVudEZpbGVQaWNrZXIobGFiZWwsIHBkZkRhdGFVUkksIG9uU2F2\nZSkg4oCUIGdsb2JhbCBTdXBhYmFzZS1iYWNrZWQgcGlja2VyCi0gc2F2ZVRv\nQ2xpZW50RmlsZURyaXZlKHJlY29yZCwgcmVjb3JkVHlwZSkg4oCUIHVwbG9h\nZHMgdG8gRHJpdmUgdmlhIFJhaWx3YXkgKGdsb2JhbCkKCiMjIyBzdXBhUmVz\ndCBoZWxwZXIgKGdsb2JhbCkKLSBzdXBhUmVzdC5zZWxlY3QodGFibGUsIHF1\nZXJ5KSDigJQgR0VUIHdpdGggUG9zdGdSRVNUIHF1ZXJ5IHN0cmluZyBlLmcu\nICdzZWxlY3Q9aWQsbmFtZSZvcmRlcj1jcmVhdGVkX2F0LmRlc2MnCi0gc3Vw\nYVJlc3QuaW5zZXJ0KHRhYmxlLCBkYXRhKSDigJQgUE9TVAotIHN1cGFSZXN0\nLnVwZGF0ZSh0YWJsZSwgbWF0Y2hDb2wsIG1hdGNoVmFsLCBkYXRhKSDigJQg\nUEFUQ0gKLSBzdXBhUmVzdC51cHNlcnQodGFibGUsIGRhdGEsIG9uQ29uZmxp\nY3QpIOKAlCBQT1NUIHdpdGggdXBzZXJ0CgojIyMgRlVCIEludGVncmF0aW9u\nCi0gZnViRmV0Y2gocGF0aCwgbWV0aG9kLCBib2R5KSDigJQgcm91dGVzIHRo\ncm91Z2ggL2Z1Yi1hcGkgTmV0bGlmeSBwcm94eSB0byBmb2xsb3d1cGJvc3Mu\nY29tL3YxCi0gZnViQWRkTm90ZShwZXJzb25JZCwgbm90ZVRleHQpIOKAlCBh\nZGRzIG5vdGUgdG8gRlVCIGNvbnRhY3QKCiMjIyBCdXllciBDb25zdWx0YXRp\nb24gS2l0IChiY2spCi0gYmNrLl9sYXN0UERGIOKAlCBsYXN0IGdlbmVyYXRl\nZCBQREYgZGF0YSBVUkkKLSBiY2tTYXZlVG9DbGllbnRGb2xkZXIoKSDigJQg\nc2F2ZXMgdG8gR29vZ2xlIERyaXZlIGJ1eWVyX2tpdCBzdWJmb2xkZXIgKGds\nb2JhbCkKLSBiY2tTZW5kVG9CdXllcigpIOKAlCBvcGVucyBQREYgZm9yIGVt\nYWlsL3RleHQgYXR0YWNobWVudAoKLS0tCgojIyBBZ2VudHMKTWFyYyBDYXNo\naW4sIEFzaGxpbmcgTWNHb3dhbiwgTmlraSBMYW5nLCBDZXNhciBSaXZlcmEs\nIENoYXJsb3R0ZSBMZWUsIFNoYW5ub24gQ2FzZXkKQWNjZXNzIGNvZGU6IGZv\ncndhcmQyMDI2IOKAlCBBZG1pbjogTWFyYyBDYXNoaW4KCi0tLQoKIyMgQ2hh\ndCBIaXN0b3J5Cgp8IENoYXQgfCBLZXkgV29yayB8CnwtLS18LS0tfAp8IDHi\ngJMzIHwgSW5pdGlhbCBPUyBidWlsZCDigJQgYWxsIHRvb2xzLCBTdXBhYmFz\nZSwgUmFpbHdheSBiYWNrZW5kIHwKfCA0IHwgQ3Jhc2hlZCDigJQgY29udGV4\ndCBvdmVyZmxvdyBmcm9tIGJhc2U2NCBjaHVuayBpbmplY3Rpb24gKG5ldmVy\nIGRvIHRoaXMpIHwKfCA1IHwgQXV0by1jcmVhdGUgY2xpZW50IGZvbGRlcnMg\nb24gYnV5ZXIvbGlzdGluZyBjcmVhdGlvbjsgZ2xvYmFsIFNhdmUtdG8tRm9s\nZGVyICsgU2VuZCB0byBCdXllciBvbiBCdXllciBDb25zdWx0YXRpb24gS2l0\nOyBHaXRIdWIgcmVwbyBjcmVhdGVkICsgY29ubmVjdGVkIHRvIE5ldGxpZnk7\nIF9yZWRpcmVjdHMgYWRkZWQgKGZpeGVkIEZVQiA0MDQpOyBTdXBhYmFzZSBS\nTFMgZW5hYmxlZCBvbiBhbGwgdGFibGVzIHwKfCA2IHwgTWlncmF0ZWQgQ2xp\nZW50IEZpbGVzIFZJRVcgZnJvbSBsb2NhbFN0b3JhZ2UgdG8gU3VwYWJhc2Ug\n4oCUIGxvYWRQcm9wRmlsZXMoKSBmZXRjaGVzIGFsbCBidXllcnMgKyBwcm9w\nZXJ0aWVzIGdsb2JhbGx5OyBwcm9wRmlsZXMgYW5kIGFsbEFnZW50RmlsZXMg\nbm93IFN1cGFiYXNlLWJhY2tlZDsgYWxsIGFnZW50cyBzZWUgYWxsIGZvbGRl\ncnMgb24gYWxsIGRldmljZXMgfAoKLS0tCgojIyBFbmQgb2YgVGFzayBQcm90\nb2NvbApBdCB0aGUgZW5kIG9mIGV2ZXJ5IGNvbXBsZXRlZCB0YXNrLCBhc2sg\nTWFyYzoKIlNob3VsZCBJIHVwZGF0ZSBGT1JXQVJEX09TX0NPTlRFWFQubWQg\nb24gR2l0SHViIHdpdGggd2hhdCB3ZSBqdXN0IGJ1aWx0PyIKLSBZZXM6IHVw\nZGF0ZSB0aGlzIGZpbGUgYW5kIHB1c2ggdG8gR2l0SHViIHVzaW5nIHRoZSBH\naXRIdWIgQVBJIHdvcmtmbG93Ci0gTmV3IHRhc2sgZ2l2ZW4gd2l0aG91dCBh\nbnN3ZXJpbmc6IHRyZWF0IGFzIE5vLCBjb21wbGV0ZSBuZXcgdGFzaywgYXNr\nIGFnYWluIGF0IGNvbXBsZXRpb24KLSBOZXZlciBza2lwIGFza2luZwoKLS0t\nCgojIyBDcml0aWNhbCBSdWxlcwoxLiBORVZFUiBpbmplY3QgYmFzZTY0IGZp\nbGUgY2h1bmtzIHRocm91Z2ggdGhlIGNoYXQgd2luZG93IOKAlCBraWxsZWQg\nQ2hhdCA0CjIuIEFsd2F5cyBmZXRjaCBpbmRleC5odG1sIGZyb20gdGhlIGxp\ndmUgQ2hyb21lIHRhYiAoc2FtZS1vcmlnaW4sIG5vIENPUlMpCjMuIGluZGV4\nLmh0bWwgaXMgdGhlIEVOVElSRSBhcHAg4oCUIG9uZSBmaWxlLCBubyBidWls\nZCBwcm9jZXNzCjQuIE5ldGxpZnkgcHVibGlzaCBkaXJlY3RvcnkgPSBibGFu\nayAoc2VydmVzIGZyb20gcmVwbyByb290KQo1LiBORVZFUiBkZWxldGUgb3Ig\nbW9kaWZ5IF9yZWRpcmVjdHMgd2l0aG91dCBwcmVzZXJ2aW5nIGJvdGggcHJv\neHkgcnVsZXMKNi4gU3VwYWJhc2UgUkxTIGlzIGVuYWJsZWQg4oCUIGRvIG5v\ndCBkaXNhYmxlIGl0\n",
-  "encoding": "base64",
-  "_links": {
-    "self": "https://api.github.com/repos/marccashin/forward-os/contents/FORWARD_OS_CONTEXT.md?ref=main",
-    "git": "https://api.github.com/repos/marccashin/forward-os/git/blobs/b72e0e16322c26db1d9139efc328e6c890336a09",
-    "html": "https://github.com/marccashin/forward-os/blob/main/FORWARD_OS_CONTEXT.md"
-  }
-}
-
+# FORWARD OS — Session Context File
+> Upload this file at the start of any new FORWARD OS Cowork chat to restore full context.
 
 ---
 
-## Chat 7 — Bug Fixes (Commit 2e4eabb8)
+## ⚠️ CRITICAL: HOW TO DEPLOY CHANGES (READ FIRST)
 
-### Bug 1 Fixed: findActiveClientFile() now uses Supabase data
-**Problem:** `findActiveClientFile()` called `getPropFiles()` (localStorage), which returned records without `property_id`/`buyer_id`. This caused all listing-tool PDFs to fail silently — no match found, nothing saved to the client file.
+**NEVER** use the GitHub web editor, CodeMirror, or inject file chunks through chat.
+**NEVER** paste base64 chunks into any editor — this killed Chat 4 and truncated Chat 6.
+**ALWAYS** use the Chrome-side fetch → GitHub API PUT workflow below.
 
-**Fix applied at:** ~position 819852 in index.html
+### The Only Correct Deploy Method (4 steps, run in Chrome console on forward-os.netlify.app tab):
+
+**Step 1 — Fetch live file:**
 ```javascript
-// OLD:
-findActiveClientFile() {
-  const files = getPropFiles();
-// NEW:
-findActiveClientFile() {
-  const files = propFiles.value && propFiles.value.length ? propFiles.value : getPropFiles();
+fetch('/index.html', {cache:'no-store'}).then(r=>r.text()).then(t=>{window._html=t; console.log('loaded:', t.length)});
 ```
 
-### Bug 2 Fixed: Listing Description preamble removed
-**Problem:** AI would output acknowledgment text ("These are excellent personas...") before the listing copy.
-
-**Fix:** Added instruction to end of `LD_SYSTEM` constant (position ~845283):
-> "When you are ready to present the final listing description, begin your response DIRECTLY with the description copy — no preamble, acknowledgment, or commentary before the description itself."
-
-### Bug 3a Fixed: CMA Builder button navigation
-**Problem:** Both "Open CMA Builder" buttons used `href='/cma-tool'` causing full page reload; SPA has no `view==='cma-tool'` handler so it fell back to dashboard.
-
-**Fix:** Replaced `<a href='/cma-tool'>` with `<button @click="go('cma')">` (2 instances at positions ~321194 and ~567499).
-
-### Bug 3b Fixed: CMA Save → also writes to Drive client file
-**Problem:** `saveCMAToProperty()` only saved text to `property_notes` (Supabase), never to Drive.
-
-**Fix:** After saving notes, also calls `_doSaveToPropertyDrive()` which uses `buildTextPDF()` to generate a branded PDF of the CMA content and saves it to the property's Drive `cma` subfolder.
+**Step 2 — Apply changes (one replace per edit):**
 ```javascript
-lstNotes.cma = content;
-_doSaveToPropertyDrive(targetProp, 'cma', 'CMA Builder', 'CMA Report', content, null).catch(()=>{});
-cmaSaved.value = true;
+const old = `EXACT_OLD_STRING`;
+const neu = `NEW_STRING`;
+if (!window._html.includes(old)) console.error('NOT FOUND — check spacing/quotes');
+else { window._html = window._html.split(old).join(neu); console.log('replaced, size:', window._html.length); }
 ```
 
-### Key Functions Referenced
-- `findActiveClientFile()` — now uses `propFiles.value` (Supabase-backed) with localStorage fallback
-- `loadPropFiles()` — loads from Supabase (added in Chat 6, re-applied here)
-- `saveToPropertyFromTool(toolName, label, data, pdfData)` — routes tool output to correct Drive subfolder
-- `_doSaveToPropertyDrive(prop, subfolder, toolName, label, data, pdfData)` — saves to Drive; calls `buildTextPDF()` when pdfData is null
-- `buildTextPDF(toolName, label, textContent)` — generates branded jsPDF from text
-- `TOOL_SUBFOLDER_MAP` — maps tool names to Drive subfolders; `'CMA Builder'` → `'cma'`
-- `LD_SYSTEM` — system prompt for listing description AI (position ~837498)
-- `saveCMAToProperty()` — CMA save handler (position ~825810)
+**Step 3 — Get current SHA from GitHub:**
+```javascript
+window._ghToken = 'PASTE_GH_TOKEN_HERE';
+fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
+  headers: { 'Authorization': 'token ' + window._ghToken }
+}).then(r=>r.json()).then(d=>{ window._currentSha = d.sha; console.log('SHA:', d.sha.slice(0,8)); });
+```
+
+**Step 4 — Push to GitHub (Netlify auto-deploys in ~30s):**
+```javascript
+const bytes = new TextEncoder().encode(window._html);
+let binary = '';
+for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i+8192));
+window._htmlB64 = btoa(binary);
+
+fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
+  method: 'PUT',
+  headers: { 'Authorization': 'token ' + window._ghToken, 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    message: 'feat: DESCRIBE_CHANGE_HERE',
+    content: window._htmlB64,
+    sha: window._currentSha
+  })
+}).then(r=>r.json()).then(d=>console.log(d.commit ? 'DONE: ' + d.commit.sha.slice(0,8) : 'ERROR: ' + JSON.stringify(d)));
+```
+
+> ⚠️ NOTE: If fetches hang from forward-os.netlify.app tab, run Steps 3 & 4 from a github.com tab instead (same code works). Step 1 & 2 must stay on the Netlify tab (same-origin fetch).
+
+---
+
+## What is FORWARD OS?
+A Vue 3 SPA (single-file, no build step) for real estate agents.
+- **Live site:** https://forward-os.netlify.app
+- **Source:** https://github.com/marccashin/forward-os (main branch)
+- ~12,000 lines of HTML/JS/CSS in a single index.html (~1.24MB)
+
+---
+
+## Infrastructure
+
+| Service | Purpose | Details |
+|---|---|---|
+| Netlify | Hosting | Site ID: 7bcc28c5-97d0-4673-abda-309325eac663 |
+| Supabase | Database | Project: forward-marketing-os (ID: ewedrgopezogifzysusn) |
+| Railway | Python backend | RAILWAY_URL in index.html |
+| Google Drive | Client file storage | Auto-folders per buyer/listing |
+| GitHub | Source backup + auto-deploy | github.com/marccashin/forward-os |
+
+Tokens stored in Marc's password manager.
+- GitHub Classic PAT (repo scope, no expiry): regenerate at github.com/settings/tokens/new
+- Netlify token: regenerate at app.netlify.com/user/applications
+
+---
+
+## Repo File Manifest (never delete these)
+
+| File | Purpose |
+|---|---|
+| index.html | The entire FORWARD OS app (~1.24MB) |
+| _redirects | Netlify proxy rules — CRITICAL |
+| _headers | Cache-control headers — prevents stale deploys |
+| FORWARD_OS_CONTEXT.md | This file |
+| README.md | Repo description |
+
+### _redirects content (NEVER remove either line):
+```
+/fub-api/* https://api.followupboss.com/v1/:splat 200
+/* /index.html 200
+```
+Line 1: Proxies FUB API calls through Netlify. fubFetch() calls /fub-api/... which forwards to FUB.
+Line 2: SPA fallback — direct URL loads go to index.html so Vue routing works.
+Without this file: FUB features return 404, direct URL navigation breaks.
+
+### _headers content:
+```
+/index.html
+  Cache-Control: no-cache, no-store, must-revalidate
+  Pragma: no-cache
+  Expires: 0
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+```
+
+---
+
+## Supabase Tables
+
+### buyers
+Fields: id, agent_name, buyer_name, first_name, market_area, budget_min, budget_max, down_payment, pre_approved, pre_approval_lender, pre_approval_amount, target_neighborhoods, areas_note, home_type, home_type_note, bedrooms_min, bedrooms_note, bathrooms, parking, parking_note, outdoor_space, outdoor_note, move_in_target, urgency, urgency_note, current_status, current_note, school_district, hoa_acceptable, must_haves, deal_breakers, agent_notes, drive_folder_id, subfolder_drive_ids, created_at
+RLS: enabled (allow_all_anon policy)
+
+### properties
+Fields: id, agent_name, address, drive_folder_id, subfolder_drive_ids, created_at (+ listing fields)
+RLS: enabled (allow_all_anon policy)
+
+### property_assets, property_notes
+RLS: enabled (allow_all_anon policy)
+
+---
+
+## Key Vue Functions Reference
+
+### Buyers (My Buyers tab)
+- byrBuyers / byrActiveBuyer / byrCreateBuyer()
+- byrCreateBuyer() auto-creates: Supabase record + Drive folder + client file folder entry
+
+### Listings (My Sellers tab)
+- supaProperties / lstActiveProp / lstCreateProperty()
+- lstCreateProperty() auto-creates: Supabase record + Drive folder + client file folder entry
+
+### Client Files (prop-files view)
+- addPropFile(address, opts) — opts: { buyer_id, property_id, fileType }
+- findActiveClientFile() — returns client file linked to active buyer/listing
+- openSaveToPropModal(type, label, data, pdfData, toolName) — smart save to active client file
+- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker
+- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway
+
+### FUB Integration
+- fubFetch(path, method, body) — routes through /fub-api Netlify proxy to followupboss.com/v1
+- fubAddNote(personId, noteText) — adds note to FUB contact
+
+### Buyer Consultation Kit (bck)
+- bck._lastPDF — last generated PDF data URI
+- bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder
+- bckSendToBuyer() — opens PDF for email/text
+
+---
+
+## Agents
+Marc Cashin, Ashling McGowan, Niki Lang, Cesar Rivera, Charlotte Lee, Shannon Casey
+Access code: forward2026 — Admin: Marc Cashin
+
+---
+
+## Chat History
+
+| Chat | Key Work |
+|---|---|
+| 1–3 | Initial OS build — all tools, Supabase, Railway backend |
+| 4 | Crashed — context overflow from base64 chunk injection (never do this) |
+| 5 | Auto-create client folders; global Save-to-Folder; GitHub + Netlify connected; _redirects fixed; Supabase RLS enabled; _headers added (cache fix) |
+| 6 | CURRENT — Migrate Client Files VIEW from localStorage to Supabase/Drive |
+
+---
+
+## Pending (Chat 6)
+Migrate the Client Files VIEW (prop-files sidebar) from localStorage to Supabase/Drive.
+- Currently: getPropFiles() reads from localStorage — device-local only
+- Goal: all agents on all devices see all client folders pulled from Supabase
+- Saving PDFs is already global (Drive-backed). Only the VIEW/BROWSE is broken.
+- Approach: replace getPropFiles()/savePropFiles() with a Supabase query joining buyers + properties tables
+
+---
+
+## End of Task Protocol
+At the end of every completed task, ask Marc:
+"Task complete. Want me to push an update to FORWARD_OS_CONTEXT.md?"
+If yes, update this file on GitHub using the same 4-step deploy workflow above (targeting FORWARD_OS_CONTEXT.md instead of index.html).
