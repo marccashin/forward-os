@@ -145,7 +145,7 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
-    <button class="btn-outline" style="color:white;border-color:rgba(255,255,255,.3);" onclick="clearPrefill()" title="Clear all fields and start a new CMA">🔄 Reset / New CMA</button>
+    <button class="btn-outline" style="background:transparent;color:white;border-color:rgba(255,255,255,.45);font-weight:700;" onclick="clearPrefill()" title="Clear all fields and start a new CMA">🔄 Reset / New CMA</button>
     <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </div>
@@ -548,7 +548,7 @@
     <span class="range" id="footerRange"></span>
   </div>
   <div style="display:flex;gap:10px;">
-    <button class="btn-outline" onclick="saveLocal()" title="Save your work in progress — no PDF generated">💾 Save Draft</button>
+    <button class="btn-outline" onclick="saveLocal()" title="Save your work in progress — no PDF generated" style="color:var(--navy);font-weight:700;">💾 Save Draft</button>
     <button class="btn-gold" onclick="exportPDF()" title="Generate and download the 4-page PDF report">⬇ Export PDF</button>
   </div>
 </div>
@@ -1546,15 +1546,15 @@ function exportPDF() {
   doc.text(brightLines, ML, brightY);
   // Short BRIGHT copyright one-liner just above the full block
   doc.setFontSize(6);
-  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, brightY - 10);
+  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, brightY - 12);
   // Footer rule and main footer text above copyright
   doc.setDrawColor(200, 200, 200);
   doc.setLineWidth(0.3);
-  doc.line(ML, brightY - 24, W - MR, brightY - 24);
+  doc.line(ML, brightY - 34, W - MR, brightY - 34);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...GRAY);
-  doc.text((agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.', ML, brightY - 12);
+  doc.text((agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.', ML, brightY - 23);
 
   // ── Save ──
   const filename = 'FORWARD_CMA_' + (subAddr || 'Report').replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
