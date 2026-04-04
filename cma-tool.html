@@ -137,7 +137,8 @@
 
 <!-- HEADER -->
 <div class="header">
-  <div class="header-left">
+  <div class="header-left" style="gap:16px;">
+    <button onclick="goBack()" title="Return to listing tools" style="background:none;border:none;color:rgba(255,255,255,.75);font-size:13px;font-weight:600;cursor:pointer;padding:0;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0;">‹ Back to Listing</button>
     <div>
       <div class="logo">FORWARD OS</div>
       <div class="header-title">CMA Builder</div>
@@ -548,7 +549,7 @@
     <span class="range" id="footerRange"></span>
   </div>
   <div style="display:flex;gap:10px;">
-    <button class="btn-outline" onclick="saveLocal()" title="Save your work in progress — no PDF generated" style="color:var(--navy);font-weight:700;">💾 Save Draft</button>
+    <button id="btnSaveFolder" class="btn-outline" onclick="saveToFolder()" title="Save CMA PDF to this property’s client folder in Google Drive" style="color:var(--navy);font-weight:700;">📁 Save to Folder</button>
     <button class="btn-gold" onclick="exportPDF()" title="Generate and download the 4-page PDF report">⬇ Export PDF</button>
   </div>
 </div>
@@ -941,9 +942,66 @@ function showToast(msg) {
 }
 
 // ── PDF EXPORT ──
+// ── BACK NAVIGATION ──
+function goBack() {
+  try { if (window.history.length > 1) { window.history.back(); } else { window.location.href = '/'; } } catch(e) { window.location.href = '/'; }
+}
+
+// ── SAVE TO FOLDER ──
+let _folderSaving = false;
+let _folderSaved  = false;
+const _RAILWAY = 'https://web-production-d9b04.up.railway.app';
+
+async function saveToFolder() {
+  if (_folderSaving || _folderSaved) return;
+  const prefillRaw = localStorage.getItem('cma_voice_prefill');
+  const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
+  const propId        = prefill.propId || '';
+  const driveFolderId = prefill.driveFolderId || '';
+  const agentUpload   = getVal('s_agentName') || localStorage.getItem('fos_agent') || 'Agent';
+  const address       = getVal('s_address') || prefill.address || 'Property';
+  if (!driveFolderId) { showToast('⚠️ No Drive folder — open CMA from your active listing'); return; }
+  _folderSaving = true;
+  const btn = document.getElementById('btnSaveFolder');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  try {
+    const { blob, filename } = await _buildPDFBlob();
+    const fd = new FormData();
+    fd.append('file', blob, filename);
+    fd.append('folder_id', driveFolderId);
+    fd.append('subfolder', 'cma');
+    fd.append('property_id', propId);
+    fd.append('uploaded_by', agentUpload);
+    const resp = await fetch(_RAILWAY + '/upload-file', { method: 'POST', body: fd });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const result = await resp.json();
+    _folderSaved = true;
+    const driveUrl = result.webViewLink || result.url || result.fileUrl || '';
+    if (propId) { localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: driveUrl, filename, date: new Date().toISOString(), address })); }
+    if (propId && _SUPA_KEY) { fetch(_SUPA_URL + '/rest/v1/property_notes', { method: 'POST', headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ property_id: propId, note_type: 'cma_report', content: filename, url: driveUrl, created_by: agentUpload, updated_at: new Date().toISOString() }) }).catch(() => {}); }
+    if (btn) { btn.innerHTML = '✅ Saved to Folder'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
+    showToast('✅ CMA saved to ' + address + ' client folder');
+    saveLocal();
+  } catch(e) {
+    console.error('Save to folder failed:', e);
+    showToast('❌ Upload failed — check connection');
+    if (btn) { btn.disabled = false; btn.innerHTML = '📁 Save to Folder'; }
+    _folderSaving = false;
+  }
+}
+
+function _pdfFilename() { const addr = getVal('s_address') || 'Report'; return 'FORWARD_CMA_' + addr.replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf'; }
+
+async function _buildPDFBlob() { const { jsPDF } = window.jspdf; const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' }); _fillPDFDoc(doc); return { blob: doc.output('blob'), filename: _pdfFilename() }; }
+
 function exportPDF() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+  _fillPDFDoc(doc);
+  doc.save(_pdfFilename());
+}
+
+function _fillPDFDoc(doc) {
 
   // ── Colors ──
   const NAVY   = [26, 39, 68];
@@ -1556,9 +1614,7 @@ function exportPDF() {
   doc.setTextColor(...GRAY);
   doc.text((agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.', ML, brightY - 23);
 
-  // ── Save ──
-  const filename = 'FORWARD_CMA_' + (subAddr || 'Report').replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
-  doc.save(filename);
+  // (doc returned to caller)
 }
 </script>
 </body>
