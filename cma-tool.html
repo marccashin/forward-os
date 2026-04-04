@@ -66,7 +66,7 @@
 
     /* ── COMPS TABLE ── */
     .comps-wrapper { overflow-x: auto; }
-    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1100px; }
+    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1300px; }
     .comps-table th { background: var(--navy); color: white; padding: 9px 8px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .4px; white-space: nowrap; }
     .comps-table th.gold { background: var(--gold); color: var(--navy); }
     .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -145,7 +145,7 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
-    <button class="btn-outline" style="color:white;border-color:rgba(255,255,255,.3);" onclick="clearPrefill()">🔄 Reset</button>
+    <button class="btn-outline" style="color:white;border-color:rgba(255,255,255,.3);" onclick="clearPrefill()" title="Clear all fields and start a new CMA">🔄 Reset / New CMA</button>
     <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </div>
@@ -426,27 +426,55 @@
       <span class="badge">Step 3</span>
       <span class="badge badge-gold" id="compCountBadge">0 of 6</span>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">Enter up to 6 comparable sales. All adjustments are calculated automatically.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 comparable sales. All adjustments are calculated automatically.</div>
+    <!-- Condition Grade Reference -->
+    <details style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
+      <summary style="cursor:pointer;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);list-style:none;display:flex;align-items:center;gap:8px;">
+        <span style="color:var(--gold);">▶</span> Condition Grade Reference &nbsp;<span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">— click to expand</span>
+      </summary>
+      <div style="padding:12px 14px 14px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+        <div style="border-left:4px solid #16a34a;padding:8px 10px;background:white;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#16a34a;margin-bottom:3px;">A+ — Like New / Exceptional</div>
+          <div style="font-size:11px;color:var(--muted);">New construction or fully renovated. Superior finishes throughout. Zero deferred maintenance.</div>
+        </div>
+        <div style="border-left:4px solid #22c55e;padding:8px 10px;background:white;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#22c55e;margin-bottom:3px;">A — Excellent</div>
+          <div style="font-size:11px;color:var(--muted);">Recently updated with high-quality finishes. Very well maintained, only cosmetic wear visible.</div>
+        </div>
+        <div style="border-left:4px solid #3b82f6;padding:8px 10px;background:white;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#3b82f6;margin-bottom:3px;">B — Good</div>
+          <div style="font-size:11px;color:var(--muted);">Well maintained. Minor wear consistent with age and use. No significant updates needed.</div>
+        </div>
+        <div style="border-left:4px solid #eab308;padding:8px 10px;background:white;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#b45309;margin-bottom:3px;">C — Average <span style="font-size:10px;">(baseline)</span></div>
+          <div style="font-size:11px;color:var(--muted);">Normal wear and tear for property's age. Typical market condition. Used as the $0 baseline.</div>
+        </div>
+        <div style="border-left:4px solid #ef4444;padding:8px 10px;background:white;border-radius:4px;">
+          <div style="font-size:12px;font-weight:700;color:#ef4444;margin-bottom:3px;">D — Fair / Deferred Maintenance</div>
+          <div style="font-size:11px;color:var(--muted);">Visible deferred maintenance. Functional but requires significant repairs or updates to be competitive.</div>
+        </div>
+      </div>
+    </details>
     <div class="comps-wrapper">
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="min-width:160px;">Address</th>
-            <th style="min-width:90px;">Sold Date</th>
-            <th style="min-width:90px;">Sale Price</th>
-            <th style="min-width:60px;">GLA</th>
-            <th style="min-width:45px;">Beds</th>
-            <th style="min-width:55px;">Full Ba</th>
-            <th style="min-width:55px;">Half Ba</th>
-            <th style="min-width:55px;">Bel Gr</th>
-            <th style="min-width:50px;">Garage</th>
-            <th style="min-width:90px;">Condition</th>
-            <th style="min-width:70px;">HOA/Mo</th>
-            <th style="min-width:80px;">Concessions</th>
-            <th style="min-width:80px;">Proximity</th>
-            <th class="gold" style="min-width:70px;">$/SqFt</th>
-            <th class="gold" style="min-width:90px;">Net Adj</th>
-            <th class="gold" style="min-width:90px;">Adj Price</th>
+            <th style="min-width:180px;">Address</th>
+            <th style="min-width:100px;">Sold Date</th>
+            <th style="min-width:110px;">Sale Price</th>
+            <th style="min-width:80px;">GLA</th>
+            <th style="min-width:55px;">Beds</th>
+            <th style="min-width:65px;">Full Ba</th>
+            <th style="min-width:65px;">Half Ba</th>
+            <th style="min-width:65px;">Bel Gr</th>
+            <th style="min-width:65px;">Garage</th>
+            <th style="min-width:100px;">Condition</th>
+            <th style="min-width:80px;">HOA/Mo</th>
+            <th style="min-width:100px;">Concessions</th>
+            <th style="min-width:90px;">Proximity</th>
+            <th class="gold" style="min-width:80px;">$/SqFt</th>
+            <th class="gold" style="min-width:100px;">Net Adj</th>
+            <th class="gold" style="min-width:100px;">Adj Price</th>
           </tr>
         </thead>
         <tbody id="compsBody">
@@ -482,9 +510,16 @@
         <div class="vb-label">Low Estimate</div>
         <div class="vb-value" id="vLow">—</div>
       </div>
-      <div class="value-box gold-box">
-        <div class="vb-label">Recommended Value</div>
+      <div class="value-box gold-box" style="position:relative;">
+        <div class="vb-label">Recommended Value <span style="font-weight:400;opacity:.75;font-size:9px;">(auto)</span></div>
         <div class="vb-value" id="vRecommended">—</div>
+      </div>
+      <div class="value-box" style="border:2px solid var(--gold);background:#fffbf0;">
+        <div class="vb-label" style="color:var(--gold);">Agent Override <span style="font-weight:400;opacity:.75;font-size:9px;">(optional)</span></div>
+        <input type="number" id="agentPriceOverride" placeholder="e.g. 595000" step="1000" min="0"
+          style="border:1.5px solid var(--gold);border-radius:6px;padding:5px 8px;font-size:16px;font-weight:700;color:var(--navy);width:100%;text-align:center;background:white;"
+          oninput="updateOverrideDisplay()" />
+        <div style="font-size:10px;color:var(--muted);margin-top:4px;" id="overrideNote">Enter to override PDF value</div>
       </div>
       <div class="value-box">
         <div class="vb-label">High Estimate</div>
@@ -513,8 +548,8 @@
     <span class="range" id="footerRange"></span>
   </div>
   <div style="display:flex;gap:10px;">
-    <button class="btn-outline" onclick="saveLocal()">💾 Save Draft</button>
-    <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn-outline" onclick="saveLocal()" title="Save your work in progress — no PDF generated">💾 Save Draft</button>
+    <button class="btn-gold" onclick="exportPDF()" title="Generate and download the 4-page PDF report">⬇ Export PDF</button>
   </div>
 </div>
 
@@ -821,6 +856,19 @@ function fmtAdj(n) {
   return (n > 0 ? '+' : '') + fmtDollar(n);
 }
 
+function updateOverrideDisplay() {
+  const override = parseFloat(document.getElementById('agentPriceOverride').value);
+  const note = document.getElementById('overrideNote');
+  if (override && override > 0) {
+    note.textContent = '✓ This value will be used in the PDF';
+    note.style.color = '#16a34a';
+    document.getElementById('footerValue').textContent = fmtDollar(override);
+  } else {
+    note.textContent = 'Enter to override PDF value';
+    note.style.color = '';
+  }
+}
+
 // ── SAVE DRAFT ──
 function _buildDraft() {
   return {
@@ -840,7 +888,8 @@ function _buildDraft() {
       hoa: getVal('adj_hoa'), condAplus: getVal('adj_condAplus'), condA: getVal('adj_condA'),
       condB: getVal('adj_condB'), condC: getVal('adj_condC'), condD: getVal('adj_condD')
     },
-    agentNotes: getVal('agentNotes')
+    agentNotes: getVal('agentNotes'),
+    agentPriceOverride: getVal('agentPriceOverride')
   };
 }
 
@@ -862,6 +911,7 @@ function _applyDraft(draft) {
   }
   if (draft.comps && draft.comps.length) { comps = draft.comps; buildCompsTable(); }
   if (draft.agentNotes) { const el = document.getElementById('agentNotes'); if (el) el.value = draft.agentNotes; }
+  if (draft.agentPriceOverride) { const el = document.getElementById('agentPriceOverride'); if (el) { el.value = draft.agentPriceOverride; updateOverrideDisplay(); } }
   recalcAll();
 }
 
@@ -926,7 +976,9 @@ function exportPDF() {
     const s = [...adjPrices].sort((a,b)=>a-b);
     return s.length%2===0 ? (s[s.length/2-1]+s[s.length/2])/2 : s[Math.floor(s.length/2)];
   })();
-  const recommended = Math.round(median / 1000) * 1000;
+  const recommendedAuto = Math.round(median / 1000) * 1000;
+  const agentOverrideVal = parseFloat(document.getElementById('agentPriceOverride').value) || 0;
+  const recommended = agentOverrideVal > 0 ? agentOverrideVal : recommendedAuto;
   const rangeLow    = Math.round(recommended * 0.97 / 1000) * 1000;
   const rangeHigh   = Math.round(recommended * 1.03 / 1000) * 1000;
 
@@ -1481,17 +1533,28 @@ function exportPDF() {
     doc.text(noteLines, ML, y);
   }
 
-  pageFooter(
-    (agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.',
-    null
-  );
-  // BRIGHT MLS full disclaimer
+  // Page 4 custom footer — positions calculated to fit everything on page
+  // Full BRIGHT MLS disclosure goes at very bottom, then short copyright, then rule + footer text above
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(5.5);
   doc.setTextColor(...GRAY);
   const brightDisc = 'The data relating to real estate displayed here appears in part through the BRIGHT Internet Data Exchange program, a voluntary cooperative exchange of property listing data between licensed real estate brokerage firms in which FORWARD Real Estate | Corcoran McEnearney participates, and is provided by BRIGHT through a licensing agreement. The information provided is for the personal, non-commercial use of consumers and may not be used for any purpose other than to identify prospective properties consumers may be interested in purchasing. Some properties which appear for sale may no longer be available because they are under contract, have Closed or are no longer being offered for sale. This home sale information is not to be construed as an appraisal and may not be used as such for any purpose. BRIGHT MLS is the provider of this home sale information and has compiled content from various sources. Some properties represented may not have actually sold due to reporting errors. Data last updated: ' + dateStr;
   const brightLines = doc.splitTextToSize(brightDisc, CW);
-  doc.text(brightLines, ML, 780);
+  const brightLineH = 7; // pt per line at 5.5pt
+  const brightBlockH = brightLines.length * brightLineH;
+  const brightY = H - 4 - brightBlockH; // anchor to bottom of page
+  doc.text(brightLines, ML, brightY);
+  // Short BRIGHT copyright one-liner just above the full block
+  doc.setFontSize(6);
+  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, brightY - 10);
+  // Footer rule and main footer text above copyright
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.3);
+  doc.line(ML, brightY - 24, W - MR, brightY - 24);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...GRAY);
+  doc.text((agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.', ML, brightY - 12);
 
   // ── Save ──
   const filename = 'FORWARD_CMA_' + (subAddr || 'Report').replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
