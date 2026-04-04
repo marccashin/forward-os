@@ -999,7 +999,7 @@
               <div class="lp-card" @click="lpOpen('presentation')"><div class="lp-icon">📑</div><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div>
               <div class="lp-card" @click="lpOpen('netsheet')"><div class="lp-icon">💰</div><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div>
               <div class="lp-card" @click="go('listing-desc')"><div class="lp-icon">✍️</div><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div>
-              <div class="lp-card" @click="go('cma')"><div class="lp-icon">📊</div><div class="lp-label">CMA Snapshot</div><div class="lp-sub">Pull comps for this listing</div></div>
+              <div class="lp-card" @click="go('cma')" :class="{'lp-card-done': lstCmaSaved}"><div class="lp-icon">📊</div><div class="lp-label">CMA Snapshot</div><div class="lp-sub" v-if="lstCmaSaved" style="color:#16a34a;font-weight:700;">✅ Saved to Drive</div><div class="lp-sub" v-else>Pull comps for this listing</div></div>
               <div class="lp-card" @click="lpOpen('marketreport')"><div class="lp-icon">📈</div><div class="lp-label">Market Report</div><div class="lp-sub">Latest stats by region</div></div>
               <div class="lp-card" @click="lpOpen('pricereduction')"><div class="lp-icon"><span style="position:relative;">📉<span v-if="prDom>0" class="lp-badge">{{ prDom }}d</span></span></div><div class="lp-label">Price Reduction Planner</div><div class="lp-sub">DOM tracker with milestones</div></div>
               <div class="lp-card" @click="lpOpen('sellerprep')"><div class="lp-icon">🏠</div><div class="lp-label">Seller Prep Guide</div><div class="lp-sub">Property preparation checklist for sellers</div></div>
@@ -1009,7 +1009,7 @@
               <div class="lp-card-mobile" @click="lpOpen('presentation')"><span class="lp-icon">📑</span><div><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('netsheet')"><span class="lp-icon">💰</span><div><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="go('listing-desc')"><span class="lp-icon">✍️</span><div><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div><span class="lp-arrow">›</span></div>
-              <div class="lp-card-mobile" @click="go('cma')"><span class="lp-icon">📊</span><div><div class="lp-label">CMA Snapshot</div><div class="lp-sub">Pull comps for this listing</div></div><span class="lp-arrow">›</span></div>
+              <div class="lp-card-mobile" @click="go('cma')" :class="{'lp-card-done': lstCmaSaved}"><span class="lp-icon">📊</span><div><div class="lp-label">CMA Snapshot</div><div class="lp-sub" v-if="lstCmaSaved" style="color:#16a34a;font-weight:600;">✅ Saved</div><div class="lp-sub" v-else>Pull comps for this listing</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('marketreport')"><span class="lp-icon">📈</span><div><div class="lp-label">Market Report</div><div class="lp-sub">Latest stats by region</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('pricereduction')"><span class="lp-icon">📉</span><div><div class="lp-label">Price Reduction Planner</div><div class="lp-sub">DOM tracker with milestones</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('sellerprep')"><span class="lp-icon">🏠</span><div><div class="lp-label">Seller Prep Guide</div><div class="lp-sub">Pre-listing checklist</div></div><span class="lp-arrow">›</span></div>
@@ -6813,6 +6813,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // CMA log
     const cmaLogAddress = ref('');
     const cmaSaved = ref(false);
+    const lstCmaSaved = Vue.computed(() => {
+      const propId = lstActiveProp.value?.id;
+      if (!propId) return false;
+      return !!localStorage.getItem('cma_saved_' + propId);
+    });
     const cmaSaving = ref(false);
     async function saveCMAToProperty() {
       const addr = cmaLogAddress.value.trim();
@@ -11384,6 +11389,8 @@ async function voiceApplyFields() {
         clientName:   val(f.clientName) || '',
         agentName:    val(f.agentName) || agentName.value,
         notes:        val(f.notes) || '',
+        propId:       lstActiveProp.value?.id || '',
+        driveFolderId: lstActiveProp.value?.drive_folder_id || '',
         // Comp search criteria for when Bright MLS API is connected
         compSearch: {
           radius:     num(f.compSearchRadius) || '0.5',
@@ -12443,7 +12450,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
       osgFetchComps, osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
       // CMA
-      cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving,
+      cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
       isAdmin, lstGroupedByAgent, byrGroupedByAgent, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress,
       showSaveToProp, saveToPropData, saveToPropSelected, saveToPropNewAddr,
