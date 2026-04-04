@@ -553,46 +553,109 @@
 let comps = [];
 const MAX_COMPS = 6;
 
+// ── SUPABASE SYNC (cross-device) ──
+const _SUPA_URL = localStorage.getItem('fos_supa_url') || 'https://ewedrgopezogifzysusn.supabase.co';
+const _SUPA_KEY = localStorage.getItem('fos_supa_key') || '';
+const _AGENT    = localStorage.getItem('fos_agent') || '';
+
+function _supaHdrs(extra) {
+  return Object.assign({ 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY, 'Content-Type': 'application/json' }, extra || {});
+}
+
+async function _supaLoad() {
+  if (!_SUPA_KEY || !_AGENT) return null;
+  try {
+    const r = await fetch(
+      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&order=updated_at.desc&limit=1`,
+      { headers: _supaHdrs() }
+    );
+    const rows = await r.json();
+    return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  } catch(e) { console.warn('Supabase load failed', e); return null; }
+}
+
+async function _supaSave(draftData) {
+  if (!_SUPA_KEY || !_AGENT) return;
+  try {
+    const prefillRaw = localStorage.getItem('cma_voice_prefill');
+    const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
+    const address = prefill.address || getVal('s_address') || '';
+    await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
+      method: 'POST',
+      headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify({
+        agent_name: _AGENT,
+        property_address: address,
+        prefill_data: prefill,
+        draft_data: draftData,
+        updated_at: new Date().toISOString()
+      })
+    });
+  } catch(e) { console.warn('Supabase save failed', e); }
+}
+
+async function _supaDelete() {
+  if (!_SUPA_KEY || !_AGENT) return;
+  try {
+    await fetch(
+      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}`,
+      { method: 'DELETE', headers: _supaHdrs() }
+    );
+  } catch(e) { /* silent */ }
+}
+
 // ── INIT ──
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', async () => {
   buildCompsTable();
-  loadPrefill();
-  loadDraft();
+  // Try cloud first for cross-device resume
+  const row = await _supaLoad();
+  if (row && (row.draft_data || row.prefill_data)) {
+    if (row.prefill_data) _applyPrefill(row.prefill_data);
+    if (row.draft_data)   _applyDraft(row.draft_data);
+    showToast('☁️ Resumed from cloud');
+  } else {
+    loadPrefill();
+    loadDraft();
+  }
   recalcAll();
 });
 
 // ── PREFILL FROM FORWARD OS ──
+function _applyPrefill(d) {
+  if (!d) return;
+  const set = (id, val) => { if (val !== undefined && val !== null && val !== '') { const el = document.getElementById(id); if (el) el.value = val; } };
+  set('s_address', d.address);
+  set('s_city', d.city);
+  set('s_state', d.state);
+  set('s_zip', d.zip);
+  set('s_beds', d.beds);
+  set('s_fullBaths', d.fullBaths);
+  set('s_halfBaths', d.halfBaths);
+  set('s_gla', d.gla);
+  set('s_below', d.below);
+  set('s_yearBuilt', d.yearBuilt);
+  set('s_hoaMonthly', d.hoaMonthly);
+  set('s_condoFee', d.condoFee);
+  set('s_lotSize', d.lotSize);
+  set('s_clientName', d.clientName);
+  set('s_agentName', d.agentName);
+  set('s_notes', d.notes);
+  if (d.condition) set('s_condition', d.condition);
+  if (d.propType) set('s_propType', d.propType);
+  if (d.parkingType) set('s_parkingType', d.parkingType);
+  if (d.parkingSpaces) set('s_parkingSpaces', d.parkingSpaces);
+  const addr = d.address || '';
+  if (addr) {
+    document.getElementById('headerSub').textContent = addr;
+    document.getElementById('prefillNotice').style.display = 'block';
+  }
+}
+
 function loadPrefill() {
   try {
     const raw = localStorage.getItem('cma_voice_prefill');
     if (!raw) return;
-    const d = JSON.parse(raw);
-    const set = (id, val) => { if (val !== undefined && val !== null && val !== '') { const el = document.getElementById(id); if (el) el.value = val; } };
-    set('s_address', d.address);
-    set('s_city', d.city);
-    set('s_state', d.state);
-    set('s_zip', d.zip);
-    set('s_beds', d.beds);
-    set('s_fullBaths', d.fullBaths);
-    set('s_halfBaths', d.halfBaths);
-    set('s_gla', d.gla);
-    set('s_below', d.below);
-    set('s_yearBuilt', d.yearBuilt);
-    set('s_hoaMonthly', d.hoaMonthly);
-    set('s_condoFee', d.condoFee);
-    set('s_lotSize', d.lotSize);
-    set('s_clientName', d.clientName);
-    set('s_agentName', d.agentName);
-    set('s_notes', d.notes);
-    if (d.condition) set('s_condition', d.condition);
-    if (d.propType) set('s_propType', d.propType);
-    if (d.parkingType) set('s_parkingType', d.parkingType);
-    if (d.parkingSpaces) set('s_parkingSpaces', d.parkingSpaces);
-    const addr = d.address ? d.address : '';
-    if (addr) {
-      document.getElementById('headerSub').textContent = addr;
-      document.getElementById('prefillNotice').style.display = 'block';
-    }
+    _applyPrefill(JSON.parse(raw));
     recalcAll();
   } catch(e) { console.warn('prefill load error', e); }
 }
@@ -601,6 +664,7 @@ function clearPrefill() {
   if (!confirm('Reset all fields to blank?')) return;
   localStorage.removeItem('cma_voice_prefill');
   localStorage.removeItem('cma_draft');
+  _supaDelete(); // clear cloud session too
   location.reload();
 }
 
@@ -692,7 +756,7 @@ function recalcAll() {
   const adjPrices = [];
 
   comps.forEach((c, i) => {
-  const sp = parseFloat(c.salePrice) || 0;
+    const sp = parseFloat(c.salePrice) || 0;
     if (!sp) {
       document.getElementById('c'+i+'_psf').textContent = '—';
       document.getElementById('c'+i+'_netAdj').textContent = '—';
@@ -791,27 +855,52 @@ function fmtDollar(n) {
 }
 
 // ── SAVE DRAFT ──
+function _buildDraft() {
+  return {
+    subject: {
+      address: getVal('s_address'), city: getVal('s_city'), state: getVal('s_state'), zip: getVal('s_zip'),
+      propType: getVal('s_propType'), beds: getVal('s_beds'), fullBaths: getVal('s_fullBaths'),
+      halfBaths: getVal('s_halfBaths'), gla: getVal('s_gla'), below: getVal('s_below'),
+      yearBuilt: getVal('s_yearBuilt'), condition: getVal('s_condition'), parkingType: getVal('s_parkingType'),
+      parkingSpaces: getVal('s_parkingSpaces'), hoaMonthly: getVal('s_hoaMonthly'),
+      condoFee: getVal('s_condoFee'), lotSize: getVal('s_lotSize'), clientName: getVal('s_clientName'),
+      agentName: getVal('s_agentName'), notes: getVal('s_notes')
+    },
+    comps,
+    adjustments: {
+      gla: getVal('adj_gla'), condA: getVal('adj_condA'), condB: getVal('adj_condB'),
+      condC: getVal('adj_condC'), condD: getVal('adj_condD'), garage: getVal('adj_garage'),
+      bath: getVal('adj_bath'), hoa: getVal('adj_hoa')
+    },
+    agentNotes: getVal('agentNotes')
+  };
+}
+
+function _applyDraft(draft) {
+  if (!draft) return;
+  if (draft.subject) {
+    Object.entries(draft.subject).forEach(([k, v]) => {
+      const el = document.getElementById('s_' + k);
+      if (el && v) el.value = v;
+    });
+  }
+  if (draft.adjustments) {
+    const a = draft.adjustments;
+    const setAdj = (k, v) => { const el = document.getElementById('adj_'+k); if (el && v !== undefined) el.value = v; };
+    setAdj('gla', a.gla); setAdj('condA', a.condA); setAdj('condB', a.condB);
+    setAdj('condC', a.condC); setAdj('condD', a.condD); setAdj('garage', a.garage);
+    setAdj('bath', a.bath); setAdj('hoa', a.hoa);
+  }
+  if (draft.comps && draft.comps.length) { comps = draft.comps; buildCompsTable(); }
+  if (draft.agentNotes) { const el = document.getElementById('agentNotes'); if (el) el.value = draft.agentNotes; }
+  recalcAll();
+}
+
 function saveLocal() {
   try {
-    const draft = {
-      subject: {
-        address: getVal('s_address'), city: getVal('s_city'), state: getVal('s_state'), zip: getVal('s_zip'),
-        propType: getVal('s_propType'), beds: getVal('s_beds'), fullBaths: getVal('s_fullBaths'),
-        halfBaths: getVal('s_halfBaths'), gla: getVal('s_gla'), below: getVal('s_below'),
-        yearBuilt: getVal('s_yearBuilt'), condition: getVal('s_condition'), parkingType: getVal('s_parkingType'),
-        parkingSpaces: getVal('s_parkingSpaces'), hoaMonthly: getVal('s_hoaMonthly'),
-        condoFee: getVal('s_condoFee'), lotSize: getVal('s_lotSize'), clientName: getVal('s_clientName'),
-        agentName: getVal('s_agentName'), notes: getVal('s_notes')
-      },
-      comps,
-      adjustments: {
-        gla: getVal('adj_gla'), condA: getVal('adj_condA'), condB: getVal('adj_condB'),
-        condC: getVal('adj_condC'), condD: getVal('adj_condD'), garage: getVal('adj_garage'),
-        bath: getVal('adj_bath'), hoa: getVal('adj_hoa')
-      },
-      agentNotes: getVal('agentNotes')
-    };
+    const draft = _buildDraft();
     localStorage.setItem('cma_draft', JSON.stringify(draft));
+    _supaSave(draft); // cloud sync — non-blocking
     showToast('✅ Draft saved');
   } catch(e) { showToast('Error saving draft'); }
 }
@@ -820,29 +909,7 @@ function loadDraft() {
   try {
     const raw = localStorage.getItem('cma_draft');
     if (!raw) return;
-    const draft = JSON.parse(raw);
-    if (draft.subject) {
-      Object.entries(draft.subject).forEach(([k, v]) => {
-        const el = document.getElementById('s_' + k);
-        if (el && v) el.value = v;
-      });
-    }
-    if (draft.adjustments) {
-      const a = draft.adjustments;
-      const setAdj = (k, v) => { const el = document.getElementById('adj_'+k); if (el && v!==undefined) el.value = v; };
-      setAdj('gla', a.gla); setAdj('condA', a.condA); setAdj('condB', a.condB);
-      setAdj('condC', a.condC); setAdj('condD', a.condD); setAdj('garage', a.garage);
-      setAdj('bath', a.bath); setAdj('hoa', a.hoa);
-    }
-    if (draft.comps && draft.comps.length) {
-      comps = draft.comps;
-      buildCompsTable();
-    }
-    if (draft.agentNotes) {
-      const el = document.getElementById('agentNotes');
-      if (el) el.value = draft.agentNotes;
-    }
-    recalcAll();
+    _applyDraft(JSON.parse(raw));
   } catch(e) { /* ignore */ }
 }
 
@@ -915,7 +982,7 @@ function exportPDF() {
   doc.setFontSize(8.5);
   const colW = (W - 2*margin) / 2 - 8;
   subFields.forEach((f, i) => {
-  const col = i % 2;
+    const col = i % 2;
     const row = Math.floor(i / 2);
     const x = margin + col * (colW + 16);
     const rowY = y + row * 14;
