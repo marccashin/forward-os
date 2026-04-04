@@ -4,11 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CMA Builder — FORWARD OS</title>
-  
-  
-<sCH�� Y�="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
-<style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
     :root {
       --navy: #1a2744;
       --navy-light: #243660;
@@ -25,7 +22,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
 
-    /* ── HEADER ── */
+    /* ══ HEADER ══ */
     .header {
       background: var(--navy);
       color: white;
@@ -39,16 +36,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .header-left { display: flex; align-items: center; gap: 14px; }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-
     .logo { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--gold); }
     .header-title { font-size: 17px; font-weight: 600; color: white; }
     .header-sub { font-size: 12px; color: rgba(255,255,255,0.6); margin-top: 1px; }
@@ -58,28 +45,705 @@
     .btn-navy:hover { background: var(--navy-light); }
     .btn-outline { background: white; color: var(--navy); border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
+    /* ══ LAYOUT ══ */
+    .page { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
+
+    /* ══ CARDS ══ */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--navy); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .card-title .badge { background: var(--navy); color: white; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; letter-spacing: .3px; }
+    .card-title .badge-gold { background: var(--gold); color: var(--navy); }
+
+    /* ══ FORM FIELDS ══ */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .form-grid-wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select, .field textarea { border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; color: var(--text); background: white; transition: border-color .15s; width: 100%; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); }
+    .field input[readonly] { background: #f0f4ff; color: var(--muted); }
+
+    /* ══ COMPS TABLE ══ */
+    .comps-wrapper { overflow-x: auto; }
+    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1100px; }
+    .comps-table th { background: var(--navy); color: white; padding: 9px 8px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .4px; white-space: nowrap; }
+    .comps-table th.gold { background: var(--gold); color: var(--navy); }
+    .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .comps-table tr:nth-child(even) td { background: #f9fafc; }
+    .comps-table tr:hover td { background: #f0f4ff; }
+    .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 4px 6px; font-size: 12px; width: 100%; background: white; }
+    .comps-table td input:focus, .comps-table td select:focus { outline: none; border-color: var(--gold); }
+    .comps-table td.calc { background: #f0f4ff; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
+    .comps-table td.adj-val { color: var(--green); font-weight: 600; text-align: right; }
+    .comps-table td.adj-neg { color: var(--red); font-weight: 600; text-align: right; }
+
+    /* ══ VALUE SUMMARY ══ */
+    .value-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+    .value-box { background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; }
+    .value-box.highlight { background: var(--navy); border-color: var(--navy); color: white; }
+    .value-box.gold-box { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+    .value-box .vb-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .7; margin-bottom: 6px; }
+    .value-box .vb-value { font-size: 20px; font-weight: 700; }
+    .value-box.highlight .vb-label { color: rgba(255,255,255,.7); }
+    .value-box.highlight .vb-value { color: var(--gold); }
+
+    /* ══ ADJUSTMENT SETTINGS ══ */
+    .adj-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 8px 24px;
+      margin-bottom: 6px;
+    }
+    .adj-row {border); border-radius: 6px; padding: 7px 15px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
+
+    /* ══ LAYOUT ══ */
+    .page { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
+
+    /* ══ CARDS ══ */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--navy); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1.5px solid var(--border); display: flex; align-items: center; gap: 8px; }
+    .card-title .badge { background: var(--navy); color: white; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600; letter-spacing: .3px; }
+    .card-title .badge-gold { background: var(--gold); color: var(--navy); }
+
+    /* ══ FORM FIELDS ══ */
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .form-grid-wide { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+    .field input, .field select, .field textarea { border: 1.5px solid var(--border); border-radius: 6px; padding: 7px 10px; font-size: 13px; color: var(--text); background: white; transition: border-color .15s; width: 100%; }
+    .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); }
+    .field input[readonly] { background: #f0f4ff; color: var(--muted); }
+
+    /* ══ COMPS TABLE ══ */
+    .comps-wrapper { overflow-x: auto; }
+    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1100px; }
+    .comps-table th { background: var(--navy); color: white; padding: 9px 8px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .4px; white-space: nowrap; }
+    .comps-table th.gold { background: var(--gold); color: var(--navy); }
+    .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .comps-table tr:nth-child(even) td { background: #f9fafc; }
+    .comps-table tr:hover td { background: #f0f4ff; }
+    .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 4px 6px; font-size: 12px; width: 100%; background: white; }
+    .comps-table td input:focus, .comps-table td select:focus { outline: none; border-color: var(--gold); }
+    .comps-table td.calc { background: #f0f4ff; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
+    .comps-table td.adj-val { color: var(--green); font-weight: 600; text-align: right; }
+    .comps-table td.adj-neg { color: var(--red); font-weight: 600; text-align: right; }
+
+    /* ══ VALUE SUMMARY ══ */
+    .value-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+    .value-box { background: var(--bg); border: 1.5px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; }
+    .value-box.highlight { background: var(--navy); border-color: var(--navy); color: white; }
+    .value-box.gold-box { background: var(--gold); border-color: var(--gold); color: var(--navy); }
+    .value-box .vb-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; opacity: .7; margin-bottom: 6px; }
+    .value-box .vb-value { font-size: 20px; font-weight: 700; }
+    .value-box.highlight .vb-label { color: rgba(255,255,255,.7); }
+    .value-box.highlight .vb-value { color: var(--gold); }
+
+    /* ══ ADJUSTMENT SETTINGS ══ */
+    .adj-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 8px 24px;
+      margin-bottom: 6px;
+    }
+    .adj-row {  <div class="adj-row">
+        <div class="adj-row-info">
+          <div class="adj-row-label">HOA Adjustment (monthly)</div>
+          <div class="adj-row-desc">Monthly HOA difference × this multiplier. Reflects capitalized cost to buyer.</div>
+        </div>
+        <div class="adj-row-controls">
+          <input type="number" id="adj_hoa" value="100" step="10" oninput="recalcAll()" />
+          <span class="adj-unit">× multiplier</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Condition Grade Settings -->
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin-bottom:10px;">Condition Grade Values (dollar value assigned to each grade)</div>
+      <div class="adj-grid">
+
+        <div class="adj-row" style="border-left:4px solid #16a34a;">
+          <div class="adj-row-info">
+            <div class="adj-row-label">A+ — Like New / Exceptional</div>
+            <div class="adj-row-desc">New construction or fully renovated; superior finishes; no deferred maintenance whatsoever.</div>
+          </div>
+          <div class="adj-row-controls">
+            <input type="number" id="adj_condAplus" value="15000" step="1000" oninput="recalcAll()" />
+            <span class="adj-unit">$</span>
+          </div>
+        </div>
+
+        <div class="adj-row" style="border-left:4px solid #22c55e;">
+          <div class="adj-row-info">
+            <div class="adj-row-label">A — Excellent</div>
+            <div class="adj-row-desc">Recently updated; high-quality finishes; well-maintained with only cosmetic wear.</div>
+          </div>
+          <div class="adj-row-controls">
+            <input type="number" id="adj_condA" value="10000" step="1000" oninput="recalcAll()" />
+            <span class="adj-unit">$</span>
+          </div>
+        </div>
+
+        <div class="adj-row" style="border-left:4px solid #3b82f6;">
+          <div class="adj-row-info">
+            <div class="adj-row-label">B — Good</div>
+            <div class="adj-row-desc">Average condition; some deferred maintenance or cosmetic updates needed.</div>
+          </div>
+          <div class="adj-row-controls">
+            <input type="number" id="adj_condB" value="5000" step="500" oninput="recalcAll()" />
+            <span class="adj-unit">$</span>
+          </div>
+        </div>
+
+        <div class="adj-row" style="border-left:4px solid #f97316;">
+          <div class="adj-row-info">
+            <div class="adj-row-label">C — Average</div>
+            <div class="adj-row-desc">Below-average condition; significant deferred maintenance; needs meaningful repairs.</div>
+          </div>
+          <div class="adj-row-controls">
+            <input type="number" id="adj_condC" value="0" step="500" oninput="recalcAll()" />
+            <span class="adj-unit">$</span>
+          </div>
+        </div>
+
+        <div class="adj-row" style="border-left:4px solid #ef4444;">
+          <div class="adj-row-info">
+            <div class="adj-row-label">D — Fair / Deferred Maintenance</div>
+            <div class="adj-row-desc">Poor condition; extensive deferred maintenance or needed renovations; may require significant investment.</div>
+          </div>
+          <div class="adj-row-controls">
+            <input type="number" id="adj_condD" value="-10000" step="1000" oninput="recalcAll()" />
+            <span class="adj-unit">$</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPARABLES -->
+  <div class="card">
+    <div class="card-title">
+      🔍 Comparable Sales (Comps)
+      <span class="badge badge-gold">Step 3</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">
+      Enter comparable properties sold recently in the area. The tool will automatically calculate adjustments and adjusted sale price for each comp.
+    </div>
+
+    <div class="comps-wrapper">
+      <table class="comps-table" id="compsTable">
+        <thead>
+          <tr>
+            <th>COMP #</th>
+            <th>Address</th>
+            <th>Sale Price</th>
+            <th>GLA</th>
+            <th>BED</th>
+            <th>BATH</th>
+            <th>BELOW-GRADE (sqft)</th>
+            <th>COND</th>
+            <th>$/SQFT</th>
+            <th>GLA ADJ</th>
+            <th>BELOW ADJ</th>
+            <th>BED ADJ</th>
+            <th>BATH ADJ</th>
+            <th>½ BATH ADJ</th>
+            <th>GARAGE ADJ</th>
+            <th>HOA ADJ</th>
+            <th>COND ADJ</th>
+            <th>TOTAL ADJ</th>
+            <th>ADJUSTED PRICE</th>
+          </tr>
+        </thead>
+        <tbody id="compsBody"></tbody>
+      </table>
+    </div>
+
+    <div style="margin-top:12px;">
+      <button class="btn-navy" onclick="addComp()" style="background:var(--gold);color:var(--navy);font-weight:700;">+ Add Comp</button>
+    </div>
+  </div>
+
+  <!-- VALUE SUMMARY -->
+  <div class="card">
+    <div class="card-title">💰 Valuation Summary</div>
+    <div class="value-grid">
+      <div class="value-box">
+        <div class="vb-label">Low</div>
+        <div class="vb-value" id="lowValue">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">Median</div>
+        <div class="vb-value" id="medianValue">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">High</div>
+        <div class="vb-value" id="highValue">—</div>
+      </div>
+      <div class="value-box">
+        <div class="vb-label">Mean (Avg)</div>
+        <div class="vb-value" id="avgValue">—</div>
+      </div>
+      <div class="value-box highlight">
+        <div class="vb-label">Recon. Value</div>
+        <div class="vb-value" id="reconValue">—</div>
+      </div>
+      <div class="value-box gold-box">
+        <div class="vb-label">Market Value</div>
+        <div class="vb-value" id="marketValue">—</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="footer-bar">
+  <div>
+    <span class="est-label">Est. Value Range:</span>
+    <span class="range" id="valueRange">— to —</span>
+  </div>
+  <div>
+    <span class="est-label">Market Value:</span>
+    <span class="est-value" id="footerValue">—</span>
+  </div>
+</div>
+
+<script>
+  // Initialize comps array
+  let comps = [];
+  let nextCompId = 1;
+
+  // Load from prefill if available
+  if (window.PREFILL_DATA) {
+    const p = window.PREFILL_DATA;
+    document.getElementById('s_address').value = p.address || '';
+    document.getElementById('s_city').value = p.city || '';
+    document.getElementById('s_state').value = p.state || '';
+    document.getElementById('s_zip').value = p.zip || '';
+    document.getElementById('s_clientName').value = p.clientName || '';
+    document.getElementById('s_propType').value = p.propertyType || 'Single Family';
+    document.getElementById('s_beds').value = p.beds || '';
+    document.getElementById('s_fullBaths').value = p.fullBaths || '';
+    document.getElementById('s_halfBaths').value = p.halfBaths || '';
+    document.getElementById('s_gla').value = p.gla || '';
+    document.getElementById('s_below').value = p.belowGradeFinished || '';
+    document.getElementById('s_yearBuilt').value = p.yearBuilt || '';
+    document.getElementById('s_condition').value = p.condition || 'C';
+    document.getElementById('s_parkingType').value = p.parkingType || 'Attached Garage';
+    document.getElementById('s_parkingSpaces').value = p.parkingSpaces || '';
+    document.getElementById('s_hoaMonthly').value = p.hoaMonthly || '';
+    document.getElementById('s_condoFee').value = p.condoFee || '';
+    document.getElementById('s_lotSize').value = p.lotSize || '';
+    document.getElementById('s_agentName').value = p.agentName || '';
+    document.getElementById('s_notes').value = p.notes || '';
+    document.getElementById('prefillNotice').style.display = 'block';
+  }
+
+  function addComp() {
+    comps.push({ id: nextCompId++ });
+    renderComps();
+  }
+
+  function removeComp(compId) {
+    comps = comps.filter(c => c.id !== compId);
+    renderComps();
+  }
+
+  function renderComps() {
+    const body = document.getElementById('compsBody');
+    body.innerHTML = '';
+
+    comps.forEach((c, i) => {
+      const row = body.insertRow();
+      row.innerHTML = `
+        <td style="font-weight:600;color:var(--gold);">${c.id}</td>
+        <td><input type="text" class="comp-input" id="c${i}_address" value="${c.address || ''}" onchange="recalcAll()" placeholder="Address" /></td>
+        <td><input type="number" class="comp-input" id="c${i}_salePrice" value="${c.salePrice || ''}" onchange="recalcAll()" placeholder="Sale Price" /></td>
+        <td><input type="number" class="comp-input" id="c${i}_gla" value="${c.gla || ''}" onchange="recalcAll()" placeholder="GLA" /></td>
+        <td><input type="number" class="comp-input" id="c${i}_beds" value="${c.beds || ''}" onchange="recalcAll()" placeholder="Beds" /></td>
+        <td><input type="number" class="comp-input" id="c${i}_baths" value="${c.baths || ''}" onchange="recalcAll()" placeholder="Baths" /></td>
+        <td><input type="number" class="comp-input" id="c${i}_below" value="${c.below || ''}" onchange="recalcAll()" placeholder="Below" /></td>
+        <td>
+          <select class="comp-input" id="c${i}_cond" onchange="recalcAll()">
+            <option value="A+" ${c.condition === 'A+' ? 'selected' : ''}>A+</option>
+            <option value="A" ${c.condition === 'A' ? 'selected' : ''}>A</option>
+            <option value="B" ${c.condition === 'B' ? 'selected' : ''}>B</option>
+            <option value="C" ${c.condition === 'C' ? 'selected' : ''}>C</option>
+            <option value="D" ${c.condition === 'D' ? 'selected' : ''}>D</option>
+          </select>
+        </td>
+        <td class="calc" id="c${i}_psf">—</td>
+        <td class="calc" id="c${i}_glaadjc">—</td>
+        <td class="calc" id="c${i}_belowadjc">—</td>
+        <td class="calc" id="c${i}_bedadjc">—</td>
+        <td class="calc" id="c${i}_bathadjc">—</td>
+        <td class="calc" id="c${i}_halfbathadjc">—</td>
+        <td class="calc" id="c${i}_garagadjadjc">—</td>
+        <td class="calc" id="c${i}_hoaadjc">—</td>
+        <td class="calc" id="c${i}_condadjc">—</td>
+        <td class="calc" id="c${i}_netAdj">—</td>
+        <td class="calc" id="c${i}_adjPrice">—</td>
+      `;
+    });
+
+    if (comps.length === 0) {
+      body.innerHTML = '<tr><td colspan="20" style="text-align:center;padding:20px;color:var(--muted);">No comps added yet. Click "+ Add Comp" to start.</td></tr>';
+    }
+  }
+
+  function recalcAll() {
+    updateComps();
+    updateSummary();
+  }
+
+  function updateComps() {
+    const sGla       = parseFloat(document.getElementById('s_gla').value) || 0;
+    const sBelow     = parseFloat(document.getElementById('s_below').value) || 0;
+    const sBeds      = parseFloat(document.getElementById('s_beds').value) || 0;
+    const sFullBaths = parseFloat(document.getElementById('s_fullBaths').value) || 0;
+    const sHalfBaths = parseFloat(document.getElementById('s_halfBaths').value) || 0;
+    const sGarage    = parseFloat(document.getElementById('s_parkingSpaces').value) || 0;
+    const sCond      = document.getElementById('s_condition').value;
+    const sHoa = parseFloat(document.getElementById('s_hoaMonthly').value) || 0;
+
+    const adjGla       = parseFloat(document.getElementById('adj_gla').value) || 0;
+    const adjBelow     = parseFloat(document.getElementById('adj_below').value) || 0;
+    const adjBedroom   = parseFloat(document.getElementById('adj_bedroom').value) || 0;
+    const adjBath      = parseFloat(document.getElementById('adj_bath').value) || 0;
+    const adjHalfbath  = parseFloat(document.getElementById('adj_halfbath').value) || 0;
+    const adjGarage    = parseFloat(document.getElementById('adj_garage').value) || 0;
+    const adjHoa       = parseFloat(document.getElementById('adj_hoa').value) || 0;
+    const adjCondAplus = parseFloat(document.getElementById('adj_condAplus').value) || 0;
+    const adjCondA     = parseFloat(document.getElementById('adj_condA').value) || 0;
+    const adjCondB     = parseFloat(document.getElementById('adj_condB').value) || 0;
+    const adjCondC     = parseFloat(document.getElementById('adj_condC').value) || 0;
+    const adjCondD     = parseFloat(document.getElementById('adj_condD').value) || 0;
+
+    const adjPrices = [];
+
+    comps.forEach((c, i) => {
+      const sp = parseFloat(document.getElementById('c'+i+'_salePrice').value) || 0;
+      if (!sp) {
+        document.getElementById('c'+i+'_psf').textContent = '—';
+        document.getElementById('c'+i+'_netAdj').textContent = '—';
+        document.getElementById('c'+i+'_adjPrice').textContent = '—';
+        return;
+      }
+
+      const cGla       = parseFloat(document.getElementById('c'+i+'_gla').value) || 0;
+      const cBelow     = parseFloat(document.getElementById('c'+i+'_below').value) || 0;
+      const cBeds      = parseFloat(document.getElementById('c'+i+'_beds').value) || 0;
+      const cFullBaths = parseFloat(document.getElementById('c'+i+'_baths').value) || 0;
+      const cHalfBaths = 0; // Not in comp input
+      const cGarage    = 0; // Not in comp input
+      const cCond      = document.getElementById('c'+i+'_cond').value;
+
+      const psf = (cGla > 0) ? sp / cGla : 0;
+      document.getElementById('c'+i+'_psf').textContent = psf > 0 ? '$' + psf.toFixed(0) : '—';
+
+      // Calc individual adjustments
+      let glaadjc = (sGla - cGla) * adjGla;
+      let belowadjc = (sBelow - cBelow) * adjBelow;
+      let bedadjc = (sBeds - cBeds) * adjBedroom;
+      let bathadjc = (sFullBaths - cFullBaths) * adjBath;
+      let halfbathadjc = (sHalfBaths - cHalfBaths) * adjHalfbath;
+      let garagadjc = (sGarage - cGarage) * adjGarage;
+      let hoaadjc = (sHoa > 0 ? 1 : 0) * adjHoa * 12;
+
+      let condAdjValue = 0;
+      if (sCond === 'A+') condAdjValue = adjCondAplus;
+      else if (sCond === 'A') condAdjValue = adjCondA;
+      else if (sCond === 'B') condAdjValue = adjCondB;
+      else if (sCond === 'C') condAdjValue = adjCondC;
+      else if (sCond === 'D') condAdjValue = adjCondD;
+
+      let condadjc = condAdjValue;
+      if (cCond === 'A+') condadjc -= adjCondAplus;
+      else if (cCond === 'A') condadjc -= adjCondA;
+      else if (cCond === 'B') condadjc -= adjCondB;
+      else if (cCond === 'C') condadjc -= adjCondC;
+      else if (cCond === 'D') condadjc -= adjCondD;
+
+      const netAdj = glaadjc + belowadjc + bedadjc + bathadjc + halfbathadjc + garagadjc + hoaadjc + condadjc;
+      const adjPrice = sp + netAdj;
+
+      // Display
+      document.getElementById('c'+i+'_glaadjc').textContent = glaadjc !== 0 ? (glaadjc > 0 ? '+' : '') + '$' + glaadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_belowadjc').textContent = belowadjc !== 0 ? (belowadjc > 0 ? '+' : '') + '$' + belowadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_bedadjc').textContent = bedadjc !== 0 ? (bedadjc > 0 ? '+' : '') + '$' + bedadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_bathadjc').textContent = bathadjc !== 0 ? (bathadjc > 0 ? '+' : '') + '$' + bathadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_halfbathadjc').textContent = halfbathadjc !== 0 ? (halfbathadjc > 0 ? '+' : '') + '$' + halfbathadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_garagadjc').textContent = garagadjc !== 0 ? (garagadjc > 0 ? '+' : '') + '$' + garagadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_hoaadjc').textContent = hoaadjc !== 0 ? (hoaadjc > 0 ? '+' : '') + '$' + hoaadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_condadjc').textContent = condadjc !== 0 ? (condadjc > 0 ? '+' : '') + '$' + condadjc.toLocaleString() : '—';
+      document.getElementById('c'+i+'_netAdj').textContent = netAdj !== 0 ? (netAdj > 0 ? '+' : '') + '$' + netAdj.toLocaleString() : '—';
+      document.getElementById('c'+i+'_adjPrice').textContent = adjPrice > 0 ? '$' + adjPrice.toLocaleString() : '—';
+
+      adjPrices.push(adjPrice);
+    });
+
+    window._adjPrices = adjPrices;
+  }
+
+  function updateSummary() {
+    const adjPrices = window._adjPrices || [];
+    if (adjPrices.length === 0) {
+      document.getElementById('lowValue').textContent = '—';
+      document.getElementById('medianValue').textContent = '—';
+      document.getElementById('highValue').textContent = '—';
+      document.getElementById('avgValue').textContent = '—';
+      document.getElementById('reconValue').textContent = '—';
+      document.getElementById('marketValue').textContent = '—';
+      document.getElementById('valueRange').textContent = '— to —';
+      document.getElementById('footerValue').textContent = '—';
+      return;
+    }
+
+    const sorted = [...adjPrices].sort((a, b) => a - b);
+    const low = sorted[0];
+    const high = sorted[sorted.length - 1];
+    const median = sorted.length % 2 === 0
+      ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+      : sorted[Math.floor(sorted.length / 2)];
+    const avg = adjPrices.reduce((a, b) => a + b, 0) / adjPrices.length;
+    const recon = median;
+    const market = recon;
+
+    const fmt = (v) => v > 0 ? '$' + v.toLocaleString(undefined, {maximumFractionDigits: 0}) : '—';
+
+    document.getElementById('lowValue').textContent = fmt(low);
+    document.getElementById('medianValue').textContent = fmt(median);
+    document.getElementById('highValue').textContent = fmt(high);
+    document.getElementById('avgValue').textContent = fmt(avg);
+    document.getElementById('reconValue').textContent = fmt(recon);
+    document.getElementById('marketValue').textContent = fmt(market);
+    document.getElementById('valueRange').textContent = fmt(low) + ' to ' + fmt(high);
+    document.getElementById('footerValue').textContent = fmt(market);
+  }
+
+  function clearPrefill() {
+    document.location.reload();
+  }
+
+  function exportPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'letter' });
+
+    const NAVY = [26, 39, 68];
+    const WHITE = [255, 255, 255];
+    const GOLD = [201, 168, 76];
+    const BORDER = [221, 227, 239];
+    const BG = [245, 246, 250];
+
+    const PAGE_W = 279.4;
+    const PAGE_H = 215.9;
+    const MARGIN = 8;
+    const ML = MARGIN;
+    const MR = PAGE_W - MARGIN;
+    const CW = MR - ML;
+
+    let page = 1;
+    let y = MARGIN;
+
+    // ══ PAGE 1: COVER ══
+    doc.setFillColor(...NAVY);
+    doc.rect(0, 0, PAGE_W, PAGE_H, 'F');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(44);
+    doc.setTextColor(...GOLD);
+    doc.text('CMA REPORT', PAGE_W / 2, 60, { align: 'center' });
+
+    doc.setFontSize(18);
+    doc.setTextColor(...WHITE);
+    doc.text(document.getElementById('s_address').value || 'Subject Address', PAGE_W / 2, 80, { align: 'center' });
+
+    doc.setFontSize(11);
+    doc.setTextColor('rgba(255,255,255,0.7)');
+    doc.text(document.getElementById('s_city').value + ', ' + document.getElementById('s_state').value + ' ' + document.getElementById('s_zip').value || '', PAGE_W / 2, 90, { align: 'center' });
+
+    doc.setFontSize(12);
+    doc.setTextColor(...GOLD);
+    doc.text('Prepared for: ' + (document.getElementById('s_clientName').value || 'Client Name'), PAGE_W / 2, 120, { align: 'center' });
+    doc.text('Agent: ' + (document.getElementById('s_agentName').value || 'Agent Name'), PAGE_W / 2, 130, { align: 'center' });
+
+    doc.setFontSize(10);
+    doc.setTextColor('rgba(255,255,255,0.6)');
+    const today = new Date().toLocaleDateString();
+    doc.text('Report Date: ' + today, PAGE_W / 2, 160, { align: 'center' });
+
+    doc.addPage();
+    page++;
+    y = MARGIN;
+
+    // ══ PAGE 2: PROPERTY DETAILS ══
+    doc.setFillColor(...NAVY);
+    doc.rect(ML, y, CW, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...WHITE);
+    doc.text('SUBJECT PROPERTY', ML + 3, y + 7);
+    y += 12;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...NAVY);
+    const propData = [
+      ['Address', document.getElementById('s_address').value || '—'],
+      ['City/State/ZIP', (document.getElementById('s_city').value + ', ' + document.getElementById('s_state').value + ' ' + document.getElementById('s_zip').value) || '—'],
+      ['Property Type', document.getElementById('s_propType').value],
+      ['Beds / Baths', (document.getElementById('s_beds').value || '0') + ' / ' + (document.getElementById('s_fullBaths').value || '0')],
+      ['GLA (sqft)', document.getElementById('s_gla').value || '—'],
+      ['Below-Grade Finished', document.getElementById('s_below').value || '—'],
+      ['Year Built', document.getElementById('s_yearBuilt').value || '—'],
+      ['Condition', document.getElementById('s_condition').value],
+      ['Parking', document.getElementById('s_parkingType').value + ' (' + (document.getElementById('s_parkingSpaces').value || '0') + ')'],
+    ];
+
+    propData.forEach((row, i) => {
+      if (i % 2 === 0) doc.setFillColor(...BG);
+      else doc.setFillColor(...WHITE);
+      doc.rect(ML, y, 60, 6, 'F');
+      doc.rect(ML + 60, y, CW - 60, 6, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.text(row[0], ML + 2, y + 4);
+      doc.setFont('helvetica', 'normal');
+      doc.text(row[1], ML + 62, y + 4);
+      y += 6;
+    });
+
+    y += 4;
+
+    // ══ PAGE 3: COMPARABLES ══
+    doc.addPage();
+    page++;
+    y = MARGIN;
+
+    doc.setFillColor(...NAVY);
+    doc.rect(ML, y, CW, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...WHITE);
+    doc.text('COMPARABLE SALES', ML + 3, y + 7);
+    y += 12;
+
+    const validComps = comps.filter(c => parseFloat(document.getElementById('c' + comps.indexOf(c) + '_salePrice').value) > 0);
+
+    if (validComps.length === 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(...NAVY);
+      doc.text('No comparables entered.', ML + 3, y + 5);
+    } else {
+      const ovCols = ['COMP', 'ADDRESS', 'PRICE', 'ADJUSTED PRICE', 'GLA', '$/SQFT', 'BEDS/BATHS', 'COND', 'PROXIMITY'];
+      const ovWidths = [18, 120, 65, 70, 55, 50, 68, 35, 80];
+
+      // Table header
+      doc.setFillColor(...NAVY);
+      doc.rect(ML, y, CW, 16, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7);
+      doc.setTextColor(...WHITE);
+      let tx = ML + 4;
+      ovCols.forEach((h, i) => { doc.text(h, tx, y + 11); tx += ovWidths[i]; });
+      y += 16;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      validComps.forEach((c, idx) => {
+        const cIdx = comps.indexOf(c);
+        const sp = parseFloat(document.getElementById('c' + cIdx + '_salePrice').value) || 0;
+        const gla = parseFloat(document.getElementById('c' + cIdx + '_gla').value) || 0;
+        const psf = gla > 0 ? sp / gla : 0;
+
+        if (idx % 2 === 0) doc.setFillColor(...BG);
+        else doc.setFillColor(...WHITE);
+        doc.rect(ML, y, CW, 12, 'F');
+
+        doc.setTextColor(...NAVY);
+        let tx = ML + 2;
+        doc.text('' + (idx + 1), tx, y + 8);
+        tx += 18;
+        doc.text(document.getElementById('c' + cIdx + '_address').value || '—', tx, y + 8, { maxWidth: 115 });
+        tx += 120;
+        doc.text('$' + (sp > 0 ? sp.toLocaleString() : '—'), tx, y + 8);
+        tx += 65;
+        const adjP = sp + (window._adjPrices && window._adjPrices[cIdx] ? window._adjPrices[cIdx] - sp : 0);
+        doc.text('$' + (adjP > 0 ? adjP.toLocaleString() : '—'), tx, y + 8);
+        tx += 70;
+        doc.text(gla + (gla > 0 ? '' : '—'), tx, y + 8);
+        tx += 55;
+        doc.text(psf > 0 ? '$' + psf.toFixed(0) : '—', tx, y + 8);
+        tx += 50;
+        doc.text((document.getElementById('c' + cIdx + '_beds').value || '0') + ' / ' + (document.getElementById('c' + cIdx + '_baths').value || '0'), tx, y + 8);
+        tx += 68;
+        doc.text(document.getElementById('c' + cIdx + '_cond').value || '—', tx, y + 8);
+        y += 12;
+      });
+    }
+
+    y += 6;
+
+    // ══ PAGE 4: VALUATION SUMMARY ══
+    doc.addPage();
+    page++;
+    y = MARGIN;
+
+    doc.setFillColor(...NAVY);
+    doc.rect(ML, y, CW, 10, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(...WHITE);
+    doc.text('VALUATION SUMMARY', ML + 3, y + 7);
+    y += 12;
+
+    const vals = [
+      ['Low Value', document.getElementById('lowValue').textContent],
+      ['Median Value', document.getElementById('medianValue').textContent],
+      ['High Value', document.getElementById('highValue').textContent],
+      ['Mean / Average', document.getElementById('avgValue').textContent],
+      ['Recommended Value', document.getElementById('reconValue').textContent],
+      ['Market Value', document.getElementById('marketValue').textContent],
+    ];
+
+    vals.forEach((row, i) => {
+      if (i % 2 === 0) doc.setFillColor(...BG);
+      else doc.setFillColor(...WHITE);
+      doc.rect(ML, y, 100, 8, 'F');
+      doc.rect(ML + 100, y, CW - 100, 8, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(10);
+      doc.setTextColor(...NAVY);
+      doc.text(row[0], ML + 3, y + 6);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      if (i === vals.length - 1) doc.setTextColor(...GOLD);
+      doc.text(row[1], ML + 102, y + 6);
+      y += 8;
+    });
+
+    y += 8;
+    doc.setFontSize(9);
+    doc.setTextColor(...NAVY);
+    doc.text('Notes / Disclaimers:', ML, y);
+    y += 4;
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(document.getElementById('s_notes').value || 'N/A', ML, y, { maxWidth: CW, align: 'left' });
+
+    // Save
+    const filename = (document.getElementById('s_address').value || 'CMA-Report').replace(/[^\/\w-]/g, '_') + '.pdf';
+    doc.save(filename);
+  }
+
+  // Initial render
+  renderComps();
+  updateSummary();
+</script>
+
+</body>
+</html>
