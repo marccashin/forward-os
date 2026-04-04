@@ -942,10 +942,11 @@ function exportPDF() {
     doc.setFontSize(7.5);
     doc.setTextColor(...GRAY);
     doc.text(subtitle.toUpperCase(), ML, 66);
-    // Right: date
+    // Right: date + agent
     doc.setFontSize(8.5);
     doc.setTextColor(...GRAY);
     doc.text(dateStr, W - MR, 52, { align: 'right' });
+    if (agentName) { doc.setFontSize(7.5); doc.text('Agent: ' + agentName, W - MR, 63, { align: 'right' }); }
     // Gold rule
     doc.setDrawColor(...GOLD);
     doc.setLineWidth(0.8);
@@ -958,12 +959,14 @@ function exportPDF() {
   function pageFooter(left, right) {
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
-    doc.line(ML, 752, W - MR, 752);
+    doc.line(ML, 748, W - MR, 748);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(...GRAY);
-    doc.text(left, ML, 764);
-    if (right) doc.text(right, W - MR, 764, { align: 'right' });
+    doc.text(left, ML, 760);
+    if (right) doc.text(right, W - MR, 760, { align: 'right' });
+    doc.setFontSize(6);
+    doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, 772);
   }
 
   // ── Box helper ──
@@ -1002,6 +1005,7 @@ function exportPDF() {
   doc.text('COMPARATIVE MARKET ANALYSIS', ML, 78);
   doc.setFontSize(8.5);
   doc.text('Prepared: ' + dateStr, W - MR, 64, { align: 'right' });
+  if (agentName) { doc.setFontSize(7.5); doc.text('Agent: ' + agentName, W - MR, 75, { align: 'right' }); }
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.8);
   doc.line(ML, 87, W - MR, 87);
@@ -1034,14 +1038,14 @@ function exportPDF() {
     doc.setFontSize(8);
     doc.setTextColor(...GOLD);
     doc.text('RECOMMENDED LIST PRICE RANGE', W/2, cy, { align: 'center' });
-    cy += 18;
+    cy += 44;
 
     doc.setFont('times', 'bold');
     doc.setFontSize(36);
     doc.setTextColor(...GOLD);
     const rangeText = fmtDollar(rangeLow) + ' \u2013 ' + fmtDollar(rangeHigh);
     doc.text(rangeText, W/2, cy, { align: 'center' });
-    cy += 22;
+    cy += 48;
 
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
@@ -1059,11 +1063,11 @@ function exportPDF() {
   doc.text('FORWARD Real Estate | Corcoran McEnearney', ML, 742);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(...GRAY);
-  const disclaimer1 = 'This CMA is based on recently sold comparable properties and appraiser methodology. Market conditions may affect actual sale price.';
-  const disclaimer2 = 'Confidential \u2014 prepared for client use only.';
+  const disclaimer1 = 'This CMA is based on recently sold comparable properties and adjustment methodology. Market conditions may affect actual sale price. Confidential \u2014 prepared for client use only.';
   const d1Lines = doc.splitTextToSize(disclaimer1, CW - 160);
   doc.text(d1Lines, ML + 160, 742);
-  doc.text(disclaimer2, ML + 160, 742 + d1Lines.length * 8);
+  doc.setFontSize(6);
+  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, 756);
 
   // ════════════════════════════════════════
   // PAGE 2 — SUBJECT PROPERTY
@@ -1172,7 +1176,7 @@ function exportPDF() {
     y += 15;
   });
 
-  pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr);
+  pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr + (agentName ? '  |  Agent: ' + agentName : ''));
 
   // ════════════════════════════════════════
   // PAGE 3 — ADJUSTMENT GRID
@@ -1210,7 +1214,7 @@ function exportPDF() {
   doc.text('FEATURE', ML + 4, y + 11);
   doc.setFontSize(6.5);
   doc.text('SUBJECT', ML + 4, y + 22);
-  doc.text(fullAddr.toUpperCase().slice(0, 28), ML + 44, y + 22);
+  doc.text(subAddr.toUpperCase().slice(0, 20), ML + 44, y + 22);
 
   validComps.slice(0, 6).forEach((c, ci) => {
     const cx = ML + featW + ci * compColW;
@@ -1316,7 +1320,7 @@ function exportPDF() {
   const rateLines = doc.splitTextToSize(rates, CW - 120);
   doc.text(rateLines, ML + 124, y);
 
-  pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr);
+  pageFooter('Adjustment methodology per Fannie Mae UAD standards \u2014 Confidential \u2014 ' + dateStr, null);
 
   // ════════════════════════════════════════
   // PAGE 4 — PRICING ANALYSIS
@@ -1478,9 +1482,16 @@ function exportPDF() {
   }
 
   pageFooter(
-    'FORWARD Real Estate | Corcoran McEnearney |',
-    'This CMA is an estimate of value based on comparable data and is not an appraisal. Confidential \u2014 ' + dateStr + '.'
+    (agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.',
+    null
   );
+  // BRIGHT MLS full disclaimer
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(5.5);
+  doc.setTextColor(...GRAY);
+  const brightDisc = 'The data relating to real estate displayed here appears in part through the BRIGHT Internet Data Exchange program, a voluntary cooperative exchange of property listing data between licensed real estate brokerage firms in which FORWARD Real Estate | Corcoran McEnearney participates, and is provided by BRIGHT through a licensing agreement. The information provided is for the personal, non-commercial use of consumers and may not be used for any purpose other than to identify prospective properties consumers may be interested in purchasing. Some properties which appear for sale may no longer be available because they are under contract, have Closed or are no longer being offered for sale. This home sale information is not to be construed as an appraisal and may not be used as such for any purpose. BRIGHT MLS is the provider of this home sale information and has compiled content from various sources. Some properties represented may not have actually sold due to reporting errors. Data last updated: ' + dateStr;
+  const brightLines = doc.splitTextToSize(brightDisc, CW);
+  doc.text(brightLines, ML, 780);
 
   // ── Save ──
   const filename = 'FORWARD_CMA_' + (subAddr || 'Report').replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf';
