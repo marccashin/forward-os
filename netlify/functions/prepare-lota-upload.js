@@ -15,16 +15,16 @@
  * URLs — no additional auth required, full quality preserved, no size limit.
  *
  * Required Netlify env vars:
- *   GOOGLE_SA_EMAIL  — service account email
- *   GOOGLE_SA_KEY    — service account private key (PEM) or full JSON key file
+ *   GOOGLE_CLIENT_ID      — OAuth2 client ID
+ *   GOOGLE_CLIENT_SECRET  — OAuth2 client secret
+ *   GOOGLE_REFRESH_TOKEN  — long-lived refresh token for marc@marccashin.com
  *
  * One-time Drive setup:
- *   Share the LOTA parent folder (129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e)
- *   with the service account email, Editor access.
+ *   Ensure marc@marccashin.com has Editor access to the LOTA parent folder
+ *   (129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e).
  */
 
-const https  = require('https');
-const crypto = require('crypto');
+const https = require('https');
 
 const LOTA_FOLDER_ID = '129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e';
 
@@ -44,37 +44,21 @@ function httpsReq(options, body) {
   });
 }
 
-// ─── Service Account → Access Token ──────────────────────────────────────────
+// ─── OAuth2 Refresh Token → Access Token ─────────────────────────────────────
 async function getAccessToken() {
-  const email  = process.env.GOOGLE_SA_EMAIL;
-  const rawKey = process.env.GOOGLE_SA_KEY;
-  if (!email || !rawKey) throw new Error('GOOGLE_SA_EMAIL / GOOGLE_SA_KEY env vars not set');
+  const clientId     = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+  if (!clientId || !clientSecret || !refreshToken)
+    throw new Error('GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET / GOOGLE_REFRESH_TOKEN env vars not set');
 
-  // Accept either a raw PEM key or a full JSON key file string
-  let privateKey;
-  try {
-    const parsed = JSON.parse(rawKey);
-    privateKey   = parsed.private_key.replace(/\\n/g, '\n');
-  } catch {
-    privateKey = rawKey.replace(/\\n/g, '\n');
-  }
+  const body = [
+    'client_id='     + encodeURIComponent(clientId),
+    'client_secret=' + encodeURIComponent(clientSecret),
+    'refresh_token=' + encodeURIComponent(refreshToken),
+    'grant_type=refresh_token',
+  ].join('&');
 
-  const now       = Math.floor(Date.now() / 1000);
-  const headerB64 = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
-  const claimB64  = Buffer.from(JSON.stringify({
-    iss:   email,
-    scope: 'https://www.googleapis.com/auth/drive',
-    aud:   'https://oauth2.googleapis.com/token',
-    exp:   now + 3600,
-    iat:   now,
-  })).toString('base64url');
-
-  const signer = crypto.createSign('RSA-SHA256');
-  signer.update(`${headerB64}.${claimB64}`);
-  const sig = signer.sign(privateKey, 'base64url');
-  const jwt = `${headerB64}.${claimB64}.${sig}`;
-
-  const body = 'grant_type=' + encodeURIComponent('urn:ietf:params:oauth:grant-type:jwt-bearer') + '&assertion=' + jwt;
   const resp = await httpsReq(
     {
       hostname: 'oauth2.googleapis.com',
@@ -86,7 +70,7 @@ async function getAccessToken() {
   );
 
   const data = JSON.parse(resp.body);
-  if (!data.access_token) throw new Error('SA auth failed: ' + resp.body.substring(0, 300));
+  if (!data.access_token) throw new Error('OAuth2 refresh failed: ' + resp.body.substring(0, 300));
   return data.access_token;
 }
 
