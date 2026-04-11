@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Video Upload — FORWARD OS</title>
+  <style>
+    :root {
+      --navy:#1a2744; --navy-light:#243660; --gold:#c9a84c;
+      --accent:#2563eb; --green:#16a34a; --red:#dc2626;
+      --gray:#6b7280; --border:#e2e8f0;
+    }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; background:#f1f5f9; min-height:100vh; }
+
+    /* ── Header ── */
+    .header { background:linear-gradient(135deg,var(--navy),var(--navy-light)); color:#fff; padding:14px 24px; display:flex; align-items:center; gap:16px; }
+    .btn-back { background:none; border:none; color:rgba(255,255,255,.75); font-size:13px; font-weight:600; cursor:pointer; padding:0; flex-shrink:0; white-space:nowrap; }
+    .btn-back:hover { color:#fff; }
+    .logo { font-size:9px; font-weight:800; letter-spacing:3px; color:rgba(255,255,255,.4); }
+    .header-title { font-size:17px; font-weight:700; }
+    .header-sub { font-size:11px; color:rgba(255,255,255,.65); margin-top:2px; }
+
+    /* ── Layout ── */
+    .main { max-width:660px; margin:24px auto; padding:0 16px 56px; }
+
+    /* ── Month banner ── */
+    .month-banner {
+      background:linear-gradient(135deg,var(--navy),var(--navy-light));
+      color:#fff; border-radius:12px; padding:16px 20px; margin-bottom:18px;
+      display:flex; align-items:center; gap:14px;
+    }
+    .banner-icon { font-size:26px; flex-shrink:0; }
+    .banner-lbl { font-size:10px; color:rgba(255,255,255,.55); letter-spacing:.6px; text-transform:uppercase; }
+    .banner-val { font-size:15px; font-weight:700; }
+    .banner-path { font-size:11px; color:rgba(255,255,255,.65); margin-top:2px; }
+
+    /* ── Cards ── */
+    .card { background:#fff; border-radius:12px; border:1px solid var(--border); padding:22px; margin-bottom:14px; }
+    .card-title { font-size:15px; font-weight:700; color:var(--navy); margin-bottom:4px; }
+    .card-sub { font-size:12px; color:var(--gray); margin-bottom:16px; line-height:1.5; }
+
+    /* ── Form ── */
+    label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:#374151; margin-bottom:6px; }
+    input[type="text"], input[type="url"], textarea {
+      width:100%; padding:10px 13px; border:1.5px solid var(--border); border-radius:8px;
+      font-size:14px; font-family:inherit; outline:none; transition:border-color .15s; color:#111827;
+    }
+    input:focus, textarea:focus { border-color:var(--accent); }
+    textarea { resize:vertical; min-height:82px; }
+    .form-row { margin-bottom:15px; }
+    .hint { font-size:11px; color:var(--gray); margin-top:5px; }
+
+    /* ── File drop ── */
+    .file-drop {
+      border:2px dashed #cbd5e1; border-radius:10px; padding:26px 18px;
+      text-align:center; cursor:pointer; background:#fafbfc; transition:all .2s;
+    }
+    .file-drop:hover, .file-drop.drag-over { border-color:var(--accent); background:#eff6ff; }
+    .drop-icon { font-size:30px; margin-bottom:8px; }
+    .drop-lbl { font-size:14px; font-weight:600; color:var(--navy); }
+    .drop-sub { font-size:12px; color:var(--gray); margin-top:3px; }
+    input[type="file"] { display:none; }
+
+    /* ── File list ── */
+    .file-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+    .file-item { display:flex; align-items:center; gap:10px; background:#f8fafc; border-radius:8px; padding:10px 12px; }
+    .file-emoji { font-size:20px; flex-shrink:0; }
+    .file-meta { flex:1; min-width:0; }
+    .file-name { font-size:13px; font-weight:600; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .file-size { font-size:11px; color:var(--gray); }
+    .file-stat { font-size:11px; font-weight:600; margin-top:3px; display:none; }
+    .file-rm { background:none; border:none; color:#9ca3af; cursor:pointer; font-size:16px; padding:2px 5px; flex-shrink:0; }
+    .file-rm:hover { color:var(--red); }
+    .prog-wrap { height:4px; background:#e2e8f0; border-radius:2px; margin-top:6px; overflow:hidden; display:none; }
+    .prog-bar { height:100%; background:var(--accent); border-radius:2px; width:0%; transition:width .25s; }
+    .prog-bar.done { background:var(--green); width:100% !important; }
+
+    /* ── Status ── */
+    .status-msg { border-radius:8px; padding:12px 14px; margin-bottom:12px; font-size:13px; font-weight:600; display:none; }
+    .status-msg.info { background:#eff6ff; color:var(--accent); border:1.5px solid #bfdbfe; }
+    .status-msg.error { background:#fef2f2; color:var(--red); border:1.5px solid #fecaca; }
+
+    /* ── Upload button ── */
+    .btn-upload { background:var(--accent); color:#fff; border:none; border-radius:9px; padding:13px; font-size:15px; font-weight:700; cursor:pointer; width:100%; transition:background .15s; }
+    .btn-upload:hover:not(:disabled) { background:#1d4ed8; }
+    .btn-upload:disabled { opacity:.5; cursor:not-allowed; }
+    .upload-note { text-align:center; font-size:11px; color:var(--gray); margin-top:8px; }
+
+    /* ── Success ── */
+    .success-inner { text-align:center; padding:8px 0 10px; }
+    .success-big { font-size:52px; margin-bottom:10px; }
+    .success-title { font-size:19px; font-weight:800; color:var(--navy); margin-bottom:6px; }
+    .success-body { font-size:13px; color:var(--gray); margin-bottom:20px; line-height:1.5; }
+    .btn-drive { display:inline-flex; align-items:center; gap:7px; background:var(--green); color:#fff; border:none; border-radius:8px; padding:11px 22px; font-size:14px; font-weight:700; cursor:pointer; text-decoration:none; }
+    .btn-drive:hover { background:#15803d; }
+    .btn-again { width:100%; background:none; border:2px solid var(--border); border-radius:8px; padding:11px; font-size:14px; font-weight:600; color:var(--navy); cursor:pointer; margin-top:10px; }
+    .btn-again:hover { background:#f8fafc; }
+
+    /* ── Setup warning ── */
+    .setup-warn { background:#fffbeb; border:1.5px solid #fde68a; border-radius:10px; padding:15px; margin-bottom:14px; font-size:13px; color:#92400e; }
+    .setup-warn strong { display:block; font-size:14px; margin-bottom:5px; }
+
+    @media(max-width:600px) { .main { margin:14px auto; } .card { padding:18px; } }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <button class="btn-back" onclick="goBack()">‹ Back</button>
+  <div>
+    <div class="logo">FORWARD OS</div>
+    <div class="header-title">🎬 Video Upload</div>
+    <div class="header-sub">LOTA Visuals — Content Submission</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <div class="setup-warn" id="setupWarn" style="display:none;">
+    <strong>⚙️ Backend setup required</strong>
+    This tool needs a one-time configuration by your admin (Google service account + Netlify env vars). Contact Marc to complete setup.
+  </div>
+
+  <!-- Month banner — auto-detected, no login needed -->
+  <div class="month-banner">
+    <div class="banner-icon">📅</div>
+    <div>
+      <div class="banner-lbl">Uploading to</div>
+      <div class="banner-val" id="monthDisplay">…</div>
+      <div class="banner-path">→ Self-Shot → [your topic folder]</div>
+    </div>
+  </div>
+
+  <!-- Upload form -->
+  <div id="formSection">
+
+    <div class="card">
+      <div class="card-title">📹 Video Details</div>
+      <div class="card-sub">One submission per video topic. Repeat for each of your 10 monthly videos.</div>
+
+      <div class="form-row">
+        <label for="agentName">Your Name</label>
+        <input type="text" id="agentName" placeholder="e.g. Sarah Johnson" autocomplete="name"/>
+      </div>
+
+      <div class="form-row" style="margin-bottom:0;">
+        <label for="topicInput">Video Topic *</label>
+        <input type="text" id="topicInput" placeholder="e.g. how to price your home" autocomplete="off"/>
+        <div class="hint">Becomes the folder name — keep it short and clear.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎞️ Video Files *</div>
+      <div class="card-sub">Select all clips for this topic — talking head, b-roll, multiple takes, everything you shot.</div>
+
+      <div class="file-drop" id="fileDrop" onclick="document.getElementById('fileInput').click()">
+        <div class="drop-icon">📂</div>
+        <div class="drop-lbl">Tap or click to select files</div>
+        <div class="drop-sub">MP4, MOV, HEVC — 4K accepted · No compression · Multiple files OK</div>
+      </div>
+      <input type="file" id="fileInput" multiple accept="video/*,audio/*,.mp4,.mov,.m4v,.m4a,.hevc" onchange="onFilesSelected()"/>
+      <div class="file-list" id="fileList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎯 Edit Direction <span style="font-weight:400;color:#9ca3af;font-size:12px;">(optional but helpful)</span></div>
+      <div class="card-sub">Tell LOTA Visuals what you want the final edit to look like. One option is enough — voice of text notes work great.</div>
+
+      <div class="form-row">
+        <label for="editNotes">Edit Notes</label>
+        <textarea id="editNotes" placeholder="Describe the flow, vibe, tone, pacing. What should the beginning, middle, and end look like? Even a few sentences helps."></textarea>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <label for="refUrl">Reference Video URL</label>
+        <input type="url" id="refUrl" placeholder="Instagram, TikTok, or YouTube link with the style/vibe you want"/>
+      </div>
+    </div>
+
+    <div class="status-msg info" id="statusMsg"></div>
+
+    <button class="btn-upload" id="uploadBtn" onclick="startUpload()">⬆️ Upload to LOTA Visuals</button>
+    <div class="upload-note">Files go directly to Google Drive — no compression, full original quality.</div>
+
+  </div>
+
+  <!-- Success state -->
+  <div class="card" id="successCard" style="display:none;">
+    <div class="success-inner">
+      <div class="success-big">✅</div>
+      <div class="success-title">Videos Uploaded!</div>
+      <div class="success-body" id="successBody"></div>
+      <a id="driveLink" href="#" target="_blank" class="btn-drive">📂 View in Google Drive</a>
+      <button class="btn-again" onclick="resetForm()">Submit Another Topic</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+// Calls a Netlify Function that handles Google auth server-side.
+// No per-agent login required — works for any agent on any device.
+const UPLOAD_FN = '/.netlify/functions/prepare-lota-upload';
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let _files = [];
+let _busy  = false;
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('monthDisplay').textContent = getMonthFolder();
+
+  // Pre-fill agent name from FORWARD OS storage
+  const saved = localStorage.getItem('fos_agent') || localStorage.getItem('forward_agent_name') || '';
+  if (saved) document.getElementById('agentName').value = saved;
+
+  // Drag and drop
+  const drop = document.getElementById('fileDrop');
+  drop.addEventListener('dragover',  e => { e.preventDefault(); drop.classList.add('drag-over'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('drag-over'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault();
+    drop.classList.remove('drag-over');
+    addFiles([...e.dataTransfer.files]);
+  });
+
+  // Verify backend is reachable (optional — shows warning if function missing)
+  fetch(UPLOAD_FN, { method: 'OPTIONS' }).catch(() => {
+    document.getElementById('setupWarn').style.display = 'block';
+  });
+});
+
+// ─── MONTH ────────────────────────────────────────────────────────────────────
+function getMonthFolder() {
+  const now = new Date();
+  const MONTHS = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  return `${now.getFullYear()}-${mm} ${MONTHS[now.getMonth()]}`;
+}
+
+// ─── FILE HANDLING ────────────────────────────────────────────────────────────
+function onFilesSelected() { addFiles([...document.getElementById('fileInput').files]); }
+
+function addFiles(newFiles) {
+  newFiles.forEach(f => {
+    if (!_files.find(x => x.name === f.name && x.size === f.size)) _files.push(f);
+  });
+  renderFiles();
+}
+
+function removeFile(i) { _files.splice(i, 1); renderFiles(); }
+
+function renderFiles() {
+  const list = document.getElementById('fileList');
+  if (!_files.length) { list.innerHTML = ''; return; }
+  list.innerHTML = _files.map((f, i) => `
+    <div class="file-item" id="fi-${i}">
+      <span class="file-emoji">${fileIcon(f.name)}</span>
+      <div class="file-meta">
+        <div class="file-name">${escHtml(f.name)}</div>
+        <div class="file-size">${fmtBytes(f.size)}</div>
+        <div class="file-stat" id="fs-${i}"></div>
+        <div class="prog-wrap" id="pw-${i}"><div class="prog-bar" id="pb-${i}"></div></div>
+      </div>
+      <button class="file-rm" id="frm-${i}" onclick="removeFile(${i})" title="Remove">✕</button>
+    </div>
+  `).join('');
+}
+
+function fileIcon(name) {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  return ['mp4','mov','m4v','hevc','avi','mkv'].includes(ext) ? '🎬'
+       : ['m4a','aac','mp3','wav'].includes(ext) ? '🎙️' : '📄';
+}
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b/1048576).toFixed(1) + ' MB';
+  return (b/1073741824).toFixed(2) + ' GB';
+}
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── UPLOAD FLOW ──────────────────────────────────────────────────────────────
+async function startUpload() {
+  if (_busy) return;
+
+  const topic = document.getElementById('topicInput').value.trim();
+  const agent = document.getElementById('agentName').value.trim() || 'Agent';
+  if (!topic) { showStatus('Please enter a video topic name.', 'error'); return; }
+  if (!_files.length) { showStatus('Please select at least one video file.', 'error'); return; }
+
+  _busy = true;
+  document.getElementById('uploadBtn').disabled = true;
+  document.getElementById('uploadBtn').textContent = 'Preparing…';
+  localStorage.setItem('fos_agent', agent);
+
+  try {
+    // Step 1: Call Netlify Function — creates Drive folders + returns pre-auth'd upload URLs
+    showStatus('📂 Setting up folder structure in Google Drive…');
+
+    const editNotes = document.getElementById('editNotes').value.trim();
+    const refUrl    = document.getElementById('refUrl').value.trim();
+
+    const prepResp = await fetch(UPLOAD_FN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic,
+        agentName: agent,
+        editNotes,
+        refUrl,
+        files: _files.map(f => ({ name: f.name, type: f.type || 'video/mp4', size: f.size }))
+      })
+    });
+
+    if (!prepResp.ok) {
+      const err = await prepResp.json().catch(() => ({ error: 'HTTP ' + prepResp.status }));
+      throw new Error(err.error || 'Setup failed');
+    }
+
+    const prep = await prepResp.json();
+    // prep = { topicFolderId, folderUrl, monthFolder, uploads: ['uploadUrl1', 'uploadUrl2', ...] }
+
+    // Step 2: Upload each file directly to Google Drive using the pre-auth'd URLs
+    for (let i = 0; i < _files.length; i++) {
+      const file = _files[i];
+      showStatus(`⬆️ Uploading ${i + 1} of ${_files.length}: ${file.name}`);
+      document.getElementById('frm-'+i).style.display = 'none';
+      document.getElementById('pw-'+i).style.display  = 'block';
+      const stat = document.getElementById('fs-'+i);
+      stat.style.display = 'block';
+      stat.style.color   = 'var(--accent)';
+      stat.textContent   = 'Uploading…';
+
+      await xhrUpload(prep.uploads[i], file, i);
+
+      document.getElementById('pb-'+i).classList.add('done');
+      stat.style.color = 'var(--green)';
+      stat.textContent = '✅ Done';
+    }
+
+    showSuccess(topic, prep.monthFolder, _files.length, prep.folderUrl);
+
+  } catch (err) {
+    console.error('[video-upload] Error:', err);
+    showStatus('❌ ' + err.message, 'error');
+    document.getElementById('uploadBtn').disabled = false;
+    document.getElementById('uploadBtn').textContent = '⬆️ Upload to LOTA Visuals';
+    _busy = false;
+  }
+}
+
+// Upload a single file via XHR so we get progress events
+function xhrUpload(uploadUrl, file, idx) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', uploadUrl);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        document.getElementById('pb-'+idx).style.width = Math.round(e.loaded / e.total * 100) + '%';
+      }
+    };
+    xhr.onload  = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(file.name + ' upload failed (' + xhr.status + ')'));
+    xhr.onerror = () => reject(new Error('Network error uploading ' + file.name));
+    xhr.send(file);
+  });
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function showStatus(msg, type = 'info') {
+  const el = document.getElementById('statusMsg');
+  el.textContent  = msg;
+  el.style.display = 'block';
+  el.className = 'status-msg ' + type;
+}
+
+function showSuccess(topic, month, count, url) {
+  document.getElementById('formSection').style.display = 'none';
+  document.getElementById('statusMsg').style.display   = 'none';
+  document.getElementById('successCard').style.display = 'block';
+  document.getElementById('successBody').textContent =
+    count + ' file' + (count !== 1 ? 's' : '') + ' uploaded to ' + month + ' › Self-Shot › ' + topic;
+  document.getElementById('driveLink').href = url;
+}
+
+function resetForm() {
+  _files = [];
+  _busy  = false;
+  ['topicInput','editNotes','refUrl'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fileInput').value  = '';
+  document.getElementById('fileList').innerHTML = '';
+  document.getElementById('statusMsg').style.display   = 'none';
+  document.getElementById('uploadBtn').disabled        = false;
+  document.getElementById('uploadBtn').textContent     = '⬆️ Upload to LOTA Visuals';
+  document.getElementById('successCard').style.display = 'none';
+  document.getElementById('formSection').style.display = 'block';
+  document.getElementById('monthDisplay').textContent  = getMonthFolder();
+}
+
+function goBack() {
+  try { window.history.length > 1 ? window.history.back() : (window.location.href = '/'); }
+  catch(e) { window.location.href = '/'; }
+}
+</script>
+</body>
+</html>
