@@ -667,6 +667,8 @@
         <div class="nav-item" :class="{active:view==='meeting-prep'}" @click="go('meeting-prep')"><span>🧠</span> Meeting Prep</div>
         <div class="nav-item" :class="{active:view==='social-post'}" @click="go('social-post')"><span>📱</span> Social Post Generator</div>
         <div class="nav-item" :class="{active:view==='bio-writer'}" @click="go('bio-writer')"><span>👤</span> Agent Bio Writer</div>
+        <div class="nav-section">CONTENT</div>
+        <div class="nav-item" @click="go('video-upload')">🎬 Video Upload</div>
         <div class="nav-section">Account</div>
         <div class="nav-item" :class="{active:view==='prop-files'}" @click="go('prop-files')"><span>🏠</span> Client Files</div>
         <div class="nav-item" :class="{active:view==='library'}" @click="go('library')"><span>📁</span> Saved Library</div>
@@ -11709,6 +11711,7 @@ async function voiceCrmSubmit() {
         case 'cma':
           localStorage.removeItem('cma_voice_prefill');
           break;
+        case 'video-upload': window.location.href = '/video-upload.html'; break;
         case 'social-post':
           Object.assign(sp, { points:'', tone:'authoritative' }); spPosts.value = [];
           break;
