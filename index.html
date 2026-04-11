@@ -11543,6 +11543,8 @@ async function voiceCrmSubmit() {
       }
     }
     function go(v) {
+      // External page redirects
+      if (v === 'video-upload') { window.location.href = '/video-upload.html'; return; }
       // Redirect old Listing Package view to unified Listings tab
       if (v === 'just-listed') { v = 'listings'; }
       view.value=v; sidebarOpen.value=false; window.scrollTo(0,0);
@@ -11711,7 +11713,6 @@ async function voiceCrmSubmit() {
         case 'cma':
           localStorage.removeItem('cma_voice_prefill');
           break;
-        case 'video-upload': window.location.href = '/video-upload.html'; break;
         case 'social-post':
           Object.assign(sp, { points:'', tone:'authoritative' }); spPosts.value = [];
           break;
