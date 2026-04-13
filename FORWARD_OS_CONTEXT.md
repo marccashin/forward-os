@@ -170,7 +170,7 @@ RLS: enabled (allow_all_anon policy)
 ### Buyer Consultation Kit (bck)
 - bck._lastPDF — last generated PDF data URI
 - bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder (global)
-- bckSendToBuyer() — opens PDF for email/text attachment
+- bckSendToBuyer() — opens PDF for eiail/text attachment
 
 ---
 
