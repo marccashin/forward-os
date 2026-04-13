@@ -6090,6 +6090,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
       // Show complete modal if returning to a completed property
       lstShowCompleteModal.value = (prop.status === 'complete');
+      // Reset tool states so previous property data doesn't bleed through
+      Object.assign(mlsForm, { listPrice:'', beds:'', baths:'', sqft:'', yearBuilt:'', hoa:'', propType:'', parking:'', features:['','','','',''] });
+      ldOutput.value = ''; ldMessages.value = []; ldStarted.value = false;
+      jlOutput.value = null;
+      Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
     }
 
     async function lstSaveNote(subfolder) {
