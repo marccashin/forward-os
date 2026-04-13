@@ -6039,7 +6039,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         } catch (driveErr) { console.warn('Drive folder creation skipped:', driveErr.message); }
 
         // Auto-create a linked client file folder for this listing/seller
-        addPropFile(prop.address, { property_id: prop.id, fileType: 'listing' });
         refreshPropFiles();
 
         lstShowNewModal.value = false;
@@ -6657,7 +6656,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const all = [...bFiles,...pFiles].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
         propFiles.value = all.filter(f => f.agent_name === agentName.value);
         allAgentFiles.value = AGENTS.map(name=>({agent:name,files:all.filter(f=>f.agent_name===name)})).filter(g=>g.files.length>0||g.agent===ADMIN_AGENT);
-      } catch(e) { console.error('loadPropFiles:',e); propFiles.value=getPropFiles(); allAgentFiles.value=getAllAgentsPropFiles(); }
+      } catch(e) { console.error('loadPropFiles:',e); propFiles.value=[]; allAgentFiles.value=[]; }
     }
     async function refreshPropFiles() { await loadPropFiles(); }
     async function createPropFile() {
@@ -10391,7 +10390,6 @@ No markdown. Valid JSON only.`;
           }
         } catch(e) { console.warn('Drive folder creation failed:', e); }
         // Auto-create a linked client file folder for this buyer
-        addPropFile(buyer.buyer_name, { buyer_id: buyer.id, fileType: 'buyer' });
         refreshPropFiles();
         byrBuyers.value.unshift(buyer);
         byrShowNewModal.value = false;
@@ -11569,6 +11567,7 @@ async function voiceCrmSubmit() {
       view.value=v; sidebarOpen.value=false; window.scrollTo(0,0);
       if (v === 'listings') lstFetchProperties();
       if (v === 'buyer-package') byrFetchBuyers();
+      if (v === 'prop-files') loadPropFiles();
       // Auto-populate buyer tools from active buyer profile
       if (byrActiveBuyer.value) {
         const b = byrActiveBuyer.value;
