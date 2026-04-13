@@ -614,7 +614,13 @@ async function _supaDelete() {
 window.addEventListener('DOMContentLoaded', async () => {
   buildCompsTable();
   const row = await _supaLoad();
-  if (row && (row.draft_data || row.prefill_data)) {
+  // If a fresh prefill exists for a different property, don't resume old session
+  const _fpRaw = localStorage.getItem('cma_voice_prefill');
+  const _fp = _fpRaw ? JSON.parse(_fpRaw) : null;
+  const _fpAddr = _fp && _fp.address ? _fp.address.trim().toLowerCase() : null;
+  const _sessAddr = row && row.property_address ? row.property_address.trim().toLowerCase() : null;
+  const _mismatch = _fpAddr && _sessAddr && _fpAddr !== _sessAddr;
+  if (row && (row.draft_data || row.prefill_data) && !_mismatch) {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
     showToast('☁️ Resumed from cloud');
