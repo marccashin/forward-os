@@ -1,4 +1,4 @@
-# FORWARD OS â Session Context File
+# FORWARD OS — Session Context File
 > Upload this file at the start of any new FORWARD OS Cowork chat to restore full context.
 
 ---
@@ -32,16 +32,16 @@ Tokens stored in Marc's password manager.
 | Item | Value |
 |---|---|
 | GCP Project | `forward-os-490520` (under `marc@marccashin.com` / `marccashin.com` Workspace) |
-| OAuth App User Type | **Internal** â refresh tokens never expire |
+| OAuth App User Type | **Internal** — refresh tokens never expire |
 | OAuth Client Name | LOTA Drive Uploader |
 | Client ID | `1019354489966-j4fsg0elahtkillhv8734462cme9q7e1.apps.googleusercontent.com` |
 | Authorized Account | `marc@marccashin.com` |
-| Old GCP Project | `forward-marketing-os` (under Corcoran account â deprecated for auth, marc@marccashin.com added as Owner for safety) |
+| Old GCP Project | `forward-marketing-os` (under Corcoran account — deprecated for auth, marc@marccashin.com added as Owner for safety) |
 
 **Netlify env vars (forward-os project):**
-- `GOOGLE_CLIENT_ID` â Client ID above
-- `GOOGLE_CLIENT_SECRET` â Secret ending in `9YSu`
-- `GOOGLE_REFRESH_TOKEN` â Permanent token for `marc@marccashin.com`
+- `GOOGLE_CLIENT_ID` — Client ID above
+- `GOOGLE_CLIENT_SECRET` — Secret ending in `9YSu`
+- `GOOGLE_REFRESH_TOKEN` — Permanent token for `marc@marccashin.com`
 
 ---
 
@@ -53,8 +53,8 @@ Tokens stored in Marc's password manager.
   - Authenticates as `marc@marccashin.com` via OAuth2 refresh token (server-side only)
   - Creates folder hierarchy in LOTA Visuals Drive folder (`129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e`)
   - Returns pre-authenticated resumable upload URLs
-  - **No per-agent Google login required** â works for any agent on any device
-- **Flow:** Agent fills topic + name â Netlify fn creates Drive folders â browser uploads directly to Drive
+  - **No per-agent Google login required** — works for any agent on any device
+- **Flow:** Agent fills topic + name → Netlify fn creates Drive folders → browser uploads directly to Drive
 
 ---
 
@@ -64,8 +64,8 @@ Tokens stored in Marc's password manager.
 |---|---|
 | index.html | The entire FORWARD OS app (~1.24MB) |
 | video-upload.html | Standalone Video Upload page |
-| netlify/functions/prepare-lota-upload.js | Netlify Function â Drive OAuth + folder creation |
-| _redirects | Netlify proxy rules â CRITICAL |
+| netlify/functions/prepare-lota-upload.js | Netlify Function — Drive OAuth + folder creation |
+| _redirects | Netlify proxy rules — CRITICAL |
 | FORWARD_OS_CONTEXT.md | This file |
 | README.md | Repo description |
 
@@ -75,20 +75,20 @@ Tokens stored in Marc's password manager.
 /* /index.html 200
 ```
 Line 1: Proxies FUB API calls through Netlify. fubFetch() calls /fub-api/... which forwards to FUB.
-Line 2: SPA fallback â direct URL loads go to index.html so Vue routing works.
+Line 2: SPA fallback — direct URL loads go to index.html so Vue routing works.
 Without this file: FUB features return 404, direct URL navigation breaks.
 
 ---
 
 ## Standard Deploy Workflow (GitHub-first)
-Push to GitHub â Netlify auto-deploys. One step = live update + backup.
+Push to GitHub → Netlify auto-deploys. One step = live update + backup.
 
-### Step 1 â Fetch live file (in forward-os.netlify.app Chrome tab):
+### Step 1 — Fetch live file (in forward-os.netlify.app Chrome tab):
 ```javascript
 fetch('/index.html', {cache:'no-store'}).then(r=>r.text()).then(t=>{window._html=t; console.log('loaded:', t.length)});
 ```
 
-### Step 2 â Apply string-replace changes:
+### Step 2 — Apply string-replace changes:
 ```javascript
 const old = `EXACT_OLD_STRING`;
 const neu = `NEW_STRING`;
@@ -96,7 +96,7 @@ if (!window._html.includes(old)) console.error('NOT FOUND');
 else { window._html = window._html.split(old).join(neu); console.log('replaced:', window._html.length); }
 ```
 
-### Step 3 â Get current SHA:
+### Step 3 — Get current SHA:
 ```javascript
 window._ghToken = 'PASTE_GH_TOKEN_HERE';
 fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
@@ -104,7 +104,7 @@ fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', 
 }).then(r=>r.json()).then(d=>{ window._currentSha = d.sha; console.log('SHA:', d.sha.slice(0,8)); });
 ```
 
-### Step 4 â Push to GitHub:
+### Step 4 — Push to GitHub:
 ```javascript
 const bytes = new TextEncoder().encode(window._html);
 let binary = '';
@@ -131,7 +131,7 @@ Same pattern as above but target /contents/FORWARD_OS_CONTEXT.md instead of /con
 
 ### buyers
 Fields: id, agent_name, buyer_name, first_name, market_area, budget_min, budget_max, down_payment, pre_approved, pre_approval_lender, pre_approval_amount, target_neighborhoods, areas_note, home_type, home_type_note, bedrooms_min, bedrooms_note, bathrooms, parking, parking_note, outdoor_space, outdoor_note, move_in_target, urgency, urgency_note, current_status, current_note, school_district, hoa_acceptable, must_haves, deal_breakers, agent_notes, drive_folder_id, subfolder_drive_ids, created_at
-RLS: enabled (allow_all_anon policy â all operations for anon + authenticated)
+RLS: enabled (allow_all_anon policy — all operations for anon + authenticated)
 
 ### properties
 Fields: id, agent_name, address, drive_folder_id, subfolder_drive_ids, created_at (+ listing fields)
@@ -152,31 +152,26 @@ RLS: enabled (allow_all_anon policy)
 - supaProperties / lstActiveProp / lstCreateProperty()
 - lstCreateProperty() auto-creates: Supabase record + Drive folder + client file folder entry
 
-### Client Files (prop-files view) â PENDING MIGRATION
-- Current state: display/browse reads from localStorage (device-local, NOT global)
-- Saving PDFs to folders: global via Google Drive (fixed in Chat 5)
-- PENDING GOAL: Migrate the CLIENT FILES VIEW to read from Supabase/Drive so all agents see all folders on all devices
-- addPropFile(address, opts) â opts: { buyer_id, property_id, fileType } â localStorage write
-- getPropFiles() / savePropFiles() â localStorage helpers (to be replaced with Supabase reads)
-- findActiveClientFile() â returns client file linked to active buyer/listing
-- openSaveToPropModal(type, label, data, pdfData, toolName) â smart save, auto-routes to active client file
-- openClientFilePicker(label, pdfDataURI, onSave) â global Supabase-backed picker (already global)
-- saveToClientFileDrive(record, recordType) â uploads to Drive via Railway (already global)
+### Client Files (prop-files view)
+- Fully migrated to Supabase in Chat 7 — all agents on all devices see all folders
+- createPropFile() writes to Supabase; deletePropFile() deletes from Supabase
+- openClientFilePicker(label, pdfDataURI, onSave) — global Supabase-backed picker
+- saveToClientFileDrive(record, recordType) — uploads to Drive via Railway
 
 ### FUB Integration
-- fubFetch(path, method, body) â routes through /fub-api Netlify proxy to followupboss.com/v1
-- fubAddNote(personId, noteText) â adds note to FUB contact
+- fubFetch(path, method, body) — routes through /fub-api Netlify proxy to followupboss.com/v1
+- fubAddNote(personId, noteText) — adds note to FUB contact
 
 ### Buyer Consultation Kit (bck)
-- bck._lastPDF â last generated PDF data URI
-- bckSaveToClientFolder() â saves to Google Drive buyer_kit subfolder (global)
-- bckSendToBuyer() â opens PDF for eiail/text attachment
+- bck._lastPDF — last generated PDF data URI
+- bckSaveToClientFolder() — saves to Google Drive buyer_kit subfolder (global)
+- bckSendToBuyer() — apens PDF for email/text attachment
 
 ---
 
 ## Agents
 Marc Cashin, Ashling McGowan, Niki Lang, Cesar Rivera, Charlotte Lee, Shannon Casey
-Access code: forward2026 â Admin: Marc Cashin
+Access code: forward2026 — Admin: Marc Cashin
 
 ---
 
@@ -184,17 +179,17 @@ Access code: forward2026 â Admin: Marc Cashin
 
 | Chat | Key Work |
 |---|---|
-| 1â3 | Initial OS build â all tools, Supabase, Railway backend |
-| 4 | Crashed â context overflow from base64 chunk injection (never do this) |
+| 1–3 | Initial OS build — all tools, Supabase, Railway backend |
+| 4 | Crashed — context overflow from base64 chunk injection (never do this) |
 | 5 | Auto-create client folders on buyer/listing creation; global Save-to-Folder + Send to Buyer on Buyer Consultation Kit; GitHub repo created + connected to Netlify; _redirects added (fixed FUB 404); Supabase RLS enabled on all tables |
-| 6 | Video Upload feature built (video-upload.html + prepare-lota-upload Netlify fn); blank screen routing bug fixed; OAuth2 auth set up under marc@marccashin.com (GCP project forward-os-490520, Internal app = permanent tokens); marc@marccashin.com added as Owner on old forward-marketing-os project; Client Files VIEW migration (localStorage â Supabase) still pending |
+| 6 | Video Upload feature built (video-upload.html + prepare-lota-upload Netlify fn); blank screen routing bug fixed; OAuth2 auth set up under marc@marccashin.com (GCP project forward-os-490520, Internal app = permanent tokens); marc@marccashin.com added as Owner on old forward-marketing-os project; Client Files VIEW migration (localStorage → Supabase) still pending |
+| 7 | Client Files VIEW fully migrated to Supabase (propFiles filtered by agent, createPropFile writes to Supabase, deletePropFile wired to Supabase, supaRest.delete added); CMA Builder cross-property auto-populate bug fixed (cloud resume skipped when prefill address differs from saved session); GitHub PAT regenerated |
+| 8 | CRM data bleed bug fixed — lstOpenProperty now resets mlsForm (listPrice/beds/baths/sqft/yearBuilt/hoa/propType/parking/features), ldOutput/ldMessages/ldStarted (Listing Description Writer), and jl (Just Listed generator) when switching properties so previous listing data never bleeds into a new one |
 
 ---
 
-| 7 | Client Files VIEW fully migrated to Supabase: propFiles filtered by agent, adminGetAgentFiles uses allAgentFiles (Supabase) not localStorage, createPropFile writes to Supabase, supaRest.delete added, deletePropFile/removePropFile wired to Supabase. CMA Builder cross-property auto-populate bug fixed: cloud resume skipped when prefill address differs from saved session. GitHub PAT regenerated (no expiry, repo scope). |
-
 ## Pending
-- *(nothing pending — all items complete as of Chat 7)*
+- *(nothing pending — all items complete as of Chat 8)*
 
 ---
 
@@ -208,9 +203,9 @@ At the end of every completed task, ask Marc:
 ---
 
 ## Critical Rules
-1. NEVER inject base64 file chunks through the chat window â killed Chat 4
+1. NEVER inject base64 file chunks through the chat window — killed Chat 4
 2. Always fetch index.html from the live Chrome tab (same-origin, no CORS)
-3. index.html is the ENTIRE app â one file, no build process
+3. index.html is the ENTIRE app — one file, no build process
 4. Netlify publish directory = blank (serves from repo root)
 5. NEVER delete or modify _redirects without preserving both proxy rules
-6. Supabase RLS is enabled â do not disable it
+6. Supabase RLS is enabled — do not disable it
