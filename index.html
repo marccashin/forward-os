@@ -4740,6 +4740,13 @@ const supaRest = {
     if (!res.ok) throw new Error(`Supabase update error: ${res.status}`);
     return res.json();
   },
+  async delete(table, matchCol, matchVal) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${matchCol}=eq.${matchVal}`, {
+      method: 'DELETE', headers: this.headers()
+    });
+    if (!res.ok) throw new Error(`Supabase delete error: ${res.status}`);
+    return res.ok;
+  },
   async upsert(table, data, onConflict) {
     const h = { ...this.headers(), 'Prefer': `resolution=merge-duplicates,return=representation` };
     const url = onConflict ? `${SUPABASE_URL}/rest/v1/${table}?on_conflict=${onConflict}` : `${SUPABASE_URL}/rest/v1/${table}`;
@@ -5340,8 +5347,12 @@ function addResourceToProp(propId, resource) {
   f.resources.unshift({ id: Date.now(), ...resource, savedAt: new Date().toISOString() });
   savePropFiles(files);
 }
-function deletePropFile(propId) {
-  savePropFiles(getPropFiles().filter(p => p.id !== propId));
+async function deletePropFile(propId) {
+  // Find the record to determine which table to delete from
+  const allFiles = [...propFiles.value, ...(allAgentFiles.value.flatMap(g => g.files))];
+  const pf = allFiles.find(f => f.id === propId);
+  const table = pf && pf.recordType === 'buyer' ? 'buyers' : 'properties';
+  await supaRest.delete(table, 'id', propId);
 }
 function deleteResourceFromProp(propId, resId) {
   const files = getPropFiles();
@@ -6639,25 +6650,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const bFiles = (buyers||[]).map(b=>({id:b.id,address:b.buyer_name,createdAt:b.created_at,resources:[],agent_name:b.agent_name,drive_folder_id:b.drive_folder_id,subfolder_drive_ids:b.subfolder_drive_ids,buyer_id:b.id,recordType:'buyer'}));
         const pFiles = (props||[]).map(p=>({id:p.id,address:p.address,createdAt:p.created_at,resources:[],agent_name:p.agent_name,drive_folder_id:p.drive_folder_id,subfolder_drive_ids:p.subfolder_drive_ids,property_id:p.id,recordType:'property'}));
         const all = [...bFiles,...pFiles].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-        propFiles.value = all;
+        propFiles.value = all.filter(f => f.agent_name === agentName.value);
         allAgentFiles.value = AGENTS.map(name=>({agent:name,files:all.filter(f=>f.agent_name===name)})).filter(g=>g.files.length>0||g.agent===ADMIN_AGENT);
       } catch(e) { console.error('loadPropFiles:',e); propFiles.value=getPropFiles(); allAgentFiles.value=getAllAgentsPropFiles(); }
     }
     async function refreshPropFiles() { await loadPropFiles(); }
-    function createPropFile() {
+    async function createPropFile() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
-      addPropFile(addr);
-      newPropAddress.value = '';
-      refreshPropFiles();
-      showToast('✅ Property file created!');
+      try {
+        await supaRest.insert('properties', { agent_name: agentName.value, address: addr });
+        newPropAddress.value = '';
+        await refreshPropFiles();
+        showToast('✅ Property file created!');
+      } catch(e) { showToast('Error creating file: ' + e.message, 3000); }
     }
-    function removePropFile(id) {
-      if (!confirm('Delete this property file and all its saved resources?')) return;
-      deletePropFile(id);
+    async function removePropFile(id) {
+      if (!window.confirm('Delete this client file? This will permanently remove it.')) return;
+      await deletePropFile(id);
       if (activePropFile.value && activePropFile.value.id === id) activePropFile.value = null;
-      refreshPropFiles();
-      showToast('Property file deleted.');
+      await refreshPropFiles();
+      showToast('Client file deleted.');
     }
     function openPropFile(pf) {
       activePropFile.value = pf;
@@ -6803,7 +6816,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       else { adminViewAgent.value = null; }
     }
     function adminGetAgentFiles(name) {
-      return getPropFilesFor(name);
+      const group = allAgentFiles.value.find(g => g.agent === name);
+      return group ? group.files : [];
     }
     // Admin: open a property file from another agent's namespace
     function adminOpenPropFile(agentNameStr, pf) {
