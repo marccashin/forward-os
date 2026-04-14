@@ -6647,12 +6647,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     async function loadPropFiles() {
       try {
-        const [buyers, props] = await Promise.all([
+        const [buyers, props, propAssets, buyerAssets] = await Promise.all([
           supaRest.select('buyers', 'select=id,buyer_name,agent_name,drive_folder_id,subfolder_drive_ids,created_at&order=created_at.desc'),
-          supaRest.select('properties', 'select=id,address,agent_name,drive_folder_id,subfolder_drive_ids,created_at&order=created_at.desc')
+          supaRest.select('properties', 'select=id,address,agent_name,drive_folder_id,subfolder_drive_ids,created_at&order=created_at.desc'),
+          supaRest.select('property_assets', 'select=id,property_id,subfolder,file_name,drive_link,created_at&order=created_at.desc').catch(()=>[]),
+          supaRest.select('buyer_assets', 'select=id,buyer_id,subfolder,file_name,drive_link,created_at&order=created_at.desc').catch(()=>[])
         ]);
-        const bFiles = (buyers||[]).map(b=>({id:b.id,address:b.buyer_name,createdAt:b.created_at,resources:[],agent_name:b.agent_name,drive_folder_id:b.drive_folder_id,subfolder_drive_ids:b.subfolder_drive_ids,buyer_id:b.id,recordType:'buyer'}));
-        const pFiles = (props||[]).map(p=>({id:p.id,address:p.address,createdAt:p.created_at,resources:[],agent_name:p.agent_name,drive_folder_id:p.drive_folder_id,subfolder_drive_ids:p.subfolder_drive_ids,property_id:p.id,recordType:'property'}));
+        const toRes = a => ({ id: a.id, label: (a.file_name||a.subfolder||'').replace(/-\d{4}-\d{2}-\d{2}\.pdf$/,'').replace(/-/g,' '), type: a.subfolder, driveLink: a.drive_link, savedAt: a.created_at });
+        const propAssetMap = {}; (propAssets||[]).forEach(a => { if (!propAssetMap[a.property_id]) propAssetMap[a.property_id]=[]; propAssetMap[a.property_id].push(toRes(a)); });
+        const buyerAssetMap = {}; (buyerAssets||[]).forEach(a => { if (!buyerAssetMap[a.buyer_id]) buyerAssetMap[a.buyer_id]=[]; buyerAssetMap[a.buyer_id].push(toRes(a)); });
+        const bFiles = (buyers||[]).map(b=>({id:b.id,address:b.buyer_name,createdAt:b.created_at,resources:buyerAssetMap[b.id]||[],agent_name:b.agent_name,drive_folder_id:b.drive_folder_id,subfolder_drive_ids:b.subfolder_drive_ids,buyer_id:b.id,recordType:'buyer'}));
+        const pFiles = (props||[]).map(p=>({id:p.id,address:p.address,createdAt:p.created_at,resources:propAssetMap[p.id]||[],agent_name:p.agent_name,drive_folder_id:p.drive_folder_id,subfolder_drive_ids:p.subfolder_drive_ids,property_id:p.id,recordType:'property'}));
         const all = [...bFiles,...pFiles].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
         propFiles.value = all.filter(f => f.agent_name === agentName.value);
         allAgentFiles.value = AGENTS.map(name=>({agent:name,files:all.filter(f=>f.agent_name===name)})).filter(g=>g.files.length>0||g.agent===ADMIN_AGENT);
