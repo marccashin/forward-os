@@ -6811,19 +6811,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (buyer && buyer.email) toEmail = buyer.email;
       }
       const subject = encodeURIComponent((r.label || 'Document') + ' — ' + (pf.address || ''));
-      const body = encodeURIComponent(
-        'Hi,
-
-Please find your document below:
-
-' +
-        (r.label || 'Document') + '
-' + r.driveLink + '
-
-' +
-        'Best,
-' + agentName.value
-      );
+      const body = encodeURIComponent('Hi,\n\nPlease find your document below:\n\n' + (r.label || 'Document') + '\n' + r.driveLink + '\n\nBest,\n' + agentName.value);
       window.open('mailto:' + toEmail + '?subject=' + subject + '&body=' + body);
     }
     function downloadResourcePDF(r) {
