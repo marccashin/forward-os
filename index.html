@@ -3839,7 +3839,9 @@
                       <div style="display:flex;gap:6px;flex-shrink:0;">
                         <button v-if="r.pdfData" class="btn-sm" style="background:var(--gold);color:var(--navy);font-weight:700;" @click="viewResourcePDF(r)">View PDF</button>
                         <button v-if="r.pdfData" class="btn-sm btn-navy" style="font-size:11px;" @click="downloadResourcePDF(r)">Download</button>
-                        <button v-if="!r.pdfData" class="btn-sm btn-copy" @click="copy(typeof r.data === 'string' ? r.data : JSON.stringify(r.data))">Copy</button>
+                        <button v-if="r.driveLink" class="btn-sm" style="background:var(--gold);color:var(--navy);font-weight:700;" @click="viewResourceLink(r)">View</button>
+                        <button v-if="r.driveLink" class="btn-sm btn-navy" style="font-size:11px;" @click="sendResourceToClient(r, activePropFile)">Send to Client</button>
+                        <button v-if="!r.pdfData && !r.driveLink" class="btn-sm btn-copy" @click="copy(typeof r.data === 'string' ? r.data : JSON.stringify(r.data))">Copy</button>
                         <button v-if="!activePropFile._viewingAgent || activePropFile._viewingAgent === agentName" class="btn-sm btn-del" @click="removeResource(activePropFile.id, r.id)">✕</button>
                       </div>
                     </div>
@@ -6798,6 +6800,31 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
       const blob = new Blob([ab], { type: 'application/pdf' });
       openPDFBlob(blob, (r.label || 'document') + '.pdf');
+    }
+    function viewResourceLink(r) {
+      if (r.driveLink) window.open(r.driveLink, '_blank');
+    }
+    function sendResourceToClient(r, pf) {
+      let toEmail = '';
+      if (pf.recordType === 'buyer') {
+        const buyer = (byrBuyers.value || []).find(b => b.id === pf.buyer_id);
+        if (buyer && buyer.email) toEmail = buyer.email;
+      }
+      const subject = encodeURIComponent((r.label || 'Document') + ' — ' + (pf.address || ''));
+      const body = encodeURIComponent(
+        'Hi,
+
+Please find your document below:
+
+' +
+        (r.label || 'Document') + '
+' + r.driveLink + '
+
+' +
+        'Best,
+' + agentName.value
+      );
+      window.open('mailto:' + toEmail + '?subject=' + subject + '&body=' + body);
     }
     function downloadResourcePDF(r) {
       if (!r.pdfData) return;
