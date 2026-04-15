@@ -4698,7 +4698,7 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
 let _fosApiKey = '';
 
 // ── Constants ──────────────────────────────────────────────
-const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey'];
+const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations'];
 const LISTING_PRESENTATIONS = {
   'Marc Cashin':    'https://www.canva.com/design/DAHECgtXhJc/edit',
   'Ashling McGowan':'https://www.canva.com/design/DAHEC0x1ja8/edit',
@@ -5322,7 +5322,8 @@ function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify
 
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
-const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner — can see all agents' files
+const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
+        const ADMIN_AGENTS = ['Marc Cashin', 'Operations']; — can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
@@ -5615,7 +5616,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     ];
 
     // Client Files
-    const isAdmin = computed(() => agentName.value === ADMIN_AGENT);
+    const isAdmin = computed(() => ADMIN_AGENTS.includes(agentName.value));
 
     // Group listings by agent_name for Marc's admin view
     const lstGroupedByAgent = computed(() => {
