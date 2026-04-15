@@ -12418,7 +12418,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       }
       function downloadAllPhotos(files) {
         files.forEach(function(f, i) {
-          var fid = f.drive_file_id || ((f.drive_link||'').match(//d/([a-zA-Z0-9_-]+)/)||[])[1] || ((f.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1];
+          var fid = f.drive_file_id || ((f.drive_link||'').match(/[/]d[/]([a-zA-Z0-9_-]+)/)||[])[1] || ((f.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1];
           if (!fid) return;
           setTimeout(function() { var a=document.createElement('a'); a.href='https://drive.google.com/uc?export=download&id='+fid; a.download=f.file_name||'photo'; a.target='_blank'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }, i*800);
         });
