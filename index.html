@@ -2123,6 +2123,29 @@
               </div>
             </div>
           </div>
+          <!-- Buyer File Storage -->
+          <div class="card" style="margin-bottom:16px;">
+            <div style="font-weight:700;font-size:15px;color:var(--navy);margin-bottom:12px;">📁 Client Files</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <div v-for="sf in [{key:'pre_approval',label:'Pre-Approval',icon:'📄'},{key:'buyer_documents',label:'Client Docs',icon:'📂'},{key:'inspection',label:'Inspections',icon:'🔍'},{key:'closing',label:'Closing',icon:'📋'}]" :key="sf.key" style="background:#f8f9fa;border-radius:10px;padding:12px;border:1px solid #e5e7eb;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                  <div style="font-weight:600;font-size:13px;color:var(--navy);">{{ sf.icon }} {{ sf.label }}</div>
+                  <span v-if="byrSubfolderFiles(sf.key).length>0" style="background:var(--navy);color:#fff;border-radius:10px;padding:2px 7px;font-size:11px;">{{ byrSubfolderFiles(sf.key).length }}</span>
+                </div>
+                <div v-if="byrUploading[sf.key]" style="font-size:12px;color:#666;margin-bottom:6px;">Uploading...</div>
+                <label v-else style="display:inline-block;margin-bottom:6px;cursor:pointer;">
+                  <input type="file" style="display:none;" @change="e=>{byrUploadFile(e.target.files[0],sf.key);e.target.value=''}">
+                  <span style="display:inline-block;background:var(--navy);color:#fff;border-radius:6px;padding:3px 12px;font-size:12px;cursor:pointer;">+ Upload</span>
+                </label>
+                <div v-if="byrSubfolderFiles(sf.key).length===0" style="color:#bbb;font-size:11px;font-style:italic;">No files yet</div>
+                <div v-for="f in byrSubfolderFiles(sf.key)" :key="f.id" style="display:flex;align-items:center;gap:4px;padding:3px 0;border-top:1px solid #eee;margin-top:2px;">
+                  <span style="flex:1;font-size:11px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="f.file_name">{{ f.file_name }}</span>
+                  <a v-if="f.drive_link" :href="f.drive_link" target="_blank" style="color:var(--navy);font-size:11px;text-decoration:none;" title="Download">⬇</a>
+                  <button @click="byrDeleteFile(f)" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:11px;padding:0 2px;" title="Delete">✕</button>
+                </div>
+              </div>
+            </div>
+          </div>
         </template>
 
         <template v-else-if="view==='buyer-consult'">
@@ -10351,6 +10374,8 @@ No markdown. Valid JSON only.`;
     const byrNewEmail = ref('');
     const byrNewPhone = ref('');
     const byrDeleteTarget = ref(null);
+    const byrActiveFiles = ref([]);
+    const byrUploading = ref({});
 
     async function byrFetchBuyers() {
       if (!SUPABASE_URL) return;
@@ -10404,6 +10429,7 @@ No markdown. Valid JSON only.`;
 
     function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
+      loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
     }
@@ -11510,6 +11536,57 @@ async function voiceCrmSubmit() {
 }
 // ── End Voice Assistant System ───────────────────────────────────────────
 
+    function byrSubfolderFiles(key) {
+      return byrActiveFiles.value.filter(f => f.subfolder === key);
+    }
+    async function loadByrFiles(buyer) {
+      if (!buyer) { byrActiveFiles.value = []; return; }
+      try {
+        const qp = [
+          'select=id,buyer_id,subfolder,file_name,drive_link,created_at',
+          'buyer_id=eq.' + buyer.id,
+          'order=created_at.desc'
+        ].join(String.fromCharCode(38));
+        const files = await supaRest.select('buyer_assets', qp).catch(()=>[]);
+        const allowed = ['pre_approval','buyer_documents','inspection','closing'];
+        byrActiveFiles.value = (files||[]).filter(f=>allowed.includes(f.subfolder)).map(a=>{
+          const dl = a.drive_link||'';
+          const mm = dl.match(/[/]d[/]([a-zA-Z0-9_-]+)/) || dl.match(/[?]id=([a-zA-Z0-9_-]+)/);
+          return { id:a.id, buyer_id:a.buyer_id, subfolder:a.subfolder, file_name:a.file_name, drive_link:a.drive_link, drive_file_id:mm?mm[1]:null };
+        });
+      } catch(e) { byrActiveFiles.value=[]; }
+    }
+    async function byrUploadFile(file, subfolder) {
+      if (!byrActiveBuyer.value||!file) return;
+      byrUploading.value = Object.assign({},byrUploading.value,{[subfolder]:true});
+      try {
+        const buyer = byrActiveBuyer.value;
+        const sdi = buyer.subfolder_drive_ids||{};
+        const folderId = sdi[subfolder]||buyer.drive_folder_id||'';
+        const fd = new FormData();
+        fd.append('file', file); fd.append('folder_id', folderId);
+        fd.append('subfolder', subfolder); fd.append('uploaded_by', agentName.value);
+        fd.append('buyer_id', buyer.id);
+        const res = await fetch(RAILWAY_URL+'/upload-buyer-file',{method:'POST',body:fd});
+        if (!res.ok) throw new Error(await res.text()||'Upload failed');
+        const data = await res.json();
+        const dl2 = data.drive_link||'';
+        const mm2 = dl2.match(/[/]d[/]([a-zA-Z0-9_-]+)/) || dl2.match(/[?]id=([a-zA-Z0-9_-]+)/);
+        const fid = data.file_id || (mm2?mm2[1]:null);
+        byrActiveFiles.value=[...byrActiveFiles.value,{id:data.asset_id||String(Date.now()),buyer_id:buyer.id,subfolder,file_name:file.name,drive_file_id:fid,drive_link:data.drive_link}];
+        showGoldToast('File uploaded!');
+      } catch(e) { showToast('Upload failed: '+e.message); }
+      finally { byrUploading.value=Object.assign({},byrUploading.value,{[subfolder]:false}); }
+    }
+    async function byrDeleteFile(file) {
+      if (!confirm('Delete '+file.file_name+'?')) return;
+      try {
+        const body = JSON.stringify({file_id:file.drive_file_id,asset_id:file.id,asset_type:'buyer'});
+        const res = await fetch(RAILWAY_URL+'/delete-file',{method:'DELETE',headers:{'Content-Type':'application/json'},body});
+        if (!res.ok) throw new Error(await res.text());
+        byrActiveFiles.value=byrActiveFiles.value.filter(f=>f.id!==file.id);
+      } catch(e) { showToast('Delete failed: '+e.message); }
+    }
     function showToast(msg, ms=2600) { toast.msg=msg; toast.show=true; setTimeout(()=>{toast.show=false;},ms); }
 
     // Universal PDF opener that works on mobile (avoids popup blockers)
@@ -12477,7 +12554,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Buyer Needs Analysis
       bnaMode, bnaView, bnaTranscript, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
       // Buyer System
-      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget,
+      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrUpdateProfile,
       byrPackageLoading, byrPackageError, byrGeneratePackage,
       byrCreating,
