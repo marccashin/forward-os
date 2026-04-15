@@ -3246,67 +3246,48 @@
               <!-- Tool: Listing Photos (first tool) -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='photos' ? null : 'photos'">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:18px;">📸</span>
-                    <span style="font-size:14px;font-weight:700;color:var(--navy);">Listing Photos</span>
-                    <span v-if="lstSubfolderFiles('listing_photos').length>0" style="font-size:11px;color:var(--gold);font-weight:600;">{{ lstSubfolderFiles('listing_photos').length }} file{{ lstSubfolderFiles('listing_photos').length===1?'':'s' }}</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='photos' ? '▼' : '▶' }}</span>
+                  <span style="display:flex;align-items:center;gap:8px;">
+                    <span>📸</span>
+                    <strong>Listing Photos</strong>
+                    <span v-if="lstSubfolderFiles('listing_photos').length" style="color:#b8860b;font-weight:600;font-size:13px;">{{ lstSubfolderFiles('listing_photos').length }} file{{ lstSubfolderFiles('listing_photos').length===1?'':'s' }}</span>
+                  </span>
+                  <span style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+                    <button v-if="lstSubfolderFiles('listing_photos').length" @click.stop="downloadAllPhotos(lstSubfolderFiles('listing_photos'))" style="background:#1e3a5f;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;">⬇ Save All</button>
+                    <span :style="{transform:lstToolOpen==='photos'?'rotate(180deg)':'',transition:'transform 0.2s',display:'inline-block'}">▼</span>
+                  </span>
                 </div>
-                <div v-if="lstToolOpen==='photos'" class="subfolder-body">
-                  <!-- Thumbnail grid -->
-                  <div v-if="lstSubfolderFiles('listing_photos').length>0" style="margin-bottom:14px;">
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
-                      <div v-for="file in lstSubfolderFiles('listing_photos')" :key="file.id" style="position:relative;border-radius:8px;overflow:hidden;width:80px;height:80px;background:#e5e7eb;flex-shrink:0;box-shadow:0 1px 4px rgba(0,0,0,.1);">
-                        <!-- Thumbnail: always show something — Drive thumb if available, placeholder if not -->
-                        <img v-if="file.drive_file_id || file.drive_link"
-                             :src="'https://drive.google.com/thumbnail?id='+(file.drive_file_id || ((file.drive_link||'').match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1] || ((file.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1] || '')+'&sz=w200'"
-                             style="width:100%;height:100%;object-fit:cover;display:block;border-radius:8px;"
-                             onerror="this.style.display='none';this.nextElementSibling.style.display='flex'" />
-                        <!-- Placeholder shown when no drive_file_id or image fails to load -->
-                        <div :style="{display: (file.drive_file_id || file.drive_link) ? 'none' : 'flex', width:'100%',height:'100%',alignItems:'center',justifyContent:'center',background:'#e5e7eb',fontSize:'24px',color:'#9ca3af',borderRadius:'8px'}" class="photo-placeholder">🖼️</div>
-                        <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:4px 6px;">
-                          <div style="font-size:9px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ file.file_name }}</div>
-                        </div>
-                        <div style="position:absolute;top:4px;right:4px;display:flex;gap:3px;">
-                          <a v-if="file.drive_link" :href="file.drive_link" target="_blank" @click.stop style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:10px;text-decoration:none;color:var(--navy);">↗</a>
-                          <button v-if="lstActiveProp.status!=='running'&&lstActiveProp.status!=='submitted'" @click.stop="lstDeleteFile(file)" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;font-size:10px;border:none;cursor:pointer;color:#dc2626;">✕</button>
-                        </div>
+                <div v-show="lstToolOpen==='photos'" style="padding:14px 12px 16px;">
+                  <div v-if="!lstSubfolderFiles('listing_photos').length" style="text-align:center;padding:48px 20px;color:#9ca3af;font-size:15px;">No photos uploaded yet.</div>
+                  <div v-else style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+                    <div v-for="(file,fi) in lstSubfolderFiles('listing_photos')" :key="file.id"
+                         style="position:relative;aspect-ratio:1/1;border-radius:10px;overflow:hidden;background:#e5e7eb;cursor:pointer;box-shadow:0 1px 6px rgba(0,0,0,.12);"
+                         @click="openPhotoLightbox(fi, lstSubfolderFiles('listing_photos'))">
+                      <img v-if="file.drive_file_id || file.drive_link"
+                           :src="'https://drive.google.com/thumbnail?id='+(file.drive_file_id||((file.drive_link||'').match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1]||((file.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1])+'&sz=w400'"
+                           style="width:100%;height:100%;object-fit:cover;display:block;"
+                           @error="$event.target.style.display='none'">
+                      <div v-else style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;">🖼️</div>
+                      <div style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,.7));padding:18px 6px 5px;font-size:10px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ file.file_name }}</div>
+                      <div style="position:absolute;top:5px;right:5px;display:flex;gap:4px;" @click.stop>
+                        <a :href="'https://drive.google.com/uc?export=download&id='+(file.drive_file_id||((file.drive_link||'').match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1]||((file.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1])" :download="file.file_name" target="_blank" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);display:flex;align-items:center;justify-content:center;font-size:12px;text-decoration:none;" title="Save photo">⬇</a>
+                        <button @click="lstDeleteFile(file)" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.92);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:10px;color:#dc2626;">✕</button>
                       </div>
-                    </div>
-                    <!-- File list (details view) -->
-                    <div v-for="file in lstSubfolderFiles('listing_photos')" :key="'list-'+file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
-                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null">🗑 Delete</div>
-                      <div class="file-row" :class="{swiped: fileSwipedId===file.id}">
-                        <span class="file-icon">🖼️</span>
-                        <div class="file-info">
-                          <div class="file-name">{{ file.file_name }}</div>
-                          <div class="file-meta">{{ file.uploaded_by ? file.uploaded_by.split('@')[0] : '' }} · {{ new Date(file.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div>
-                        </div>
-                        <a v-if="file.drive_link" :href="file.drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:11px;">View</a>
-                      </div>
-                    </div>
-                  </div>
-                  <!-- Upload progress -->
-                  <div v-if="lstUploading['listing_photos']" style="margin-bottom:14px;">
-                    <div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Uploading...</div>
-                    <div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div>
-                  </div>
-                  <!-- Upload drop zone -->
-                  <div v-if="lstActiveProp.status!=='running'&&lstActiveProp.status!=='submitted'"
-                    class="drop-zone" :class="{'drag-over':lstDragOver==='listing_photos'}"
-                    @dragover.prevent="lstDragOver='listing_photos'" @dragleave="lstDragOver=''"
-                    @drop.prevent="lstHandleDrop($event,'listing_photos')" @click="$refs.photoFileInput?.click()">
-                    <input ref="photoFileInput" type="file" accept=".jpg,.jpeg,.png,.heic,.pdf" multiple style="display:none;" @change="lstHandleFileInput($event,'listing_photos')">
-                    <div class="drop-zone-text">
-                      <span style="font-size:20px;">📷</span><br>
-                      Drop photos here or click to upload<br>
-                      <span style="font-size:11px;">.jpg, .png, .heic, .pdf</span>
                     </div>
                   </div>
                 </div>
               </div>
-
+              <!-- Photo Lightbox -->
+              <div v-if="photoLightbox.open" @click.self="photoLightbox.open=false" style="position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;display:flex;align-items:center;justify-content:center;">
+                <button @click="photoLightbox.open=false" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:44px;height:44px;font-size:20px;cursor:pointer;">✕</button>
+                <button v-if="photoLightbox.files.length>1" @click="photoLightboxNav(-1)" style="position:absolute;left:12px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:50px;height:50px;font-size:28px;cursor:pointer;">&#8249;</button>
+                <div style="display:flex;flex-direction:column;align-items:center;gap:14px;max-width:90vw;">
+                  <img v-if="photoLightbox.current" :src="'https://drive.google.com/thumbnail?id='+(photoLightbox.current.drive_file_id||((photoLightbox.current.drive_link||'').match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1]||((photoLightbox.current.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1])+'&sz=w1200'" style="max-width:88vw;max-height:72vh;object-fit:contain;border-radius:10px;box-shadow:0 8px 32px rgba(0,0,0,.5);">
+                  <div v-if="photoLightbox.current" style="color:#e5e7eb;font-size:13px;text-align:center;max-width:80vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ photoLightbox.current.file_name }}</div>
+                  <a v-if="photoLightbox.current" :href="'https://drive.google.com/uc?export=download&id='+(photoLightbox.current.drive_file_id||((photoLightbox.current.drive_link||'').match(/\/d\/([a-zA-Z0-9_-]+)/)||[])[1]||((photoLightbox.current.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1])" :download="photoLightbox.current.file_name" target="_blank" style="background:#b8860b;color:#fff;border-radius:10px;padding:12px 36px;font-size:16px;font-weight:700;cursor:pointer;text-decoration:none;">⬇ Save to Phone</a>
+                  <div v-if="photoLightbox.files.length>1" style="color:#9ca3af;font-size:12px;">{{ photoLightbox.index+1 }} / {{ photoLightbox.files.length }}</div>
+                </div>
+                <button v-if="photoLightbox.files.length>1" @click="photoLightboxNav(1)" style="position:absolute;right:12px;background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:50%;width:50px;height:50px;font-size:28px;cursor:pointer;">&#8250;</button>
+              </div>
               <!-- Tool: Listing Presentation -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='presentation' ? null : 'presentation'">
@@ -12425,7 +12406,24 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       }
     });
 
-    return {
+    // Photo gallery
+      const photoLightbox = ref({ open: false, files: [], index: 0, current: null });
+      function openPhotoLightbox(index, files) {
+        photoLightbox.value = { open: true, files: files, index: index, current: files[index] };
+      }
+      function photoLightboxNav(dir) {
+        const lb = photoLightbox.value;
+        const ni = (lb.index + dir + lb.files.length) % lb.files.length;
+        photoLightbox.value = { open: true, files: lb.files, index: ni, current: lb.files[ni] };
+      }
+      function downloadAllPhotos(files) {
+        files.forEach(function(f, i) {
+          var fid = f.drive_file_id || ((f.drive_link||'').match(//d/([a-zA-Z0-9_-]+)/)||[])[1] || ((f.drive_link||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)||[])[1];
+          if (!fid) return;
+          setTimeout(function() { var a=document.createElement('a'); a.href='https://drive.google.com/uc?export=download&id='+fid; a.download=f.file_name||'photo'; a.target='_blank'; document.body.appendChild(a); a.click(); document.body.removeChild(a); }, i*800);
+        });
+      }
+      return {
       // Auth
       loggedIn, agentName, loginAgent, loginCode, loginError, AGENTS,
       doLogin, logout,
@@ -12516,7 +12514,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Agent Session
       sessionEmail, switchAgent,
       // Listings System
-      lstProperties, lstLoading, lstToolOpen, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
+      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
