@@ -1856,6 +1856,33 @@
         <template v-else-if="view==='buyer-detail'">
           <div style="max-width:800px;">
             <button class="lp-back" @click="go('buyer-package')" style="margin-bottom:12px;">← All Buyers</button>
+            <!-- Buyer Summary Card -->
+            <div style="background:linear-gradient(135deg,var(--navy) 0%,#1e3a5f 100%);border-radius:12px;padding:16px;margin-bottom:16px;color:#fff;">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
+                <div>
+                  <div style="font-size:19px;font-weight:700;line-height:1.2;">{{ byrActiveBuyer.buyer_name }}</div>
+                  <div style="font-size:12px;color:#94a3b8;margin-top:3px;">{{ byrActiveBuyer.email || '' }}{{ (byrActiveBuyer.email && byrActiveBuyer.phone) ? ' · ' : '' }}{{ byrActiveBuyer.phone || '' }}</div>
+                </div>
+                <span :class="'status-badge status-'+(byrActiveBuyer.status||'active')" style="flex-shrink:0;margin-left:8px;">{{ byrActiveBuyer.status || 'Active' }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+                <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:22px;font-weight:700;">{{ byrSubfolderFiles('pre_approval').length }}</div>
+                  <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Pre-Approvals</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='tour_tracker').length }}</div>
+                  <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Tours Saved</div>
+                </div>
+                <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
+                  <div style="font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='cash_to_close').length }}</div>
+                  <div style="font-size:10px;color:#94a3b8;margin-top:1px;">CTC Reports</div>
+                </div>
+              </div>
+              <div v-if="byrActiveBuyer.budget_min||byrActiveBuyer.budget_max" style="font-size:12px;color:#94a3b8;">
+                💰 Budget: <span style="color:#fff;font-weight:600;">{{ byrActiveBuyer.budget_min ? '$'+Number(byrActiveBuyer.budget_min).toLocaleString() : '' }}{{ (byrActiveBuyer.budget_min&&byrActiveBuyer.budget_max) ? ' – ' : '' }}{{ byrActiveBuyer.budget_max ? '$'+Number(byrActiveBuyer.budget_max).toLocaleString() : '' }}</span>
+              </div>
+            </div>
             <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
                 <div style="flex:1;min-width:0;">
@@ -2145,7 +2172,49 @@
                 </div>
               </div>
             </div>
-          </div>
+              <!-- Generated Reports -->
+              <div v-if="byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy'].includes(f.subfolder)).length>0" style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:12px;">
+                <div style="font-weight:600;font-size:13px;color:var(--navy);margin-bottom:8px;">📊 Generated Reports</div>
+                <div style="display:flex;flex-direction:column;gap:4px;">
+                  <div v-for="f in byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy'].includes(f.subfolder))" :key="f.id" style="display:flex;align-items:center;gap:6px;padding:6px 8px;background:#f8f9fa;border-radius:6px;border:1px solid #e5e7eb;">
+                    <span style="font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#333;" :title="f.file_name">{{ f.file_name }}</span>
+                    <span style="font-size:10px;color:#9ca3af;background:#e5e7eb;border-radius:4px;padding:1px 5px;">{{ (f.subfolder||'').split('_').join(' ') }}</span>
+                    <a v-if="f.drive_link" :href="f.drive_link" target="_blank" style="color:var(--navy);font-size:12px;text-decoration:none;" title="Open">↗</a>
+                  </div>
+                </div>
+              </div>
+            <!-- Offer Tracker -->
+            <div class="card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div style="font-weight:700;font-size:15px;color:var(--navy);">🏡 Offer Tracker</div>
+                <button @click="byrNewOffer.showForm=!byrNewOffer.showForm" style="background:var(--navy);color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer;">{{ byrNewOffer.showForm ? 'Cancel' : '+ Add Offer' }}</button>
+              </div>
+              <!-- Add form -->
+              <div v-if="byrNewOffer.showForm" style="background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:12px;border:1px solid #e5e7eb;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+                  <div class="form-row"><label>Property Address</label><input type="text" v-model="byrNewOffer.address" placeholder="123 Main St..." style=""></div>
+                  <div class="form-row"><label>Offer Price</label><input type="text" v-model="byrNewOffer.price" placeholder="e.g. 525,000" style=""></div>
+                </div>
+                <div class="form-row" style="margin-bottom:8px;"><label>Notes</label><input type="text" v-model="byrNewOffer.notes" placeholder="Contingencies, escalation clause..." style=""></div>
+                <button @click="byrAddOffer()" style="background:var(--gold);color:#fff;border:none;border-radius:6px;padding:6px 18px;font-size:13px;cursor:pointer;font-weight:600;">Save Offer</button>
+              </div>
+              <!-- Offer list -->
+              <div v-if="byrGetOffers().length===0 && !byrNewOffer.showForm" style="color:#bbb;font-size:12px;font-style:italic;text-align:center;padding:12px 0;">No offers tracked yet</div>
+              <div v-for="offer in byrGetOffers()" :key="offer.id" style="border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px;margin-bottom:8px;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;">
+                  <div>
+                    <div style="font-weight:600;font-size:13px;color:var(--navy);">{{ offer.address }}</div>
+                    <div v-if="offer.price" style="font-size:12px;color:#6b7280;margin-top:1px;">💰 {{ offer.price.startsWith('$') ? '' : '$' }}{{ offer.price }}</div>
+                    <div v-if="offer.notes" style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ offer.notes }}</div>
+                  </div>
+                  <button @click="byrRemoveOffer(offer.id)" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:13px;padding:0 2px;" title="Remove">✕</button>
+                </div>
+                <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                  <span v-for="s in byrOfferStatuses" :key="s" @click="byrUpdateOfferStatus(offer.id,s)" :style="'padding:3px 8px;border-radius:10px;font-size:11px;cursor:pointer;border:1px solid '+(offer.status===s?'var(--navy)':'#e5e7eb')+';background:'+(offer.status===s?'var(--navy)':'#fff')+';color:'+(offer.status===s?'#fff':'#6b7280')">{{ s }}</span>
+                </div>
+              </div>
+            </div>
+                        </div>
         </template>
 
         <template v-else-if="view==='buyer-consult'">
@@ -2655,12 +2724,25 @@
                   </div>
 
                   <!-- Pros/Cons -->
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;">
-                    <div class="form-row"><label style="color:#16a34a;">Pros</label><textarea v-model="tt.activeProperty.pros" rows="3" placeholder="Best features..." @input="ttSaveTours" style=""></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='tt-pros'}" @click="inlineMicToggle('tt-pros',()=>tt.activeProperty.pros,v=>{tt.activeProperty.pros=v;ttSaveTours()})" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
-                    <div class="form-row"><label style="color:#dc2626;">Cons</label><textarea v-model="tt.activeProperty.cons" rows="3" placeholder="Concerns or drawbacks..." @input="ttSaveTours" style=""></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='tt-cons'}" @click="inlineMicToggle('tt-cons',()=>tt.activeProperty.cons,v=>{tt.activeProperty.cons=v;ttSaveTours()})" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
+                  <div style="margin-top:6px;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                      <div>
+                        <div style="font-weight:600;font-size:12px;color:#16a34a;margin-bottom:5px;">✅ Pros</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;">
+                          <span v-for="tag in ['Great Layout','Natural Light','Good Schools','Quiet Street','Large Yard','Updated Kitchen','Storage','Curb Appeal']" :key="tag" @click="tt.activeProperty.pros=(tt.activeProperty.pros?tt.activeProperty.pros+'\n':'')+tag;ttSaveTours()" style="background:#dcfce7;color:#16a34a;border:1px solid #86efac;border-radius:12px;padding:2px 7px;font-size:11px;cursor:pointer;user-select:none;">+{{ tag }}</span>
+                        </div>
+                        <div class="form-row"><textarea v-model="tt.activeProperty.pros" rows="3" placeholder="Best features..." @input="ttSaveTours" style=""></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='tt-pros'}" @click="inlineMicToggle('tt-pros',()==>tt.activeProperty.pros,v=>{tt.activeProperty.pros=v;ttSaveTours()})" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
+                      </div>
+                      <div>
+                        <div style="font-weight:600;font-size:12px;color:#dc2626;margin-bottom:5px;">⚠️ Concerns</div>
+                        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px;">
+                          <span v-for="tag in ['Small Rooms','Busy Road','Old Systems','No Garage','Low Ceilings','Flood Zone','Dated Kitchen','Needs Work']" :key="tag" @click="tt.activeProperty.cons=(tt.activeProperty.cons?tt.activeProperty.cons+'\n':'')+tag;ttSaveTours()" style="background:#fee2e2;color:#dc2626;border:1px solid #fca5a5;border-radius:12px;padding:2px 7px;font-size:11px;cursor:pointer;user-select:none;">+{{ tag }}</span>
+                        </div>
+                        <div class="form-row"><textarea v-model="tt.activeProperty.cons" rows="3" placeholder="Concerns or drawbacks..." @input="ttSaveTours" style=""></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='tt-cons'}" @click="inlineMicToggle('tt-cons',()==>tt.activeProperty.cons,v=>{tt.activeProperty.cons=v;ttSaveTours()})" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
+                      </div>
+                    </div>
                   </div>
-
-                  <!-- Done scoring button -->
+                          <!-- Done scoring button -->
                   <button class="btn-gold" @click="tt.activeProperty=null;ttSaveTours()" style="width:100%;margin-top:16px;font-size:14px;">✓ Done Scoring</button>
                 </div>
               </template>
@@ -2686,6 +2768,7 @@
               <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
                 <button class="btn-gold" @click="ctcDownloadPDF" style="font-size:12px;padding:8px 24px;">⬇ Download PDF</button>
                 <button class="btn-navy" @click="ctcSaveToProperty" style="font-size:12px;padding:8px 24px;">📁 Save to Property</button>
+              <button @click="ctcSaveToBuyerFile" style="font-size:12px;padding:8px 16px;background:var(--gold);color:#fff;border:none;border-radius:8px;cursor:pointer;margin-left:8px;">💾 Buyer File</button>
               </div>
             </div>
 
@@ -8619,6 +8702,55 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       setTimeout(() => { ctcSaved.value = false; }, 8000);
     }
 
+    async function ctcSaveToBuyerFile() {
+      if (ctc.result === null) { showToast('Calculate the estimate first.', 3000); return; }
+      if (!byrActiveBuyer.value) { showToast('No active buyer — open a buyer profile first.', 3000); return; }
+      try {
+        const pdfBase64 = ctcGetPDFBase64();
+        const binary = atob(pdfBase64);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], {type:'application/pdf'});
+        const addr = ctc.address || 'Estimate';
+        const fileName = 'CTC_' + addr.replace(/[^a-z0-9]/gi,'_').substring(0,40) + '_' + new Date().toISOString().slice(0,10) + '.pdf';
+        const file = new File([blob], fileName, {type:'application/pdf'});
+        await byrUploadFile(file, 'cash_to_close');
+      } catch(e) { showToast('Save failed: '+e.message); }
+    }
+
+
+
+    function byrGetOffers() {
+      const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
+      if (!id) return [];
+      return byrOfferMap.value[id] || [];
+    }
+    function byrAddOffer() {
+      const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
+      if (!id || !byrNewOffer.address) return;
+      const offers = [...(byrOfferMap.value[id]||[])];
+      offers.push({id:Date.now(), address:byrNewOffer.address, price:byrNewOffer.price, notes:byrNewOffer.notes, status:'Preparing', created_at:new Date().toISOString()});
+      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
+      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      byrNewOffer.address=''; byrNewOffer.price=''; byrNewOffer.notes=''; byrNewOffer.showForm=false;
+    }
+    function byrUpdateOfferStatus(offerId, status) {
+      const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
+      if (!id) return;
+      const offers = (byrOfferMap.value[id]||[]).map(o => o.id===offerId ? Object.assign({},o,{status}) : o);
+      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
+      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+    }
+    function byrRemoveOffer(offerId) {
+      const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
+      if (!id || !confirm('Remove this offer?')) return;
+      const offers = (byrOfferMap.value[id]||[]).filter(o => o.id !== offerId);
+      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
+      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+    }
+
+
+
 
     // -- Buyer Consultation Kit (branded PDF generator, inspired by FORWARD methods + Heider)
     const bck = reactive({
@@ -10376,6 +10508,9 @@ No markdown. Valid JSON only.`;
     const byrDeleteTarget = ref(null);
     const byrActiveFiles = ref([]);
     const byrUploading = ref({});
+    const byrOfferMap = ref(JSON.parse(localStorage.getItem('byrOfferMap')||'{}'));
+    const byrNewOffer = reactive({address:'', price:'', notes:'', showForm:false});
+    const byrOfferStatuses = ['Preparing','Submitted','Countered','Accepted','Rejected'];
 
     async function byrFetchBuyers() {
       if (!SUPABASE_URL) return;
@@ -11548,8 +11683,7 @@ async function voiceCrmSubmit() {
           'order=created_at.desc'
         ].join(String.fromCharCode(38));
         const files = await supaRest.select('buyer_assets', qp).catch(()=>[]);
-        const allowed = ['pre_approval','buyer_documents','inspection','closing'];
-        byrActiveFiles.value = (files||[]).filter(f=>allowed.includes(f.subfolder)).map(a=>{
+        byrActiveFiles.value = (files||[]).map(a=>{
           const dl = a.drive_link||'';
           const mm = dl.match(/[/]d[/]([a-zA-Z0-9_-]+)/) || dl.match(/[?]id=([a-zA-Z0-9_-]+)/);
           return { id:a.id, buyer_id:a.buyer_id, subfolder:a.subfolder, file_name:a.file_name, drive_link:a.drive_link, drive_file_id:mm?mm[1]:null };
@@ -12538,7 +12672,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       atCoreDocs, atMarketing, atTraining, atTemplates, atTransactions, atContractClose,
       // Cash to Close
       ctc, ctcFmt, calcCashToClose, ctcReset, CTC_JURISDICTIONS, ctcOnAddressInput, ctcSelectSuggestion,
-      ctcDownloadPDF, ctcSaveToProperty, ctcSaved, ctcCurrencyBlur, ctcCurrencyFocus, ctcCurrencyInput,
+      ctcDownloadPDF, ctcSaveToProperty, ctcSaveToBuyerFile, ctcSaved, ctcCurrencyBlur, ctcCurrencyFocus, ctcCurrencyInput,
       ctcSyncDownFromPct, ctcSyncDownFromAmt, ctcCalcInsEscrow, ctcCalcTaxEscrow, ctcCalcPrepaidInterest, ctcCalcMIEscrow,
       // Buyer Consultation Kit
       bck, bckSections, bckGeneratePDF, bckSaveToProperty, bckSaved, bckSaving,
@@ -12554,7 +12688,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Buyer Needs Analysis
       bnaMode, bnaView, bnaTranscript, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
       // Buyer System
-      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
+      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrUpdateProfile,
       byrPackageLoading, byrPackageError, byrGeneratePackage,
       byrCreating,
