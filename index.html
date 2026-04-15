@@ -5304,7 +5304,7 @@ function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
 const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
-        const ADMIN_AGENTS = ['Marc Cashin', 'Operations']; — can see all agents' files
+        const ADMIN_AGENTS = ['Marc Cashin', 'Operations']; // can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
