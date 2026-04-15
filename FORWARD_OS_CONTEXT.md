@@ -1,4 +1,4 @@
-# FORWARD OS â Session Context File
+# FORWARD OS — Session Context File
 > Upload this file at the start of any new FORWARD OS Cowork chat to restore full context.
 
 ---
@@ -21,192 +21,131 @@ A Vue 3 SPA (single-file, no build step) for real estate agents.
 | Google Drive | LOTA video uploads + client file storage | OAuth via marc@marccashin.com |
 | GitHub | Source backup + auto-deploy | github.com/marccashin/forward-os |
 
-Tokens stored in Marc's password manager.
-- GitHub Classic PAT (repo scope, no expiry): regenerate at github.com/settings/tokens/new
-- Netlify token: regenerate at app.netlify.com/user/applications
-
 ---
 
-## Google Cloud / OAuth
+## Pushing Code (No PAT Required — Permanent Setup)
 
-| Item | Value |
-|---|---|
-| GCP Project | `forward-os-490520` (under `marc@marccashin.com` / `marccashin.com` Workspace) |
-| OAuth App User Type | **Internal** â refresh tokens never expire |
-| OAuth Client Name | LOTA Drive Uploader |
-| Client ID | `1019354489966-j4fsg0elahtkillhv8734462cme9q7e1.apps.googleusercontent.com` |
-| Authorized Account | `marc@marccashin.com` |
-| Old GCP Project | `forward-marketing-os` (under Corcoran account â deprecated for auth, marc@marccashin.com added as Owner for safety) |
+Pushing changes to GitHub is done via a Netlify Function that uses a **GitHub App** for authentication. No personal access tokens are needed or should ever be pasted in chat.
 
-**Netlify env vars (forward-os project):**
-- `GOOGLE_CLIENT_ID` â Client ID above
-- `GOOGLE_CLIENT_SECRET` â Secret ending in `9YSu`
-- `GOOGLE_REFRESH_TOKEN` â Permanent token for `marc@marccashin.com`
+### How it works
+The function at `/.netlify/functions/github-push` (source: `netlify/functions/github-push.js`):
+1. Reads `GITHUB_APP_ID` and `GITHUB_APP_PRIVATE_KEY` from Netlify env vars
+2. Signs a JWT with the private key (RS256)
+3. Exchanges the JWT for a short-lived installation token via GitHub API
+4. Uses that token to push files to `marccashin/forward-os`
 
----
+### GitHub App details
+- **App name:** Forward OS Deployer
+- **App ID:** 3382390
+- **Installation ID:** 124051198 (installed on marccashin/forward-os)
+- **Permissions:** Read & write access to repository contents
+- **Netlify env vars set:** `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (base64-encoded PEM)
+- The private key PEM file is stored safely — it is NOT a GitHub PAT and will not be auto-revoked
 
-## Video Upload Feature
+### Standard push call (from browser console on forward-os.netlify.app)
+```js
+// 1. Get current file as base64
+const html = document.documentElement.outerHTML;
+const encoded = btoa(unescape(encodeURIComponent(html)));
 
-- **Page:** `/video-upload.html` (separate page, not a Vue view)
-- **Routing:** `go('video-upload')` in index.html redirects to `/video-upload.html`
-- **Netlify Function:** `netlify/functions/prepare-lota-upload.js`
-  - Authenticates as `marc@marccashin.com` via OAuth2 refresh token (server-side only)
-  - Creates folder hierarchy in LOTA Visuals Drive folder (`129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e`)
-  - Returns pre-authenticated resumable upload URLs
-  - **No per-agent Google login required** â works for any agent on any device
-- **Flow:** Agent fills topic + name â Netlify fn creates Drive folders â browser uploads directly to Drive
-
----
-
-## Repo File Manifest (never delete these)
-
-| File | Purpose |
-|---|---|
-| index.html | The entire FORWARD OS app (~1.24MB) |
-| video-upload.html | Standalone Video Upload page |
-| netlify/functions/prepare-lota-upload.js | Netlify Function â Drive OAuth + folder creation |
-| _redirects | Netlify proxy rules â CRITICAL |
-| FORWARD_OS_CONTEXT.md | This file |
-| README.md | Repo description |
-
-### _redirects content (NEVER remove either line):
+// 2. Push to GitHub
+const res = await fetch('/.netlify/functions/github-push', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ content: encoded, message: 'describe change here', filename: 'index.html' })
+}).then(r => r.json());
+console.log(res);
 ```
-/fub-api/* https://api.followupboss.com/v1/:splat 200
-/* /index.html 200
-```
-Line 1: Proxies FUB API calls through Netlify. fubFetch() calls /fub-api/... which forwards to FUB.
-Line 2: SPA fallback â direct URL loads go to index.html so Vue routing works.
-Without this file: FUB features return 404, direct URL navigation breaks.
-
----
-
-## Standard Deploy Workflow (GitHub-first)
-Push to GitHub â Netlify auto-deploys. One step = live update + backup.
-
-### Step 1 â Fetch live file (in forward-os.netlify.app Chrome tab):
-```javascript
-fetch('/index.html', {cache:'no-store'}).then(r=>r.text()).then(t=>{window._html=t; console.log('loaded:', t.length)});
-```
-
-### Step 2 â Apply string-replace changes:
-```javascript
-const old = `EXACT_OLD_STRING`;
-const neu = `NEW_STRING`;
-if (!window._html.includes(old)) console.error('NOT FOUND');
-else { window._html = window._html.split(old).join(neu); console.log('replaced:', window._html.length); }
-```
-
-### Step 3 â Get current SHA:
-```javascript
-window._ghToken = 'PASTE_GH_TOKEN_HERE';
-fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
-  headers: { 'Authorization': 'token ' + window._ghToken }
-}).then(r=>r.json()).then(d=>{ window._currentSha = d.sha; console.log('SHA:', d.sha.slice(0,8)); });
-```
-
-### Step 4 â Push to GitHub:
-```javascript
-const bytes = new TextEncoder().encode(window._html);
-let binary = '';
-for (let i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode(...bytes.subarray(i, i+8192));
-window._htmlB64 = btoa(binary);
-
-fetch('https://api.github.com/repos/marccashin/forward-os/contents/index.html', {
-  method: 'PUT',
-  headers: { 'Authorization': 'token ' + window._ghToken, 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    message: 'feat: DESCRIBE_CHANGE_HERE',
-    content: window._htmlB64,
-    sha: window._currentSha
-  })
-}).then(r=>r.json()).then(d=>console.log(d.commit ? 'DONE: ' + d.commit.sha.slice(0,8) : 'ERROR: ' + JSON.stringify(d)));
-```
-
-### To update FORWARD_OS_CONTEXT.md on GitHub:
-Same pattern as above but target /contents/FORWARD_OS_CONTEXT.md instead of /contents/index.html.
 
 ---
 
 ## Supabase Tables
 
-### buyers
-Fields: id, agent_name, buyer_name, first_name, market_area, budget_min, budget_max, down_payment, pre_approved, pre_approval_lender, pre_approval_amount, target_neighborhoods, areas_note, home_type, home_type_note, bedrooms_min, bedrooms_note, bathrooms, parking, parking_note, outdoor_space, outdoor_note, move_in_target, urgency, urgency_note, current_status, current_note, school_district, hoa_acceptable, must_haves, deal_breakers, agent_notes, drive_folder_id, subfolder_drive_ids, created_at
-RLS: enabled (allow_all_anon policy â all operations for anon + authenticated)
+| Table | Key Columns | Purpose |
+|---|---|---|
+| `buyers` | id, buyer_name, agent_name, drive_folder_id, subfolder_drive_ids, email, created_at | Buyer records |
+| `properties` | id, address, agent_name, drive_folder_id, subfolder_drive_ids, created_at | Listing records |
+| `buyer_assets` | id, buyer_id, subfolder, file_name, drive_link, created_at | Files for buyers |
+| `property_assets` | id, property_id, subfolder, file_name, drive_link, created_at | Files for listings |
 
-### properties
-Fields: id, agent_name, address, drive_folder_id, subfolder_drive_ids, created_at (+ listing fields)
-RLS: enabled (allow_all_anon policy)
-
-### property_assets, property_notes
-RLS: enabled (allow_all_anon policy)
+Supabase is accessed via the `supaRest` helper in index.html:
+```js
+supaRest.select('table_name', 'select=col1,col2&filter=value')
+supaRest.insert('table_name', { col: val })
+supaRest.update('table_name', { col: val }, 'id=eq.123')
+supaRest.delete('table_name', 'id=eq.123')
+```
 
 ---
 
-## Key Vue Functions Reference
+## App Architecture
 
-### Buyers (My Buyers tab)
-- byrBuyers / byrActiveBuyer / byrCreateBuyer()
-- byrCreateBuyer() auto-creates: Supabase record + Drive folder + client file folder entry
+### Vue 3 Setup
+- Single `setup()` function returns all reactive state and methods to the template
+- **Critical rule:** Every function used in the template MUST be explicitly returned from `setup()`
+- Reactive state: `ref()` for primitives, arrays; `computed()` for derived values
 
-### Listings (My Sellers tab)
-- supaProperties / lstActiveProp / lstCreateProperty()
-- lstCreateProperty() auto-creates: Supabase record + Drive folder + client file folder entry
+### Key Reactive State
+- `agentName` — currently logged-in agent
+- `propFiles` — client file records for current agent (from Supabase)
+- `allAgentFiles` — all agents' file records grouped by agent (admin view)
+- `activePropFile` — currently selected file record in detail panel
+- `byrBuyers` — buyer records
+- `lstProperties` — property/listing records
+
+### Key Functions
+- `loadPropFiles()` — fetches buyers + properties + buyer_assets + property_assets from Supabase in parallel, builds propFile objects with resources arrays
+- `go(view)` — switches the active view; triggers `loadPropFiles()` when switching to `'prop-files'`
+- `viewResourceLink(r)` — opens `r.driveLink` in a new tab
+- `sendResourceToClient(r, pf)` — opens mailto: with document link pre-filled
 
 ### Client Files (prop-files view)
-- Fully migrated to Supabase in Chat 7 â all agents on all devices see all folders
-- createPropFile() writes to Supabase; deletePropFile() deletes from Supabase
-- openClientFilePicker(label, pdfDataURI, onSave) â global Supabase-backed picker
-- saveToClientFileDrive(record, recordType) â uploads to Drive via Railway
-
-### FUB Integration
-- fubFetch(path, method, body) â routes through /fub-api Netlify proxy to followupboss.com/v1
-- fubAddNote(personId, noteText) â adds note to FUB contact
-
-### Buyer Consultation Kit (bck)
-- bck._lastPDF â last generated PDF data URI
-- bckSaveToClientFolder() â saves to Google Drive buyer_kit subfolder (global)
-- bckSendToBuyer() â apens PDF for email/text attachment
+- `propFiles` is populated from Supabase (NOT localStorage) via `loadPropFiles()`
+- Each record has: `id, address, createdAt, resources[], agent_name, drive_folder_id, subfolder_drive_ids, recordType ('buyer'|'property')`
+- Resources come from `property_assets` / `buyer_assets` tables
+- Each resource: `{ id, label, type, driveLink, savedAt }`
+- Resource cards show **View** button (opens Drive link) and **Send to Client** button (mailto)
+- Copy button only shows when `!r.driveLink && !r.pdfData`
 
 ---
 
-## Agents
-Marc Cashin, Ashling McGowan, Niki Lang, Cesar Rivera, Charlotte Lee, Shannon Casey
-Access code: forward2026 â Admin: Marc Cashin
+## AGENTS & Admin
+```js
+const AGENTS = ['Marc','Natalie','Serena','Miranda','Admin'];
+const ADMIN_AGENT = 'Admin';
+```
 
 ---
 
-## Chat History
+## Chat History Summary
 
-| Chat | Key Work |
-|---|---|
-| 1â3 | Initial OS build â all tools, Supabase, Railway backend |
-| 4 | Crashed â context overflow from base64 chunk injection (never do this) |
-| 5 | Auto-create client folders on buyer/listing creation; global Save-to-Folder + Send to Buyer on Buyer Consultation Kit; GitHub repo created + connected to Netlify; _redirects added (fixed FUB 404); Supabase RLS enabled on all tables |
-| 6 | Video Upload feature built (video-upload.html + prepare-lota-upload Netlify fn); blank screen routing bug fixed; OAuth2 auth set up under marc@marccashin.com (GCP project forward-os-490520, Internal app = permanent tokens); marc@marccashin.com added as Owner on old forward-marketing-os project; Client Files VIEW migration (localStorage â Supabase) still pending |
-| 7 | Client Files VIEW fully migrated to Supabase (propFiles filtered by agent, createPropFile writes to Supabase, deletePropFile wired to Supabase, supaRest.delete added); CMA Builder cross-property auto-populate bug fixed (cloud resume skipped when prefill address differs from saved session); GitHub PAT regenerated |
-| 8 | CRM data bleed bug fixed â lstOpenProperty now resets mlsForm (listPrice/beds/baths/sqft/yearBuilt/hoa/propType/parking/features), ldOutput/ldMessages/ldStarted (Listing Description Writer), and jl (Just Listed generator) when switching properties so previous listing data never bleeds into a new one |
-| 9 | Client Files VIEW fully migrated to Supabase: (1) go('prop-files') now calls loadPropFiles() on every view switch so data is always fresh; (2) removed redundant addPropFile() localStorage writes from byrCreateBuyer() and lstCreateProperty() — refreshPropFiles() already handles the update via Supabase; (3) loadPropFiles() catch fallback changed from getPropFiles()/getAllAgentsPropFiles() (localStorage) to empty arrays so no device-local data leaks into the global view |
+### Chat 9 (April 2026)
+**Completed work:**
 
----
+1. **Client Files VIEW migrated to Supabase** — `loadPropFiles()` now fetches all 4 tables in parallel (buyers, properties, property_assets, buyer_assets). localStorage fallback removed. View auto-refreshes when switching to the prop-files view.
 
-## Pending
-- *(nothing pending — all items complete as of Chat 9)*
+2. **Resources now show correctly** — "0 resources" bug fixed. Resources now come from `property_assets` and `buyer_assets` Supabase tables, mapped by property_id / buyer_id.
+
+3. **View + Send to Client buttons** — Replaced non-functional Copy button on resource cards. View opens the Drive link. Send to Client opens a pre-filled mailto. Two new functions added to setup() return: `viewResourceLink`, `sendResourceToClient`.
+
+4. **GitHub App authentication (permanent fix)** — Replaced GitHub PAT approach with a GitHub App. The `github-push` Netlify function now signs its own short-lived tokens using the app's private key stored in Netlify env vars. No PATs are ever needed in chat again. App ID: 3382390, Installation ID: 124051198.
 
 ---
 
-## End of Task Protocol
-At the end of every completed task, ask Marc:
-"Should I update FORWARD_OS_CONTEXT.md on GitHub with what we just built?"
-- Yes: update this file and push to GitHub using the GitHub API workflow
-- New task given without answering: treat as No, complete new task, ask again at completion
-- Never skip asking
+## Common Pitfalls
+
+1. **Vue template can't see a function?** → It's not in the `setup()` return object. Add it.
+2. **Syntax error / blank login screen with raw `{{ }}`?** → A JS string literal contains a literal newline. Use `\n` escape sequences instead.
+3. **localStorage data** → Old approach, no longer used for propFiles. All data lives in Supabase.
+4. **Never paste GitHub tokens (ghp_*, github_pat_*) in chat** — GitHub + Anthropic partnership auto-revokes them within seconds. Use the github-push Netlify function instead.
+5. **Supabase `.catch(()=>[])` on asset queries** — intentional; allows graceful empty fallback if tables are missing.
 
 ---
 
-## Critical Rules
-1. NEVER inject base64 file chunks through the chat window â killed Chat 4
-2. Always fetch index.html from the live Chrome tab (same-origin, no CORS)
-3. index.html is the ENTIRE app â one file, no build process
-4. Netlify publish directory = blank (serves from repo root)
-5. NEVER delete or modify _redirects without preserving both proxy rules
-6. Supabase RLS is enabled â do not disable it
+## Standard Session Startup
+
+At the start of each session:
+1. User uploads this context file
+2. Claude reads it fully before starting work
+3. To make code changes: edit index.html in the browser console using string-replace, then push via `/.netlify/functions/github-push`
+4. Update this context file at end of session and push it too
