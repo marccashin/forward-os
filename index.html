@@ -738,6 +738,80 @@
             <div style="font-size:11px;color:#9ca3af;line-height:1.5;">Say who you just met or snap a photo of their card — AI extracts all the details and you confirm before it goes into Follow Up Boss.</div>
           </div>
 
+          <!-- ── Agent Feedback Button ── -->
+          <div style="text-align:center;margin-bottom:16px;">
+            <button @click="openFeedback" style="display:inline-flex;align-items:center;gap:8px;padding:10px 22px;background:#fff;border:1.5px solid #e5e7eb;border-radius:24px;cursor:pointer;font-size:13px;font-weight:600;color:#6b7280;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <span style="font-size:16px;">💬</span> Leave Feedback
+            </button>
+          </div>
+
+          <!-- Feedback Modal -->
+          <div v-if="feedbackModal.show" style="position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-end;justify-content:center;" @click.self="closeFeedback">
+            <div style="background:#fff;border-radius:20px 20px 0 0;padding:28px 24px 36px;width:100%;max-width:480px;box-shadow:0 -4px 30px rgba(0,0,0,0.15);">
+
+              <!-- Submitted state -->
+              <div v-if="feedbackModal.submitted" style="text-align:center;padding:20px 0;">
+                <div style="font-size:48px;margin-bottom:12px;">✅</div>
+                <div style="font-size:18px;font-weight:700;color:var(--navy);">Thanks for the feedback!</div>
+                <div style="font-size:13px;color:#9ca3af;margin-top:6px;">Marc will see this in his daily digest.</div>
+              </div>
+
+              <!-- Main flow -->
+              <template v-else>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                  <div style="font-size:17px;font-weight:700;color:var(--navy);">💬 Agent Feedback</div>
+                  <button @click="closeFeedback" style="background:none;border:none;font-size:22px;color:#9ca3af;cursor:pointer;line-height:1;">×</button>
+                </div>
+
+                <!-- Step 1: choose type -->
+                <div v-if="!feedbackModal.type" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px;">
+                  <button @click="selectFeedbackType('positive')" style="padding:20px 12px;border-radius:14px;border:2px solid #e5e7eb;background:#f9fafb;cursor:pointer;text-align:center;">
+                    <div style="font-size:32px;margin-bottom:8px;">👍</div>
+                    <div style="font-size:13px;font-weight:700;color:#16a34a;">What's working</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Share a win or useful feature</div>
+                  </button>
+                  <button @click="selectFeedbackType('negative')" style="padding:20px 12px;border-radius:14px;border:2px solid #e5e7eb;background:#f9fafb;cursor:pointer;text-align:center;">
+                    <div style="font-size:32px;margin-bottom:8px;">🚨</div>
+                    <div style="font-size:13px;font-weight:700;color:#dc2626;">Something's off</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:3px;">Bug, confusion, or frustration</div>
+                  </button>
+                </div>
+
+                <!-- Step 2: record / type message -->
+                <div v-if="feedbackModal.type">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                    <button @click="selectFeedbackType('')" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:18px;">←</button>
+                    <span style="font-size:14px;font-weight:600;color:var(--navy);">{{ feedbackModal.type === 'positive' ? '👍 What’s working great?' : '🚨 What’s not working?' }}</span>
+                  </div>
+
+                  <!-- Mic button -->
+                  <div style="text-align:center;margin-bottom:16px;">
+                    <button @click="feedbackModal.recording ? feedbackStopVoice() : feedbackStartVoice()"
+                      :style="feedbackModal.recording ? 'background:#dc2626;' : 'background:var(--navy);'"
+                      style="width:72px;height:72px;border-radius:50%;border:none;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,0.2);">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+                      </svg>
+                    </button>
+                    <div style="font-size:12px;color:#9ca3af;margin-top:8px;">{{ feedbackModal.recording ? 'Recording… tap to stop' : 'Tap to speak' }}</div>
+                  </div>
+
+                  <!-- Transcript / text area -->
+                  <textarea v-model="feedbackModal.transcript"
+                    placeholder="Or type your feedback here…"
+                    style="width:100%;min-height:80px;padding:12px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:14px;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+
+                  <div v-if="feedbackModal.error" style="color:#dc2626;font-size:12px;margin-top:6px;">{{ feedbackModal.error }}</div>
+
+                  <button @click="submitFeedback" :disabled="feedbackModal.submitting"
+                    style="width:100%;margin-top:14px;padding:14px;background:var(--navy);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:700;cursor:pointer;">
+                    {{ feedbackModal.submitting ? 'Sending…' : 'Send Feedback' }}
+                  </button>
+                </div>
+              </template>
+            </div>
+          </div>
+
           <!-- ── Stats Row ── -->
           <div class="dash-stats-grid">
             <div class="dash-stat-card" v-if="isAdmin">
@@ -10963,7 +11037,54 @@ No markdown. Valid JSON only.`;
     const listingPresentationUrl = computed(() => LISTING_PRESENTATIONS[agentName.value] || '');
 
     // ── Helpers ────────────────────────────────────────────
-// ── Knowledge Base ─────────────────────────────────────────────────────
+// ── Agent Feedback ──────────────────────────────────────────────────────
+    const feedbackModal = reactive({
+      show: false, type: '', recording: false,
+      transcript: '', submitting: false, submitted: false, error: ''
+    });
+    let _fbRecognition = null;
+
+    function openFeedback() {
+      feedbackModal.show = true; feedbackModal.type = ''; feedbackModal.transcript = '';
+      feedbackModal.submitted = false; feedbackModal.error = ''; feedbackModal.recording = false;
+    }
+    function closeFeedback() {
+      if (_fbRecognition) { try { _fbRecognition.stop(); } catch(e){} }
+      feedbackModal.show = false; feedbackModal.recording = false;
+    }
+    function selectFeedbackType(t) { feedbackModal.type = t; feedbackModal.transcript = ''; feedbackModal.error = ''; }
+    function feedbackStartVoice() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) { feedbackModal.error = 'Voice not supported in this browser.'; return; }
+      _fbRecognition = new SR();
+      _fbRecognition.continuous = false; _fbRecognition.interimResults = false; _fbRecognition.lang = 'en-US';
+      _fbRecognition.onresult = (e) => { feedbackModal.transcript = e.results[0][0].transcript; feedbackModal.recording = false; };
+      _fbRecognition.onerror = () => { feedbackModal.recording = false; };
+      _fbRecognition.onend = () => { feedbackModal.recording = false; };
+      _fbRecognition.start(); feedbackModal.recording = true;
+    }
+    function feedbackStopVoice() {
+      if (_fbRecognition) { try { _fbRecognition.stop(); } catch(e){} }
+      feedbackModal.recording = false;
+    }
+    async function submitFeedback() {
+      if (!feedbackModal.transcript.trim()) { feedbackModal.error = 'Please record or type your feedback first.'; return; }
+      feedbackModal.submitting = true; feedbackModal.error = '';
+      try {
+        await supaRest.insert('agent_feedback', {
+          agent_name: agentName.value || 'Unknown',
+          type: feedbackModal.type,
+          message: feedbackModal.transcript.trim()
+        });
+        feedbackModal.submitted = true; feedbackModal.submitting = false;
+        setTimeout(() => { feedbackModal.show = false; }, 2500);
+      } catch(e) {
+        feedbackModal.error = 'Could not save feedback. Try again.';
+        feedbackModal.submitting = false;
+      }
+    }
+
+    // ── Knowledge Base ─────────────────────────────────────────────────────
     const kbSyncing = ref(false);
     const kbSyncMsg = ref('');
 
@@ -12843,6 +12964,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
       kbSyncing, kbSyncMsg, syncKnowledgeBase,
+      feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
       lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
