@@ -5972,6 +5972,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     // ── Listings System (Feature 1) ──────────────────────────────────────
+    watch(agentName, (v, old) => { if(v && v !== old){ lstFetchProperties(); byrFetchBuyers(); } });
     const lstProperties = ref([]);
     const lstLoading = ref(false);
     const lstToolOpen = ref(null); // which listing tool panel is expanded in property folder
