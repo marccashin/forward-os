@@ -651,6 +651,16 @@
       <div class="agent-chip">
         <div style="color:rgba(255,255,255,.4);font-size:10px;letter-spacing:.5px;margin-bottom:2px;text-transform:uppercase;">Logged in as</div>
         <div style="color:#fff;font-size:14px;font-weight:600;">{{ agentName }}</div>
+        <div v-if="isAdmin" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.12);padding-top:10px;">
+          <div style="color:rgba(255,255,255,.4);font-size:9px;letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;">Switch to</div>
+          <div v-for="a in agentSwitchList" :key="a"
+               @click="quickSwitchAgent(a)"
+               style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;padding:6px 8px;border-radius:6px;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;gap:6px;"
+               @mouseenter="$event.currentTarget.style.background='rgba(255,255,255,0.1)'"
+               @mouseleave="$event.currentTarget.style.background='transparent'">
+            <span style="font-size:10px;opacity:0.5;">›</span> {{ a }}
+          </div>
+        </div>
       </div>
       <!-- Nav -->
       <nav style="padding:10px;flex:1;">
@@ -5967,6 +5977,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       loggedIn.value = false;
       agentName.value = '';
       view.value = 'dashboard';
+    }
+    // Quick agent switcher (admin only — no logout required)
+    const agentSwitchList = computed(() => AGENTS.filter(a => a !== agentName.value));
+    function quickSwitchAgent(name) {
+      agentName.value = name;
+      localStorage.setItem('fos_agent', name);
+      go('dashboard');
     }
 
     // ── Listings System (Feature 1) ──────────────────────────────────────
@@ -12722,7 +12739,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
-      sessionEmail, switchAgent,
+      sessionEmail, switchAgent, agentSwitchList, quickSwitchAgent,
       // Listings System
       lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
