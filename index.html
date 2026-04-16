@@ -651,7 +651,7 @@
       <div class="agent-chip">
         <div style="color:rgba(255,255,255,.4);font-size:10px;letter-spacing:.5px;margin-bottom:2px;text-transform:uppercase;">Logged in as</div>
         <div style="color:#fff;font-size:14px;font-weight:600;">{{ agentName }}</div>
-        <div v-if="isAdmin" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.12);padding-top:10px;">
+        <div v-if="isOriginalAdmin" style="margin-top:10px;border-top:1px solid rgba(255,255,255,0.12);padding-top:10px;">
           <div style="color:rgba(255,255,255,.4);font-size:9px;letter-spacing:.5px;margin-bottom:6px;text-transform:uppercase;">Switch to</div>
           <div v-for="a in agentSwitchList" :key="a"
                @click="quickSwitchAgent(a)"
@@ -5974,11 +5974,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function switchAgent() {
       if (!confirm('Switch to a different agent?')) return;
       localStorage.removeItem('fos_agent');
+      localStorage.removeItem('fos_original_agent');
       loggedIn.value = false;
       agentName.value = '';
       view.value = 'dashboard';
     }
     // Quick agent switcher (admin only — no logout required)
+    const originalAgent = ref(localStorage.getItem('fos_original_agent') || localStorage.getItem('fos_agent') || '');
+    const isOriginalAdmin = computed(() => ADMIN_AGENTS.includes(originalAgent.value));
     const agentSwitchList = computed(() => AGENTS.filter(a => a !== agentName.value));
     function quickSwitchAgent(name) {
       agentName.value = name;
@@ -11859,6 +11862,8 @@ async function voiceCrmSubmit() {
       if (loginCode.value !== ACCESS_CODE) { loginError.value='Incorrect access code.'; loginCode.value=''; return; }
       agentName.value = loginAgent.value;
       localStorage.setItem('fos_agent', loginAgent.value);
+      localStorage.setItem('fos_original_agent', loginAgent.value);
+      originalAgent.value = loginAgent.value;
       loggedIn.value = true;
       bw.name = loginAgent.value;
       jl.agent = loginAgent.value;
@@ -12739,7 +12744,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
-      sessionEmail, switchAgent, agentSwitchList, quickSwitchAgent,
+      sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
       // Listings System
       lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
