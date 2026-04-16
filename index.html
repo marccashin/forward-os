@@ -5986,6 +5986,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function quickSwitchAgent(name) {
       agentName.value = name;
       localStorage.setItem('fos_agent', name);
+      refreshPropFiles();
       go('dashboard');
     }
 
