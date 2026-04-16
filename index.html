@@ -840,6 +840,15 @@
               </div>
               <span style="margin-left:auto;color:var(--gold);font-size:18px;">→</span>
             </div>
+            <!-- Knowledge Base Sync -->
+            <div class="tool-card" @click="syncKnowledgeBase" style="max-width:340px;display:flex;align-items:center;gap:14px;border:1.5px solid #e5e7eb;background:#fff;margin-top:10px;opacity:1;">
+              <span style="font-size:28px;">📂</span>
+              <div>
+                <div style="font-size:14px;font-weight:700;color:var(--navy);">Sync Knowledge Base</div>
+                <div style="font-size:12px;color:#9ca3af;margin-top:3px;">{{ kbSyncing ? 'Syncing from Drive…' : (kbSyncMsg || 'Pull latest docs from Drive folder') }}</div>
+              </div>
+              <span style="margin-left:auto;color:var(--gold);font-size:18px;">{{ kbSyncing ? '⏳' : '↓' }}</span>
+            </div>
           </div>
 
         </template>
@@ -10954,7 +10963,28 @@ No markdown. Valid JSON only.`;
     const listingPresentationUrl = computed(() => LISTING_PRESENTATIONS[agentName.value] || '');
 
     // ── Helpers ────────────────────────────────────────────
-// ── Voice Assistant System ──────────────────────────────────────────────
+// ── Knowledge Base ─────────────────────────────────────────────────────
+    const kbSyncing = ref(false);
+    const kbSyncMsg = ref('');
+
+    async function syncKnowledgeBase() {
+      kbSyncing.value = true;
+      kbSyncMsg.value = '';
+      try {
+        const res = await fetch(RAILWAY_URL + '/sync-knowledge', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ folder_id: '1miL-1DSGwFjVqXZuhG3D50ToCswtN5KA' })
+        });
+        const data = await res.json();
+        kbSyncMsg.value = data.message || ('Synced ' + (data.synced || 0) + ' documents.');
+      } catch(e) {
+        kbSyncMsg.value = 'Sync failed: ' + (e.message || 'unknown error');
+      }
+      kbSyncing.value = false;
+    }
+
+    // ── Voice Assistant System ──────────────────────────────────────────────
 const voiceModal = reactive({
   show: false,
   phase: 'listening', // listening | review | followup | crm-review | done | crm-result | error
@@ -11259,6 +11289,18 @@ function voiceClose() {
   if (_voiceRecognition) { try { _voiceRecognition.stop(); } catch(e) {} }
   if (_voiceFollowupRecognition) { try { _voiceFollowupRecognition.stop(); } catch(e) {} }
   voiceModal.show = false;
+}
+
+
+// ── Knowledge Base Search ─────────────────────────────────────────────────
+async function kbSearch(query) {
+  try {
+    const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 4);
+    if (!words.length) return [];
+    const keyword = encodeURIComponent(words[0]);
+    const results = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category&content=ilike.*' + keyword + '*&limit=5');
+    return Array.isArray(results) ? results : [];
+  } catch(e) { return []; }
 }
 
 async function voiceParse() {
@@ -12640,6 +12682,14 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
         // Fetch FORWARD training content (TC_PILLARS + any connected Google Docs)
         const trainingContent = await getAgentToolsContent(question);
 
+        // ── Knowledge Base: search Marc's uploaded materials first ────────
+        const _kbDocs = await kbSearch(question);
+        const _hasKb = _kbDocs.length > 0;
+        const _kbContext = _hasKb
+          ? '\n\n━━ UPLOADED TRAINING MATERIALS ━━\n' + _kbDocs.map(d => '[' + d.file_name + ']\n' + (d.content||'').slice(0,800)).join('\n\n---\n\n')
+          : '';
+        // ─────────────────────────────────────────────────────────────────
+
         // Detect if question is contract/forms related
         const contractKeywords = ['contract','form','addendum','disclosure','contingency','gcaar','mar','nvar','nar','ratified','offer','deed','closing','settlement','inspection','contingent','escrow','earnest','title','lien','deed of trust','transfer tax','recordation','topa','poa','hoa disclosure','lead paint','radon'];
         const q = question.toLowerCase();
@@ -12663,9 +12713,13 @@ SOURCE ATTRIBUTION RULES — always end your answer with a source line:
 FORMATTING:
 - Answer in 3-5 concise sentences. Plain prose, no bullet points, no headers.
 - Be direct and practical — agents are asking in the field.
+- If answered from uploaded materials, start with "📁 Based on your uploaded training materials..."
 - If the answer is in the training, start with "Based on your FORWARD training..."
 - If from jurisdiction knowledge, start with "For [DC/MD/VA] real estate..."
 - If from Marc's Methods, start with "Based on Marc's approach here..."
+- If using general knowledge only (not from uploaded docs), end with: "\n\n⚠️ This answer is based on general real estate best practices, not your uploaded materials."
+
+${_kbContext}
 
 ${trainingContent}
 
@@ -12788,6 +12842,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
+      kbSyncing, kbSyncMsg, syncKnowledgeBase,
       // Listings System
       lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
