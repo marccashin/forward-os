@@ -767,22 +767,60 @@
               <p style="margin:2px 0 0;font-size:13px;color:#78350f;">Go to <span style="cursor:pointer;font-weight:700;text-decoration:underline;" @click="go('settings')">Settings</span> to add your API key before using the AI tools.</p>
             </div>
           </div>
-          <!-- My Listings & My Buyers Summary Panels -->
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;" class="dash-summary-grid">
-            <div class="card" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px;">
-              <div style="font-size:32px;margin-bottom:8px;">🏠</div>
-              <div style="font-size:28px;font-weight:700;color:var(--navy);">{{ lstProperties.length }}</div>
-              <div style="font-size:13px;color:#6b7280;margin:4px 0 14px;">Active Listing{{ lstProperties.length !== 1 ? 's' : '' }}</div>
-              <button class="btn-navy" @click="go('listings')" style="font-size:13px;padding:10px 24px;">Go to Listings</button>
+          <!-- Today's Focus -->
+          <div style="margin-bottom:24px;">
+
+            <!-- Dual Primary CTAs -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;" class="dash-cta-grid">
+              <button class="btn-navy" @click="go('meeting-prep')" style="padding:15px 20px;font-size:14px;font-weight:600;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;line-height:1.2;">
+                <span style="font-size:18px;">🏠</span><span>Prep Listing<br>Presentation</span>
+              </button>
+              <button class="btn-gold" @click="go('meeting-prep')" style="padding:15px 20px;font-size:14px;font-weight:600;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:9px;line-height:1.2;">
+                <span style="font-size:18px;">👥</span><span>Prep Buyer<br>Consultation</span>
+              </button>
             </div>
-            <div class="card" style="display:flex;flex-direction:column;align-items:center;text-align:center;padding:28px 20px;">
-              <div style="font-size:32px;margin-bottom:8px;">👥</div>
-              <div style="font-size:28px;font-weight:700;color:var(--navy);">{{ byrBuyers.length }}</div>
-              <div style="font-size:13px;color:#6b7280;margin:4px 0 14px;">Active Buyer{{ byrBuyers.length !== 1 ? 's' : '' }}</div>
-              <button class="btn-navy" @click="go('buyer-package')" style="font-size:13px;padding:10px 24px;">Go to Buyers</button>
+
+            <!-- Your Listings -->
+            <div v-if="lstProperties.length" style="margin-bottom:16px;">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7280;text-transform:uppercase;margin-bottom:8px;">Your Listings</div>
+              <div v-for="p in lstProperties.slice(0,3)" :key="p.id" style="background:#fff;border-radius:12px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1px solid #e5e7eb;">
+                <div style="font-size:20px;flex-shrink:0;">🏠</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.address }}</div>
+                </div>
+                <button class="btn-navy" @click="go('meeting-prep')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
+                <button class="apb-btn-outline" @click="go('listings')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Open Tools</button>
+              </div>
+              <div v-if="lstProperties.length > 3" @click="go('listings')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ lstProperties.length }} listings →</div>
             </div>
+
+            <!-- Your Buyers -->
+            <div v-if="byrBuyers.length">
+              <div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7280;text-transform:uppercase;margin-bottom:8px;">Your Buyers</div>
+              <div v-for="b in byrBuyers.slice(0,3)" :key="b.id" style="background:#fff;border-radius:12px;padding:13px 16px;margin-bottom:8px;display:flex;align-items:center;gap:12px;border:1px solid #e5e7eb;">
+                <div style="font-size:20px;flex-shrink:0;">👤</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ b.buyer_name }}</div>
+                </div>
+                <button class="btn-gold" @click="go('meeting-prep')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Consult</button>
+                <button class="apb-btn-outline" @click="go('buyer-package')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">View Buyer</button>
+              </div>
+              <div v-if="byrBuyers.length > 3" @click="go('buyer-package')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ byrBuyers.length }} buyers →</div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-if="!lstProperties.length && !byrBuyers.length" style="background:#fff;border-radius:12px;padding:28px 20px;text-align:center;border:1.5px dashed #d1d5db;">
+              <div style="font-size:30px;margin-bottom:8px;">🚀</div>
+              <div style="font-weight:600;color:var(--navy);margin-bottom:4px;">Ready to get started?</div>
+              <div style="font-size:13px;color:#6b7280;margin-bottom:16px;">Add your first listing or buyer to see your focus here.</div>
+              <div style="display:flex;gap:10px;justify-content:center;">
+                <button class="btn-navy" @click="go('listings')" style="font-size:13px;padding:9px 18px;">+ New Listing</button>
+                <button class="btn-gold" @click="go('buyer-package')" style="font-size:13px;padding:9px 18px;">+ New Buyer</button>
+              </div>
+            </div>
+
           </div>
-          <style>@media(max-width:640px){.dash-summary-grid{grid-template-columns:1fr !important;}}</style>
+          <style>@media(max-width:640px){.dash-cta-grid{grid-template-columns:1fr !important;}}</style>
 
           <!-- Voice Hero -->
           <div class="dash-mic-hero">
