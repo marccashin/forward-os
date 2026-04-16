@@ -789,7 +789,7 @@
                   <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ p.address }}</div>
                 </div>
                 <button class="btn-navy" @click="go('meeting-prep')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
-                <button class="apb-btn-outline" @click="go('listings')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Open Tools</button>
+                <button @click="go('listings')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;border:1.5px solid #d1d5db;background:transparent;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:500;">Open Tools</button>
               </div>
               <div v-if="lstProperties.length > 3" @click="go('listings')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ lstProperties.length }} listings →</div>
             </div>
@@ -803,7 +803,7 @@
                   <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ b.buyer_name }}</div>
                 </div>
                 <button class="btn-gold" @click="go('meeting-prep')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Consult</button>
-                <button class="apb-btn-outline" @click="go('buyer-package')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">View Buyer</button>
+                <button @click="go('buyer-package')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;border:1.5px solid #d1d5db;background:transparent;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:500;">View Buyer</button>
               </div>
               <div v-if="byrBuyers.length > 3" @click="go('buyer-package')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ byrBuyers.length }} buyers →</div>
             </div>
