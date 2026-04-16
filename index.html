@@ -719,7 +719,7 @@
               <div class="dash-mic-inner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
             </button>
             <div class="dash-mic-label">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Listening…' : 'FORWARD Voice' }}</div>
-            <div class="dash-mic-sublabel">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Tap to stop' : 'Say: "Net sheet for 123 Main St DC at $750K" or "How do I handle a low-ball offer?"' }}</div>
+            <div class="dash-mic-sublabel">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Tap to stop' : 'Say: "Open 123 Main St" · "Net sheet for 123 Main St at $750K" · "How do I handle a low-ball offer?"' }}</div>
           </div>
 
           <!-- ── Add Contact to Follow Up Boss ─── -->
@@ -11010,7 +11010,7 @@ const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Es
 
 Return format:
 {
-  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "meeting-prep" | "general-question",
+  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "meeting-prep" | "general-question" | "navigate",
   "fields": { all key-value pairs you could extract from the speech },
   "missing": [ every field from the REQUIRED list below that was NOT mentioned ]
 }
@@ -11058,6 +11058,10 @@ Field keys: buyerName, buyerEmail, buyerPhone,
   neighborhoods (comma-separated), budget (e.g. "$600K-$850K"),
   timeline (asap/1-3months/3-6months/6-12months/12+months),
   preferences (text: beds, baths, garage, style, etc.)
+
+━━ NAVIGATE ━━
+Use when the agent says: open / go to / show me / take me to / pull up / navigate to + a property address or buyer name.
+Field keys: query (the address or name as spoken), type ("listing" or "buyer" — infer from context)
 
 ━━ RULES ━━
 - Strip $ signs and commas from all numbers ("800000" not "$800,000", "2.5" not "2.5%")
@@ -11259,6 +11263,25 @@ function voiceClose() {
 
 async function voiceParse() {
   if (!voiceModal.transcript.trim()) return;
+
+  // ── Navigation pre-check (no Claude call needed) ──────────────────
+  const _navPat = /^(?:open|go to|take me to|show me|navigate to|pull up|bring up|switch to)\s+(.+)/i;
+  const _navM = _navPat.exec(voiceModal.transcript.trim());
+  if (_navM) {
+    const _q = _navM[1].toLowerCase().replace(/[.!?,]+$/, '').trim();
+    const _mp = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase();
+      return _a.includes(_q) || _q.includes(_a.split(',')[0].trim());
+    });
+    if (_mp) { voiceClose(); lstOpenProperty(_mp); return; }
+    const _mb = byrBuyers.value.find(b => {
+      const _n = b.buyer_name.toLowerCase();
+      return _n.includes(_q) || _q.includes(_n) || _q.includes(_n.split(' ')[0]);
+    });
+    if (_mb) { voiceClose(); byrOpenBuyer(_mb); return; }
+  }
+  // ── End navigation pre-check ──────────────────────────────────────
+
   voiceModal.parsing = true;
 
   let parsed;
@@ -11301,6 +11324,25 @@ async function voiceParse() {
     // Set pendingApply → the watch() in setup() handles prefill + navigation
     voiceModal.pendingApply = true;
     voiceClose();
+    return;
+  }
+
+  // Navigate to a specific listing or buyer by address/name
+  if (parsed.tool === 'navigate') {
+    const _nq = ((parsed.fields && parsed.fields.query) || voiceModal.transcript).toLowerCase().trim();
+    const _np = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase();
+      return _a.includes(_nq) || _nq.includes(_a.split(',')[0].trim());
+    });
+    if (_np) { voiceClose(); lstOpenProperty(_np); return; }
+    const _nb = byrBuyers.value.find(b => {
+      const _n = b.buyer_name.toLowerCase();
+      return _n.includes(_nq) || _nq.includes(_n);
+    });
+    if (_nb) { voiceClose(); byrOpenBuyer(_nb); return; }
+    voiceModal.parsing = false;
+    voiceModal.phase = 'error';
+    voiceModal.errorMsg = 'Couldn't find "' + ((parsed.fields && parsed.fields.query) || voiceModal.transcript) + '". Check the address or name and try again.';
     return;
   }
 
