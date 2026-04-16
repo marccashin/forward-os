@@ -11342,7 +11342,7 @@ async function voiceParse() {
     if (_nb) { voiceClose(); byrOpenBuyer(_nb); return; }
     voiceModal.parsing = false;
     voiceModal.phase = 'error';
-    voiceModal.errorMsg = 'Couldn't find "' + ((parsed.fields && parsed.fields.query) || voiceModal.transcript) + '". Check the address or name and try again.';
+    voiceModal.errorMsg = `Couldn't find "` + ((parsed.fields && parsed.fields.query) || voiceModal.transcript) + `". Check the address or name and try again.`;
     return;
   }
 
