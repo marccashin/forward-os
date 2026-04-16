@@ -30,7 +30,17 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
 
-  const { content, message, filename = 'index.html' } = body;
+  const { content, message, filename = 'index.html', repo: bodyRepo = 'marccashin/forward-os', action = 'push' } = body;
+  if (action === 'read') {
+    // Read-only mode: get file content + SHA
+    try {
+      const jwt2 = createJWT(appId, privateKey);
+      const tr2 = await fetch('https://api.github.com/app/installations/124051198/access_tokens', { method:'POST', headers:{'Authorization':'Bearer '+jwt2,'Accept':'application/vnd.github+json'} }).then(r=>r.json());
+      const rh2 = {'Authorization':'token '+tr2.token,'Content-Type':'application/json'};
+      const meta2 = await fetch('https://api.github.com/repos/'+bodyRepo+'/contents/'+filename, {headers:rh2}).then(r=>r.json());
+      return { statusCode:200, body: JSON.stringify({ sha: meta2.sha, content: meta2.content, encoding: meta2.encoding }) };
+    } catch(e) { return { statusCode:500, body: JSON.stringify({error:e.message}) }; }
+  }
   if (!content || !message) return { statusCode: 400, body: 'Missing fields: content and message required' };
 
   try {
@@ -64,7 +74,7 @@ exports.handler = async (event) => {
       'Content-Type': 'application/json'
     };
 
-    const repo = 'marccashin/forward-os';
+    const repo = bodyRepo;
 
     // 4. Get current file SHA
     const meta = await fetch(
