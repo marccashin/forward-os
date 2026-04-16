@@ -82,17 +82,15 @@ exports.handler = async (event) => {
       { headers: repoHeaders }
     ).then(r => r.json());
 
-    if (!meta.sha) {
-      return { statusCode: 500, body: JSON.stringify({ error: 'Could not get file SHA', detail: meta }) };
-    }
-
-    // 5. Push new content
+    // 5. Push new content (create if no sha, update if sha exists)
+    const putBody = { message, content };
+    if (meta.sha) putBody.sha = meta.sha;
     const result = await fetch(
       `https://api.github.com/repos/${repo}/contents/${filename}`,
       {
         method: 'PUT',
         headers: repoHeaders,
-        body: JSON.stringify({ message, content, sha: meta.sha })
+        body: JSON.stringify(putBody)
       }
     ).then(r => r.json());
 
