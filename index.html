@@ -4605,7 +4605,7 @@
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn-outline" @click="voiceClose" style="flex:1;min-height:48px;">Close</button>
-        <button class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;"><button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">📋 Copy Content</button>📚 Full Training</button>
+        <button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">📋 Copy Content</button><button class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;">📚 Full Training</button>
       </div>
     </template>
 
@@ -11519,7 +11519,7 @@ async function voiceParse() {
                 if (parsed.tool === 'write-content') {
                 const _wq=((parsed.fields&&parsed.fields.query)||voiceModal.transcript).trim();
                 const _wct=(parsed.fields&&parsed.fields.content_type)||'both';
-                const _wp=lstProperties.value.find(p=>{const _a=p.address.toLowerCase();return _a.includes(_wq.toLowerCase())||_wq.toLowerCase().includes(_a.split(',')[0].trim());});
+                const _wp=lstProperties.value.find(p=>{const _a=p.address.toLowerCase();const _q=_wq.toLowerCase();if(_a.includes(_q)||_q.includes(_a.split(',')[0].trim()))return true;const _an=_a.match(/\d+/);const _qn=_q.match(/\d+/);return!!(_an&&_qn&&_an[0]===_qn[0]);});
                 voiceModal.parsing=false;voiceModal.phase='answer';voiceModal.detectedTool='write-content';
                 voiceModal.answerQuestion='✍️ Writing content for: '+_wq;
                 voiceModal.generatedContent='';
