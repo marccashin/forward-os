@@ -719,7 +719,7 @@
               <div class="dash-mic-inner"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
             </button>
             <div class="dash-mic-label">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Listening…' : 'FORWARD Voice' }}</div>
-            <div class="dash-mic-sublabel">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Tap to stop' : 'Say: "Open 123 Main St" · "Net sheet for 123 Main St at $750K" · "How do I handle a low-ball offer?"' }}</div>
+            <div class="dash-mic-sublabel">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Tap to stop' : 'Say: "Write open house copy for 19209 Croom Rd" · "Net sheet for 123 Main at $750K" · "Handle a low-ball offer?"' }}</div>
           </div>
 
           <!-- ── Add Contact to Follow Up Boss ─── -->
@@ -4605,7 +4605,7 @@
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn-outline" @click="voiceClose" style="flex:1;min-height:48px;">Close</button>
-        <button class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;">📚 Full Training</button>
+        <button class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;"><button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">📋 Copy Content</button>📚 Full Training</button>
       </div>
     </template>
 
@@ -11118,6 +11118,7 @@ const voiceModal = reactive({
   extractedFields: {},
   missingFields: [],
   errorMsg: '',
+        generatedContent: '',
   // Business card / image attachment
   imageData: null,    // base64 data URL
   imageName: '',
@@ -11161,7 +11162,7 @@ const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Es
 
 Return format:
 {
-  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "meeting-prep" | "general-question" | "navigate",
+  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "meeting-prep" | "general-question" | "navigate" | "write-content",
   "fields": { all key-value pairs you could extract from the speech },
   "missing": [ every field from the REQUIRED list below that was NOT mentioned ]
 }
@@ -11213,6 +11214,10 @@ Field keys: buyerName, buyerEmail, buyerPhone,
 ━━ NAVIGATE ━━
 Use when the agent says: open / go to / show me / take me to / pull up / navigate to + a property address or buyer name.
 Field keys: query (the address or name as spoken), type ("listing" or "buyer" — infer from context)
+
+━━ WRITE CONTENT ━━
+Use when agent says: write / generate / create / draft + (open house copy / social post / Instagram / Facebook / marketing copy) + for [address].
+Field keys: query (address as spoken), content_type ("open-house" | "social-post" | "both" — if unclear, use "both")
 
 ━━ RULES ━━
 - Strip $ signs and commas from all numbers ("800000" not "$800,000", "2.5" not "2.5%")
@@ -11410,6 +11415,7 @@ function voiceClose() {
   if (_voiceRecognition) { try { _voiceRecognition.stop(); } catch(e) {} }
   if (_voiceFollowupRecognition) { try { _voiceFollowupRecognition.stop(); } catch(e) {} }
   voiceModal.show = false;
+            voiceModal.generatedContent = '';
 }
 
 
@@ -11510,7 +11516,27 @@ async function voiceParse() {
   }
 
   // General question → answer using training content, stay in modal
-  if (parsed.tool === 'general-question') {
+                if (parsed.tool === 'write-content') {
+                const _wq=((parsed.fields&&parsed.fields.query)||voiceModal.transcript).trim();
+                const _wct=(parsed.fields&&parsed.fields.content_type)||'both';
+                const _wp=lstProperties.value.find(p=>{const _a=p.address.toLowerCase();return _a.includes(_wq.toLowerCase())||_wq.toLowerCase().includes(_a.split(',')[0].trim());});
+                voiceModal.parsing=false;voiceModal.phase='answer';voiceModal.detectedTool='write-content';
+                voiceModal.answerQuestion='✍️ Writing content for: '+_wq;
+                voiceModal.generatedContent='';
+                if(!_wp){voiceModal.answerText='⚠️ No listing found for "'+_wq+'". Use address as shown in Listings tab.';return;}
+                const _pd=['Address: '+_wp.address,'Price: $'+Number(_wp.list_price||_wp.price||0).toLocaleString(),'Beds: '+(_wp.beds||_wp.bedrooms||'N/A'),'Baths: '+(_wp.baths||_wp.bathrooms||'N/A'),'Sq Ft: '+(_wp.sqft||_wp.square_feet||'N/A'),'Description: '+(_wp.description||_wp.notes||'')].join('\n');
+                const _tp=_wct==='open-house'?'Write compelling open house marketing copy. Include a headline, 3-4 sentences, and a CTA under 150 words.':_wct==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline + 3-4 sentences + CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
+                voiceModal.answerText='⏳ Generating content…';
+                try{
+                  const _key=localStorage.getItem('fos_key')||ANTHROPIC_KEY;
+                  const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
+                  const _d=await _r.json();
+                  if(_d.content&&_d.content[0]){voiceModal.generatedContent=_d.content[0].text;voiceModal.answerText='✨ '+_d.content[0].text;}
+                  else{voiceModal.answerText='⚠️ '+((_d.error&&_d.error.message)||'Generation failed.');}
+                }catch(e){voiceModal.answerText='⚠️ Error: '+e.message;}
+                return;
+              }
+              if (parsed.tool === 'general-question') {
     voiceModal.answerQuestion = parsed.fields?.question || voiceModal.transcript;
     voiceModal.answerText = '';
     voiceModal.pendingAnswer = true;  // watch() in setup() handles the answer
