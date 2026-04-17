@@ -4609,7 +4609,19 @@
       </div>
     </template>
 
-    <!-- Phase: error -->
+    <!-- Phase: confirm-write -->
+              <template v-else-if="voiceModal.phase==='confirm-write'">
+                <div style="padding:12px 0 4px;">
+                  <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Address</div>
+                  <input v-model="voiceModal.confirmAddress" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;" placeholder="Address..." />
+                  <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Content type</div>
+                  <div style="display:flex;gap:6px;margin-bottom:14px;">
+                    <button v-for="t in [{v:'both',l:'Both'},{v:'open-house',l:'Open House'},{v:'social-post',l:'Social Post'}]" :key="t.v" @click="voiceModal.confirmType=t.v" :style="{flex:1,padding:'8px 4px',borderRadius:'8px',border:'1.5px solid '+(voiceModal.confirmType===t.v?'var(--navy)':'#e2e8f0'),background:voiceModal.confirmType===t.v?'var(--navy)':'#fff',color:voiceModal.confirmType===t.v?'#fff':'#374151',fontWeight:600,cursor:'pointer',fontSize:'12px'}">{{t.l}}</button>
+                  </div>
+                  <button @click="voiceModal.generate&&voiceModal.generate()" class="btn-navy" style="width:100%;min-height:50px;font-size:15px;">✨ Generate</button>
+                </div>
+              </template>
+              <!-- Phase: error -->
     <template v-else-if="voiceModal.phase==='error'">
       <div style="text-align:center;padding:16px 0;">
         <div style="margin-bottom:12px;color:#dc2626;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
@@ -11520,20 +11532,25 @@ async function voiceParse() {
                 const _wq=((parsed.fields&&parsed.fields.query)||voiceModal.transcript).trim();
                 const _wct=(parsed.fields&&parsed.fields.content_type)||'both';
                 const _wp=lstProperties.value.find(p=>{const _a=p.address.toLowerCase();const _q=_wq.toLowerCase();if(_a.includes(_q)||_q.includes(_a.split(',')[0].trim()))return true;const _an=_a.match(/\d+/);const _qn=_q.match(/\d+/);return!!(_an&&_qn&&_an[0]===_qn[0]);});
-                voiceModal.parsing=false;voiceModal.phase='answer';voiceModal.detectedTool='write-content';
-                voiceModal.answerQuestion='✍️ Writing content for: '+_wq;
-                voiceModal.generatedContent='';
-                if(!_wp){voiceModal.answerText='⚠️ No listing found for "'+_wq+'". Use address as shown in Listings tab.';return;}
-                const _pd=['Address: '+_wp.address,'Price: $'+Number(_wp.list_price||_wp.price||0).toLocaleString(),'Beds: '+(_wp.beds||_wp.bedrooms||'N/A'),'Baths: '+(_wp.baths||_wp.bathrooms||'N/A'),'Sq Ft: '+(_wp.sqft||_wp.square_feet||'N/A'),'Description: '+(_wp.description||_wp.notes||'')].join('\n');
-                const _tp=_wct==='open-house'?'Write compelling open house marketing copy. Include a headline, 3-4 sentences, and a CTA under 150 words.':_wct==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline + 3-4 sentences + CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
-                voiceModal.answerText='⏳ Generating content…';
-                try{
-                  const _key=localStorage.getItem('fos_key')||ANTHROPIC_KEY;
-                  const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
-                  const _d=await _r.json();
-                  if(_d.content&&_d.content[0]){voiceModal.generatedContent=_d.content[0].text;voiceModal.answerText='✨ '+_d.content[0].text;}
-                  else{voiceModal.answerText='⚠️ '+((_d.error&&_d.error.message)||'Generation failed.');}
-                }catch(e){voiceModal.answerText='⚠️ Error: '+e.message;}
+                voiceModal.parsing=false;voiceModal.generatedContent='';
+                if(!_wp){voiceModal.phase='answer';voiceModal.detectedTool='write-content';voiceModal.answerQuestion='✍️ '+_wq;voiceModal.answerText='⚠️ No listing found for "'+_wq+'". Use the address shown in Listings tab.';return;}
+                voiceModal.phase='confirm-write';voiceModal.detectedTool='write-content';
+                voiceModal.confirmAddress=_wp.address;voiceModal.confirmType=_wct;
+                voiceModal.generate=async()=>{
+                  const _cwp=lstProperties.value.find(p=>p.address===voiceModal.confirmAddress)||lstProperties.value.find(p=>{const an=p.address.match(/\d+/);const qn=voiceModal.confirmAddress.match(/\d+/);return an&&qn&&an[0]===qn[0];});
+                  voiceModal.phase='answer';voiceModal.answerQuestion='✍️ Writing content for: '+((_cwp&&_cwp.address)||voiceModal.confirmAddress);
+                  if(!_cwp){voiceModal.answerText='⚠️ Address not found.';return;}
+                  voiceModal.answerText='⏳ Generating content…';
+                  const _pd=['Address: '+_cwp.address,'Price: $'+Number(_cwp.list_price||_cwp.price||0).toLocaleString(),'Beds: '+(_cwp.beds||_cwp.bedrooms||'N/A'),'Baths: '+(_cwp.baths||_cwp.bathrooms||'N/A'),'Sq Ft: '+(_cwp.sqft||_cwp.square_feet||'N/A'),'Description: '+(_cwp.description||_cwp.notes||'')].join('\n');
+                  const _tp=voiceModal.confirmType==='open-house'?'Write compelling open house copy: catchy headline, 3-4 sentences, CTA under 150 words.':voiceModal.confirmType==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline+3-4 sentences+CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
+                  try{
+                    const _key=_fosApiKey||localStorage.getItem(agentKey('fos_key'));
+                    const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
+                    const _d=await _r.json();
+                    if(_d.content&&_d.content[0]){voiceModal.generatedContent=_d.content[0].text;voiceModal.answerText='✨ '+_d.content[0].text;}
+                    else{voiceModal.answerText='⚠️ '+((_d.error&&_d.error.message)||'Generation failed.');}
+                  }catch(e){voiceModal.answerText='⚠️ Error: '+e.message;}
+                };
                 return;
               }
               if (parsed.tool === 'general-question') {
