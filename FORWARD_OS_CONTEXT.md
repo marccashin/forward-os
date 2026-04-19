@@ -196,6 +196,10 @@ const ADMIN_AGENT = 'Admin';
 1. **Voice write-content: Full Training button removed** — Added `v-if="voiceModal.detectedTool!=='write-content'"` to the Full Training button in the answer phase template. Button now hidden when generating listing copy.
 2. **Voice write-content: pulls listing description from Supabase** — `voiceModal.generate()` now fetches from `property_notes` table (`subfolder='listing_remarks'`, column `content`) before generating copy. If no description saved, shows actionable error message telling agent to use the Listing Description tool first.
 3. **Discovered `property_notes` table** — Stores raw text for listing descriptions. `ldSaveToProperty()` inserts here with `subfolder='listing_remarks'` and `content=text`. Also stores a branded PDF to `property_assets` via Drive.
+4. **⚠️ Broke app with `$'` replacement pattern** — `String.replace(old, new)` where `new` contained `'Price: $'+Number(...)` — the `$'` token is a JS replacement pattern meaning "insert text following the match," which injected 77,668 chars of source into `_pd`. App showed raw `{{ a }}` / `{{ loginError }}` (Vue failed to mount). Fixed in Chat 12.
+
+### Chat 12 (April 18, 2026)
+1. **Fixed `$'` injection bug** — Broken `_pd` array (77,668 chars, positions 1214808–1292476) replaced with correct 275-char version using `t.substring(0, si) + correctPd + t.substring(ei)` — no `.replace()`. Pushed as commit `78370b65`. App restored.
 
 ---
 
@@ -209,6 +213,7 @@ const ADMIN_AGENT = 'Admin';
 6. **⚠️ Never push outerHTML** — Always fetch `/index.html` fresh, modify `window._src`, and push that. Pushing `document.documentElement.outerHTML` saves the rendered DOM without Vue directives, breaking all buttons.
 7. **Claude in Chrome must be connected** — Without it, Claude cannot read the source or navigate the app. Ensure the Chrome extension is signed in before starting work sessions.
 8. **Async fetch timing** — `fetch('/index.html')` is async. Check `window._src.length` in a separate tool call after fetching to confirm the source loaded before applying patches.
+9. **⚠️ NEVER use `.replace()` for patching source** — JS replacement strings treat `$'` (dollar + apostrophe) as "insert text following the match." Any replacement string containing `$'` (e.g., `'Price: $'+...`) will inject the entire tail of the source file into the patch, breaking Vue. **Always use substring splicing instead:** `t.substring(0, si) + newStr + t.substring(ei)` where `si`/`ei` are `indexOf`-computed boundaries.
 
 ---
 
