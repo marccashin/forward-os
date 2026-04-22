@@ -738,6 +738,18 @@
             <div style="font-size:11px;color:#9ca3af;line-height:1.5;">Say who you just met or snap a photo of their card — AI extracts all the details and you confirm before it goes into Follow Up Boss.</div>
           </div>
 
+          <!-- ── Voice Hints ── -->
+          <div style="margin:0 0 18px;padding:14px 16px;background:rgba(201,168,76,0.07);border:1.5px dashed rgba(201,168,76,0.35);border-radius:12px;">
+            <div style="font-size:10px;font-weight:800;color:#c9a84c;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">💡 Try saying to the mic...</div>
+            <div style="display:flex;flex-wrap:wrap;gap:7px;">
+              <span @click="voiceStart" style="padding:5px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;">&ldquo;Open house for 42 Oak St&rdquo;</span>
+              <span @click="voiceStart" style="padding:5px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;">&ldquo;Social post for 123 Main St&rdquo;</span>
+              <span @click="voiceStart" style="padding:5px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;">&ldquo;Write both for 55 Park Ave&rdquo;</span>
+              <span @click="voiceStart" style="padding:5px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;">&ldquo;Open house and social post&rdquo;</span>
+              <span @click="voiceStart" style="padding:5px 12px;background:#fff;border:1px solid #e5e7eb;border-radius:20px;font-size:12px;color:#374151;cursor:pointer;white-space:nowrap;">&ldquo;Listing copy for 200 Broadway&rdquo;</span>
+            </div>
+          </div>
+
           <!-- ── Agent Feedback Button ── -->
           <div style="text-align:center;margin-bottom:16px;">
             <button @click="openFeedback" style="display:inline-flex;align-items:center;gap:8px;padding:13px 28px;background:linear-gradient(135deg,#c9a84c,#e0be70);border:none;border-radius:12px;cursor:pointer;font-size:15px;font-weight:700;color:#1a2e4a;box-shadow:0 4px 16px rgba(201,168,76,0.45);letter-spacing:0.01em;">
