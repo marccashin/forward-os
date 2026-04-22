@@ -11458,7 +11458,7 @@ async function voiceParse() {
   if (!voiceModal.transcript.trim()) return;
 
   // ── Navigation pre-check (no Claude call needed) ──────────────────
-  const _navPat = /^(?:open|go to|take me to|show me|navigate to|pull up|bring up|switch to)\s+(.+)/i;
+  const _navPat = /^(?:open(?!\s+house)|go to|take me to|show me|navigate to|pull up|bring up|switch to)\s+(.+)/i;
   const _navM = _navPat.exec(voiceModal.transcript.trim());
   if (_navM) {
     const _q = _navM[1].toLowerCase().replace(/[.!?,]+$/, '').trim();
