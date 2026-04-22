@@ -136,10 +136,9 @@ supaRest.delete('table_name', 'id=eq.123')
 ---
 
 ## AGENTS & Admin
-```js
-const AGENTS = ['Marc','Natalie','Serena','Miranda','Admin'];
-const ADMIN_AGENT = 'Admin';
-```
+The `AGENTS` array and login names are already correct in the app. Do NOT suggest changes.
+Real team: Marc Cashin, Ashling McGowan, Niki Lang, Cesar Rivera, Charlotte Lee, Shannon Casey, + Operations role.
+The `ADMIN_AGENT` is `'Admin'`.
 
 ---
 
