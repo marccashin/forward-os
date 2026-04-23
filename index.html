@@ -7145,7 +7145,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           const fileName = 'Listing-Description-' + prop.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') + '.pdf';
           const blob = buildTextPDF('Listing Description', 'Listing Description — ' + prop.address, text);
           // Also store in property_notes for in-app recall
-          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text, created_by: sessionEmail.value }); } catch {}
+          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); } catch {}
           const formData = new FormData();
           formData.append('file', blob, fileName);
           formData.append('folder_id', folderId);
@@ -11555,7 +11555,7 @@ async function voiceParse() {
                   voiceModal.answerText='⏳ Fetching listing description…';
                   const _ldRes=await supaRest.select('property_notes','select=content&property_id=eq.'+_cwp.id+'&subfolder=eq.listing_remarks').catch(()=>[]);
                   const _ldText=(_ldRes&&_ldRes[0]&&_ldRes[0].content)||'';
-                  if(!_ldText){voiceModal.answerText='⚠️ No listing description found. Open the Listing Description tool in the app, save the description for this property, then try again.';return;}
+                  if(!_ldText){voiceModal.answerText='⚠️ No listing description found. Open the Listing Description tool in the app, re-save the description for this property, then try again.';return;}
                   const _pd=['Address: '+_cwp.address,'Price: $'+Number(_cwp.list_price||_cwp.price||0).toLocaleString(),'Beds: '+(_cwp.beds||_cwp.bedrooms||'N/A'),'Baths: '+(_cwp.baths||_cwp.bathrooms||'N/A'),'Sq Ft: '+(_cwp.sqft||_cwp.square_feet||'N/A'),'Description: '+_ldText].join('\n');
                   const _tp=voiceModal.confirmType==='open-house'?'Write compelling open house copy: catchy headline, 3-4 sentences, CTA under 150 words.':voiceModal.confirmType==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline+3-4 sentences+CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
                   try{
