@@ -11549,7 +11549,7 @@ async function voiceParse() {
                 voiceModal.phase='confirm-write';voiceModal.detectedTool='write-content';
                 voiceModal.confirmAddress=_wp.address;voiceModal.confirmType=_wct;
                 voiceModal.generate=async()=>{
-                  const _cwp=lstProperties.value.find(p=>p.address===voiceModal.confirmAddress)||lstProperties.value.find(p=>{const an=p.address.match(/\d+/);const qn=voiceModal.confirmAddress.match(/\d+/);return an&&qn&&an[0]===qn[0];});
+                  const _addrNorm=s=>(s||"").toLowerCase().replace(/\brd\b/g,"road").replace(/\bst\b/g,"street").replace(/\bave\b/g,"avenue").replace(/\bdr\b/g,"drive").replace(/\bblvd\b/g,"boulevard").replace(/[.,]/g,"").replace(/\s+/g," ").trim();const _ca=_addrNorm(voiceModal.confirmAddress);const _cwp=lstProperties.value.find(p=>{const _pa=_addrNorm(p.address);if(!_ca)return false;if(_pa===_ca)return true;const _num=_ca.match(/^\d+/)?.[0];const _w1=_ca.split(" ")[1]||"";return _num&&_w1&&_pa.startsWith(_num)&&(_pa.includes(_w1)||_ca.includes(_pa.split(" ")[1]||""));})||lstProperties.value.find(p=>{const an=p.address.match(/\d+/);const qn=voiceModal.confirmAddress.match(/\d+/);return an&&qn&&an[0]===qn[0];});
                   voiceModal.phase='answer';voiceModal.answerQuestion='✍️ Writing content for: '+((_cwp&&_cwp.address)||voiceModal.confirmAddress);
                   if(!_cwp){voiceModal.answerText='⚠️ Address not found.';return;}
                   voiceModal.answerText='⏳ Fetching listing description…';
