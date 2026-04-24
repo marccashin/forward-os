@@ -7,7 +7,7 @@
 A Vue 3 SPA (single-file, no build step) for real estate agents.
 - **Live site:** https://forward-os.netlify.app
 - **Source:** https://github.com/marccashin/forward-os (main branch)
-- ~13,000 lines of HTML/JS/CSS in a single index.html (~1,294,669 chars as of Chat 14)
+- ~13,000 lines of HTML/JS/CSS in a single index.html (~1,298,478 chars as of Chat 15)
 
 ---
 
@@ -167,6 +167,10 @@ Fixed $' injection bug. Feedback button gold CTA. Railway → Hobby plan.
 3. Backfilled 19209 Croom Road description from Drive PDF into property_notes
 4. Context file rebuilt (previous GitHub version was truncated)
 5. Pitfall: never double-wrap window.fetch — use fresh tab if fetch breaks
+
+### Chat 15 (April 23, 2026)
+1. **Google Maps distance integration** — Added `ldGetAmenityDistances(address)` using Geocoder + PlacesService + DistanceMatrixService. Injects real driving distances into LD_SYSTEM prompt as VERIFIED DISTANCE DATA. Updated instruction #7 to require ONLY provided distances. Commit `b03be525`.
+2. Pitfall: Browser fetch broken by prior session interceptors — opened fresh tab for all subsequent fetches and push.
 
 ---
 
