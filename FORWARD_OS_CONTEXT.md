@@ -7,7 +7,7 @@
 A Vue 3 SPA (single-file, no build step) for real estate agents.
 - **Live site:** https://forward-os.netlify.app
 - **Source:** https://github.com/marccashin/forward-os (main branch)
-- ~13,000 lines of HTML/JS/CSS in a single index.html (~1,298,478 chars as of Chat 15)
+- ~13,000 lines of HTML/JS/CSS in a single index.html (~1,296,189 chars as of Chat 15)
 
 ---
 
@@ -169,8 +169,9 @@ Fixed $' injection bug. Feedback button gold CTA. Railway → Hobby plan.
 5. Pitfall: never double-wrap window.fetch — use fresh tab if fetch breaks
 
 ### Chat 15 (April 23, 2026)
-1. **Google Maps distance integration** — Added `ldGetAmenityDistances(address)` using Geocoder + PlacesService + DistanceMatrixService. Injects real driving distances into LD_SYSTEM prompt as VERIFIED DISTANCE DATA. Updated instruction #7 to require ONLY provided distances. Commit `b03be525`.
-2. Pitfall: Browser fetch broken by prior session interceptors — opened fresh tab for all subsequent fetches and push.
+1. **Google Maps distance integration**: New Netlify function `get-nearby-places.js` calls Geocoding API + Places Nearby Search + Distance Matrix API server-side. Client-side `ldGetAmenityDistances()` calls the function and injects real driving distances into LD_SYSTEM as VERIFIED DISTANCE DATA. Updated instruction #7 to prohibit fabricated distances. Commits `2f855df2` (index.html), `259fb4f3` (new function).
+2. **Env var required**: `GOOGLE_MAPS_PLACES_KEY` must be set in Netlify with a key that has Places API, Geocoding API, and Distance Matrix API enabled.
+3. Pitfall: Browser fetch broken by prior session interceptors — opened fresh tab for all subsequent work.
 
 ---
 
