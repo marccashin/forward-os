@@ -676,7 +676,6 @@
         <div class="nav-section">AI Tools</div>
         <div class="nav-item" :class="{active:view==='meeting-prep'}" @click="go('meeting-prep')"><span>🧠</span> Meeting Prep</div>
         <div class="nav-item" :class="{active:view==='social-post'}" @click="go('social-post')"><span>📱</span> Social Post Generator</div>
-        <div class="nav-item" :class="{active:view==='bio-writer'}" @click="go('bio-writer')"><span>👤</span> Agent Bio Writer</div>
         <div class="nav-section">CONTENT</div>
         <div class="nav-item" @click="go('video-upload')">🎬 Video Upload</div>
         <div class="nav-section">Account</div>
@@ -1621,59 +1620,7 @@
           </div>
         </template>
 
-        <template v-else-if="view==='bio-writer'">
-          <div class="two-col">
-            <div class="card">
-              <h3 style="margin:0 0 18px;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;">Agent Information</h3>
-              <div class="form-row"><label>Full Name</label><input v-model="bw.name" :placeholder="agentName"/></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-row"><label>Years in Real Estate</label><input v-model="bw.years" type="number" placeholder="8"/></div>
-                <div class="form-row"><label>Licensed In</label><input v-model="bw.states" placeholder="DC, MD, VA"/></div>
-              </div>
-              <div class="form-row"><label>Markets Served</label><input v-model="bw.markets" placeholder="Georgetown, McLean, Bethesda, Old Town…"/></div>
-              <div class="form-row"><label>Specialties</label><input v-model="bw.specs" placeholder="Luxury buyers, relocation, first-time buyers, investment…"/></div>
-              <div class="form-row"><label>Notable Achievements (optional)</label><textarea v-model="bw.achiev" rows="2" placeholder="Top 1% nationally, $50M sold 2024, #1 in McLean 3 years running…" style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='bw-achiev'}" @click="inlineMicToggle('bw-achiev',()=>bw.achiev,v=>bw.achiev=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
-              <div class="form-row"><label>Personal Differentiator / Story</label><textarea v-model="bw.personal" rows="3" placeholder="What makes this agent unique? Background, philosophy, connection to the market…" style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='bw-personal'}" @click="inlineMicToggle('bw-personal',()=>bw.personal,v=>bw.personal=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                <div class="form-row"><label>Tone</label><select v-model="bw.tone"><option value="professional">Professional / Formal</option><option value="conversational">Conversational / Warm</option><option value="bold">Bold / Confident</option></select></div>
-                <div class="form-row"><label>Length</label><select v-model="bw.length"><option value="short">Short (100–150 words)</option><option value="medium">Medium (200–250 words)</option><option value="long">Long (300–400 words)</option></select></div>
-              </div>
-              <button class="btn-gold" @click="genBio" :disabled="bwLoading||!apiKeySet" style="width:100%;margin-top:4px;">
-                <span class="spinner" v-if="bwLoading"></span>{{ bwLoading ? 'Writing Bio…' : '👤 Generate Bio' }}
-              </button>
-            </div>
-            <div>
-              <div class="card">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-                  <h3 style="margin:0;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;">Generated Bio</h3>
-                  <div style="display:flex;gap:8px;" v-if="bwOutput">
-                    <button class="btn-sm btn-copy" @click="copy(bwOutput)">Copy</button>
-                    <button class="btn-sm btn-save" @click="saveOut('bio-writer',(bw.name||agentName)+' Bio',bwOutput)">Save</button>
-                  </div>
-                </div>
-                <template v-if="bwLoading">
-                  <div class="shimmer" style="margin-bottom:10px;width:55%;"></div>
-                  <div class="shimmer" style="margin-bottom:10px;"></div>
-                  <div class="shimmer" style="margin-bottom:10px;width:80%;"></div>
-                  <div class="shimmer" style="margin-bottom:10px;width:65%;"></div>
-                  <div class="shimmer" style="margin-bottom:10px;"></div>
-                  <div class="shimmer" style="width:72%;"></div>
-                </template>
-                <div v-else-if="bwOutput" class="output-box">{{ bwOutput }}</div>
-                <div v-else style="min-height:180px;display:flex;align-items:center;justify-content:center;border:2px dashed #e5e7eb;border-radius:10px;color:#9ca3af;text-align:center;padding:20px;">
-                  <div><div style="font-size:32px;margin-bottom:8px;">👤</div>Fill in the agent details and click Generate</div>
-                </div>
-                <div v-if="bwOutput" style="text-align:right;font-size:11px;color:#9ca3af;margin-top:8px;">{{ bwOutput.split(' ').length }} words</div>
-              </div>
-              <div v-if="bwOutput" class="card" style="margin-top:12px;">
-                <p style="margin:0 0 10px;font-size:12px;color:#6b7280;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Refine</p>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                  <button v-for="r in bwRefines" :key="r" class="refine-pill" @click="refine('bw',r)" :disabled="bwLoading">{{ r }}</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
+        
 
         <!-- ============ TRAINING CENTER ============ -->
         <template v-else-if="view==='training'">
@@ -5518,9 +5465,22 @@ function parseJSON(raw) {
 
 // ── Library helpers (agent-namespaced) ─────────────────────
 function agentKey(base) { const a = localStorage.getItem('fos_agent')||'default'; return base + '_' + a.replace(/\s+/g,'_'); }
-function getLib()      { try { return JSON.parse(localStorage.getItem(agentKey('fos_lib'))||'[]'); } catch { return []; } }
-function pushLib(item) { const l=getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); }
-function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify(getLib().filter(i=>i.id!==id))); }
+async function getLib() {
+  try {
+    const an = localStorage.getItem('fos_agent')||'__default__';
+    const rows = await supaRest.select('saved_library','agent_name=eq.'+encodeURIComponent(an)+'&order=id.desc');
+    if (Array.isArray(rows)) return rows;
+  } catch(e) { console.warn('[FOS] lib load:',e); }
+  try { return JSON.parse(localStorage.getItem(agentKey('fos_lib'))||'[]'); } catch { return []; }
+}
+async function pushLib(item) {
+  try {
+    const an = localStorage.getItem('fos_agent')||'__default__';
+    await supaRest.insert('saved_library',{...item,agent_name:an});
+    lib.value = await getLib(); return;
+  } catch(e) { console.warn('[FOS] lib save:',e); }
+  try { const l=await getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); } catch {}
+}function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify(getLib().filter(i=>i.id!==id))); }
 
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
@@ -5808,13 +5768,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const settVoice     = ref(localStorage.getItem('fos_voice')||'');
 
     // Library
-    const lib       = ref(getLib());
+    const lib       = ref([]);
+    getLib().then(v => { lib.value = v; });
     const libFilter = ref('all');
     const libTypes  = [
       { k:'listing-desc',l:'Listing Desc' },
       { k:'just-listed', l:'Just Listed' },
       { k:'social-post', l:'Social Posts' },
-      { k:'bio-writer',  l:'Agent Bios' },
     ];
 
     // Client Files
@@ -12114,7 +12074,7 @@ async function voiceCrmSubmit() {
     }
     function saveOut(type, title, content) {
       pushLib({ id:Date.now(), type, title, content, toolLabel:TOOL_LABELS[type]||type, savedAt:new Date().toISOString(), agent:agentName.value });
-      lib.value = getLib();
+      lib.value = await getLib();
       showToast('✅ Saved to library!');
       // Reset the form 1.5s after saving — agent sees the confirmation, then gets a clean slate
       setTimeout(() => resetToolForm(type), 1500);
@@ -12137,7 +12097,7 @@ async function voiceCrmSubmit() {
       adminViewAgent.value = null;
       activePropFile.value = null;
       // Refresh agent-specific data
-      lib.value = getLib();
+      lib.value = await getLib();
       refreshPropFiles();
       // Check local cache first
       let cachedKey = localStorage.getItem(agentKeyFor('fos_key', loginAgent.value)) || '';
