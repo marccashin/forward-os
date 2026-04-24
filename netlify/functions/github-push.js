@@ -47,7 +47,22 @@ exports.handler = async (event) => {
   let body;
   try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
 
-  const { content, message, sha: bodySha, filename = 'index.html', repo = 'marccashin/forward-os', action = 'push' } = body;
+  const { content, message, sha: bodySha, filename, repo = 'marccashin/forward-os', action = 'push' } = body;
+
+  // SAFETY: filename is required — no silent default to index.html
+  if (!filename) {
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'filename is required. Do not rely on defaults.' }) };
+  }
+  // SAFETY: if writing index.html, content must be actual HTML (>100KB decoded and starts with <!)
+  if (filename === 'index.html' && content && action !== 'get-sha') {
+    const decoded = Buffer.from(content, 'base64').toString('utf8');
+    if (decoded.length < 100000) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html content is suspiciously small (' + decoded.length + ' chars). Refusing write to prevent accidental overwrite.' }) };
+    }
+    if (!decoded.trimStart().startsWith('<!')) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html content does not start with <!DOCTYPE. Refusing write.' }) };
+    }
+  }
 
   if (action === 'get-sha') {
     try {
