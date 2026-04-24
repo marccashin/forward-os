@@ -74,12 +74,13 @@ exports.handler = async (event) => {
   }
 
   const appId = process.env.GITHUB_APP_ID;
-  const privateKeyB64 = process.env.GITHUB_APP_PRIVATE_KEY;
-  if (!appId || !privateKeyB64) {
+  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY || '';
+  if (!appId || !rawKey) {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: 'GitHub App credentials not configured' }) };
   }
 
-  const privateKey = Buffer.from(privateKeyB64, 'base64').toString('utf8');
+  // Key is stored in Netlify env with literal \n — convert to actual newlines
+  const privateKey = rawKey.replace(/\\n/g, '\n');
 
   let body;
   try {
@@ -90,31 +91,17 @@ exports.handler = async (event) => {
 
   const { content, message, sha: bodySha, filename, repo = 'marccashin/forward-os', action = 'push' } = body;
 
-  // SAFETY: filename is required
   if (!filename) {
-    return {
-      statusCode: 400,
-      headers: corsHeaders,
-      body: JSON.stringify({ error: 'filename is required. Do not rely on defaults.' })
-    };
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'filename is required. Do not rely on defaults.' }) };
   }
 
-  // SAFETY: writing index.html requires valid HTML (>100KB decoded, starts with <!)
   if (filename === 'index.html' && content && action !== 'get-sha') {
     const decoded = Buffer.from(content, 'base64').toString('utf8');
     if (decoded.length < 100000) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: `SAFETY BLOCK: index.html too small (${decoded.length} chars). Refusing to prevent accidental overwrite.` })
-      };
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: `SAFETY BLOCK: index.html too small (${decoded.length} chars).` }) };
     }
     if (!decoded.trimStart().startsWith('<!')) {
-      return {
-        statusCode: 400,
-        headers: corsHeaders,
-        body: JSON.stringify({ error: 'SAFETY BLOCK: index.html does not start with <!DOCTYPE. Refusing write.' })
-      };
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html does not start with <!DOCTYPE.' }) };
     }
   }
 
@@ -125,22 +112,16 @@ exports.handler = async (event) => {
       const refRes = await apiCall('GET', `/repos/${repo}/git/ref/heads/main`, token);
       if (refRes.status !== 200) throw new Error('Bad ref: ' + JSON.stringify(refRes.data));
       const commitSha = refRes.data.object.sha;
-
       const commitRes = await apiCall('GET', `/repos/${repo}/git/commits/${commitSha}`, token);
       if (commitRes.status !== 200) throw new Error('Bad commit: ' + JSON.stringify(commitRes.data));
       const treeSha = commitRes.data.tree.sha;
-
       const treeRes = await apiCall('GET', `/repos/${repo}/git/trees/${treeSha}?recursive=1`, token);
       if (treeRes.status !== 200) throw new Error('Bad tree: ' + JSON.stringify(treeRes.data));
-
       const entry = (treeRes.data.tree || []).find(f => f.path === filename);
-      if (!entry) {
-        return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: `${filename} not found in tree` }) };
-      }
+      if (!entry) return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: `${filename} not found in tree` }) };
       return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ sha: entry.sha, path: entry.path }) };
     }
 
-    // push action
     if (!content || !message) {
       return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'content and message are required for push' }) };
     }
@@ -155,15 +136,9 @@ exports.handler = async (event) => {
     if (sha) putBody.sha = sha;
 
     const putRes = await apiCall('PUT', `/repos/${repo}/contents/${filename}`, token, putBody);
-    if (putRes.status !== 200 && putRes.status !== 201) {
-      throw new Error('PUT failed: ' + JSON.stringify(putRes.data));
-    }
+    if (putRes.status !== 200 && putRes.status !== 201) throw new Error('PUT failed: ' + JSON.stringify(putRes.data));
 
-    return {
-      statusCode: 200,
-      headers: corsHeaders,
-      body: JSON.stringify({ sha: putRes.data.commit ? putRes.data.commit.sha : null, error: null })
-    };
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ sha: putRes.data.commit ? putRes.data.commit.sha : null, error: null }) };
 
   } catch (e) {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: e.message }) };
