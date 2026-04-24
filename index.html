@@ -12456,68 +12456,19 @@ Now let me craft a listing description tailored to attract these buyers. Here it
 
         async function ldGetAmenityDistances(address) {
       try {
-        const geocoder = new google.maps.Geocoder();
-        const geoResult = await new Promise((res, rej) => {
-          geocoder.geocode({ address }, (results, status) => {
-            if (status === 'OK' && results.length > 0) res(results[0]);
-            else rej(new Error('Geocode: ' + status));
-          });
+        const res = await fetch('/.netlify/functions/get-nearby-places', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address })
         });
-        const origin = geoResult.geometry.location;
-
-        const mapDiv = document.createElement('div');
-        const _gmap = new google.maps.Map(mapDiv, { center: origin, zoom: 15 });
-        const places = new google.maps.places.PlacesService(_gmap);
-        const cats = [
-          { type: 'grocery_or_supermarket', label: 'Grocery' },
-          { type: 'restaurant', label: 'Restaurant' },
-          { type: 'park', label: 'Park' },
-          { type: 'library', label: 'Library' },
-          { type: 'transit_station', label: 'Transit' },
-          { type: 'cafe', label: 'Cafe' },
-          { type: 'pharmacy', label: 'Pharmacy' },
-        ];
-        const placeResults = (await Promise.all(cats.map(cat => new Promise(res => {
-          places.nearbySearch(
-            { location: origin, rankBy: google.maps.places.RankBy.DISTANCE, type: cat.type },
-            (results, status) => res(status === 'OK' && results.length ? { label: cat.label, place: results[0] } : null)
-          );
-        })))).filter(Boolean);
-
-        const seen = new Set();
-        const unique = placeResults.filter(p => { if (seen.has(p.place.place_id)) return false; seen.add(p.place.place_id); return true; });
-        if (!unique.length) return null;
-
-        const distSvc = new google.maps.DistanceMatrixService();
-        const distRes = await new Promise((res, rej) => {
-          distSvc.getDistanceMatrix({
-            origins: [origin],
-            destinations: unique.map(p => p.place.geometry.location),
-            travelMode: google.maps.TravelMode.DRIVING,
-            unitSystem: google.maps.UnitSystem.IMPERIAL,
-          }, (response, status) => status === 'OK' ? res(response) : rej(new Error('DistMatrix: ' + status)));
-        });
-
-        const elements = distRes.rows[0].elements;
-        const lines = unique.map((p, idx) => {
-          const el = elements[idx];
-          const dist = el.status === 'OK' ? el.distance.text : null;
-          return dist ? '- ' + p.place.name + ' (' + p.label + '): ' + dist : null;
-        }).filter(Boolean);
-
-        lines.sort((a, b) => {
-          const num = s => parseFloat(s.replace(/[^0-9.]/g,'').trim()) || 999;
-          return num(a) - num(b);
-        });
-
-        return lines.join('\n');
+        const data = await res.json();
+        return data.distances || null;
       } catch(e) {
         console.warn('[LD] ldGetAmenityDistances error:', e);
         return null;
       }
     }
 
-    async function ldSend(text) {
+        async function ldSend(text) {
       if (!text || !text.trim()) return;
       const userMsg = text.trim();
       ldInput.value = '';
