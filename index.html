@@ -12074,7 +12074,7 @@ async function voiceCrmSubmit() {
     }
     function saveOut(type, title, content) {
       pushLib({ id:Date.now(), type, title, content, toolLabel:TOOL_LABELS[type]||type, savedAt:new Date().toISOString(), agent:agentName.value });
-      lib.value = await getLib();
+      getLib().then(v => { lib.value = v; });
       showToast('✅ Saved to library!');
       // Reset the form 1.5s after saving — agent sees the confirmation, then gets a clean slate
       setTimeout(() => resetToolForm(type), 1500);
