@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const https = require('https');
-
+const VERSION = 'v3-diag';
 const GOOD_COMMIT = '4dbc02672b907ffe2b893311b399a3308529830b';
 const OWNER = 'marccashin';
 const REPO = 'forward-os';
@@ -22,24 +22,7 @@ function makeJWT(appId, privateKey) {
 function apiCall(method, path, token, body) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : undefined;
-    const req = https.request({
-      hostname: 'api.github.com',
-      path, method,
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Accept': 'application/vnd.github.v3+json',
-        'User-Agent': 'forward-os/1.0',
-        'Content-Type': 'application/json',
-        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
-      }
-    }, (res) => {
-      let b = '';
-      res.on('data', c => { b += c; });
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(b) }); }
-        catch(e) { resolve({ status: res.statusCode, data: b }); }
-      });
-    });
+    const req = https.request({ hostname: 'api.github.com', path, method, headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'forward-os/1.0', 'Content-Type': 'application/json', ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {}) } }, (res) => { let b = ''; res.on('data', c => { b += c; }); res.on('end', () => { try { resolve({ status: res.statusCode, data: JSON.parse(b) }); } catch(e) { resolve({ status: res.statusCode, data: b }); } }); });
     req.on('error', reject);
     if (data) req.write(data);
     req.end();
@@ -49,43 +32,31 @@ function apiCall(method, path, token, body) {
 exports.handler = async (event) => {
   const h = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: h, body: '' };
+  const appId = process.env.GITHUB_APP_ID;
+  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
+  const keyDiag = { version: VERSION, appIdLen: String(appId||'').length, pkLen: String(privateKey||'').length, pkStart: String(privateKey||'').slice(0,27), pkHasNewlines: (privateKey||'').includes('\n') };
   try {
-    const appId = process.env.GITHUB_APP_ID;
-    const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
-    if (!appId || !privateKey) throw new Error('Missing GITHUB_APP_ID or GITHUB_APP_PRIVATE_KEY');
-
+    if (!appId || !privateKey) throw new Error('Missing env vars');
     const jwt = makeJWT(appId, privateKey);
-
     const instRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/installation', jwt);
-    if (instRes.status !== 200) throw new Error('Installation lookup failed: ' + JSON.stringify(instRes.data));
+    if (instRes.status !== 200) throw new Error('Installation failed: ' + JSON.stringify(instRes.data));
     const installId = instRes.data.id;
-
     const tokRes = await apiCall('POST', '/app/installations/' + installId + '/access_tokens', jwt);
-    if (tokRes.status !== 201) throw new Error('Token creation failed: ' + JSON.stringify(tokRes.data));
+    if (tokRes.status !== 201) throw new Error('Token failed: ' + JSON.stringify(tokRes.data));
     const tok = tokRes.data.token;
-
     const gcRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/git/commits/' + GOOD_COMMIT, tok);
-    if (gcRes.status !== 200) throw new Error('Good commit lookup failed: ' + JSON.stringify(gcRes.data));
+    if (gcRes.status !== 200) throw new Error('Good commit failed');
     const goodTree = gcRes.data.tree.sha;
-
     const refRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/git/ref/heads/main', tok);
-    if (refRes.status !== 200) throw new Error('Ref lookup failed: ' + JSON.stringify(refRes.data));
+    if (refRes.status !== 200) throw new Error('Ref failed');
     const headSha = refRes.data.object.sha;
-
-    const ncRes = await apiCall('POST', '/repos/' + OWNER + '/' + REPO + '/git/commits', tok, {
-      message: 'Restore index.html - revert accidental overwrite',
-      tree: goodTree,
-      parents: [headSha],
-      author: { name: 'forward-os-deployer[bot]', email: 'forward-os-deployer[bot]@users.noreply.github.com', date: new Date().toISOString() }
-    });
-    if (ncRes.status !== 201) throw new Error('Commit creation failed: ' + JSON.stringify(ncRes.data));
+    const ncRes = await apiCall('POST', '/repos/' + OWNER + '/' + REPO + '/git/commits', tok, { message: 'Restore index.html - revert accidental overwrite', tree: goodTree, parents: [headSha], author: { name: 'forward-os-deployer[bot]', email: 'forward-os-deployer[bot]@users.noreply.github.com', date: new Date().toISOString() } });
+    if (ncRes.status !== 201) throw new Error('Commit failed: ' + JSON.stringify(ncRes.data));
     const newSha = ncRes.data.sha;
-
     const prRes = await apiCall('PATCH', '/repos/' + OWNER + '/' + REPO + '/git/refs/heads/main', tok, { sha: newSha, force: false });
     if (prRes.status !== 200) throw new Error('Ref update failed: ' + JSON.stringify(prRes.data));
-
-    return { statusCode: 200, headers: h, body: JSON.stringify({ success: true, newCommit: newSha, restoredTree: goodTree }) };
+    return { statusCode: 200, headers: h, body: JSON.stringify({ success: true, newCommit: newSha, diag: keyDiag }) };
   } catch(e) {
-    return { statusCode: 500, headers: h, body: JSON.stringify({ error: e.message }) };
+    return { statusCode: 500, headers: h, body: JSON.stringify({ error: e.message, diag: keyDiag }) };
   }
 };
