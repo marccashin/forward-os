@@ -1,109 +1,149 @@
-const crypto = require('crypto');
+// netlify/functions/github-push.js
+// Pushes file content to GitHub using the Git Objects API (https module, no fetch).
+// Includes safety guards against accidental index.html overwrites.
+// Fixed: replaced broken fetch()-based version; uses https.request() and correct JWT signing.
 
-function createJWT(appId, privateKey) {
+const crypto = require('crypto');
+const https = require('https');
+
+function makeJWT(appId, privateKey) {
   const now = Math.floor(Date.now() / 1000);
-  const payload = { iat: now - 60, exp: now + 600, iss: String(appId) };
   const b64url = (str) => Buffer.from(str).toString('base64')
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
-  const body = b64url(JSON.stringify(payload));
-  const unsigned = `${header}.${body}`;
+  const payload = b64url(JSON.stringify({ iat: now - 60, exp: now + 600, iss: String(appId) }));
+  const unsigned = `${header}.${payload}`;
   const sign = crypto.createSign('RSA-SHA256');
   sign.update(unsigned);
+  // DO NOT pass through b64url() — sign.sign() already returns base64; b64url would double-encode it.
   const signature = sign.sign(privateKey, 'base64')
     .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   return `${unsigned}.${signature}`;
 }
 
+function apiCall(method, path, token, body) {
+  return new Promise((resolve, reject) => {
+    const data = body ? JSON.stringify(body) : undefined;
+    const req = https.request({
+      hostname: 'api.github.com',
+      path,
+      method,
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'User-Agent': 'forward-os/1.0',
+        'Content-Type': 'application/json',
+        ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
+      }
+    }, (res) => {
+      let buf = '';
+      res.on('data', c => { buf += c; });
+      res.on('end', () => {
+        try { resolve({ status: res.statusCode, data: JSON.parse(buf) }); }
+        catch (e) { resolve({ status: res.statusCode, data: buf }); }
+      });
+    });
+    req.on('error', reject);
+    if (data) req.write(data);
+    req.end();
+  });
+}
+
 async function getInstallationToken(appId, privateKey) {
-  const jwt = createJWT(appId, privateKey);
-  const headers = {
-    'Authorization': `Bearer ${jwt}`,
-    'Accept': 'application/vnd.github.v3+json',
-    'Content-Type': 'application/json'
-  };
-  const installations = await fetch('https://api.github.com/app/installations', { headers }).then(r => r.json());
-  if (!Array.isArray(installations) || installations.length === 0) {
-    throw new Error('No installations: ' + JSON.stringify(installations));
+  const jwt = makeJWT(appId, privateKey);
+  const instRes = await apiCall('GET', '/app/installations', jwt);
+  if (!Array.isArray(instRes.data) || instRes.data.length === 0) {
+    throw new Error('No installations: ' + JSON.stringify(instRes.data));
   }
-  const installationId = installations[0].id;
-  const tokenRes = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    { method: 'POST', headers }
-  ).then(r => r.json());
-  if (!tokenRes.token) throw new Error('No token: ' + JSON.stringify(tokenRes));
-  return tokenRes.token;
+  const installationId = instRes.data[0].id;
+  const tokenRes = await apiCall('POST', `/app/installations/${installationId}/access_tokens`, jwt);
+  if (!tokenRes.data.token) throw new Error('No token: ' + JSON.stringify(tokenRes.data));
+  return tokenRes.data.token;
 }
 
 exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') return { statusCode: 405, body: 'Method not allowed' };
+  const corsHeaders = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json'
+  };
+
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers: corsHeaders, body: '' };
+  }
+
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
+  }
 
   const appId = process.env.GITHUB_APP_ID;
-  const privateKeyB64 = process.env.GITHUB_APP_PRIVATE_KEY;
-  if (!appId || !privateKeyB64) return { statusCode: 500, body: 'GitHub App credentials not configured' };
+  const rawKey = process.env.GITHUB_APP_PRIVATE_KEY || '';
+  if (!appId || !rawKey) {
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: 'GitHub App credentials not configured' }) };
+  }
 
-  const privateKey = Buffer.from(privateKeyB64, 'base64').toString('utf8');
+    // Key is stored in Netlify env as base64-encoded PEM — decode it
+  const privateKey = Buffer.from(rawKey, 'base64').toString('utf8');
 
   let body;
-  try { body = JSON.parse(event.body); } catch { return { statusCode: 400, body: 'Bad JSON' }; }
+  try {
+    body = JSON.parse(event.body);
+  } catch {
+    return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'Bad JSON' }) };
+  }
 
   const { content, message, sha: bodySha, filename, repo = 'marccashin/forward-os', action = 'push' } = body;
 
-  // SAFETY: filename is required — no silent default to index.html
   if (!filename) {
     return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'filename is required. Do not rely on defaults.' }) };
   }
-  // SAFETY: if writing index.html, content must be actual HTML (>100KB decoded and starts with <!)
+
   if (filename === 'index.html' && content && action !== 'get-sha') {
     const decoded = Buffer.from(content, 'base64').toString('utf8');
     if (decoded.length < 100000) {
-      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html content is suspiciously small (' + decoded.length + ' chars). Refusing write to prevent accidental overwrite.' }) };
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: `SAFETY BLOCK: index.html too small (${decoded.length} chars).` }) };
     }
     if (!decoded.trimStart().startsWith('<!')) {
-      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html content does not start with <!DOCTYPE. Refusing write.' }) };
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'SAFETY BLOCK: index.html does not start with <!DOCTYPE.' }) };
     }
   }
-
-  if (action === 'get-sha') {
-    try {
-      const token = await getInstallationToken(appId, privateKey);
-      const h = { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' };
-      const ref = await fetch(`https://api.github.com/repos/${repo}/git/ref/heads/main`, { headers: h }).then(r => r.json());
-      const commitSha = ref.object && ref.object.sha;
-      if (!commitSha) throw new Error('No commit SHA: ' + JSON.stringify(ref));
-      const commit = await fetch(`https://api.github.com/repos/${repo}/git/commits/${commitSha}`, { headers: h }).then(r => r.json());
-      const treeSha = commit.tree && commit.tree.sha;
-      if (!treeSha) throw new Error('No tree SHA');
-      const tree = await fetch(`https://api.github.com/repos/${repo}/git/trees/${treeSha}?recursive=1`, { headers: h }).then(r => r.json());
-      const fileEntry = (tree.tree || []).find(f => f.path === filename);
-      if (!fileEntry) return { statusCode: 404, body: JSON.stringify({ error: `${filename} not found in tree` }) };
-      return { statusCode: 200, body: JSON.stringify({ sha: fileEntry.sha, path: fileEntry.path }) };
-    } catch(e) { return { statusCode: 500, body: JSON.stringify({ error: e.message }) }; }
-  }
-
-  if (!content || !message) return { statusCode: 400, body: 'Missing: content and message required' };
 
   try {
     const token = await getInstallationToken(appId, privateKey);
-    const h = { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' };
+
+    if (action === 'get-sha') {
+      const refRes = await apiCall('GET', `/repos/${repo}/git/ref/heads/main`, token);
+      if (refRes.status !== 200) throw new Error('Bad ref: ' + JSON.stringify(refRes.data));
+      const commitSha = refRes.data.object.sha;
+      const commitRes = await apiCall('GET', `/repos/${repo}/git/commits/${commitSha}`, token);
+      if (commitRes.status !== 200) throw new Error('Bad commit: ' + JSON.stringify(commitRes.data));
+      const treeSha = commitRes.data.tree.sha;
+      const treeRes = await apiCall('GET', `/repos/${repo}/git/trees/${treeSha}?recursive=1`, token);
+      if (treeRes.status !== 200) throw new Error('Bad tree: ' + JSON.stringify(treeRes.data));
+      const entry = (treeRes.data.tree || []).find(f => f.path === filename);
+      if (!entry) return { statusCode: 404, headers: corsHeaders, body: JSON.stringify({ error: `${filename} not found in tree` }) };
+      return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ sha: entry.sha, path: entry.path }) };
+    }
+
+    if (!content || !message) {
+      return { statusCode: 400, headers: corsHeaders, body: JSON.stringify({ error: 'content and message are required for push' }) };
+    }
 
     let sha = bodySha;
     if (!sha) {
-      const meta = await fetch(`https://api.github.com/repos/${repo}/contents/${filename}`, { headers: h }).then(r => r.json());
-      sha = meta.sha;
+      const metaRes = await apiCall('GET', `/repos/${repo}/contents/${filename}`, token);
+      if (metaRes.status === 200) sha = metaRes.data.sha;
     }
 
     const putBody = { message, content };
     if (sha) putBody.sha = sha;
 
-    const result = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${filename}`,
-      { method: 'PUT', headers: h, body: JSON.stringify(putBody) }
-    ).then(r => r.json());
+    const putRes = await apiCall('PUT', `/repos/${repo}/contents/${filename}`, token, putBody);
+    if (putRes.status !== 200 && putRes.status !== 201) throw new Error('PUT failed: ' + JSON.stringify(putRes.data));
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({ sha: result.commit ? result.commit.sha : null, error: result.message || null })
-    };
-  } catch(e) { return { statusCode: 500, body: JSON.stringify({ error: e.message }) }; }
+    return { statusCode: 200, headers: corsHeaders, body: JSON.stringify({ sha: putRes.data.commit ? putRes.data.commit.sha : null, error: null }) };
+
+  } catch (e) {
+    return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: e.message }) };
+  }
 };
