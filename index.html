@@ -7575,6 +7575,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const label = (sellerPrepType.value === 'condo' ? 'Condo' : 'SFH') + ' Seller Prep Guide';
         await saveToPropertyFromTool('Seller Prep Guide', label, null, pdfBase64);
         sellerPrepSaved.value = true;
+        showToast('✅ Saved to property files.');
         setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
       } finally { sellerPrepSaving.value = false; }
     }
