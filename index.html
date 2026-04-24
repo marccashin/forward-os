@@ -7376,7 +7376,7 @@ CONVERSATION FLOW (follow this exactly):
 6. Before writing the description, use any information you can find online about the property and neighborhood to fill in details. Do not guess or fabricate specs.
 7. When writing the final description, include a last paragraph with local amenities and bullet points. If a VERIFIED DISTANCE DATA section is appended to this prompt, use ONLY those exact distances — do not estimate or fabricate any mileages. If no VERIFIED DISTANCE DATA section is present, name the amenities using general proximity language only (e.g., "steps from", "minutes away", "within easy reach") — never invent specific distances.
 
-Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step. When you are ready to present the final listing description, begin your response DIRECTLY with the description copy — no preamble, acknowledgment, or commentary before the description itself.`;
+Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step. When you are ready to present the final listing description, begin your response with [FWRD_DESC_START] on its own line, then ONLY the listing description text, then [FWRD_DESC_END] on its own line. Absolutely nothing before [FWRD_DESC_START] or after [FWRD_DESC_END].`;
     // Keep ld reactive for backward compatibility with save
     const ld = reactive({ address:'' });
 
@@ -12519,11 +12519,11 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           reply = await claudeChat(apiMessages, effectiveSystem);
 
           // Check if this response contains the final listing description
-          const trimmed = reply.trim();
-          const lastSentence = trimmed.slice(-80);
-          const isDescription = trimmed.length > 600 && !lastSentence.endsWith('?');
+          const _sm = '[FWRD_DESC_START]', _em = '[FWRD_DESC_END]';
+          const _si = reply.indexOf(_sm), _ei = reply.indexOf(_em);
+          const isDescription = _si >= 0 && _ei > _si;
           if (isDescription) {
-            ldOutput.value = reply;
+            ldOutput.value = reply.substring(_si + _sm.length, _ei).trim();
             for (const m of ldMessages.value) {
               if (m.role === 'user' && m.content.match(/\d+\s+\w/)) {
                 ld.address = m.content.trim();
