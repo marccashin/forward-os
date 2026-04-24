@@ -14,7 +14,9 @@ function makeJWT(appId, privateKey) {
   const unsigned = `${header}.${payload}`;
   const sign = crypto.createSign('RSA-SHA256');
   sign.update(unsigned);
-  const signature = b64url(sign.sign(privateKey, 'base64'));
+  // DO NOT pass through b64url() — sign.sign() already returns base64; b64url would double-encode it.
+  const signature = sign.sign(privateKey, 'base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
   return `${unsigned}.${signature}`;
 }
 
@@ -79,8 +81,8 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: 'GitHub App credentials not configured' }) };
   }
 
-  // Key is stored in Netlify env with literal \n — convert to actual newlines
-  const privateKey = rawKey.replace(/\\n/g, '\n');
+    // Key is stored in Netlify env as base64-encoded PEM — decode it
+  const privateKey = Buffer.from(rawKey, 'base64').toString('utf8');
 
   let body;
   try {
