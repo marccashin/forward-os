@@ -1,6 +1,5 @@
 const crypto = require('crypto');
 const https = require('https');
-const VERSION = 'v3-diag';
 const GOOD_COMMIT = '4dbc02672b907ffe2b893311b399a3308529830b';
 const OWNER = 'marccashin';
 const REPO = 'forward-os';
@@ -32,10 +31,10 @@ function apiCall(method, path, token, body) {
 exports.handler = async (event) => {
   const h = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: h, body: '' };
-  const appId = process.env.GITHUB_APP_ID;
-  const privateKey = process.env.GITHUB_APP_PRIVATE_KEY;
-  const keyDiag = { version: VERSION, appIdLen: String(appId||'').length, pkLen: String(privateKey||'').length, pkStart: String(privateKey||'').slice(0,27), pkHasNewlines: (privateKey||'').includes('\n') };
   try {
+    const appId = process.env.GITHUB_APP_ID;
+    // Key is stored base64-encoded — decode it first to get the PEM
+    const privateKey = Buffer.from(process.env.GITHUB_APP_PRIVATE_KEY, 'base64').toString('utf8');
     if (!appId || !privateKey) throw new Error('Missing env vars');
     const jwt = makeJWT(appId, privateKey);
     const instRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/installation', jwt);
@@ -45,18 +44,18 @@ exports.handler = async (event) => {
     if (tokRes.status !== 201) throw new Error('Token failed: ' + JSON.stringify(tokRes.data));
     const tok = tokRes.data.token;
     const gcRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/git/commits/' + GOOD_COMMIT, tok);
-    if (gcRes.status !== 200) throw new Error('Good commit failed');
+    if (gcRes.status !== 200) throw new Error('Good commit failed: ' + JSON.stringify(gcRes.data));
     const goodTree = gcRes.data.tree.sha;
     const refRes = await apiCall('GET', '/repos/' + OWNER + '/' + REPO + '/git/ref/heads/main', tok);
-    if (refRes.status !== 200) throw new Error('Ref failed');
+    if (refRes.status !== 200) throw new Error('Ref failed: ' + JSON.stringify(refRes.data));
     const headSha = refRes.data.object.sha;
     const ncRes = await apiCall('POST', '/repos/' + OWNER + '/' + REPO + '/git/commits', tok, { message: 'Restore index.html - revert accidental overwrite', tree: goodTree, parents: [headSha], author: { name: 'forward-os-deployer[bot]', email: 'forward-os-deployer[bot]@users.noreply.github.com', date: new Date().toISOString() } });
     if (ncRes.status !== 201) throw new Error('Commit failed: ' + JSON.stringify(ncRes.data));
     const newSha = ncRes.data.sha;
     const prRes = await apiCall('PATCH', '/repos/' + OWNER + '/' + REPO + '/git/refs/heads/main', tok, { sha: newSha, force: false });
     if (prRes.status !== 200) throw new Error('Ref update failed: ' + JSON.stringify(prRes.data));
-    return { statusCode: 200, headers: h, body: JSON.stringify({ success: true, newCommit: newSha, diag: keyDiag }) };
+    return { statusCode: 200, headers: h, body: JSON.stringify({ success: true, newCommit: newSha, restoredTree: goodTree }) };
   } catch(e) {
-    return { statusCode: 500, headers: h, body: JSON.stringify({ error: e.message, diag: keyDiag }) };
+    return { statusCode: 500, headers: h, body: JSON.stringify({ error: e.message }) };
   }
 };
