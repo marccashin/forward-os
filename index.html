@@ -7116,6 +7116,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const ldStarted  = ref(false);
     const ldSaving   = ref(false);
     const ldVoiceListening = ref(false);
+    const ldDistances       = ref(null);
+    const ldDistanceFetched  = ref(false);
 
     // Computed: true if listing_remarks subfolder has any saved files for active property
     const ldSavedToProperty = computed(() => {
@@ -7372,7 +7374,7 @@ CONVERSATION FLOW (follow this exactly):
    - If YES: ask them to paste the personas, then write the listing description using those personas.
    - If NO: using the property details provided plus any information you can find online about the property and neighborhood, create 5 detailed buyer personas. Each persona should have: a name, age, occupation, household situation, what they value in a home, why THIS specific property fits them, and what emotional hook will compel them to tour it. Present all 5 personas clearly, then write the listing description tailored to attract all of them.
 6. Before writing the description, use any information you can find online about the property and neighborhood to fill in details. Do not guess or fabricate specs.
-7. When writing the final description, include a last paragraph with local amenities and bullet points showing distance in miles from the property address.
+7. When writing the final description, include a last paragraph with local amenities and bullet points. Use ONLY the verified driving distances supplied in the VERIFIED DISTANCE DATA section appended to this prompt — do not estimate or fabricate any distances.
 
 Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step. When you are ready to present the final listing description, begin your response DIRECTLY with the description copy — no preamble, acknowledgment, or commentary before the description itself.`;
     // Keep ld reactive for backward compatibility with save
@@ -12200,7 +12202,7 @@ async function voiceCrmSubmit() {
       switch(type) {
         case 'listing-desc':
           ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
-          ldInput.value = ''; ld.address = '';
+          ldInput.value = ''; ld.address = ''; ldDistances.value = null; ldDistanceFetched.value = false;
           localStorage.removeItem(agentKey('voice_ld_context'));
           break;
         case 'net-sheet':
@@ -12423,6 +12425,8 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldMessages.value = [];
       ldOutput.value = '';
       ldStep.value = 0;
+      ldDistances.value = null;
+      ldDistanceFetched.value = false;
       ldMockMode.value = !settKey.value; // use reactive ref — set by doLogin() from Supabase
       await nextTick();
       const chatEl = document.getElementById('ld-chat-scroll');
@@ -12448,6 +12452,69 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldLoading.value = false;
       await nextTick();
       if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+        async function ldGetAmenityDistances(address) {
+      try {
+        const geocoder = new google.maps.Geocoder();
+        const geoResult = await new Promise((res, rej) => {
+          geocoder.geocode({ address }, (results, status) => {
+            if (status === 'OK' && results.length > 0) res(results[0]);
+            else rej(new Error('Geocode: ' + status));
+          });
+        });
+        const origin = geoResult.geometry.location;
+
+        const mapDiv = document.createElement('div');
+        const _gmap = new google.maps.Map(mapDiv, { center: origin, zoom: 15 });
+        const places = new google.maps.places.PlacesService(_gmap);
+        const cats = [
+          { type: 'grocery_or_supermarket', label: 'Grocery' },
+          { type: 'restaurant', label: 'Restaurant' },
+          { type: 'park', label: 'Park' },
+          { type: 'library', label: 'Library' },
+          { type: 'transit_station', label: 'Transit' },
+          { type: 'cafe', label: 'Cafe' },
+          { type: 'pharmacy', label: 'Pharmacy' },
+        ];
+        const placeResults = (await Promise.all(cats.map(cat => new Promise(res => {
+          places.nearbySearch(
+            { location: origin, rankBy: google.maps.places.RankBy.DISTANCE, type: cat.type },
+            (results, status) => res(status === 'OK' && results.length ? { label: cat.label, place: results[0] } : null)
+          );
+        })))).filter(Boolean);
+
+        const seen = new Set();
+        const unique = placeResults.filter(p => { if (seen.has(p.place.place_id)) return false; seen.add(p.place.place_id); return true; });
+        if (!unique.length) return null;
+
+        const distSvc = new google.maps.DistanceMatrixService();
+        const distRes = await new Promise((res, rej) => {
+          distSvc.getDistanceMatrix({
+            origins: [origin],
+            destinations: unique.map(p => p.place.geometry.location),
+            travelMode: google.maps.TravelMode.DRIVING,
+            unitSystem: google.maps.UnitSystem.IMPERIAL,
+          }, (response, status) => status === 'OK' ? res(response) : rej(new Error('DistMatrix: ' + status)));
+        });
+
+        const elements = distRes.rows[0].elements;
+        const lines = unique.map((p, idx) => {
+          const el = elements[idx];
+          const dist = el.status === 'OK' ? el.distance.text : null;
+          return dist ? '- ' + p.place.name + ' (' + p.label + '): ' + dist : null;
+        }).filter(Boolean);
+
+        lines.sort((a, b) => {
+          const num = s => parseFloat(s.replace(/[^0-9.]/g,'').trim()) || 999;
+          return num(a) - num(b);
+        });
+
+        return lines.join('\n');
+      } catch(e) {
+        console.warn('[LD] ldGetAmenityDistances error:', e);
+        return null;
+      }
     }
 
     async function ldSend(text) {
@@ -12485,7 +12552,20 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           // Build messages array for Claude
           const initMsg = { role:'user', content:'Begin the listing description process.' };
           const apiMessages = [initMsg, ...ldMessages.value.map(m => ({ role: m.role, content: m.content }))];
-          reply = await claudeChat(apiMessages, LD_SYSTEM);
+                    // Fetch real amenity distances if we have an address and haven't yet
+          if (!ldDistanceFetched.value) {
+            for (const m of ldMessages.value) {
+              if (m.role === 'user' && m.content.match(/\d+\s+\w/)) {
+                const dists = await ldGetAmenityDistances(m.content.trim());
+                if (dists) { ldDistances.value = dists; ldDistanceFetched.value = true; }
+                break;
+              }
+            }
+          }
+          const effectiveSystem = ldDistances.value
+            ? LD_SYSTEM + '\n\nVERIFIED DISTANCE DATA (real driving distances — use ONLY these, do not estimate or fabricate any mileages):\n' + ldDistances.value
+            : LD_SYSTEM;
+          reply = await claudeChat(apiMessages, effectiveSystem);
 
           // Check if this response contains the final listing description
           const trimmed = reply.trim();
