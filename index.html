@@ -855,7 +855,7 @@
 
             <!-- Meeting Intelligence Prep CTA -->
             <div style="margin-bottom:20px;">
-              <button class="btn-navy" @click="goPrep(p.address)" style="width:100%;padding:15px 20px;font-size:15px;font-weight:600;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px;">
+              <button class="btn-navy" @click="go('meeting-prep')" style="width:100%;padding:15px 20px;font-size:15px;font-weight:600;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:10px;">
                 <span style="font-size:20px;">🧠</span><span>Meeting Intelligence Prep</span>
               </button>
             </div>
@@ -868,7 +868,7 @@
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:normal;">{{ p.address }}</div>
                 </div>
-                <button class="btn-navy" @click="go('meeting-prep')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
+                <button class="btn-navy" @click="goPrep(p.address)" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
                 <button @click="go('listings')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;border:1.5px solid #d1d5db;background:transparent;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:500;">Open Tools</button>
               </div>
               <div v-if="lstProperties.length > 3" @click="go('listings')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ lstProperties.length }} listings →</div>
