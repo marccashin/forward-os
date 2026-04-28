@@ -6479,7 +6479,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       } catch (e) { showToast('Delete failed: ' + e.message, 3000); }
     }
 
-    async async function lstGenerateCampaignInApp() {
+    async function lstGenerateCampaignInApp() {
   const prop = lstActiveProp.value;
   if (!prop) return;
   const listingDesc = lstNotes.listing_remarks;
@@ -6530,7 +6530,7 @@ function campCopyToClipboard() {
   navigator.clipboard.writeText(listing + body).then(() => showToast('Campaign copied to clipboard!', 3000)).catch(() => showToast('Copy failed.', 4000));
 }
 
-function lstSubmitToPipeline() {
+async function lstSubmitToPipeline() {
       if (!lstActiveProp.value) return;
       lstSubmitting.value = true;
       try {
