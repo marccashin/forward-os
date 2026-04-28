@@ -3282,6 +3282,9 @@
                     <button class="btn-outline" @click="lstEditingAddress=false" style="font-size:12px;padding:6px 10px;">Cancel</button>
                   </div>
                   <div style="font-size:13px;color:#6b7280;margin-top:4px;">{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }}</div>
+                <div style="margin-top:5px;">
+                  <input :value="lstActiveProp.seller_name || ''" @blur="lstSaveSellerName($event.target.value)" @keyup.enter="$event.target.blur()" placeholder="+ Add seller name" style="font-size:13px;color:var(--navy);background:none;border:none;border-bottom:1px dashed #cbd5e1;outline:none;width:100%;max-width:280px;padding:2px 0;">
+                </div>
                 </div>
                 <span :class="'status-badge status-'+(lstActiveProp.status||'draft')">
                   {{ lstActiveProp.status || 'draft' }}
@@ -6275,6 +6278,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
     }
 
+    async function lstSaveSellerName(name) {
+      if (!lstActiveProp.value) return;
+      await supaRest.update('properties', 'id', lstActiveProp.value.id, { seller_name: name });
+      lstActiveProp.value.seller_name = name;
+    }
     async function lstSaveNote(subfolder) {
       if (!lstActiveProp.value) return;
       const content = lstNotes[subfolder]?.trim();
@@ -13027,7 +13035,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
