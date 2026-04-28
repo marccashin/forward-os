@@ -3825,7 +3825,7 @@
                 <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--navy);">
                   <div>
                     <div style="font-size:15px;font-weight:700;color:white;">Campaign Package</div>
-                    <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ lstActiveProp.address }} · Edit any section before copying</div>
+                    <div style="font-size:11px;color:#94a3b8;margin-top:2px;">{{ lstActiveProp.address }} · {{ campParsed.length }} sections · click any to edit</div>
                   </div>
                   <button @click="campShowPreview=false" style="background:rgba(255,255,255,.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;">✕</button>
                 </div>
@@ -3842,14 +3842,15 @@
                       </label>
                     </div>
                     <div v-if="section.included" style="padding:10px 14px;">
-                      <textarea v-model="section.content" style="width:100%;border:none;outline:none;font-size:12px;line-height:1.6;resize:vertical;min-height:100px;font-family:inherit;color:#374151;background:transparent;"></textarea>
+                      <textarea v-model="section.content" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:vertical;min-height:140px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;" placeholder="Click to edit..."></textarea>
                     </div>
                     <div v-else style="padding:10px 14px;font-size:12px;color:#94a3b8;font-style:italic;">Excluded from output</div>
                   </div>
                 </div>
                 <div style="padding:12px 16px;border-top:1px solid #e2e8f0;display:flex;gap:10px;flex-shrink:0;background:#f8fafc;">
-                  <button @click="campCopyToClipboard()" style="flex:1;padding:11px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">📋 Copy All Sections</button>
-                  <button @click="campShowPreview=false" style="padding:11px 18px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#64748b;cursor:pointer;">Close</button>
+                  <button @click="campApproveAndSend()" style="flex:1;padding:11px;background:var(--gold);color:var(--navy);border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">✅ Approve &amp; Send to Seller</button>
+                  <button @click="campCopyToClipboard()" style="padding:11px 14px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;">📋 Copy</button>
+                  <button @click="campShowPreview=false" style="padding:11px 14px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#64748b;cursor:pointer;">Close</button>
                 </div>
               </div>
             </div>
@@ -6505,15 +6506,25 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const raw = await claude(prompt);
     campRawResult.value = raw;
     const parsed = [];
-    const parts = raw.split(/---SECTION:\s*/);
+    let parts = [];
+    if (raw.includes('---SECTION:')) {
+      parts = raw.split(/---SECTION:\s*/).filter(p => p.trim());
+    } else if (raw.includes('###')) {
+      parts = raw.split(/\n###\s*/).filter(p => p.trim());
+    } else {
+      parts = raw.split(/\n(?=[A-Z][A-Z\s]{5,}\n)/).filter(p => p.trim());
+    }
     parts.forEach(part => {
       const trimmed = part.trim();
       if (!trimmed) return;
       const nlIdx = trimmed.indexOf('\n');
-      const title = (nlIdx > 0 ? trimmed.substring(0, nlIdx) : trimmed).replace(/---$/, '').trim();
+      const title = (nlIdx > 0 ? trimmed.substring(0, nlIdx) : trimmed).replace(/---+$/g, '').trim();
       const body = nlIdx > 0 ? trimmed.substring(nlIdx).trim() : '';
-      if (title) parsed.push({ title, content: body, included: true });
+      if (title && title.length < 100) parsed.push({ title, content: body, included: true });
     });
+    if (parsed.length === 0 && raw.trim()) {
+      parsed.push({ title: 'Generated Campaign Content', content: raw.trim(), included: true });
+    }
     campParsed.value = parsed;
     campShowPreview.value = true;
   } catch(e) {
@@ -6522,6 +6533,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   } finally {
     campGenerating.value = false;
   }
+}
+
+async function campApproveAndSend() {
+  campShowPreview.value = false;
+  await new Promise(r => setTimeout(r, 200));
+  lstCampaignSendToSeller();
 }
 
 function campCopyToClipboard() {
@@ -13195,7 +13212,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
