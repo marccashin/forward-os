@@ -868,7 +868,7 @@
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:normal;">{{ p.address }}</div>
                 </div>
-                <button class="btn-navy" @click="goPrep(p.address)" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
+                <button class="btn-navy" @click="goPrep(p.seller_name || p.address)" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Meeting</button>
                 <button @click="go('listings')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;border:1.5px solid #d1d5db;background:transparent;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:500;">Open Tools</button>
               </div>
               <div v-if="lstProperties.length > 3" @click="go('listings')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ lstProperties.length }} listings →</div>
@@ -882,7 +882,7 @@
                 <div style="flex:1;min-width:0;">
                   <div style="font-weight:600;font-size:14px;color:var(--navy);white-space:normal;">{{ b.buyer_name }}</div>
                 </div>
-                <button class="btn-gold" @click="goPrep(b.buyer_name)" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Consult</button>
+                <button class="btn-gold" @click="goPrep((b.first_name + ' ' + b.last_name).trim())" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;">Prep Consult</button>
                 <button @click="go('buyer-package')" style="font-size:12px;padding:7px 12px;white-space:nowrap;flex-shrink:0;border:1.5px solid #d1d5db;background:transparent;color:var(--navy);border-radius:8px;cursor:pointer;font-weight:500;">View Buyer</button>
               </div>
               <div v-if="byrBuyers.length > 3" @click="go('buyer-package')" style="font-size:13px;color:var(--gold);cursor:pointer;text-align:center;padding:4px 0;font-weight:500;">View all {{ byrBuyers.length }} buyers →</div>
@@ -3944,6 +3944,7 @@
                 <!-- Create new (only for own files) -->
                 <div v-if="adminViewAgent === agentName" style="display:flex;gap:8px;margin-bottom:16px;">
                   <input v-model="newPropAddress" placeholder="e.g. 123 Main St. Unit 7E" style="max-width:340px;" @keyup.enter="createPropFile">
+                  <input v-model="newPropSellerName" placeholder="Seller name (e.g. John Smith)" style="max-width:340px;" @keyup.enter="createPropFile">
                   <button class="btn-navy" @click="createPropFile" style="white-space:nowrap;">+ New Property</button>
                 </div>
                 <div v-if="adminGetAgentFiles(adminViewAgent).length === 0" style="color:#9ca3af;font-size:13px;padding:20px 0;">No property files yet.</div>
@@ -5807,7 +5808,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const allAgentFiles = ref([]);
     const activePropFile = ref(null);        // currently viewing property file
     const adminViewAgent = ref(null);        // admin: currently expanded agent folder
-    const newPropAddress = ref('');
+    const newPropAddress = ref(''); const newPropSellerName = ref('');
     const showSaveToProp = ref(false);       // modal open state
     const saveToPropData = ref(null);        // { type, label, data } to save
     const saveToPropSelected = ref(null);    // selected property file ID
@@ -6846,8 +6847,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const addr = newPropAddress.value.trim();
       if (!addr) return;
       try {
-        await supaRest.insert('properties', { agent_name: agentName.value, address: addr });
-        newPropAddress.value = '';
+        await supaRest.insert('properties', { agent_name: agentName.value, address: addr, seller_name: newPropSellerName.value.trim() });
+        newPropAddress.value = ''; newPropSellerName.value = '';
         await refreshPropFiles();
         showToast('✅ Property file created!');
       } catch(e) { showToast('Error creating file: ' + e.message, 3000); }
@@ -12994,7 +12995,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
-      isAdmin, lstGroupedByAgent, byrGroupedByAgent, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress,
+      isAdmin, lstGroupedByAgent, byrGroupedByAgent, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress, newPropSellerName,
       showSaveToProp, saveToPropData, saveToPropSelected, saveToPropNewAddr,
       refreshPropFiles, createPropFile, removePropFile, openPropFile, closePropFile,
       removeResource, viewResourceLink, sendResourceToClient, openSaveToPropModal, confirmSaveToProp, cancelSaveToProp,
