@@ -3842,7 +3842,7 @@
                       </label>
                     </div>
                     <div v-if="section.included" style="padding:10px 14px;">
-                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;" placeholder="Click to edit..."></textarea>
+                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;field-sizing:content;overflow:hidden;" placeholder="Click to edit..."></textarea>
                     </div>
                     <div v-else style="padding:10px 14px;font-size:12px;color:#94a3b8;font-style:italic;">Excluded from output</div>
                   </div>
