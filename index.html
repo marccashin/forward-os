@@ -5351,7 +5351,7 @@ async function claude(userPrompt, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
   const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
-  const body = { model, max_tokens: 2048, messages: [{ role:'user', content:userPrompt }] };
+  const body = { model, max_tokens: 8192, messages: [{ role:'user', content:userPrompt }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
