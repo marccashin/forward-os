@@ -3829,7 +3829,7 @@
                   </div>
                   <button @click="campShowPreview=false" style="background:rgba(255,255,255,.12);border:none;color:white;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px;line-height:1;">✕</button>
                 </div>
-                <div style="flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;">
+                <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:16px;display:flex;flex-direction:column;gap:14px;">
                   <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px;">
                     <details style="margin-bottom:10px"><summary style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:6px 8px;background:#dcfce7;border-radius:6px;border:1px solid #bbf7d0;">📝 Listing Description (from saved)<span style="font-weight:400;font-size:9px;opacity:.7">▼ expand</span></summary>
                     <div style="font-size:12px;color:#374151;white-space:pre-wrap;line-height:1.6;">{{ lstNotes.listing_remarks }}</div></details>
@@ -3842,7 +3842,7 @@
                       </label>
                     </div>
                     <div v-if="section.included" style="padding:10px 14px;">
-                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:80px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;" placeholder="Click to edit..."></textarea>
+                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;" placeholder="Click to edit..."></textarea>
                     </div>
                     <div v-else style="padding:10px 14px;font-size:12px;color:#94a3b8;font-style:italic;">Excluded from output</div>
                   </div>
@@ -6525,7 +6525,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     if (parsed.length === 0 && raw.trim()) {
       parsed.push({ title: 'Generated Campaign Content', content: raw.trim(), included: true });
     }
-    campParsed.value = parsed;
+    parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} campParsed.value = parsed;
     campShowPreview.value = true;
           setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});},150);
   } catch(e) {
