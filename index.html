@@ -6644,6 +6644,7 @@ async function lstSubmitToPipeline() {
       const netSheetFile = files.find(f => f.subfolder === 'seller_net_sheet');
       if (netSheetNote || netSheetFile) {
         _addSection('SELLER NET SHEET', netSheetNote, netSheetFile?.drive_link);
+      }
       if (files.length === 0 && !Object.values(lstNotes).some(n => n && n.trim())) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(11); doc.setTextColor(...gray);
         doc.text('Campaign files were emailed directly to ' + sessionEmail.value + '.', 40, y);
