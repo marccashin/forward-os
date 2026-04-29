@@ -3913,7 +3913,7 @@
                 </button>
                 <div v-if="campGenerating" style="text-align:center;margin-top:8px;font-size:12px;color:var(--navy);opacity:.75;">Generating 6 campaign sections · this takes ~60 seconds…</div>
                 <div v-if="campRawResult" style="margin-top:8px;text-align:center;">
-                  <button @click="campShowPreview=true;setTimeout(function(){var r=function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});};r();setTimeout(r,400);},100)" style="background:none;border:none;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">📋 View & Edit Generated Campaign</button>
+                  <button @click="campShowPreview=true" style="background:none;border:none;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">📋 View & Edit Generated Campaign</button>
                 </div>
               </div>
             </div>
@@ -6609,8 +6609,7 @@ async function lstSubmitToPipeline() {
       doc.text('Prepared by ' + agentName.value + '  ·  ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 40, y); y += 14;
       doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(40, y, W - 40, y); y += 20;
       // ── Intro text ──
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81);      const introLines = doc.splitTextToSize(intro, W - 80);
-      doc.text(introLines, 40, y); y += introLines.length * 14 + 10;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81);      // intro text removed
 
       // ── Helper: section block ──
       function _addSection(label, content, driveLink) {
