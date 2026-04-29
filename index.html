@@ -3842,7 +3842,7 @@
                       </label>
                     </div>
                     <div v-if="section.included" style="padding:10px 14px;">
-                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;field-sizing:content;overflow:hidden;" placeholder="Click to edit..."></textarea>
+                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;field-sizing:content;overflow-y:auto;" placeholder="Click to edit..."></textarea>
                     </div>
                     <div v-else style="padding:10px 14px;font-size:12px;color:#94a3b8;font-style:italic;">Excluded from output</div>
                   </div>
@@ -6607,9 +6607,7 @@ async function lstSubmitToPipeline() {
       doc.text('Prepared by ' + agentName.value + '  ·  ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 40, y); y += 14;
       doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(40, y, W - 40, y); y += 20;
       // ── Intro text ──
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81);
-      const intro = 'Your FORWARD Marketing OS campaign is complete. All deliverables are included below.';
-      const introLines = doc.splitTextToSize(intro, W - 80);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81);      const introLines = doc.splitTextToSize(intro, W - 80);
       doc.text(introLines, 40, y); y += introLines.length * 14 + 10;
 
       // ── Helper: section block ──
@@ -6621,7 +6619,6 @@ async function lstSubmitToPipeline() {
         doc.text(label, 50, y + 13);
         if (driveLink) {
           doc.setFont('helvetica', 'italic'); doc.setFontSize(8); doc.setTextColor(...gold);
-          doc.text('View in Drive →', W - 130, y + 13);
           doc.link(W - 135, y + 2, 100, 14, { url: driveLink });
         }
         y += 28;
@@ -6647,31 +6644,6 @@ async function lstSubmitToPipeline() {
       const netSheetFile = files.find(f => f.subfolder === 'seller_net_sheet');
       if (netSheetNote || netSheetFile) {
         _addSection('SELLER NET SHEET', netSheetNote, netSheetFile?.drive_link);
-      }
-      // ── CMA & Pricing ──
-      const cmaNote = lstNotes.cma || '';
-      const cmaFile = files.find(f => f.subfolder === 'cma');
-      if (cmaNote || cmaFile) {
-        _addSection('CMA & PRICING ANALYSIS', cmaNote, cmaFile?.drive_link);
-      }
-      // ── Photos & Briefs ──
-      const photoFiles = files.filter(f => f.subfolder === 'listing_photos');
-      if (photoFiles.length > 0) {
-        const photoNames = photoFiles.map(f => '• ' + f.file_name).join('\n');
-        _addSection('PHOTOS & BRIEFS', photoNames, photoFiles[0]?.drive_link);
-      }
-      // ── MLS Data ──
-      const mlsNote = lstNotes.mls_data || '';
-      const mlsFile = files.find(f => f.subfolder === 'mls_data');
-      if (mlsNote || mlsFile) {
-        _addSection('MLS DATA', mlsNote, mlsFile?.drive_link);
-      }
-      // ── Any remaining files ──
-      const knownSubfolders = ['listing_remarks','seller_net_sheet','cma','listing_photos','mls_data'];
-      const otherFiles = files.filter(f => !knownSubfolders.includes(f.subfolder || ''));
-      for (const file of otherFiles) {
-        _addSection(file.file_name || 'Additional File', '', file.drive_link);
-      }
       if (files.length === 0 && !Object.values(lstNotes).some(n => n && n.trim())) {
         doc.setFont('helvetica', 'italic'); doc.setFontSize(11); doc.setTextColor(...gray);
         doc.text('Campaign files were emailed directly to ' + sessionEmail.value + '.', 40, y);
