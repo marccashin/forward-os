@@ -598,7 +598,8 @@
       font-size:12px; color:#92400e; font-weight:600;
       margin-bottom:14px; width:100%;
     }
-  </style>
+  .fos-spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:fos-spin .7s linear infinite;flex-shrink:0}@keyframes fos-spin{to{transform:rotate(360deg)}}
+</style>
 </head>
 <body>
 <div id="app">
@@ -3909,8 +3910,9 @@
               </div>
               <div style="padding:12px 16px;">
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" style="width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
-                  {{ campGenerating ? '⏳ Generating Campaign...' : '🚀 Generate Campaign In-App' }}
+                  <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="fos-spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
+                <div v-if="campGenerating" style="text-align:center;margin-top:8px;font-size:12px;color:var(--navy);opacity:.75;">Generating 6 campaign sections · this takes ~30 seconds…</div>
                 <div v-if="campRawResult" style="margin-top:8px;text-align:center;">
                   <button @click="campShowPreview=true;setTimeout(function(){var r=function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});};r();setTimeout(r,400);},100)" style="background:none;border:none;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">📋 View & Edit Generated Campaign</button>
                 </div>
