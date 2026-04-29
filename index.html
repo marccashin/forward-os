@@ -3360,8 +3360,7 @@
                     {key:'listing_remarks', icon:'✍️', label:'Listing Description'},
                     {key:'seller_net_sheet', icon:'💰', label:'Net Sheet'},
                     {key:'cma', icon:'📊', label:'CMA / Pricing'},
-                    {key:'listing_photos', icon:'📸', label:'Photos & Briefs'},
-                    {key:'mls_data', icon:'📋', label:'MLS Data'}
+                                        {key:'mls_data', icon:'📋', label:'MLS Data'}
                   ]" :key="cat.key">
                     <div v-if="lstSubfolderFiles(cat.key).length > 0" style="background:rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;">
                       <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">{{ cat.icon }} {{ cat.label }}</div>
@@ -3843,7 +3842,7 @@
                       </label>
                     </div>
                     <div v-if="section.included" style="padding:10px 14px;">
-                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:none;min-height:260px;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;field-sizing:content;overflow-y:auto;" placeholder="Click to edit..."></textarea>
+                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid #cbd5e1;border-radius:6px;outline:none;font-size:12px;line-height:1.6;resize:vertical;min-height:120px;max-height:500px;overflow-y:auto;font-family:inherit;color:#374151;background:#f8fafc;padding:8px 10px;box-sizing:border-box;field-sizing:content;overflow-y:auto;" placeholder="Click to edit..."></textarea>
                     </div>
                     <div v-else style="padding:10px 14px;font-size:12px;color:#94a3b8;font-style:italic;">Excluded from output</div>
                   </div>
@@ -3912,7 +3911,7 @@
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" style="width:100%;padding:12px;background:var(--navy);color:white;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
                   <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="fos-spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
-                <div v-if="campGenerating" style="text-align:center;margin-top:8px;font-size:12px;color:var(--navy);opacity:.75;">Generating 6 campaign sections · this takes ~30 seconds…</div>
+                <div v-if="campGenerating" style="text-align:center;margin-top:8px;font-size:12px;color:var(--navy);opacity:.75;">Generating 6 campaign sections · this takes ~60 seconds…</div>
                 <div v-if="campRawResult" style="margin-top:8px;text-align:center;">
                   <button @click="campShowPreview=true;setTimeout(function(){var r=function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});};r();setTimeout(r,400);},100)" style="background:none;border:none;color:var(--navy);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">📋 View & Edit Generated Campaign</button>
                 </div>
@@ -6505,7 +6504,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION — USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
-    const raw = await claude(prompt);
+    const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out — please try again')),90000));
+    const raw = await Promise.race([claude(prompt), _timeout]);
     campRawResult.value = raw;
     let parsed = [];
     let parts = [];
