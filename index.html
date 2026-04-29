@@ -6505,7 +6505,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   try {
     const raw = await claude(prompt);
     campRawResult.value = raw;
-    const parsed = [];
+    let parsed = [];
     let parts = [];
     if (raw.includes('---SECTION:')) {
       parts = raw.split(/---SECTION:\s*/).filter(p => p.trim());
