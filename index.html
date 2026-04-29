@@ -6548,49 +6548,165 @@ function campExportPDF() {
   const sections = campParsed.value;
   if (!sections || !sections.length) { alert('No campaign content to export. Generate a campaign first.'); return; }
   const prop = lstActiveProp.value;
+  if (!prop) { alert('No active property. Please select a listing first.'); return; }
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-  const W = 612, H = 792, ML = 40, MR = 40;
-  let y = 90;
-  function addPage() { doc.addPage(); y = ML; }
-  function checkY(needed) { if (y + needed > H - 40) addPage(); }
-  doc.setFillColor(10, 37, 64);
-  doc.rect(0, 0, W, 70, 'F');
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(22);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CAMPAIGN PACKAGE', ML, 42);
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  const addr = prop ? (prop.address || prop.full_address || '') : '';
-  if (addr) doc.text(addr, ML, 58);
-  sections.filter(function(sec){ return sec.included !== false; }).forEach(function(section) {
-    checkY(50);
-    doc.setFillColor(229, 237, 246);
-    doc.rect(ML - 8, y - 15, W - ML - MR + 16, 24, 'F');
-    doc.setTextColor(10, 37, 64);
+  const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
+  let y = 0;
+  let pageNum = 1;
+
+  function addPage() { doc.addPage(); pageNum++; y = 60; }
+  function checkY(needed) { if (y + needed > H - 60) addPage(); }
+
+  // Strip markdown and emojis for plain-text PDF rendering
+  function clean(text) {
+    return (text || '')
+      .replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu, '')
+      .replace(/\*\*([^*]+)\*\*/g, '$1')
+      .replace(/\*([^*]+)\*/g, '$1')
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/^>\s*/gm, '    ')
+      .replace(/^[+\-\*]\s+/gm, '- ')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/`([^`]+)`/g, '$1');
+  }
+
+  // Render a block of text with markdown-aware line handling
+  function renderBlock(text, indent) {
+    const x = ML + (indent || 0);
+    const blockW = TW - (indent || 0);
+    const rawLines = clean(text).split('\n');
+    rawLines.forEach(function(raw) {
+      const line = raw.trimEnd();
+      if (!line.trim()) { y += 6; return; }
+      // Detect separator lines
+      if (/^-{3,}$/.test(line.trim())) {
+        checkY(12);
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.5);
+        doc.line(ML, y - 2, W - MR, y - 2);
+        y += 10;
+        return;
+      }
+      // Detect bold-only lines (e.g. "1. Name: ..." or section subheads)
+      const isBold = /^\d+\.|^(Name:|The |PRE-MARKET|WEEK|ONGOING)/.test(line.trim());
+      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(30, 30, 30);
+      const wrapped = doc.splitTextToSize(line, blockW);
+      wrapped.forEach(function(wl) {
+        checkY(14);
+        doc.text(wl, x, y);
+        y += 14;
+      });
+      doc.setFont('helvetica', 'normal');
+    });
+  }
+
+  // Draw a navy section header bar
+  function sectionHeader(title) {
+    checkY(36);
+    doc.setFillColor(10, 37, 64);
+    doc.rect(0, y - 18, W, 28, 'F');
+    doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(section.title ? section.title.toUpperCase() : 'SECTION', ML, y);
-    y += 8;
-    doc.setDrawColor(10, 37, 64);
-    doc.setLineWidth(0.5);
-    doc.line(ML, y, W - MR, y);
-    y += 12;
+    doc.text(title.toUpperCase(), ML, y);
+    y += 20;
     doc.setTextColor(30, 30, 30);
-    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    const lines = doc.splitTextToSize(section.content || '', W - ML - MR);
-    lines.forEach(function(line) {
-      checkY(13);
-      doc.text(line, ML, y);
-      y += 13;
-    });
-    y += 18;
+  }
+
+  // ── Cover header ──────────────────────────────────────────────
+  doc.setFillColor(10, 37, 64);
+  doc.rect(0, 0, W, 80, 'F');
+  doc.setTextColor(255, 219, 108);
+  doc.setFontSize(26);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CAMPAIGN PACKAGE', ML, 44);
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'normal');
+  const addr = clean(prop.address || prop.full_address || '');
+  doc.text(addr, ML, 64);
+  y = 102;
+
+  // ── 1. PERSONALIZED LETTER ───────────────────────────────────
+  const today = new Date();
+  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const sellerName = clean(prop.seller_name || prop.contact_name || '');
+
+  sectionHeader('Letter to Seller');
+  y += 4;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(30, 30, 30);
+
+  const greeting = sellerName ? ('Dear ' + sellerName + ',') : 'Dear Valued Client,';
+  doc.text(dateStr, ML, y); y += 18;
+  doc.text(greeting, ML, y); y += 18;
+
+  const letterBody = [
+    'It has been a privilege preparing this campaign package for ' + addr + '. What follows represents a comprehensive, multi-channel marketing strategy built specifically around your property — its history, its infrastructure, and the buyers who will recognize its true value.',
+    'Every element of this package has been designed to attract serious, qualified buyers: the buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social media, video, and advertising materials are ready to deploy across every relevant platform.',
+    'The 30-day campaign plan gives you full visibility into every step — from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
+    'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
+  ];
+
+  letterBody.forEach(function(para) {
+    const wrapped = doc.splitTextToSize(para, TW);
+    wrapped.forEach(function(line) { checkY(14); doc.text(line, ML, y); y += 14; });
+    y += 8;
   });
+
+  doc.text('Warm regards,', ML, y); y += 16;
+  doc.setFont('helvetica', 'bold');
+  doc.text('Marc Cashin', ML, y); y += 14;
+  doc.setFont('helvetica', 'normal');
+  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 14;
+  doc.text('marc@marccashin.com', ML, y); y += 24;
+
+  // ── 2. LISTING DESCRIPTION ───────────────────────────────────
+  const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
+  if (listingDesc) {
+    addPage();
+    sectionHeader('Listing Description');
+    y += 6;
+    renderBlock(listingDesc, 0);
+    y += 10;
+  }
+
+  // ── 3-6. CAMPAIGN SECTIONS (sorted by desired order) ─────────
+  const ORDER = ['buyer', 'plan', '30-day', 'social', 'tiktok', 'flyer', 'linkedin'];
+  function sectionPriority(title) {
+    const t = (title || '').toLowerCase();
+    if (t.includes('buyer') || t.includes('avatar')) return 0;
+    if (t.includes('30-day') || t.includes('plan') || t.includes('marketing')) return 1;
+    if (t.includes('social') || t.includes('instagram') || t.includes('facebook')) return 2;
+    if (t.includes('tiktok') || t.includes('script') || t.includes('video')) return 3;
+    if (t.includes('flyer') || t.includes('print') || t.includes('brochure')) return 4;
+    if (t.includes('linkedin')) return 5;
+    return 6;
+  }
+
+  const sorted = sections
+    .filter(function(s) { return s.included !== false; })
+    .slice()
+    .sort(function(a, b) { return sectionPriority(a.title) - sectionPriority(b.title); });
+
+  sorted.forEach(function(section) {
+    addPage();
+    sectionHeader(section.title || 'Section');
+    y += 6;
+    renderBlock(section.content || '', 0);
+  });
+
+  // Save
   const filename = (addr || 'Campaign').replace(/[^a-zA-Z0-9 ]/g, '_') + '_Campaign.pdf';
   doc.save(filename);
 }
+
 
 function campCopyToClipboard() {
   const listing = 'LISTING DESCRIPTION\n' + '─'.repeat(40) + '\n' + (lstNotes.listing_remarks || '') + '\n\n';
