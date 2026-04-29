@@ -3378,7 +3378,7 @@
                 </div>
                 <!-- Send to Seller + View Drive -->
                 <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
-                  <button @click="lstCampaignSendToSeller" style="flex:1;min-width:120px;background:var(--gold);color:#0A1628;border:none;border-radius:10px;padding:12px 0;font-size:13px;font-weight:700;cursor:pointer;">📄 Generate & Send PDF</button>
+                  <button @click="campExportPDF" style="flex:1;min-width:120px;background:var(--gold);color:#0A1628;border:none;border-radius:10px;padding:12px 0;font-size:13px;font-weight:700;cursor:pointer;">📄 Generate & Send PDF</button>
                   <a v-if="lstActiveProp.drive_folder_id" :href="'https://drive.google.com/drive/folders/'+lstActiveProp.drive_folder_id" target="_blank" style="flex:1;min-width:120px;background:rgba(255,255,255,.1);border:1.5px solid rgba(255,255,255,.2);border-radius:10px;padding:12px 0;font-size:13px;font-weight:600;color:#fff;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;">📁 View in Drive</a>
                 </div>
               </div>
@@ -6541,7 +6541,55 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 async function campApproveAndSend() {
   campShowPreview.value = false;
   await new Promise(r => setTimeout(r, 200));
-  lstCampaignSendToSeller();
+  campExportPDF();
+}
+
+function campExportPDF() {
+  const sections = campParsed.value;
+  if (!sections || !sections.length) { alert('No campaign content to export. Generate a campaign first.'); return; }
+  const prop = lstActiveProp.value;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  const W = 612, H = 792, ML = 40, MR = 40;
+  let y = 90;
+  function addPage() { doc.addPage(); y = ML; }
+  function checkY(needed) { if (y + needed > H - 40) addPage(); }
+  doc.setFillColor(10, 37, 64);
+  doc.rect(0, 0, W, 70, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(22);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CAMPAIGN PACKAGE', ML, 42);
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+  const addr = prop ? (prop.address || prop.full_address || '') : '';
+  if (addr) doc.text(addr, ML, 58);
+  sections.filter(function(sec){ return sec.included !== false; }).forEach(function(section) {
+    checkY(50);
+    doc.setFillColor(229, 237, 246);
+    doc.rect(ML - 8, y - 15, W - ML - MR + 16, 24, 'F');
+    doc.setTextColor(10, 37, 64);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(section.title ? section.title.toUpperCase() : 'SECTION', ML, y);
+    y += 8;
+    doc.setDrawColor(10, 37, 64);
+    doc.setLineWidth(0.5);
+    doc.line(ML, y, W - MR, y);
+    y += 12;
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const lines = doc.splitTextToSize(section.content || '', W - ML - MR);
+    lines.forEach(function(line) {
+      checkY(13);
+      doc.text(line, ML, y);
+      y += 13;
+    });
+    y += 18;
+  });
+  const filename = (addr || 'Campaign').replace(/[^a-zA-Z0-9 ]/g, '_') + '_Campaign.pdf';
+  doc.save(filename);
 }
 
 function campCopyToClipboard() {
