@@ -164,6 +164,12 @@
       🏠 Subject Property
       <span class="badge">Step 1</span>
     </div>
+    <!-- ── Bright MLS Pull ── -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:#f0f4ff;border-radius:8px;border:1px solid #c5d3f5;">
+      <input type="text" id="mlsSearchInput" placeholder="Enter address or MLS # to pull from Bright MLS" style="flex:1;min-width:220px;padding:7px 10px;border:1px solid #c5d3f5;border-radius:6px;font-size:13px;">
+      <button onclick="pullFromMLS()" id="mlsPullBtn" style="padding:7px 18px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Pull from MLS</button>
+      <span id="mlsPullStatus" style="font-size:12px;color:#666;white-space:nowrap;"></span>
+    </div>
     <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
       <div class="field" style="grid-column:span 2;">
         <label>Property Address</label>
@@ -426,6 +432,8 @@
       🏘️ Comparable Sales
       <span class="badge">Step 3</span>
       <span class="badge badge-gold" id="compCountBadge">0 of 6</span>
+      <button onclick="findComps()" id="findCompsBtn" style="margin-left:auto;padding:5px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Find Comps from MLS</button>
+      <span id="findCompsStatus" style="font-size:12px;color:#666;margin-left:6px;"></span>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 comparable sales. All adjustments are calculated automatically.</div>
     <!-- Condition Grade Reference -->
@@ -473,6 +481,7 @@
             <th style="min-width:80px;">HOA/Mo</th>
             <th style="min-width:100px;">Concessions</th>
             <th style="min-width:90px;">Proximity</th>
+            <th style="min-width:60px;">DOM</th>
             <th class="gold" style="min-width:80px;">$/SqFt</th>
             <th class="gold" style="min-width:100px;">Net Adj</th>
             <th class="gold" style="min-width:100px;">Adj Price</th>
@@ -697,6 +706,7 @@ function buildCompRow(i) {
     <td><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
     <td><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="compChange(${i},'proximity',this.value)" /></td>
+    <td><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="compChange(${i},'dom',+this.value)" /></td>
     <td class="calc" id="c${i}_psf">—</td>
     <td class="calc" id="c${i}_netAdj">—</td>
     <td class="calc" id="c${i}_adjPrice">—</td>
@@ -713,7 +723,7 @@ function buildCompRow(i) {
 
 function addComp() {
   if (comps.length >= MAX_COMPS) return;
-  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'' });
+  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' });
   buildCompsTable();
   recalcAll();
 }
@@ -1621,6 +1631,107 @@ function _fillPDFDoc(doc) {
   doc.text((agentName ? 'Agent: ' + agentName + '  |  ' : '') + 'This CMA is an estimate of value and is not an appraisal. Confidential \u2014 ' + dateStr + '.', ML, brightY - 23);
 
   // (doc returned to caller)
+}
+
+
+// ── Bright MLS Integration ────────────────────────────────────────────
+
+async function pullFromMLS() {
+  const query = (document.getElementById('mlsSearchInput').value || '').trim();
+  if (!query) { alert('Please enter an address or MLS number.'); return; }
+  const btn = document.getElementById('mlsPullBtn');
+  const status = document.getElementById('mlsPullStatus');
+  btn.disabled = true; btn.textContent = 'Pulling…'; status.textContent = '';
+  try {
+    const resp = await fetch(_RAILWAY + '/api/bright/property-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Lookup failed');
+    const p = data.property;
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val != null && val !== '') el.value = val; };
+    set('s_address',      p.street || (p.address || '').split(',')[0].trim());
+    set('s_city',         p.city);
+    set('s_state',        p.state);
+    set('s_zip',          p.zip);
+    set('s_propType',     p.propType);
+    set('s_beds',         p.beds);
+    set('s_fullBaths',    p.fullBaths);
+    set('s_halfBaths',    p.halfBaths);
+    set('s_gla',          p.gla);
+    set('s_below',        p.below);
+    set('s_yearBuilt',    p.yearBuilt);
+    set('s_condition',    p.condition);
+    set('s_parkingType',  p.parkingType);
+    set('s_parkingSpaces',p.parkingSpaces);
+    set('s_hoaMonthly',   p.hoaMonthly);
+    set('s_condoFee',     p.condoFee);
+    set('s_lotSize',      p.lotSize);
+    status.textContent = '✔ Populated from MLS' + (p.mlsNumber ? ' (' + p.mlsNumber + ')' : '');
+    status.style.color = '#1a7a4a';
+    recalc();
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.style.color = '#c0392b';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Pull from MLS';
+  }
+}
+
+async function findComps() {
+  const city  = (document.getElementById('s_city')  || {}).value || '';
+  const state = (document.getElementById('s_state') || {}).value || '';
+  if (!city || !state) { alert('Fill in subject property city and state first (Step 1).'); return; }
+  const gla   = parseFloat(document.getElementById('s_gla').value)       || null;
+  const beds  = parseFloat(document.getElementById('s_beds').value)      || null;
+  const baths = parseFloat(document.getElementById('s_fullBaths').value) || null;
+  const btn    = document.getElementById('findCompsBtn');
+  const status = document.getElementById('findCompsStatus');
+  btn.disabled = true; btn.textContent = 'Finding…'; status.textContent = '';
+  try {
+    const resp = await fetch(_RAILWAY + '/api/bright/comps-lookup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ city, state, beds, full_baths: baths, gla })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Comps lookup failed');
+    const incoming = data.comps || [];
+    if (!incoming.length) {
+      status.textContent = 'No comps found — adjust subject property fields and retry.';
+      status.style.color = '#c0392b'; return;
+    }
+    comps.length = 0;
+    incoming.forEach(c => {
+      comps.push({
+        address:      c.address      || '',
+        soldDate:     c.soldDate     || '',
+        salePrice:    c.salePrice    != null ? String(c.salePrice)    : '',
+        gla:          c.gla          != null ? String(c.gla)          : '',
+        beds:         c.beds         != null ? String(c.beds)         : '',
+        fullBaths:    c.fullBaths    != null ? String(c.fullBaths)    : '',
+        halfBaths:    c.halfBaths    != null ? String(c.halfBaths)    : '',
+        below:        c.below        != null ? String(c.below)        : '',
+        garageSpaces: c.garageSpaces != null ? String(c.garageSpaces) : '',
+        condition:    c.condition    || 'C',
+        hoaMonthly:   c.hoaMonthly   != null ? String(c.hoaMonthly)   : '',
+        concessions:  c.concessions  || '',
+        proximity:    c.proximity    || '',
+        dom:          c.dom          != null ? String(c.dom) : ''
+      });
+    });
+    buildCompsTable();
+    recalc();
+    status.textContent = '✔ ' + incoming.length + ' comp' + (incoming.length > 1 ? 's' : '') + ' loaded from MLS';
+    status.style.color = '#1a7a4a';
+  } catch (err) {
+    status.textContent = 'Error: ' + err.message;
+    status.style.color = '#c0392b';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Find Comps from MLS';
+  }
 }
 </script>
 </body>
