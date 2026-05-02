@@ -424,6 +424,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .listing-card:hover { border-color: var(--gold-muted); }
 .listing-card:hover::after { opacity: 1; }
 .listing-card.swiped { transform: translateX(-52px); }
+/* On desktop (pointer: fine), hide swipe panel — use hover delete button instead */
+@media (hover: hover) and (pointer: fine) {
+  .listing-card-delete { display: none; }
+  .listing-card.swiped { transform: none; }
+}
 
 /* Market + Status badges */
 .market-badge {
@@ -3242,7 +3247,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="legend-dot"></span>{{ lbl }}
                 </span>
               </div>
-              <span style="font-size:7.5px;color:#aaa;letter-spacing:0.08em;">← swipe to delete</span>
             </div>
 
             <!-- Admin: grouped by agent -->
