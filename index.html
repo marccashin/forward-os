@@ -3947,19 +3947,34 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div v-for="(section, idx) in campParsed" :key="idx" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;">
                     <!-- Accordion header — click to expand/collapse -->
                     <div @click="campOpenSection = campOpenSection===idx ? null : idx"
-                         style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--cream);cursor:pointer;user-select:none;transition:background 0.13s;"
-                         :style="{background: campOpenSection===idx ? 'var(--navy)' : 'var(--cream)'}">
-                      <div style="display:flex;align-items:center;gap:10px;">
-                        <span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;" :style="{color: campOpenSection===idx ? 'var(--gold)' : 'var(--navy)'}">{{ section.title }}</span>
-                        <span v-if="section.content && section.content.length > 10" style="font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:0.08em;" :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.6)' : 'var(--gold-muted)'}">{{ section.content.slice(0,48).trim() }}…</span>
-                        <span v-else style="font-family:'Montserrat',sans-serif;font-size:7px;font-style:italic;" :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.5)' : '#bbb'}">empty — click to add</span>
+                         style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;transition:background 0.15s;border-left:3px solid transparent;"
+                         :style="{background: campOpenSection===idx ? 'var(--navy)' : 'var(--white)', borderLeftColor: campOpenSection===idx ? 'var(--gold)' : 'transparent'}">
+                      <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+                        <!-- Pencil icon — signals editability -->
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                             :style="{stroke: campOpenSection===idx ? 'var(--gold)' : 'var(--gold-muted)', flexShrink:0}">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                        <div style="min-width:0;">
+                          <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;"
+                               :style="{color: campOpenSection===idx ? 'var(--gold)' : 'var(--navy)'}">{{ section.title }}</div>
+                          <div v-if="campOpenSection!==idx" style="font-family:'Montserrat',sans-serif;font-size:7px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:340px;"
+                               :style="{color: section.content && section.content.length > 10 ? 'var(--gold-muted)' : '#bbb', fontStyle: section.content && section.content.length > 10 ? 'normal' : 'italic'}">
+                            {{ section.content && section.content.length > 10 ? section.content.slice(0,60).trim() + '…' : 'Empty — click to add content' }}
+                          </div>
+                          <div v-else style="font-family:'Montserrat',sans-serif;font-size:7px;color:rgba(200,169,110,0.55);margin-top:2px;letter-spacing:0.1em;">Editing now</div>
+                        </div>
                       </div>
-                      <div style="display:flex;align-items:center;gap:12px;">
+                      <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;">
                         <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;"
                                :style="{color: campOpenSection===idx ? 'var(--gold-muted)' : 'var(--gold-muted)'}">
                           <input type="checkbox" v-model="section.included" style="cursor:pointer;accent-color:var(--gold);"> Include
                         </label>
-                        <span :style="{fontSize:'9px',color: campOpenSection===idx ? 'var(--gold-muted)' : '#aaa',transform: campOpenSection===idx ? 'rotate(180deg)' : 'none',display:'inline-block',transition:'transform 0.2s'}">▼</span>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;padding:3px 8px;border-radius:1px;transition:all 0.15s;"
+                             :style="{background: campOpenSection===idx ? 'rgba(200,169,110,0.2)' : 'var(--cream)', color: campOpenSection===idx ? 'var(--gold)' : 'var(--gold-muted)', border: campOpenSection===idx ? '1px solid rgba(200,169,110,0.4)' : '1px solid var(--cream-dark)'}">
+                          {{ campOpenSection===idx ? 'EDITING ▲' : 'EDIT ▼' }}
+                        </div>
                       </div>
                     </div>
                     <!-- Expanded edit area -->
@@ -3976,6 +3991,54 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div v-else-if="!section.included" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
                 </div>
+                <!-- AI Revision section inside panel -->
+                <div style="border-top:1px solid var(--cream-mid);background:var(--cream);">
+                  <div @click="campRevOpen=!campRevOpen" style="display:flex;align-items:center;justify-content:space-between;padding:12px 24px;cursor:pointer;user-select:none;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--gold-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                      <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--navy);">Ask AI to Revise</span>
+                      <span style="font-family:'Montserrat',sans-serif;font-size:7px;color:var(--gold-muted);">Regenerate with instructions</span>
+                    </div>
+                    <span style="font-size:8px;color:var(--gold-muted);">{{ campRevOpen ? '▲' : '▼' }}</span>
+                  </div>
+                  <div v-if="campRevOpen" style="padding:0 24px 16px;">
+                    <div v-if="lstRevActiveStatus==='running'" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:rgba(10,35,66,0.06);border-radius:2px;margin-bottom:10px;">
+                      <span class="spinner spinner-dark" style="width:14px;height:14px;flex-shrink:0;"></span>
+                      <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:var(--navy);">Revision {{ lstRevLatestNumber }} in progress…</span>
+                    </div>
+                    <div v-else-if="lstRevActiveStatus==='complete' && lstRevLatestNumber > 0" style="padding:10px 14px;background:rgba(10,35,66,0.06);border-radius:2px;margin-bottom:10px;">
+                      <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:var(--navy);">Revision {{ lstRevLatestNumber }} complete — sent to {{ sessionEmail }}</span>
+                    </div>
+                    <div v-if="lstRevActiveStatus !== 'running'">
+                      <div style="display:flex;gap:8px;margin-bottom:10px;">
+                        <div class="revision-tab" :class="{active: lstRevInputTab === 'voice'}" @click="lstRevInputTab = 'voice'">Speak</div>
+                        <div class="revision-tab" :class="{active: lstRevInputTab === 'text'}" @click="lstRevInputTab = 'text'">Type</div>
+                      </div>
+                      <div v-if="lstRevInputTab==='voice'" style="text-align:center;padding:8px 0;">
+                        <button @click="inlineMicToggle('lst-rev-notes',()=>lstRevNotes.value,v=>lstRevNotes.value=v)"
+                          :class="{recording: inlineMicActive==='lst-rev-notes'}"
+                          style="width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);background:var(--navy);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--gold);transition:all 0.2s;margin-bottom:8px;">
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;color:var(--navy);">{{ inlineMicActive==='lst-rev-notes' ? 'Listening…' : 'Tap to Speak' }}</div>
+                        <div v-if="lstRevNotes" style="margin-top:10px;background:var(--white);border:1px solid var(--cream-mid);border-radius:1px;padding:10px 12px;text-align:left;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);line-height:1.6;white-space:pre-wrap;">{{ lstRevNotes }}</div>
+                      </div>
+                      <div v-else style="position:relative;">
+                        <textarea v-model="lstRevNotes" rows="4"
+                          placeholder="Describe what to change. Be specific: which section, what to adjust, and why."
+                          style="width:100%;resize:vertical;font-family:'Cormorant Garamond',serif;font-size:13px;padding:10px 12px;border:1px solid var(--cream-mid);border-radius:1px;background:var(--white);color:var(--navy);box-sizing:border-box;outline:none;line-height:1.6;"></textarea>
+                        <button class="ta-mic-btn" :class="{active:inlineMicActive==='lst-rev-notes'}" @click="inlineMicToggle('lst-rev-notes',()=>lstRevNotes.value,v=>lstRevNotes.value=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                      </div>
+                      <button class="btn-navy" :disabled="lstRevNotes.length < 20 || lstRevSubmitting"
+                        @click="lstSubmitRevisionRequest; campRevOpen=false"
+                        style="width:100%;margin-top:10px;color:var(--gold);font-family:'Montserrat',sans-serif;font-size:8px;letter-spacing:0.16em;text-transform:uppercase;padding:12px;">
+                        <span class="spinner" v-if="lstRevSubmitting"></span>
+                        {{ lstRevSubmitting ? 'Submitting…' : 'Submit for AI Revision' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <!-- Footer actions -->
                 <div style="padding:16px 24px;border-top:1px solid var(--cream-mid);display:flex;gap:10px;flex-shrink:0;background:var(--cream);">
                   <button @click="campApproveAndSend()" style="flex:1;padding:13px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">Approve &amp; Send to Seller</button>
                   <button @click="campCopyToClipboard()" style="padding:13px 18px;background:var(--white);border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Copy All</button>
@@ -4062,13 +4125,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Campaign Revision System -->
             <div v-if="lstActiveProp.status==='complete' || lstRevisionRequests.length > 0">
               <div v-if="lstCanRequestRevision" class="revision-section">
-                <div class="revision-header">Request Campaign Revisions</div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-                  <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">
-                    {{ lstRevisionRequests.length === 0 ? 'Original' : 'Revision ' + lstRevisionRequests.length }}
-                  </div>
-                  <button v-if="campRawResult" @click="campShowPreview=true" style="background:none;border:none;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:3px;">View Campaign ↗</button>
-                </div>
+                <div class="revision-header">Campaign Complete</div>
+                <!-- Status banners -->
                 <div v-if="lstRevisionRequests.length > 0" style="margin-bottom:16px;">
                   <select v-model="lstRevSelectedVersion" style="max-width:240px;font-size:13px;">
                     <option value="original">Original</option>
@@ -4087,41 +4145,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-if="lstRevActiveStatus === 'error'" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
                   <span style="font-size:13px;color:#dc2626;font-weight:500;">Something went wrong. Contact Marc at marc.cashin@corcoranmce.com.</span>
                 </div>
-                <div v-if="lstRevActiveStatus !== 'running'">
-                  <div style="display:flex;gap:8px;margin-bottom:14px;">
-                    <div class="revision-tab" :class="{active: lstRevInputTab === 'voice'}" @click="lstRevInputTab = 'voice'">Speak Your Edits</div>
-                    <div class="revision-tab" :class="{active: lstRevInputTab === 'text'}" @click="lstRevInputTab = 'text'">Type Your Edits</div>
-                  </div>
-                  <div style="margin-top:8px;">
-                    <!-- Voice tab: large mic button -->
-                    <div v-if="lstRevInputTab==='voice'" style="text-align:center;padding:12px 0 8px;">
-                      <button
-                        @click="inlineMicToggle('lst-rev-notes',()=>lstRevNotes.value,v=>lstRevNotes.value=v)"
-                        :class="{recording: inlineMicActive==='lst-rev-notes'}"
-                        style="width:72px;height:72px;border-radius:50%;border:3px solid var(--gold);background:var(--navy);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--gold);transition:all 0.2s;touch-action:manipulation;margin-bottom:10px;">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                      </button>
-                      <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ inlineMicActive==='lst-rev-notes' ? 'Listening…' : 'Tap to Speak' }}</div>
-                      <div style="font-size:12px;color:#9ca3af;">{{ inlineMicActive==='lst-rev-notes' ? 'Tap again to stop' : 'Describe your requested changes out loud' }}</div>
-                      <div v-if="lstRevNotes" style="margin-top:12px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px 12px;text-align:left;font-size:13px;color:#374151;line-height:1.55;white-space:pre-wrap;">{{ lstRevNotes }}</div>
-                      <div v-if="lstRevNotes" style="text-align:right;font-size:11px;color:#9ca3af;margin-top:4px;">{{ lstRevNotes.length }} characters</div>
-                    </div>
-                    <!-- Text tab: regular textarea -->
-                    <div v-else style="position:relative;">
-                      <textarea v-model="lstRevNotes" rows="5"
-                        placeholder="Describe your requested changes. Be specific: reference the section, what you want changed, and why."
-                        style="resize:vertical;min-height:100px;"></textarea>
-                      <button class="ta-mic-btn" :class="{active:inlineMicActive==='lst-rev-notes'}" @click="inlineMicToggle('lst-rev-notes',()=>lstRevNotes.value,v=>lstRevNotes.value=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                      <div style="text-align:right;font-size:11px;color:#9ca3af;margin-top:4px;">{{ lstRevNotes.length }} characters</div>
-                    </div>
-                  </div>
-                  <button class="btn-navy" :disabled="lstRevNotes.length < 20 || lstRevSubmitting"
-                    @click="lstSubmitRevisionRequest"
-                    :class="{'rev-running-btn': lstRevSubmitting}"
-                    style="width:100%;margin-top:12px;color:var(--gold);">
-                    <span class="spinner" v-if="lstRevSubmitting"></span>
-                    {{ lstRevSubmitting ? 'Revision Running...' : 'Submit Revision Request' }}
+                <div v-if="lstRevActiveStatus !== 'running'" style="margin-top:16px;">
+                  <button @click="campShowPreview=true;campRevOpen=true" style="width:100%;padding:14px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">
+                    Review &amp; Edit Campaign →
                   </button>
+                  <div v-if="lstRevisionRequests.length > 0" style="margin-top:10px;font-family:'Montserrat',sans-serif;font-size:7.5px;color:var(--gold-muted);text-align:center;letter-spacing:0.08em;">
+                    {{ lstRevisionRequests.length }} revision{{ lstRevisionRequests.length===1?'':'s' }} submitted
+                  </div>
                 </div>
               </div>
               <div v-else class="revision-locked">
@@ -6334,6 +6364,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campRawResult = ref(localStorage.getItem('fos_campSections') ? 'cached' : '');
     const campShowPreview = ref(false);
     const campOpenSection = ref(0);
+    const campRevOpen = ref(false);
     const campGenerating = ref(false);
     const campShowSettings = ref(false);
     const lstUploading = reactive({ listing_photos:false, cma:false, seller_net_sheet:false, listing_remarks:false, mls_data:false });
@@ -13483,7 +13514,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
