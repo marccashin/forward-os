@@ -3945,16 +3945,35 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </details>
                   </div>
                   <div v-for="(section, idx) in campParsed" :key="idx" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;">
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--cream);border-bottom:1px solid var(--cream-mid);">
-                      <span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--navy);">{{ section.title }}</span>
-                      <label style="display:flex;align-items:center;gap:6px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">
-                        <input type="checkbox" v-model="section.included" style="cursor:pointer;accent-color:var(--navy);"> Include
-                      </label>
+                    <!-- Accordion header — click to expand/collapse -->
+                    <div @click="campOpenSection = campOpenSection===idx ? null : idx"
+                         style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--cream);cursor:pointer;user-select:none;transition:background 0.13s;"
+                         :style="{background: campOpenSection===idx ? 'var(--navy)' : 'var(--cream)'}">
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <span :style="{fontFamily:'Montserrat',sans-serif,fontSize:'8px',fontWeight:'700',letterSpacing:'0.18em',textTransform:'uppercase',color: campOpenSection===idx ? 'var(--gold)' : 'var(--navy)'}">{{ section.title }}</span>
+                        <span v-if="section.content && section.content.length > 10" :style="{fontFamily:'Montserrat',sans-serif,fontSize:'7px',color: campOpenSection===idx ? 'rgba(200,169,110,0.6)' : 'var(--gold-muted)',letterSpacing:'0.08em'}">{{ section.content.slice(0,48).trim() }}…</span>
+                        <span v-else :style="{fontFamily:'Montserrat',sans-serif,fontSize:'7px',fontStyle:'italic',color: campOpenSection===idx ? 'rgba(200,169,110,0.5)' : '#bbb'}">empty — click to add</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:12px;">
+                        <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;"
+                               :style="{color: campOpenSection===idx ? 'var(--gold-muted)' : 'var(--gold-muted)'}">
+                          <input type="checkbox" v-model="section.included" style="cursor:pointer;accent-color:var(--gold);"> Include
+                        </label>
+                        <span :style="{fontSize:'9px',color: campOpenSection===idx ? 'var(--gold-muted)' : '#aaa',transform: campOpenSection===idx ? 'rotate(180deg)' : 'none',display:'inline-block',transition:'transform 0.2s'}">▼</span>
+                      </div>
                     </div>
-                    <div v-if="section.included" style="padding:14px 18px;">
-                      <textarea v-model="section.content" class="camp-section-ta" @input="function(e){e.target.style.height='auto';e.target.style.height=e.target.scrollHeight+'px';}" style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.75;resize:vertical;min-height:120px;background:var(--white);padding:12px 14px;box-sizing:border-box;color:var(--navy);" placeholder="Click to edit..."></textarea>
+                    <!-- Expanded edit area -->
+                    <div v-if="campOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                      <textarea v-model="section.content" class="camp-section-ta"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
+                        :style="{height: Math.max(180, (section.content||'a').split('\n').length * 25 + 60) + 'px'}"
+                        @focus="$event.target.style.borderColor='var(--gold-muted)'"
+                        @blur="$event.target.style.borderColor='var(--cream-mid)'"
+                        placeholder="Type or paste content for this section…"></textarea>
                     </div>
-                    <div v-else style="padding:12px 18px;font-family:'Montserrat',sans-serif;font-size:8px;color:var(--gold-muted);letter-spacing:0.1em;text-transform:uppercase;">Excluded from output</div>
+                    <div v-else-if="!section.included" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
                 </div>
                 <div style="padding:16px 24px;border-top:1px solid var(--cream-mid);display:flex;gap:10px;flex-shrink:0;background:var(--cream);">
@@ -6314,6 +6333,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campParsed = ref((function(){try{var d=window['localStorage'].getItem('fos_campSections');return d?JSON.parse(d):[];}catch(e){return [];}})());
     const campRawResult = ref(localStorage.getItem('fos_campSections') ? 'cached' : '');
     const campShowPreview = ref(false);
+    const campOpenSection = ref(0);
     const campGenerating = ref(false);
     const campShowSettings = ref(false);
     const lstUploading = reactive({ listing_photos:false, cma:false, seller_net_sheet:false, listing_remarks:false, mls_data:false });
@@ -6641,7 +6661,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
     campShowPreview.value = true;
-          setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=ta.scrollHeight+'px';});},150);
+          setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
   } catch(e) {
     showToast('Generation failed. Check your API key in Settings.', 5000);
     console.error('campGenerate error:', e);
@@ -13463,7 +13483,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
