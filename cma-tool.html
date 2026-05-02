@@ -636,6 +636,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     showToast('☁️ Resumed from cloud');
   } else {
     loadPrefill();
+    if (_URL_ADDRESS) { const _a = document.getElementById('s_address'); if (_a && !_a.value) _a.value = _URL_ADDRESS; }
   }
   recalcAll();
 });
