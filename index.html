@@ -3950,9 +3950,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                          style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;background:var(--cream);cursor:pointer;user-select:none;transition:background 0.13s;"
                          :style="{background: campOpenSection===idx ? 'var(--navy)' : 'var(--cream)'}">
                       <div style="display:flex;align-items:center;gap:10px;">
-                        <span :style="{fontFamily:'Montserrat',sans-serif,fontSize:'8px',fontWeight:'700',letterSpacing:'0.18em',textTransform:'uppercase',color: campOpenSection===idx ? 'var(--gold)' : 'var(--navy)'}">{{ section.title }}</span>
-                        <span v-if="section.content && section.content.length > 10" :style="{fontFamily:'Montserrat',sans-serif,fontSize:'7px',color: campOpenSection===idx ? 'rgba(200,169,110,0.6)' : 'var(--gold-muted)',letterSpacing:'0.08em'}">{{ section.content.slice(0,48).trim() }}…</span>
-                        <span v-else :style="{fontFamily:'Montserrat',sans-serif,fontSize:'7px',fontStyle:'italic',color: campOpenSection===idx ? 'rgba(200,169,110,0.5)' : '#bbb'}">empty — click to add</span>
+                        <span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;" :style="{color: campOpenSection===idx ? 'var(--gold)' : 'var(--navy)'}">{{ section.title }}</span>
+                        <span v-if="section.content && section.content.length > 10" style="font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:0.08em;" :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.6)' : 'var(--gold-muted)'}">{{ section.content.slice(0,48).trim() }}…</span>
+                        <span v-else style="font-family:'Montserrat',sans-serif;font-size:7px;font-style:italic;" :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.5)' : '#bbb'}">empty — click to add</span>
                       </div>
                       <div style="display:flex;align-items:center;gap:12px;">
                         <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;"
