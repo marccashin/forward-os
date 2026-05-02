@@ -643,6 +643,30 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
   cursor: pointer; margin-top: 12px;
 }
+/* revision-section uses different class names than rev- variants */
+.revision-section { margin-top: 24px; }
+.revision-header {
+  font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 500;
+  color: var(--navy); margin-bottom: 12px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--cream-mid);
+}
+.revision-tab {
+  font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase; padding: 9px 16px;
+  cursor: pointer; border: 1px solid var(--cream-dark); border-radius: 1px;
+  color: var(--gold-muted); background: var(--white); transition: all 0.13s;
+}
+.revision-tab:hover { border-color: var(--gold-muted); color: var(--navy); }
+.revision-tab.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
+/* Mobile nav — hidden on desktop */
+.mobile-nav { display: none; }
+@media (max-width: 768px) {
+  .mobile-nav {
+    display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
+    background: var(--white); border-top: 1px solid var(--cream-mid);
+    padding: 6px 0 env(safe-area-inset-bottom, 6px);
+  }
+}
 .rev-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* Pipeline steps */
