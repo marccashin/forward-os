@@ -567,6 +567,7 @@
 // ── STATE ──
 let comps = [];
 const MAX_COMPS = 6;
+const _URL_ADDRESS = new URLSearchParams(location.search).get('address') || '';
 
 // ── SUPABASE SYNC ──
 const _SUPA_URL = localStorage.getItem('fos_supa_url') || 'https://ewedrgopezogifzysusn.supabase.co';
@@ -581,7 +582,7 @@ async function _supaLoad() {
   if (!_SUPA_KEY || !_AGENT) return null;
   try {
     const r = await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&order=updated_at.desc&limit=1`,
+      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}&order=updated_at.desc&limit=1`,
       { headers: _supaHdrs() }
     );
     const rows = await r.json();
@@ -594,7 +595,7 @@ async function _supaSave(draftData) {
   try {
     const prefillRaw = localStorage.getItem('cma_voice_prefill');
     const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
-    const address = prefill.address || getVal('s_address') || '';
+    const address = prefill.address || getVal('s_address') || _URL_ADDRESS || '';
     await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
       method: 'POST',
       headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
@@ -613,7 +614,7 @@ async function _supaDelete() {
   if (!_SUPA_KEY || !_AGENT) return;
   try {
     await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}`,
+      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}`,
       { method: 'DELETE', headers: _supaHdrs() }
     );
   } catch(e) { /* silent */ }
@@ -635,7 +636,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     showToast('☁️ Resumed from cloud');
   } else {
     loadPrefill();
-    loadDraft();
   }
   recalcAll();
 });
@@ -673,7 +673,6 @@ function loadPrefill() {
 function clearPrefill() {
   if (!confirm('Reset all fields to blank?')) return;
   localStorage.removeItem('cma_voice_prefill');
-  localStorage.removeItem('cma_draft');
   _supaDelete();
   location.reload();
 }
@@ -935,7 +934,6 @@ function _applyDraft(draft) {
 function saveLocal() {
   try {
     const draft = _buildDraft();
-    localStorage.setItem('cma_draft', JSON.stringify(draft));
     _supaSave(draft);
     showToast('✅ Draft saved');
   } catch(e) { showToast('Error saving draft'); }
@@ -943,7 +941,7 @@ function saveLocal() {
 
 function loadDraft() {
   try {
-    const raw = localStorage.getItem('cma_draft');
+    const raw = null /* disabled: Supabase-only */;
     if (!raw) return;
     _applyDraft(JSON.parse(raw));
   } catch(e) { /* ignore */ }
