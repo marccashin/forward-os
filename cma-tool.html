@@ -567,7 +567,7 @@
 // ── STATE ──
 let comps = [];
 const MAX_COMPS = 6;
-const _URL_ADDRESS = new URLSearchParams(location.search).get('address') || '';
+const _URL_ADDRESS = localStorage.getItem('fos_cma_address') || '';
 
 // ── SUPABASE SYNC ──
 const _SUPA_URL = localStorage.getItem('fos_supa_url') || 'https://ewedrgopezogifzysusn.supabase.co';
