@@ -185,6 +185,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* ── VOICE MODAL ── */
 .voice-modal-overlay { position: fixed; inset: 0; background: rgba(10,35,66,0.6); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 .voice-modal { background: var(--navy); border-radius: 2px; padding: 30px; width: 340px; border: 1px solid rgba(200,169,110,0.2); }
+.voice-waveform { display: flex; align-items: center; gap: 3px; height: 38px; margin-bottom: 18px; }
+.wave-bar { width: 3px; border-radius: 2px; background: var(--gold); opacity: 0.6; animation: wavePulse 1.4s ease-in-out infinite; }
+.wave-bar:nth-child(2n) { animation-duration: 1.0s; animation-delay: 0.15s; }
+.wave-bar:nth-child(3n) { animation-duration: 1.6s; animation-delay: 0.3s; }
+.wave-bar:nth-child(4n) { animation-duration: 0.9s; animation-delay: 0.05s; }
+.voice-transcript { font-size: 15px; color: var(--cream); line-height: 1.6; min-height: 48px; }
+.voice-transcript.live { color: var(--white); font-size: 16px; }
 
 /* ── LISTING CARD ── */
 .listing-card { background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px; padding: 16px 20px; }
@@ -852,7 +859,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div class="voice-desc">Your intelligent platform assistant. Ask anything — listings, scripts, market data, training, and client prep. Voice-first, built for how you work in the field.</div>
               <div class="voice-actions">
                 <button class="vbtn vbtn-primary" @click="voiceStart">{{ voiceModal.show && voiceModal.phase==='listening' ? 'Listening…' : 'Start Session' }}</button>
-                <button class="vbtn vbtn-ghost" @click="go('training')">Training Library</button>
               </div>
             </div>
 
@@ -4548,11 +4554,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
       <div style="display:flex;align-items:center;gap:8px;">
         <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);" :style="{animation:voiceModal.phase==='listening'?'micPulse 1.2s infinite':'none'}"></div>
-        <span style="font-size:15px;font-weight:700;color:var(--navy);">
+        <span style="font-size:15px;font-weight:700;color:var(--cream);letter-spacing:0.04em;">
           {{ voiceModal.phase==='listening' ? 'Listening…' : voiceModal.phase==='review' ? 'Review' : voiceModal.phase==='followup' ? 'A few more details' : voiceModal.phase==='crm-result' ? (voiceModal.crmResult?.demo ? 'Demo Preview' : 'Contact Added') : voiceModal.phase==='done' ? 'All set!' : voiceModal.phase==='answer-loading' ? 'Searching…' : voiceModal.phase==='answer' ? 'From Your Training' : voiceModal.phase==='crm-review' ? 'Ready to Add Contact?' : 'Error' }}
         </span>
       </div>
-      <button @click="voiceClose" style="width:28px;height:28px;border-radius:50%;background:#f3f4f6;border:none;cursor:pointer;font-size:13px;color:#9ca3af;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button @click="voiceClose" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(200,169,110,0.3);cursor:pointer;font-size:11px;color:rgba(200,169,110,0.7);display:flex;align-items:center;justify-content:center;transition:background 0.13s;">✕</button>
     </div>
 
     <!-- Phase: listening -->
@@ -4565,10 +4571,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       </div>
       <div class="voice-transcript live">{{ voiceModal.transcript || 'Speak now…' }}</div>
       <div style="display:flex;gap:10px;margin-top:14px;">
-        <button class="btn-navy" @click="voiceStop" style="flex:1;min-height:52px;font-size:15px;font-weight:700;letter-spacing:.5px;">■ &nbsp;Stop Recording</button>
-        <label style="width:52px;height:52px;border-radius:14px;background:#f3f4f6;border:1.5px solid #e5e7eb;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:22px;" title="Attach business card photo">
-          📷<input type="file" accept="image/*" style="display:none;" @change="voiceAttachImage">
-        </label>
+        <button @click="voiceStop" style="flex:1;padding:14px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.35);border-radius:2px;color:var(--gold);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">■ &nbsp;Stop Recording</button>
+
       </div>
       <div v-if="voiceModal.imageName" style="margin-top:10px;display:flex;align-items:center;gap:6px;font-size:12px;color:var(--gold);font-weight:600;background:#fffbeb;padding:6px 10px;border-radius:8px;">📷 {{ voiceModal.imageName }}</div>
     </template>
