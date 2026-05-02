@@ -387,23 +387,30 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .lp-back:hover { color: var(--navy); }
 
 /* Property card */
-.listing-card-wrap { position: relative; }
+.listing-card-wrap { position: relative; overflow: hidden; border-radius: 2px; }
 .listing-card-delete {
-  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
-  background: #dc2626; color: var(--white); display: flex; align-items: center;
-  justify-content: center; font-size: 8px; font-weight: 700; letter-spacing: 0.12em;
-  text-transform: uppercase; border-radius: 0 2px 2px 0; cursor: pointer; z-index: 1;
+  position: absolute; right: 0; top: 0; bottom: 0; width: 52px;
+  background: rgba(160,30,30,0.88); color: rgba(255,255,255,0.9);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; border-radius: 0 2px 2px 0; cursor: pointer; z-index: 1;
+  transition: background 0.15s;
+}
+.listing-card-delete:hover { background: rgba(180,20,20,0.96); }
+.listing-card-delete svg { display: block; }
+.listing-card-delete span {
+  font-size: 6px; font-weight: 700; letter-spacing: 0.18em;
+  text-transform: uppercase; font-family: 'Montserrat', sans-serif;
 }
 .listing-card-desktop-del {
   position: absolute; top: 10px; right: 10px; z-index: 2;
-  width: 22px; height: 22px; border-radius: 50%; background: none;
-  border: 1px solid var(--cream-dark); color: #aaa; font-size: 11px;
+  width: 20px; height: 20px; border-radius: 50%; background: none;
+  border: 1px solid var(--cream-dark); color: #bbb; font-size: 9px;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  opacity: 0; transition: opacity 0.15s, border-color 0.15s;
-  font-family: sans-serif; line-height: 1;
+  opacity: 0; transition: opacity 0.15s, border-color 0.15s, color 0.15s;
+  font-family: sans-serif; line-height: 1; padding: 0;
 }
 .listing-card-wrap:hover .listing-card-desktop-del { opacity: 1; }
-.listing-card-desktop-del:hover { border-color: #dc2626; color: #dc2626; }
+.listing-card-desktop-del:hover { border-color: rgba(160,30,30,0.7); color: rgba(160,30,30,0.85); }
 .listing-card {
   background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px;
   padding: 18px 18px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.25s;
@@ -416,7 +423,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 .listing-card:hover { border-color: var(--gold-muted); }
 .listing-card:hover::after { opacity: 1; }
-.listing-card.swiped { transform: translateX(-80px); }
+.listing-card.swiped { transform: translateX(-52px); }
 
 /* Market + Status badges */
 .market-badge {
@@ -1932,7 +1939,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <div v-if="agentGroup._open !== false" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding-left:44px;">
                     <div v-for="buyer in agentGroup.buyers" :key="buyer.id" class="listing-card-wrap">
-                      <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">Delete</div>
+                      <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      <span>delete</span>
+                    </div>
                       <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
                       <div class="listing-card" @click="byrOpenBuyer(buyer)">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -1948,7 +1958,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </template>
               <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
                 <div v-for="buyer in byrBuyers" :key="buyer.id" class="listing-card-wrap">
-                  <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">Delete</div>
+                  <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      <span>delete</span>
+                    </div>
                   <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
                   <div class="listing-card" @click="byrOpenBuyer(buyer)">
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
@@ -3248,7 +3261,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                        @touchstart.passive="lstTouchStart($event,prop.id)"
                        @touchmove.passive="lstTouchMove($event,prop.id)"
                        @touchend.passive="lstTouchEnd($event,prop.id)">
-                    <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">Delete</div>
+                    <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      <span>delete</span>
+                    </div>
                     <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete">✕</button>
                     <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
@@ -3278,7 +3294,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                    @touchstart.passive="lstTouchStart($event,prop.id)"
                    @touchmove.passive="lstTouchMove($event,prop.id)"
                    @touchend.passive="lstTouchEnd($event,prop.id)">
-                <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">Delete</div>
+                <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      <span>delete</span>
+                    </div>
                 <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete">✕</button>
                 <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
