@@ -371,6 +371,272 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 @media (max-width: 900px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 768px) { .hero-row, .two-col { grid-template-columns: 1fr; } .content { padding: 16px; } }
 
+
+/* ═══════════════════════════════════════════
+   SELLER SUITE — REDESIGN
+═══════════════════════════════════════════ */
+
+/* Back link */
+.lp-back {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--gold-muted); cursor: pointer; background: none; border: none;
+  padding: 0; transition: color 0.13s; margin-bottom: 20px;
+}
+.lp-back:hover { color: var(--navy); }
+
+/* Property card */
+.listing-card-wrap { position: relative; }
+.listing-card-delete {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 80px;
+  background: #dc2626; color: var(--white); display: flex; align-items: center;
+  justify-content: center; font-size: 8px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; border-radius: 0 2px 2px 0; cursor: pointer; z-index: 1;
+}
+.listing-card-desktop-del {
+  position: absolute; top: 10px; right: 10px; z-index: 2;
+  width: 22px; height: 22px; border-radius: 50%; background: none;
+  border: 1px solid var(--cream-dark); color: #aaa; font-size: 11px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity 0.15s, border-color 0.15s;
+  font-family: sans-serif; line-height: 1;
+}
+.listing-card-wrap:hover .listing-card-desktop-del { opacity: 1; }
+.listing-card-desktop-del:hover { border-color: #dc2626; color: #dc2626; }
+.listing-card {
+  background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px;
+  padding: 18px 18px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.25s;
+  position: relative; overflow: hidden;
+}
+.listing-card::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, var(--gold), transparent);
+  opacity: 0; transition: opacity 0.2s;
+}
+.listing-card:hover { border-color: var(--gold-muted); }
+.listing-card:hover::after { opacity: 1; }
+.listing-card.swiped { transform: translateX(-80px); }
+
+/* Market + Status badges */
+.market-badge {
+  display: inline-block; font-size: 7px; font-weight: 700; letter-spacing: 0.22em;
+  text-transform: uppercase; color: var(--gold-muted); margin-bottom: 10px;
+}
+.status-badge {
+  display: inline-block; font-size: 7px; font-weight: 700; letter-spacing: 0.16em;
+  text-transform: uppercase; padding: 3px 8px; border-radius: 1px;
+}
+.status-draft  { background: var(--cream-mid); color: var(--gold-muted); }
+.status-complete { background: rgba(10,35,66,0.07); color: var(--navy-mid); }
+.status-submitted { background: rgba(10,35,66,0.07); color: var(--navy-mid); }
+.status-running { background: rgba(200,169,110,0.14); color: var(--gold-muted); }
+.status-error { background: #fef2f2; color: #dc2626; }
+.status-active { background: rgba(10,35,66,0.07); color: var(--navy-mid); }
+
+/* Asset dots */
+.asset-tracker { display: flex; align-items: center; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
+.asset-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cream-dark); flex-shrink: 0; transition: background 0.2s; }
+.asset-dot.filled { background: var(--gold); }
+
+/* Agent group header */
+.agent-group-header {
+  display: flex; align-items: center; gap: 12px; padding: 12px 0;
+  cursor: pointer; user-select: none;
+}
+.agent-group-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--navy), var(--navy-mid));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 700; color: var(--gold); letter-spacing: 0.04em;
+}
+.agent-group-name { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--navy); }
+.agent-group-count { font-size: 8.5px; color: var(--gold-muted); margin-top: 1px; }
+.agent-group-caret { margin-left: auto; font-size: 8px; color: var(--cream-dark); }
+.prop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 4px; }
+
+/* Listing address */
+.listing-address {
+  font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 500;
+  color: var(--navy); line-height: 1.3; margin-bottom: 5px;
+}
+.listing-date { font-size: 8px; color: #aaa; letter-spacing: 0.04em; }
+.listing-meta { font-size: 8.5px; color: var(--gold-muted); letter-spacing: 0.06em; margin-top: 1px; }
+
+/* Asset count text */
+.asset-count { font-size: 8px; color: #aaa; letter-spacing: 0.04em; margin-left: 6px; }
+
+/* Folder legend */
+.folder-legend { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 7.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #aaa; }
+.legend-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--gold); }
+
+/* ── PROPERTY DETAIL HEADER ── */
+.prop-detail-header {
+  background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px;
+  padding: 24px 26px; margin-bottom: 16px;
+}
+.prop-detail-address {
+  font-family: 'Cormorant Garamond', serif; font-size: 24px; font-weight: 500;
+  color: var(--navy); margin-bottom: 4px; line-height: 1.2;
+}
+.prop-detail-meta { font-size: 8.5px; color: var(--gold-muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.prop-completion-row {
+  display: flex; align-items: center; gap: 14px; margin-top: 16px;
+  padding-top: 14px; border-top: 1px solid var(--cream-mid);
+}
+.prop-completion-label { font-size: 7.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold-muted); white-space: nowrap; }
+.prop-completion-pct { font-size: 8px; font-weight: 700; color: var(--navy-mid); white-space: nowrap; }
+.progress-bar-track { flex: 1; height: 2px; background: var(--cream-dark); border-radius: 2px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold-muted), var(--gold-light)); border-radius: 2px; transition: width 0.4s ease; }
+
+/* ── VOICE FILL BAR ── */
+.voice-fill-bar {
+  display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+  background: var(--navy); border-radius: 2px; margin-bottom: 14px;
+}
+.voice-fill-ring {
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  border: 1.5px solid rgba(200,169,110,0.35);
+  background: rgba(200,169,110,0.07);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.2s, background 0.2s;
+}
+.voice-fill-ring:hover, .voice-fill-ring.recording { border-color: var(--gold); background: rgba(200,169,110,0.18); }
+.voice-fill-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--white); }
+.voice-fill-sub { font-size: 8px; color: var(--ghost); margin-top: 2px; }
+.mic-btn {
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(200,169,110,0.07); border: 1.5px solid rgba(200,169,110,0.35);
+  border-radius: 50%; color: var(--gold); cursor: pointer; transition: all 0.2s;
+}
+.mic-btn:hover, .mic-btn.recording { background: rgba(200,169,110,0.18); border-color: var(--gold); }
+
+/* ── TOOL LIST (replaces subfolder-panel) ── */
+.tool-list { border: 1px solid var(--cream-mid); border-radius: 2px; overflow: hidden; background: var(--white); margin-bottom: 12px; }
+.subfolder-panel { border-bottom: 1px solid var(--cream-mid); }
+.subfolder-panel:last-child { border-bottom: none; }
+.subfolder-header {
+  display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+  cursor: pointer; transition: background 0.13s; user-select: none;
+}
+.subfolder-header:hover { background: var(--cream); }
+.subfolder-header strong { font-size: 11px; font-weight: 700; color: var(--navy); letter-spacing: 0.02em; }
+.subfolder-icon {
+  width: 34px; height: 34px; border-radius: 2px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,35,66,0.05); font-size: 15px;
+}
+.subfolder-icon.gold { background: rgba(200,169,110,0.12); }
+.subfolder-file-count {
+  font-size: 7px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 1px; background: rgba(200,169,110,0.14); color: var(--gold-muted);
+  margin-left: 8px;
+}
+.subfolder-saved {
+  font-size: 7px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 1px; background: rgba(10,35,66,0.07); color: var(--navy-mid);
+  margin-left: 8px;
+}
+.subfolder-body { padding: 16px 20px 18px; background: var(--cream); border-top: 1px solid var(--cream-mid); }
+.subfolder-body-inner { padding-left: 46px; }
+
+/* ── CAMPAIGN SECTION ── */
+.campaign-complete-banner {
+  background: var(--navy); border-radius: 2px; padding: 20px 24px;
+  display: flex; align-items: center; gap: 18px; margin-bottom: 12px;
+}
+.cc-check {
+  width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--gold);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.cc-title { font-family: 'Cormorant Garamond', serif; font-size: 18px; font-weight: 500; color: var(--gold); }
+.cc-sub { font-size: 8px; color: var(--ghost); letter-spacing: 0.06em; margin-top: 2px; }
+.cc-actions { margin-left: auto; display: flex; gap: 8px; flex-shrink: 0; }
+.cc-modal-bg { position: fixed; inset: 0; background: rgba(10,35,66,0.85); z-index: 200; }
+.cc-modal-box { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: var(--navy); border: 1px solid rgba(200,169,110,0.3); border-radius: 2px; padding: 36px; max-width: 440px; width: 90%; text-align: center; z-index: 201; }
+
+.deliverable-row {
+  display: flex; align-items: center; gap: 14px; padding: 12px 20px;
+  border-bottom: 1px solid var(--cream-mid);
+}
+.deliverable-row:last-child { border-bottom: none; }
+.deliverable-label { font-size: 8px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--gold-muted); width: 90px; flex-shrink: 0; }
+.deliverable-name { font-size: 9.5px; color: var(--navy); flex: 1; }
+
+/* Campaign settings */
+.campaign-settings-panel { background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px; overflow: hidden; margin-bottom: 10px; }
+.cs-settings-header { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; cursor: pointer; border-bottom: 1px solid var(--cream-mid); }
+.cs-settings-title { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--navy-mid); }
+.setting-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 20px; border-bottom: 1px solid var(--cream-mid); }
+.setting-row:last-child { border-bottom: none; }
+.setting-label { font-size: 8.5px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--navy); }
+.setting-value { font-size: 8.5px; color: var(--gold-muted); }
+.generate-btn {
+  width: 100%; padding: 15px; background: var(--navy); color: var(--gold);
+  border: none; border-radius: 2px; font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase;
+  cursor: pointer; transition: background 0.13s; margin-bottom: 12px;
+}
+.generate-btn:hover { background: var(--navy-mid); }
+
+/* Revision tabs */
+.revision-panel { background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px; overflow: hidden; }
+.rev-tabs { display: flex; border-bottom: 1px solid var(--cream-mid); }
+.rev-tab-btn {
+  font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 700;
+  letter-spacing: 0.16em; text-transform: uppercase; padding: 11px 18px;
+  cursor: pointer; border-bottom: 2px solid transparent; color: #aaa;
+  transition: all 0.13s; background: none; border-top: none; border-left: none; border-right: none;
+}
+.rev-tab-btn.active { color: var(--navy); border-bottom-color: var(--gold); }
+.rev-body { padding: 20px; }
+.rev-voice-center { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 20px 0; }
+.rev-mic-ring {
+  width: 64px; height: 64px; border-radius: 50%; background: var(--navy);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  border: none; transition: background 0.13s;
+}
+.rev-mic-ring:hover { background: var(--navy-mid); }
+.rev-mic-label { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--navy); }
+.rev-mic-sub { font-size: 8.5px; color: #aaa; }
+.rev-submit-btn {
+  width: 100%; padding: 13px; background: var(--navy); color: var(--gold);
+  border: none; border-radius: 2px; font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase;
+  cursor: pointer; margin-top: 12px;
+}
+.rev-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+/* Pipeline steps */
+.pipeline-progress { background: linear-gradient(135deg, var(--navy), var(--navy-mid)); border-radius: 2px; padding: 24px; margin-bottom: 12px; }
+.pipeline-steps { display: flex; flex-direction: column; gap: 0; }
+.pipeline-step-row { display: flex; align-items: flex-start; gap: 14px; }
+.pipeline-step-col { display: flex; flex-direction: column; align-items: center; }
+.pipeline-step-circle {
+  width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 9px; font-weight: 700; flex-shrink: 0;
+  border: 1.5px solid rgba(200,169,110,0.3); color: rgba(200,169,110,0.4);
+  font-family: 'Montserrat', sans-serif;
+}
+.pipeline-step-circle.done { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.pipeline-step-circle.active { border-color: var(--gold); color: var(--gold); animation: pulse 1.5s ease infinite; }
+@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(200,169,110,0); } 50% { box-shadow: 0 0 0 6px rgba(200,169,110,0.15); } }
+.pipeline-connector { width: 1.5px; flex: 1; min-height: 16px; background: rgba(200,169,110,0.15); margin: 3px 0; }
+.pipeline-connector.done { background: var(--gold); }
+.pipeline-step-label { font-size: 10px; color: rgba(255,255,255,0.5); padding-top: 5px; }
+.pipeline-step-label.done, .pipeline-step-label.active { color: var(--white); font-weight: 500; }
+
+/* Error banner */
+.error-banner { background: #fef2f2; border: 1px solid #fecaca; border-radius: 2px; padding: 16px 20px; margin-bottom: 12px; }
+
+/* Inline mic on textareas */
+.ta-mic-btn { position: absolute; bottom: 10px; right: 10px; background: none; border: none; cursor: pointer; color: var(--gold-muted); opacity: 0.6; }
+.ta-mic-btn:hover, .ta-mic-btn.active { opacity: 1; color: var(--gold); }
+
+/* Photo lightbox */
+.photo-lightbox { position: fixed; inset: 0; background: rgba(10,35,66,0.92); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+
 </style>
 </head>
 <body>
@@ -2924,205 +3190,153 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <!-- ============ PROPERTY FILES ============ -->
         <!-- ============ LISTINGS DASHBOARD ============ -->
         <template v-else-if="view==='listings'">
-          <div style="max-width:900px;">
-            <!-- Migration banner: Listing Package moved -->
-            <div v-if="lstPkgMovedBanner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fef3c7;border:1.5px solid #fde68a;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:18px;">📋</span>
-                <span style="font-size:13px;color:#92400e;line-height:1.4;"><strong>Listing Package has moved.</strong> Your tools now live inside each property folder under Listing Tools.</span>
-              </div>
-              <button @click="lstDismissPkgBanner" style="background:none;border:none;cursor:pointer;font-size:18px;color:#92400e;flex-shrink:0;padding:0 4px;">✕</button>
+          <!-- Page header -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+            <div>
+              <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;color:var(--navy);margin:0;">My Listings</h2>
+              <p style="font-size:8.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);margin:4px 0 0;">Seller Package · Property Files · Assets</p>
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-              <div>
-                <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--navy);">My Listings</h2>
-                <p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">Manage property files, upload assets, and submit to FORWARD Marketing OS.</p>
+            <button class="btn-navy" @click="lstShowNewModal=true" style="white-space:nowrap;display:inline-flex;align-items:center;gap:7px;">
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4.5" y1="0.5" x2="4.5" y2="8.5"/><line x1="0.5" y1="4.5" x2="8.5" y2="4.5"/></svg>
+              New Property
+            </button>
+          </div>
+
+          <!-- Migration banner -->
+          <div v-if="lstPkgMovedBanner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fffbeb;border:1px solid #f5d87a;border-radius:2px;padding:12px 16px;margin-bottom:16px;">
+            <span style="font-size:9px;color:#92400e;line-height:1.4;"><strong>Listing Package has moved.</strong> Find it inside each property file under Listing Presentation.</span>
+            <button @click="lstDismissPkgBanner" style="background:none;border:none;cursor:pointer;font-size:16px;color:#92400e;flex-shrink:0;">✕</button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="lstLoading" style="text-align:center;padding:48px;color:#aaa;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;">Loading properties…</div>
+
+          <!-- Empty state -->
+          <div v-else-if="lstProperties.length===0" class="empty-state">
+            <div class="empty-state-title">No listings yet</div>
+            <div class="empty-state-sub">Create a property folder to organise assets and generate your campaign</div>
+            <div class="empty-state-actions">
+              <button class="btn-navy" @click="lstShowNewModal=true" style="padding:10px 24px;">Create First Property</button>
+            </div>
+          </div>
+
+          <div v-else>
+            <!-- Folder legend + swipe hint -->
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+              <div class="folder-legend">
+                <span style="font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:#aaa;">Folders:</span>
+                <span v-for="(lbl,sf) in {listing_photos:'Photos',cma:'CMA',seller_net_sheet:'Net Sheet',listing_remarks:'Listing Desc',mls_data:'MLS'}" :key="sf" class="legend-item">
+                  <span class="legend-dot"></span>{{ lbl }}
+                </span>
               </div>
-              <button class="btn-gold" @click="lstShowNewModal=true" style="white-space:nowrap;">+ New Property</button>
+              <span style="font-size:7.5px;color:#aaa;letter-spacing:0.08em;">← swipe to delete</span>
             </div>
 
-            <!-- Loading -->
-            <div v-if="lstLoading" style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Loading properties...</div>
-
-            <!-- Empty state: full-screen CTA for new agents -->
-            <div v-else-if="lstProperties.length===0" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 260px);text-align:center;">
-              <div style="max-width:420px;padding:40px 24px;">
-                <div style="width:80px;height:80px;margin:0 auto 20px;background:linear-gradient(135deg,var(--navy),#243660);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;">📋</div>
-                <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Welcome to My Listings</h2>
-                <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 24px;">Create a property folder to organize your listing photos, CMA, net sheet, and more — then access all your seller tools right inside the folder.</p>
-                <button class="btn-navy" @click="lstShowNewModal=true" style="padding:14px 36px;font-size:15px;font-weight:700;color:var(--gold);border-radius:12px;">
-                  Create Your First Property
-                </button>
-              </div>
-            </div>
-
-            <!-- Property cards: agent-grouped for Marc, flat for others -->
-            <div v-else>
-              <!-- Dot legend + swipe hint -->
-              <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;margin-bottom:12px;padding:8px 12px;background:#f9fafb;border-radius:8px;border:1px solid #f0f0f0;">
-                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                  <span style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.5px;">Folders:</span>
-                  <span v-for="(lbl,sf) in {listing_photos:'📸 Photos',cma:'📊 CMA',seller_net_sheet:'💰 Net Sheet',listing_remarks:'✍️ Listing Desc',mls_data:'📋 MLS'}" :key="sf" style="font-size:10px;color:#9ca3af;display:flex;align-items:center;gap:3px;">
-                    <span class="asset-dot" style="width:8px;height:8px;"></span>{{ lbl }}
-                  </span>
-                </div>
-                <span style="font-size:10px;color:#d1d5db;font-style:italic;">← swipe to delete</span>
-              </div>
-              <!-- Marc: grouped by agent -->
-              <template v-if="isAdmin">
-                <div v-for="agentGroup in lstGroupedByAgent" :key="agentGroup.name" style="margin-bottom:28px;">
-                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;" @click="agentGroup._open = !agentGroup._open">
-                    <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--navy),#243660);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">👤</div>
-                    <div style="flex:1;">
-                      <div style="font-size:14px;font-weight:700;color:var(--navy);">{{ agentGroup.name }}</div>
-                      <div style="font-size:11px;color:#9ca3af;">{{ agentGroup.props.length }} listing{{ agentGroup.props.length===1?'':'s' }}</div>
-                    </div>
-                    <span style="font-size:13px;color:#9ca3af;">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
+            <!-- Admin: grouped by agent -->
+            <template v-if="isAdmin">
+              <div v-for="agentGroup in lstGroupedByAgent" :key="agentGroup.name" style="margin-bottom:24px;">
+                <div class="agent-group-header" @click="agentGroup._open = agentGroup._open === false ? true : false">
+                  <div class="agent-group-avatar">{{ agentGroup.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
+                  <div>
+                    <div class="agent-group-name">{{ agentGroup.name }}</div>
+                    <div class="agent-group-count">{{ agentGroup.props.length }} listing{{ agentGroup.props.length===1?'':'s' }}</div>
                   </div>
-                  <div v-if="agentGroup._open !== false" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding-left:44px;">
-                    <div v-for="prop in agentGroup.props" :key="prop.id" class="listing-card-wrap" @touchstart.passive="lstTouchStart($event, prop.id)" @touchmove.passive="lstTouchMove($event, prop.id)" @touchend.passive="lstTouchEnd($event, prop.id)">
-                      <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">🗑 Delete</div>
-                      <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete property">✕</button>
-                      <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                          <span class="market-badge">{{ prop.market || 'DC' }}</span>
-                          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
-                            <span :class="'status-badge status-'+(prop.status||'draft')">{{ prop.status || 'draft' }}</span>
-                            <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
-                          </div>
-                        </div>
-                        <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ prop.address }}</div>
-                        <div style="font-size:12px;color:#9ca3af;">{{ new Date(prop.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
-                        <div class="asset-tracker" style="margin-top:10px;">
-                          <span v-for="sf in ['listing_photos','cma','seller_net_sheet','listing_remarks','mls_data']" :key="sf"
-                            :class="['asset-dot', prop._assetMap && prop._assetMap[sf] ? 'filled' : '']"
-                            :title="{listing_photos:'Photos',cma:'CMA',seller_net_sheet:'Net Sheet',listing_remarks:'Listing Desc',mls_data:'MLS Data'}[sf]"></span>
-                          <span style="font-size:10px;color:#9ca3af;margin-left:4px;">{{ prop._assetCount || 0 }}/5 folders filled</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  <span class="agent-group-caret">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
                 </div>
-              </template>
-              <!-- Other agents: flat list -->
-              <div v-else>
-                <p style="font-size:11px;color:#9ca3af;text-align:right;margin:0 4px 8px;"><span style="font-style:italic;">← swipe left to delete a card</span></p>
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
-                  <div v-for="prop in lstProperties" :key="prop.id" class="listing-card-wrap" @touchstart.passive="lstTouchStart($event, prop.id)" @touchmove.passive="lstTouchMove($event, prop.id)" @touchend.passive="lstTouchEnd($event, prop.id)">
-                    <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">🗑 Delete</div>
-                    <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete property">✕</button>
+                <div v-if="agentGroup._open !== false" class="prop-grid">
+                  <div v-for="prop in agentGroup.props" :key="prop.id" class="listing-card-wrap"
+                       @touchstart.passive="lstTouchStart($event,prop.id)"
+                       @touchmove.passive="lstTouchMove($event,prop.id)"
+                       @touchend.passive="lstTouchEnd($event,prop.id)">
+                    <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">Delete</div>
+                    <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete">✕</button>
                     <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
-                      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
                         <span class="market-badge">{{ prop.market || 'DC' }}</span>
-                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;">
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
                           <span :class="'status-badge status-'+(prop.status||'draft')">{{ prop.status || 'draft' }}</span>
                           <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
                         </div>
                       </div>
-                      <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ prop.address }}</div>
-                      <div style="font-size:12px;color:#9ca3af;">{{ new Date(prop.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
-                      <div class="asset-tracker" style="margin-top:10px;">
+                      <div class="listing-address">{{ prop.address }}</div>
+                      <div class="listing-date">{{ new Date(prop.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                      <div class="asset-tracker">
                         <span v-for="sf in ['listing_photos','cma','seller_net_sheet','listing_remarks','mls_data']" :key="sf"
                           :class="['asset-dot', prop._assetMap && prop._assetMap[sf] ? 'filled' : '']"
-                          :title="{listing_photos:'Photos',cma:'CMA',seller_net_sheet:'Net Sheet',listing_remarks:'Listing Desc',mls_data:'MLS Data'}[sf]"></span>
-                        <span style="font-size:10px;color:#9ca3af;margin-left:4px;">{{ prop._assetCount || 0 }}/5 folders filled</span>
+                          :title="{listing_photos:'Photos',cma:'CMA',seller_net_sheet:'Net Sheet',listing_remarks:'Listing Desc',mls_data:'MLS'}[sf]"></span>
+                        <span class="asset-count">{{ prop._assetCount || 0 }}/5</span>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </template>
 
-          <!-- Delete Property Confirmation Modal -->
-          <div v-if="lstDeleteTarget" class="modal-bg" @click.self="lstDeleteTarget=null">
-            <div class="modal-box" style="max-width:400px;text-align:center;">
-              <div style="font-size:36px;margin-bottom:12px;">🗑️</div>
-              <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Delete {{ lstDeleteTarget.address }}?</h3>
-              <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This cannot be undone.</p>
-              <div style="display:flex;gap:10px;">
-                <button class="btn-outline" @click="lstDeleteTarget=null" style="flex:1;">Cancel</button>
-                <button @click="lstDeleteProperty" :disabled="lstDeleting" style="flex:2;background:#DC2626;color:#fff;border:none;border-radius:10px;padding:12px 0;font-size:14px;font-weight:700;cursor:pointer;">
-                  <span class="spinner" v-if="lstDeleting"></span>
-                  {{ lstDeleting ? 'Deleting...' : 'Delete' }}
-                </button>
+            <!-- Non-admin: flat list -->
+            <div v-else class="prop-grid">
+              <div v-for="prop in lstProperties" :key="prop.id" class="listing-card-wrap"
+                   @touchstart.passive="lstTouchStart($event,prop.id)"
+                   @touchmove.passive="lstTouchMove($event,prop.id)"
+                   @touchend.passive="lstTouchEnd($event,prop.id)">
+                <div class="listing-card-delete" @click.stop="lstConfirmDelete(prop)">Delete</div>
+                <button class="listing-card-desktop-del" @click.stop="lstConfirmDelete(prop)" title="Delete">✕</button>
+                <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                    <span class="market-badge">{{ prop.market || 'DC' }}</span>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
+                      <span :class="'status-badge status-'+(prop.status||'draft')">{{ prop.status || 'draft' }}</span>
+                      <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
+                    </div>
+                  </div>
+                  <div class="listing-address">{{ prop.address }}</div>
+                  <div class="listing-date">{{ new Date(prop.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                  <div class="asset-tracker">
+                    <span v-for="sf in ['listing_photos','cma','seller_net_sheet','listing_remarks','mls_data']" :key="sf"
+                      :class="['asset-dot', prop._assetMap && prop._assetMap[sf] ? 'filled' : '']"
+                      :title="{listing_photos:'Photos',cma:'CMA',seller_net_sheet:'Net Sheet',listing_remarks:'Listing Desc',mls_data:'MLS'}[sf]"></span>
+                    <span class="asset-count">{{ prop._assetCount || 0 }}/5</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <!-- New Property Modal -->
-          <div v-if="lstShowNewModal" class="modal-bg" @click.self="lstShowNewModal=false">
-            <div class="modal-box" style="max-width:460px;">
-              <h3 style="margin:0 0 16px;font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">New Property</h3>
-              <div class="form-row">
-                <label>Property Address</label>
-                <input v-model="lstNewAddress" placeholder="e.g. 1234 Q Street NW, Washington DC 20009" autofocus>
-                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">This address is the canonical name used in Drive, Supabase, MLS Data, and all tools.</div>
-              </div>
-              <div class="form-row">
-                <label>Market</label>
-                <select v-model="lstNewMarket">
-                  <option value="DC">DC</option>
-                  <option value="Northern Virginia">Northern Virginia</option>
-                  <option value="Maryland">Maryland</option>
-                </select>
-              </div>
-              <div style="background:#f9fafb;border-radius:8px;padding:10px 14px;margin-bottom:16px;">
-                <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px;">Agent</div>
-                <div style="font-size:14px;font-weight:600;color:var(--navy);">{{ agentName }}</div>
-                <div style="font-size:12px;color:#9ca3af;">{{ sessionEmail }}</div>
-              </div>
-              <div style="display:flex;gap:10px;">
-                <button class="btn-outline" @click="lstShowNewModal=false" style="flex:1;">Cancel</button>
-                <button class="btn-gold" @click="lstCreateProperty" :disabled="!lstNewAddress.trim()||lstCreating" style="flex:2;">
-                  <span class="spinner" v-if="lstCreating"></span>
-                  {{ lstCreating ? 'Creating...' : 'Create Property' }}
-                </button>
-              </div>
-              <div v-if="lstCreateError" style="margin-top:10px;font-size:13px;color:#dc2626;">{{ lstCreateError }}</div>
             </div>
           </div>
         </template>
 
         <!-- ============ LISTING DETAIL / PROPERTY FOLDER ============ -->
         <template v-else-if="view==='listing-detail'">
-          <div style="max-width:800px;">
-            <button class="lp-back" @click="go('listings')" style="margin-bottom:12px;">&larr; All Listings</button>
+          <!-- Back -->
+          <button class="lp-back" @click="go('listings')">
+            <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="5.5,1 1.5,4.5 5.5,8"/></svg>
+            All Listings
+          </button>
 
-            <!-- Header -->
-            <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                <div style="flex:1;min-width:0;">
-                  <div v-if="!lstEditingAddress" style="display:flex;align-items:center;gap:8px;">
-                    <div style="font-size:20px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.3;">{{ lstActiveProp.address }}</div>
-                    <button @click="lstEditingAddress=true;lstEditAddressVal=lstActiveProp.address" style="background:none;border:none;cursor:pointer;font-size:14px;color:#9ca3af;padding:2px 4px;" title="Edit address">✏️</button>
-                  </div>
-                  <div v-else style="display:flex;gap:8px;align-items:center;">
-                    <input v-model="lstEditAddressVal" @keyup.enter="lstSaveAddress" @keyup.escape="lstEditingAddress=false" style="flex:1;font-size:15px;font-weight:600;padding:6px 10px;" autofocus>
-                    <button class="btn-gold" @click="lstSaveAddress" style="font-size:12px;padding:6px 14px;white-space:nowrap;">Save</button>
-                    <button class="btn-outline" @click="lstEditingAddress=false" style="font-size:12px;padding:6px 10px;">Cancel</button>
-                  </div>
-                  <div style="font-size:13px;color:#6b7280;margin-top:4px;">{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }}</div>
-                <div style="margin-top:5px;">
-                  <input :value="lstActiveProp.seller_name || ''" @blur="lstSaveSellerName($event.target.value)" @keyup.enter="$event.target.blur()" placeholder="+ Add seller name" style="font-size:13px;color:var(--navy);background:none;border:none;border-bottom:1px dashed #cbd5e1;outline:none;width:100%;max-width:280px;padding:2px 0;">
+          <!-- Property header card -->
+          <div class="prop-detail-header">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+              <div style="flex:1;min-width:0;">
+                <div v-if="!lstEditingAddress">
+                  <div class="prop-detail-address">{{ lstActiveProp.address }}</div>
+                  <button @click="lstEditingAddress=true;lstEditAddressVal=lstActiveProp.address" style="background:none;border:none;font-size:7.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;padding:0;margin-top:3px;">Edit address</button>
                 </div>
+                <div v-else style="display:flex;gap:8px;align-items:center;">
+                  <input v-model="lstEditAddressVal" @keyup.enter="lstSaveAddress" @keyup.escape="lstEditingAddress=false" style="flex:1;font-family:'Cormorant Garamond',serif;font-size:18px;padding:4px 8px;border:1px solid var(--gold-muted);border-radius:1px;outline:none;color:var(--navy);">
+                  <button class="btn-gold" @click="lstSaveAddress" style="font-size:8px;padding:6px 14px;white-space:nowrap;">Save</button>
+                  <button class="btn-outline" @click="lstEditingAddress=false" style="font-size:8px;padding:6px 10px;">Cancel</button>
                 </div>
-                <span :class="'status-badge status-'+(lstActiveProp.status||'draft')">
-                  {{ lstActiveProp.status || 'draft' }}
-                </span>
+                <div class="prop-detail-meta" style="margin-top:6px;">{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }} · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
               </div>
-              <!-- Asset completion bar -->
-              <div style="margin-top:16px;">
-                <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;margin-bottom:6px;">
-                  <span>Asset Completion</span>
-                  <span style="font-weight:700;color:var(--gold);">{{ lstAssetCount }}/5 folders have files</span>
-                </div>
-                <div class="progress-bar-track">
-                  <div class="progress-bar-fill" :style="{width:(lstAssetCount/5*100)+'%'}"></div>
-                </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;margin-top:4px;">
+                <input :value="lstActiveProp.seller_name || ''" @blur="lstSaveSellerName($event.target.value)" @keyup.enter="lstSaveSellerName($event.target.value)" placeholder="Seller name" style="font-family:'Montserrat',sans-serif;font-size:9px;padding:6px 12px;border:1px solid var(--cream-dark);border-radius:1px;color:var(--navy);outline:none;background:var(--cream);width:150px;">
+                <span :class="'status-badge status-'+(lstActiveProp.status||'draft')">{{ lstActiveProp.status || 'draft' }}</span>
               </div>
             </div>
-
+            <!-- Completion bar -->
+            <div class="prop-completion-row">
+              <span class="prop-completion-label">Asset Completion</span>
+              <div class="progress-bar-track"><div class="progress-bar-fill" :style="{width:(lstAssetCount/5*100)+'%'}"></div></div>
+              <span class="prop-completion-pct">{{ lstAssetCount }}/5 folders</span>
+            </div>
+          </div>
             <!-- Campaign Complete Modal (full-screen, must be dismissed) -->
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-bg"></div>
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-box">
