@@ -3936,7 +3936,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <button @click="campShowPreview=false" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
                 </div>
                 <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
-                  <div v-if="lstNotes.listing_remarks" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;">
+                  <div v-if="lstNotes.listing_remarks" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;flex-shrink:0;margin-bottom:6px;">
                     <details>
                       <summary style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:var(--cream);">
                         Listing Description <span style="font-weight:400;opacity:.6;font-size:7px;">▼ expand</span>
@@ -3944,7 +3944,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="padding:14px 18px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.75;border-top:1px solid var(--cream-mid);">{{ lstNotes.listing_remarks }}</div>
                     </details>
                   </div>
-                  <div v-for="(section, idx) in campParsed" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;">
+                  <div v-for="(section, idx) in campParsed" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
                     <!-- Section header — always navy, click to expand -->
                     <div @click="campOpenSection = campOpenSection===idx ? null : idx"
                          style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
