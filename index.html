@@ -3944,21 +3944,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="padding:14px 18px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.75;border-top:1px solid var(--cream-mid);">{{ lstNotes.listing_remarks }}</div>
                     </details>
                   </div>
-                  <div v-for="(section, idx) in campParsed" :key="idx" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;margin-bottom:6px;">
+                  <div v-for="(section, idx) in campParsed" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;">
                     <!-- Section header — always navy, click to expand -->
                     <div @click="campOpenSection = campOpenSection===idx ? null : idx"
-                         style="display:flex;align-items:center;justify-content:space-between;padding:18px 22px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;min-height:68px;box-sizing:border-box;"
-                         :style="{borderLeftColor: campOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.25)'}">
+                         style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
+                         :style="{borderLeftColor: campOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
                       <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                         </svg>
-                        <div style="min-width:0;">
-                          <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);margin-bottom:5px;">{{ section.title }}</div>
-                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:420px;"
-                               :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.8)' : (section.content && section.content.length > 10 ? 'rgba(247,244,239,0.55)' : 'rgba(247,244,239,0.3)'), fontStyle: (!section.content || section.content.length <= 10) ? 'italic' : 'normal'}">
-                            {{ campOpenSection===idx ? 'Click ▲ Close when done editing' : (section.content && section.content.length > 10 ? section.content.slice(0,80).trim() + '…' : 'Empty — click Edit to add content') }}
+                        <div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:4px;">{{ section.title || '—' }}</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
+                               :style="{color: campOpenSection===idx ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)', fontStyle: (!section.content || section.content.length<=10) ? 'italic' : 'normal'}">
+                            {{ campOpenSection===idx ? 'Editing now — click ▲ Close when done' : (section.content && section.content.length > 10 ? section.content.slice(0,90).trim() + '…' : 'Empty — click Edit to add') }}
                           </div>
                         </div>
                       </div>
