@@ -390,12 +390,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .listing-card-wrap { position: relative; overflow: hidden; border-radius: 2px; }
 .listing-card-delete {
   position: absolute; right: 0; top: 0; bottom: 0; width: 52px;
-  background: rgba(160,30,30,0.88); color: rgba(255,255,255,0.9);
+  background: rgba(140,24,24,0.92); color: rgba(255,255,255,0.9);
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 4px; border-radius: 0 2px 2px 0; cursor: pointer; z-index: 1;
   transition: background 0.15s;
 }
-.listing-card-delete:hover { background: rgba(180,20,20,0.96); }
+.listing-card-delete:hover { background: rgba(160,20,20,1); }
 .listing-card-delete svg { display: block; }
 .listing-card-delete span {
   font-size: 6px; font-weight: 700; letter-spacing: 0.18em;
@@ -414,7 +414,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .listing-card {
   background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px;
   padding: 18px 18px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.25s;
-  position: relative; overflow: hidden;
+  position: relative; overflow: hidden; z-index: 2;
 }
 .listing-card::after {
   content: ''; position: absolute; bottom: 0; left: 0; right: 0;
