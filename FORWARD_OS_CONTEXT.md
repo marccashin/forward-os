@@ -7,7 +7,7 @@
 A Vue 3 SPA (single-file, no build step) for real estate agents.
 - **Live site:** https://forward-os.netlify.app
 - **Source:** https://github.com/marccashin/forward-os (main branch)
-- ~13,000 lines of HTML/JS/CSS in a single index.html (~1,296,189 chars as of Chat 15)
+- ~13,499 lines of HTML/JS/CSS in a single index.html (as of Chat 17)
 
 ---
 
@@ -35,25 +35,17 @@ The function at `/.netlify/functions/github-push`:
 - App ID: 3382390 | Installation ID: 124051198
 - Netlify env vars: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (base64 PEM)
 
-### Standard push workflow
-```js
-// 1. Fetch fresh source from raw GitHub
-fetch('https://raw.githubusercontent.com/marccashin/forward-os/main/index.html')
-  .then(r=>r.text()).then(t=>{ window._rawSrc = t; });
-// 2. Verify length (separate call)
-window._rawSrc.length
-// 3. Substring splice (NEVER .replace())
-const si = window._rawSrc.indexOf(OLD);
-window._patched = window._rawSrc.substring(0, si) + NEW + window._rawSrc.substring(si + OLD.length);
-// 4. Get SHA
-fetch('/.netlify/functions/github-push', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'get-sha',filename:'index.html'})}).then(r=>r.json()).then(d=>{window._sha=d.sha;});
-// 5. Push
-const encoded = btoa(unescape(encodeURIComponent(window._patched)));
-fetch('/.netlify/functions/github-push', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:encoded,message:'describe change',filename:'index.html',sha:window._sha})}).then(r=>r.json()).then(d=>{window._pushResult=d;});
+### Standard push workflow (from Claude Code / Cowork shell)
+```bash
+cd /tmp && git clone https://github.com/marccashin/forward-os.git
+# edit index.html via Python scripts
+cd forward-os && git config user.email "marc@marccashin.com" && git config user.name "Marc Cashin"
+git remote set-url origin https://marccashin:GITHUB_PAT@github.com/marccashin/forward-os.git
+git add index.html && git commit -m "describe change" && git push origin main
 ```
 
-### CRITICAL: Never push outerHTML. Always fetch source from raw GitHub.
-### CRITICAL: Verify window._rawSrc.length in a SEPARATE tool call after fetching.
+### CRITICAL: Use Python substring/replace scripts for edits — never hand-edit 13k line files.
+### CRITICAL: Verify replacements were applied with grep/python checks before pushing.
 
 ---
 
@@ -79,7 +71,40 @@ fetch(window.__FORWARD_SUPABASE_URL + '/rest/v1/table?filter=eq.value', {method:
 - Table: `property_notes` | Subfolder: `listing_remarks` | Column: `content`
 - Saved by `ldSaveToProperty()` → `property_notes` + PDF to `property_assets`
 - Voice generate queries: `&order=updated_at.desc&limit=1` (always gets newest)
-- Bug fixed Chat 14: insert had invalid `created_by` field → silent 400. Now omitted. Agents who saved before must re-save once.
+
+---
+
+## Design System (as of Chat 16–17 redesign)
+
+### Colors
+```css
+--navy: #0A2342
+--navy-mid: #1a3a5c
+--gold: #C8A96E
+--gold-muted: rgba(200,169,110,0.7)
+--cream: #F7F4EF
+--cream-mid: #E8E2D9
+--cream-dark: #D4C9B8
+--white: #FDFCFA
+--ghost: rgba(10,35,66,0.35)
+```
+
+### Typography
+- **Labels/headers:** Montserrat, 7.5–9px, font-weight:700, letter-spacing:0.14–0.22em, text-transform:uppercase
+- **Body/content:** Cormorant Garamond, serif, 13–15px
+- **NO Playfair Display** in new components — use Cormorant Garamond
+
+### Shape
+- **border-radius: 2px** everywhere — no rounded cards, no border-radius:10px/12px
+- Hover states: border-color transitions to `var(--gold-muted)`
+
+### CSS Classes (key)
+- `.card` — white bg, cream-mid border, 2px radius, 20px padding
+- `.lp-card` — tool grid cards: white bg, cream-mid border, 2px radius, Montserrat label, Cormorant sub
+- `.lp-card:hover` — gold-muted border
+- `.dash-tool-card` — dashboard tool cards
+- `.listing-card` — seller property cards in grid
+- `.camp-section-ta` — campaign textarea in section editor
 
 ---
 
@@ -90,13 +115,24 @@ fetch(window.__FORWARD_SUPABASE_URL + '/rest/v1/table?filter=eq.value', {method:
 - Every template function MUST be in `setup()` return
 - `ref()` for primitives/arrays; `computed()` for derived
 
-### Key State: `agentName`, `propFiles`, `allAgentFiles`, `activePropFile`, `byrBuyers`, `lstProperties`
+### Key State
+- `agentName`, `propFiles`, `allAgentFiles`, `activePropFile`
+- `byrBuyers`, `lstProperties`
+- `campParsed` — array of `{title, content, included}` for campaign sections (loaded from localStorage)
+- `campOpenSection` — ref(null), tracks which accordion section index is open
+- `campShowPreview` — ref(false), controls campaign edit panel slide-over visibility
+- `campGenerating` — ref(false), campaign generation in progress
+- `campRevOpen` — ref(false), REMOVED from panel UI (left in JS state, unused in template)
 
 ### Key Functions
 - `loadPropFiles()` — fetches 4 tables in parallel
 - `go(view)` — switches view; triggers `loadPropFiles()` for 'prop-files'
 - `lstFetchProperties()` / `byrFetchBuyers()` — admin sees all
 - `ldSaveToProperty()` — saves text to `property_notes` + PDF to Drive
+- `lstGenerateCampaignInApp()` — generates campaign package, populates campParsed
+- `campApproveAndSend()` — sends approved campaign to seller
+- `campCopyToClipboard()` — copies all sections to clipboard
+- `inlineMicToggle(id, getter, setter)` — voice dictation for any field
 
 ---
 
@@ -129,6 +165,38 @@ Negative lookahead prevents "open house for [address]" routing as navigation.
 
 ### Answer Phase
 Full Training button hidden when `detectedTool === 'write-content'`.
+
+---
+
+## Campaign Package Panel (Seller Side)
+
+### Structure
+- **Left side:** campaign form (instructions, settings) + "Review & Edit Campaign Sections" button → opens panel
+- **Right side:** `.camp-settings-panel` slide-over panel (fixed position overlay)
+
+### Panel layout
+1. **Navy header bar** — title + close button
+2. **Scrollable section list** (`display:flex;flex-direction:column;overflow-y:auto;flex:1`) — each section card has `flex-shrink:0` (critical — prevents flex compression)
+3. **Footer** — Approve & Send, Copy All, Close buttons
+
+### Section card structure
+Each `campParsed` item renders as:
+```html
+<div style="...flex-shrink:0">  <!-- CRITICAL: flex-shrink:0 -->
+  <!-- Navy header bar — click to expand/collapse -->
+  <div @click="campOpenSection = campOpenSection===idx ? null : idx" ...>
+    <!-- pencil SVG, title (9px Montserrat uppercase cream), preview (13px Cormorant) -->
+    <!-- Include checkbox + EDIT/CLOSE badge -->
+  </div>
+  <!-- Expanded textarea (v-if campOpenSection===idx) -->
+  <div v-if="campOpenSection===idx">
+    <textarea v-model="section.content" class="camp-section-ta" .../>
+  </div>
+</div>
+```
+
+### Removed: "Ask AI to Revise" accordion
+Previously inside the panel between sections and footer. Removed in Chat 17 — direct editing is deterministic; AI revision adds error layers. The `campRevOpen` ref still exists in JS state but is no longer wired to any UI.
 
 ---
 
@@ -173,6 +241,31 @@ Fixed $' injection bug. Feedback button gold CTA. Railway → Hobby plan.
 2. **Env var required**: `GOOGLE_MAPS_PLACES_KEY` must be set in Netlify with a key that has Places API, Geocoding API, and Distance Matrix API enabled.
 3. Pitfall: Browser fetch broken by prior session interceptors — opened fresh tab for all subsequent work.
 
+### Chat 16 (May 2026) — Full UI Redesign
+Complete visual overhaul of the app to a luxury real estate aesthetic.
+
+**Design system established:**
+- Colors: `--navy:#0A2342`, `--gold:#C8A96E`, `--cream:#F7F4EF`, `--cream-mid:#E8E2D9`
+- Typography: Montserrat (labels, 7.5–9px, uppercase, tracked) + Cormorant Garamond (body/serif)
+- Shape: `border-radius:2px` everywhere — no more rounded cards
+
+**Components redesigned:**
+1. **Dashboard** — stat-grid, voice-card (navy bg, animated mic rings), fub-card, two-col panels — `ef33ee5`
+2. **Seller suite** — listings grid, property detail header with status badges, subfolder tools — `794dae3`
+3. **Swipe-delete panel** — slim 52px strip, trash icon, muted red; z-index fix (card z:2 over panel z:1) — `d9ab49b`, `c64d4bf`
+4. **Voice modal** — cream text on navy, animated wave bars, removed camera icon + training library block — `6811740`
+5. **Seller tools section** — Montserrat headers, navy voice bar, campaign settings palette — `cdf771c`
+6. **Campaign package panel** — complete redesign as slide-over with accordion sections — `c4f1508`–`f357fe2`
+
+**Key bugs fixed:**
+- White screen: invalid Vue `:style` object `{fontFamily:'Montserrat',sans-serif}` (bare key) — fixed by splitting static/dynamic style attrs — `119abc2`
+- Campaign section bars collapsing to thin lines: root cause was `flex-shrink` on children of `display:flex;flex-direction:column` scroll container — fixed with `flex-shrink:0` — `f357fe2`
+- Desktop showing mobile nav bar — added `display:none` + `@media(max-width:768px)` for `.mobile-nav`
+
+### Chat 17 (May 2026) — Campaign cleanup + Buyer side styling
+1. **Removed "Ask AI to Revise" accordion** from campaign panel — direct editing is cleaner, AI revision adds unnecessary error layers — `a008c93`
+2. **Buyer side full restyle**: added `.lp-card`/`.lp-icon`/`.lp-label`/`.lp-sub`/`.lp-card-mobile`/`.lp-arrow` CSS; voice banner, Client Files cards, upload buttons, Offer Tracker header/form/rows all updated to cream/navy/gold aesthetic with 2px radius — `ddba209`
+
 ---
 
 ## Common Pitfalls
@@ -180,25 +273,17 @@ Fixed $' injection bug. Feedback button gold CTA. Railway → Hobby plan.
 1. **Template function invisible?** → Not in `setup()` return.
 2. **Raw `{{ }}` on screen?** → Literal newline in JS string. Use `\n`.
 3. **localStorage** → Old approach. All data in Supabase.
-4. **Never paste GitHub tokens** — auto-revoked. Use github-push function.
+4. **Never paste GitHub tokens** — auto-revoked. Use PAT in git remote URL for Cowork shell sessions.
 5. **Supabase `.catch(()=>[])`** — intentional graceful fallback.
 6. **Never push outerHTML** — always push fetched source.
-7. **Claude in Chrome must be connected.**
-8. **Async fetch timing** — verify length in separate tool call.
-9. **Never use `.replace()` for patches** — use substring splice (`$'` hazard).
-10. **GitHub rate limiting** — one get-sha call per file right before push.
-11. **Security filter** — use raw.githubusercontent.com; use structural indexOf searches not large reads.
-12. **`property_notes` no `created_by` column** — use `updated_by`. Wrong column = silent 400.
-13. **Context file corruption** — if truncated in GitHub, rebuild from uploaded copy.
-14. **Never double-wrap window.fetch** — _upload_ux already wraps it. If fetch breaks, open a fresh tab via `tabs_create_mcp` → navigate to forward-os.netlify.app → do work there.
-15. **`supaRest.delete` may 400** — use direct `fetch()` DELETE to Supabase REST URL instead.
-16. **Between-call async**: Network I/O callbacks only complete with user interaction gaps between tool calls. Open a fresh tab if you need reliable async network in rapid-fire tool sequences.
-
----
-
-## Standard Session Startup
-1. User uploads this context file
-2. Claude reads it fully
-3. Ensure Claude in Chrome is connected
-4. For code changes: fetch raw.githubusercontent.com source, verify length, substring splice, get SHA, push
-5. Update and push this file at end of session via fresh tab (no manual steps for Marc)
+7. **Async fetch timing** — verify length in separate tool call.
+8. **Never use `.replace()` for JS patches** — `$'` hazard. Use Python `str.replace()` in scripts (safe).
+9. **GitHub rate limiting** — one get-sha call per file right before push.
+10. **Security filter** — use raw.githubusercontent.com; use structural indexOf searches not large reads.
+11. **`property_notes` no `created_by` column** — use `updated_by`. Wrong column = silent 400.
+12. **Context file corruption** — if truncated in GitHub, rebuild from uploaded copy.
+13. **Never double-wrap window.fetch** — `_upload_ux` already wraps it. If fetch breaks, open a fresh tab.
+14. **`supaRest.delete` may 400** — use direct `fetch()` DELETE to Supabase REST URL instead.
+15. **Between-call async**: Network I/O callbacks only complete with user interaction gaps between tool calls.
+16. **Vue `:style` object syntax** — never use bare unquoted keys like `{fontFamily:'Montserrat',sans-serif}`. Either quote as a string `"font-family:'Montserrat',sans-serif"` or split into static `style=""` + dynamic `:style="{}"`.
+17. **Campaign section bars collapsing** — section cards inside `display:flex;flex-direction:column` scroll containers are flex children and will shrink. Always add `flex-shrink:0` to section card divs.
