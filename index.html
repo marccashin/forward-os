@@ -828,11 +828,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="2"/><path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.9 2.9l1.4 1.4M9.7 9.7l1.4 1.4M2.9 11.1l1.4-1.4M9.7 4.3l1.4-1.4"/></svg>
           Settings
         </div>
-        <div class="nav-section" v-if="['Marc Cashin','Ashling McGowan','Operations'].includes(agentName)">Ops Hub</div>
-        <a class="nav-item" href="https://forward-command-center.netlify.app" target="_blank" rel="noopener noreferrer" v-if="['Marc Cashin','Ashling McGowan','Operations'].includes(agentName)" style="text-decoration:none;color:inherit;">
-          <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="1" y="2" width="12" height="10" rx="0.5"/><path d="M1 5h12"/><path d="M5 5v7"/></svg>
-          Command Center
-        </a>
       </nav>
       <div class="sidebar-footer">
         <div class="sign-out" @click="logout">Sign Out</div>
@@ -862,6 +857,76 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <p>Go to <span @click="go('settings')" style="cursor:pointer;font-weight:700;text-decoration:underline;">Settings</span> to add your key and unlock AI features.</p>
             </div>
           </div>
+
+          <!-- Agent Task Feed -->
+          <div v-if="taskFeed.length || taskFeedLoading" style="margin-bottom:32px;">
+
+            <!-- Section header -->
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;">
+              <div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--navy);opacity:0.45;margin-bottom:5px;">Follow Up Boss · Active Deals</div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">{{ agentName === 'Operations' ? 'Team Task Feed' : 'Your Active Deal Tasks' }}</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div v-if="taskFeedSyncedAt" style="font-family:'Montserrat',sans-serif;font-size:6.5px;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);opacity:0.38;">Synced {{ fmtDate(taskFeedSyncedAt) }}</div>
+                <button
+                  @click="syncAndRefreshTaskFeed()"
+                  :disabled="taskFeedLoading"
+                  style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:transparent;border:1px solid var(--cream-dark);color:var(--navy);padding:5px 11px;border-radius:2px;cursor:pointer;transition:border-color 0.15s;"
+                  @mouseenter="$event.target.style.borderColor='var(--gold-muted)'"
+                  @mouseleave="$event.target.style.borderColor='var(--cream-dark)'"
+                >{{ taskFeedLoading ? 'Syncing…' : 'Refresh' }}</button>
+              </div>
+            </div>
+
+            <!-- Loading skeleton -->
+            <div v-if="taskFeedLoading && !taskFeed.length"
+              style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.45;padding:18px 0;">
+              Loading tasks from FUB…
+            </div>
+
+            <!-- Task cards grid -->
+            <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;">
+              <div
+                v-for="(task, idx) in taskFeed"
+                :key="idx"
+                style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:14px 16px;"
+              >
+                <!-- Agent name badge (Operations view only) -->
+                <div
+                  v-if="agentName === 'Operations'"
+                  style="font-family:'Montserrat',sans-serif;font-size:6.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;"
+                >{{ task.agent_name }}</div>
+
+                <!-- Client name + pipeline pill -->
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
+                  <div style="font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">{{ task.client_name }}</div>
+                  <div
+                    style="font-family:'Montserrat',sans-serif;font-size:6.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:2px 7px;border-radius:2px;flex-shrink:0;"
+                    :style="task.pipeline === 'buyer'
+                      ? 'background:rgba(200,169,110,0.15);color:var(--gold);'
+                      : 'background:rgba(10,35,66,0.07);color:var(--navy);opacity:0.8;'"
+                  >{{ task.pipeline }}</div>
+                </div>
+
+                <!-- Stage -->
+                <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--navy);opacity:0.55;margin-bottom:8px;font-style:italic;">{{ task.stage }}</div>
+
+                <!-- Task name -->
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);line-height:1.45;margin-bottom:9px;">{{ task.task_name }}</div>
+
+                <!-- Due date -->
+                <div
+                  style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;"
+                  :style="task.due_date && task.due_date < new Date().toISOString().slice(0,10)
+                    ? 'color:#c0392b;'
+                    : 'color:var(--navy);opacity:0.42;'"
+                >Due {{ task.due_date ? fmtDate(task.due_date) : '—' }}</div>
+              </div>
+            </div>
+
+          </div>
+          <!-- End Agent Task Feed -->
 
           <!-- Stat Grid -->
           <div class="stat-grid">
@@ -5779,6 +5844,10 @@ createApp({
 
     // UI
     const view        = ref('dashboard');
+    // ── Agent Task Feed ───────────────────────────────────��──────────────────
+    const taskFeed         = ref([]);   // [{client_name,stage,pipeline,task_name,due_date,fub_deal_id,agent_name?}]
+    const taskFeedSyncedAt = ref(null); // ISO timestamp of last cache write
+    const taskFeedLoading  = ref(false);
     const sidebarOpen = ref(false);
     const showSwitcher = ref(false);
     const isMobile    = ref(window.innerWidth <= 768);
@@ -7274,6 +7343,7 @@ async function lstSubmitToPipeline() {
         lstFetchProperties();
         byrFetchBuyers();
         loadPropFiles();
+        loadTaskFeed();
       }
     });
 
@@ -7296,6 +7366,70 @@ async function lstSubmitToPipeline() {
       } catch(e) { console.error('loadPropFiles:',e); propFiles.value=[]; allAgentFiles.value=[]; }
     }
     async function refreshPropFiles() { await loadPropFiles(); }
+
+    // ── Agent Task Feed ──────────────���────────────────────────────���──────────
+    const CC_RAILWAY_URL = 'https://forward-command-center-production.up.railway.app';
+
+    async function loadTaskFeed() {
+      if (!agentName.value) return;
+      taskFeedLoading.value = true;
+      try {
+        if (agentName.value === 'Operations') {
+          // Operations sees ALL agents' tasks grouped
+          const rows = await supaRest.get(
+            'agent_task_cache',
+            'order=agent_name.asc'
+          ).catch(() => []);
+          const combined = [];
+          let latestSync = null;
+          for (const row of (rows || [])) {
+            for (const t of (row.tasks || [])) {
+              combined.push({ ...t, agent_name: row.agent_name });
+            }
+            if (row.synced_at && (!latestSync || row.synced_at > latestSync)) {
+              latestSync = row.synced_at;
+            }
+          }
+          taskFeed.value = combined;
+          taskFeedSyncedAt.value = latestSync;
+        } else {
+          // Individual agent — fetch their own row
+          const rows = await supaRest.get(
+            'agent_task_cache',
+            'agent_name=eq.' + encodeURIComponent(agentName.value) + '&limit=1'
+          ).catch(() => []);
+          if (rows && rows.length) {
+            taskFeed.value         = rows[0].tasks    || [];
+            taskFeedSyncedAt.value = rows[0].synced_at || null;
+          } else {
+            taskFeed.value         = [];
+            taskFeedSyncedAt.value = null;
+          }
+        }
+      } catch(e) {
+        console.error('loadTaskFeed:', e);
+      }
+      taskFeedLoading.value = false;
+    }
+
+    async function syncAndRefreshTaskFeed() {
+      // Triggers a fresh FUB pull (via CC Railway) then re-reads Supabase.
+      // Used by the manual Refresh button so agents can see cleared tasks immediately.
+      taskFeedLoading.value = true;
+      try {
+        const body = agentName.value !== 'Operations'
+          ? JSON.stringify({ agent_name: agentName.value })
+          : '{}';
+        await fetch(CC_RAILWAY_URL + '/sync-agent-tasks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body
+        });
+      } catch(e) {
+        console.warn('Task sync request failed — will still reload cache:', e);
+      }
+      await loadTaskFeed();
+    }
     async function createPropFile() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
@@ -12482,6 +12616,7 @@ async function voiceCrmSubmit() {
       if (v === 'listings') lstFetchProperties();
       if (v === 'buyer-package') byrFetchBuyers();
       if (v === 'prop-files') loadPropFiles();
+      if (v === 'dashboard')  loadTaskFeed();
       // Auto-populate buyer tools from active buyer profile
       if (byrActiveBuyer.value) {
         const b = byrActiveBuyer.value;
@@ -12555,6 +12690,7 @@ async function voiceCrmSubmit() {
       // Refresh agent-specific data
       lib.value = await getLib();
       refreshPropFiles();
+      loadTaskFeed();
       // Check local cache first
       let cachedKey = localStorage.getItem(agentKeyFor('fos_key', loginAgent.value)) || '';
       apiKeySet.value = !!cachedKey;
@@ -13492,6 +13628,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstRevVoiceRecording, lstRevSubmitting, lstRevActiveStatus, lstRevLatestNumber,
       lstCanRequestRevision, lstRevVoiceStart, lstRevVoiceStop,
       lstSubmitRevisionRequest, lstFetchRevisionRequests, lstStopRevisionPolling,
+      // Agent Task Feed
+      taskFeed, taskFeedSyncedAt, taskFeedLoading, loadTaskFeed, syncAndRefreshTaskFeed,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
