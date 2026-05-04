@@ -2829,7 +2829,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div style="max-width:860px;">
             <div style="display:flex;gap:0;margin-bottom:28px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
               <div v-for="(lbl,i) in ['1. Upload MLS','2. Review & Edit','3. Offer Details','4. Share Report']" :key="i"
-                   :style="{flex:1,padding:'10px 4px',textAlign:'center',fontSize:'12px',fontWeight:600,background:bmrStep===i+1?'var(--navy)':'var(--bg)',color:bmrStep===i+1?'#fff':'var(--muted)',borderRight:i<3?'1px solid var(--border)':'none'}">
+                   @click="(i===0)||(i===1&&bmrAnalysis)||(i===2&&bmrAnalysis)||(i===3&&bmrResult) ? bmrStep=i+1 : null"
+                   :style="{flex:1,padding:'10px 4px',textAlign:'center',fontSize:'12px',fontWeight:600,background:bmrStep===i+1?'var(--navy)':'var(--bg)',color:bmrStep===i+1?'#fff':'var(--muted)',borderRight:i<3?'1px solid var(--border)':'none',cursor:(i===0)||(i===1&&bmrAnalysis)||(i===2&&bmrAnalysis)||(i===3&&bmrResult)?'pointer':'default',opacity:(i===0)||(i===1&&bmrAnalysis)||(i===2&&bmrAnalysis)||(i===3&&bmrResult)?1:0.45}">
                 {{ lbl }}
               </div>
             </div>
@@ -5144,7 +5145,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="goldToast.show" class="toast-gold">{{ goldToast.msg }}</div>
 
     <!-- Mobile Bottom Navigation -->
-    <nav class="mobile-nav">
+    <nav class="mobile-nav" v-show="view!=='buyer-market-report'">
       <button class="mobile-nav-item" :class="{active:view==='dashboard'}" @click="go('dashboard')">
         <span class="mn-icon">🏠</span>Home
       </button>
