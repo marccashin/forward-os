@@ -2860,6 +2860,22 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </template>
             <!-- STEP 2 -->
             <template v-if="bmrStep===2 && bmrAnalysis">
+              <!-- Extraction verification banner -->
+              <div style="background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
+                <div style="font-weight:700;color:#854d0e;font-size:13px;margin-bottom:6px;">⚠ Verify Extracted Data Before Proceeding</div>
+                <div style="font-size:12px;color:#713f12;line-height:1.6;">
+                  Claude read the PDF and extracted the values below — but it can misread dense MLS layouts.
+                  <strong>Check subject sqft, beds, and baths first</strong>, then verify each closed comp's sale price and sqft.
+                  Edit any wrong value directly in the fields below, then click <em>Regenerate from Comps</em>.
+                </div>
+                <div v-if="bmrQualityWarnings.length" style="margin-top:10px;border-top:1px solid #fde047;padding-top:10px;">
+                  <div style="font-size:11px;font-weight:700;color:#854d0e;margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase;">Comp Quality Issues Detected</div>
+                  <div v-for="w in bmrQualityWarnings" :key="w" style="font-size:11px;color:#713f12;line-height:1.7;">⚠ {{ w }}</div>
+                  <div v-if="bmrNExcluded>0" style="margin-top:6px;font-size:11px;font-weight:600;color:#991b1b;">
+                    {{ bmrNExcluded }} comp{{ bmrNExcluded===1?'':'s' }} excluded from the supported value average due to adjustments exceeding ±$30k. Fix the sqft/beds/baths or remove the comp to change this.
+                  </div>
+                </div>
+              </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
                   <h3 style="font-size:16px;font-weight:700;color:var(--navy);">Subject Property</h3>
@@ -11177,7 +11193,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaved = ref(false);
 
     // ── Buyer Market Report state ──────────────────────────────────────────
-    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref('');
+    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0);
     const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
@@ -11404,6 +11420,8 @@ No markdown. Valid JSON only.`;
         finally{ clearTimeout(tid); }
         if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
         bmrAnalysis.value=await res.json();
+        bmrQualityWarnings.value=bmrAnalysis.value?.quality_warnings||[];
+        bmrNExcluded.value=bmrAnalysis.value?.n_excluded||0;
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
         if(bmrAnalysis.value?.suggested_offer_price) bmrOfferPrice.value=bmrAnalysis.value.suggested_offer_price;
         bmrStep.value=2; Vue.nextTick(()=>window.scrollTo(0,0));
@@ -11426,6 +11444,8 @@ No markdown. Valid JSON only.`;
         bmrAnalysis.value.supported_value=r.supported_value||'';
         bmrAnalysis.value.offer_range=r.offer_range||'';
         if(r.suggested_offer_price) bmrOfferPrice.value=r.suggested_offer_price;
+        if(r.quality_warnings) bmrQualityWarnings.value=r.quality_warnings;
+        if(r.n_excluded!==undefined) bmrNExcluded.value=r.n_excluded;
       }catch(e){bmrRegenError.value='Regenerate failed: '+e.message;}
       bmrRegenerating.value=false;
     }
@@ -11459,7 +11479,7 @@ No markdown. Valid JSON only.`;
       const b=encodeURIComponent('Hi '+bmrClientName.value+',\n\nYour personalized buyer market report is ready:\n\n'+bmrResult.value.url+'\n\nLet me know if you have any questions.\n\nBest,');
       window.open('mailto:?subject='+s+'&body='+b,'_blank');
     }
-    function bmrReset(){bmrStep.value=1;bmrFile.value=null;bmrDragOver.value=false;bmrAnalysis.value=null;bmrClientName.value='';bmrOfferPrice.value='';bmrReportTitle.value='';bmrOfferTerms.value=[];bmrDisclaimerAck.value=false;bmrAnalyzing.value=false;bmrDeploying.value=false;bmrUploadError.value='';bmrDeployError.value='';bmrResult.value=null;bmrCopied.value=false;}
+    function bmrReset(){bmrStep.value=1;bmrFile.value=null;bmrDragOver.value=false;bmrAnalysis.value=null;bmrClientName.value='';bmrOfferPrice.value='';bmrReportTitle.value='';bmrOfferTerms.value=[];bmrDisclaimerAck.value=false;bmrAnalyzing.value=false;bmrDeploying.value=false;bmrUploadError.value='';bmrDeployError.value='';bmrResult.value=null;bmrCopied.value=false;bmrQualityWarnings.value=[];bmrNExcluded.value=0;}
     // == Buyer System (Supabase-backed) ==
     const byrBuyers = ref([]);
     const byrActiveBuyer = ref(null);
@@ -13927,7 +13947,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskModalShow, overdueTasks, daysOverdue,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
-      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,
+      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
