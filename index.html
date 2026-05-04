@@ -11386,6 +11386,7 @@ No markdown. Valid JSON only.`;
         if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
         bmrAnalysis.value=await res.json();
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
+        if(bmrAnalysis.value?.suggested_offer_price) bmrOfferPrice.value=bmrAnalysis.value.suggested_offer_price;
         bmrStep.value=2; Vue.nextTick(()=>window.scrollTo(0,0));
       }catch(e){bmrUploadError.value='Analysis failed: '+e.message;}
       bmrAnalyzing.value=false;
