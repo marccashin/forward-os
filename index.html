@@ -7382,7 +7382,7 @@ async function lstSubmitToPipeline() {
       try {
         if (agentName.value === 'Operations') {
           // Operations sees ALL agents' tasks grouped
-          const rows = await supaRest.get(
+          const rows = await supaRest.select(
             'agent_task_cache',
             'order=agent_name.asc'
           ).catch(() => []);
@@ -7400,7 +7400,7 @@ async function lstSubmitToPipeline() {
           taskFeedSyncedAt.value = latestSync;
         } else {
           // Individual agent — fetch their own row
-          const rows = await supaRest.get(
+          const rows = await supaRest.select(
             'agent_task_cache',
             'agent_name=eq.' + encodeURIComponent(agentName.value) + '&limit=1'
           ).catch(() => []);
