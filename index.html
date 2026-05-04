@@ -859,7 +859,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Agent Task Feed -->
-          <div v-if="taskFeed.length || taskFeedLoading" style="margin-bottom:32px;">
+          <div v-if="loggedIn" style="margin-bottom:32px;">
 
             <!-- Section header -->
             <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:14px;">
@@ -883,6 +883,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-if="taskFeedLoading && !taskFeed.length"
               style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.45;padding:18px 0;">
               Loading tasks from FUB…
+            </div>
+
+            <!-- Empty state -->
+            <div v-else-if="!taskFeed.length"
+              style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.45;padding:14px 0;">
+              No tasks yet — hit Refresh to pull from FUB.
             </div>
 
             <!-- Task cards grid -->
