@@ -11374,7 +11374,7 @@ No markdown. Valid JSON only.`;
       if(!bmrFile.value)return; bmrAnalyzing.value=true; bmrUploadError.value='';
       try{
         const fd=new FormData(); fd.append('file',bmrFile.value);
-        const tok=supabase.auth.session()?.access_token||'';
+        const tok=SUPABASE_ANON_KEY;
         const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/analyze',{method:'POST',headers:{Authorization:'Bearer '+tok},body:fd});
         if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
         bmrAnalysis.value=await res.json();
@@ -11387,7 +11387,7 @@ No markdown. Valid JSON only.`;
       if(!bmrAnalysis.value||!bmrClientName.value||!bmrOfferPrice.value||!bmrReportTitle.value)return;
       bmrDeploying.value=true; bmrDeployError.value='';
       try{
-        const tok=supabase.auth.session()?.access_token||'';
+        const tok=SUPABASE_ANON_KEY;
         const aName=agentName.value||'';
         const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
