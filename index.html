@@ -4153,13 +4153,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-if="lstRevActiveStatus === 'error'" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:10px;padding:12px 16px;margin-bottom:16px;">
                   <span style="font-size:13px;color:#dc2626;font-weight:500;">Something went wrong. Contact Marc at marc.cashin@corcoranmce.com.</span>
                 </div>
-                <div v-if="lstRevActiveStatus !== 'running'" style="margin-top:16px;">
-                  <button @click="campShowPreview=true" style="width:100%;padding:14px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">
-                    Review &amp; Edit Campaign →
-                  </button>
-                  <div v-if="lstRevisionRequests.length > 0" style="margin-top:10px;font-family:'Montserrat',sans-serif;font-size:7.5px;color:var(--gold-muted);text-align:center;letter-spacing:0.08em;">
-                    {{ lstRevisionRequests.length }} revision{{ lstRevisionRequests.length===1?'':'s' }} submitted
-                  </div>
+                <div v-if="lstRevActiveStatus !== 'running' && lstRevisionRequests.length > 0" style="margin-top:10px;font-family:'Montserrat',sans-serif;font-size:7.5px;color:var(--gold-muted);text-align:center;letter-spacing:0.08em;">
+                  {{ lstRevisionRequests.length }} revision{{ lstRevisionRequests.length===1?'':'s' }} submitted
                 </div>
               </div>
               <div v-else class="revision-locked">
@@ -5516,11 +5511,11 @@ async function getAgentToolsContent(query) {
 }
 
 // ── Claude API ─────────────────────────────────────────────
-async function claude(userPrompt, system = null) {
+async function claude(userPrompt, system = null, maxTokens = 16000) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
   const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
-  const body = { model, max_tokens: 8192, messages: [{ role:'user', content:userPrompt }] };
+  const body = { model, max_tokens: maxTokens, messages: [{ role:'user', content:userPrompt }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -6390,7 +6385,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campOpenSection = ref(0);
     const campRevOpen = ref(false);
     const campGenerating = ref(false);
-    const campShowSettings = ref(false);
+    const campShowSettings = ref(true);
     const lstUploading = reactive({ listing_photos:false, cma:false, seller_net_sheet:false, listing_remarks:false, mls_data:false });
     const lstDragOver = ref('');
     const lstShowSubmitConfirm = ref(false);
@@ -6696,7 +6691,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
-    const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out — please try again')),90000));
+    const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out after 3 minutes — please try again')),180000));
     const raw = await Promise.race([claude(prompt), _timeout]);
     campRawResult.value = raw;
     let parsed = [];
@@ -13665,7 +13660,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
