@@ -12831,8 +12831,14 @@ async function voiceCrmSubmit() {
       adminKeyStatus.value = 'Checking…';
       try {
         const rows = await supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(adminKeyAgent.value)}`);
-        const hasKey = rows && rows[0] && rows[0].claude_api_key;
-        adminKeyStatus.value = hasKey ? '✅ Key is set for ' + adminKeyAgent.value : '⚠ No key set for ' + adminKeyAgent.value;
+        const fetchedKey = rows && rows[0] && rows[0].claude_api_key;
+        if (fetchedKey) {
+          adminKeyValue.value = fetchedKey;
+          adminKeyStatus.value = '✅ Key is set for ' + adminKeyAgent.value;
+        } else {
+          adminKeyValue.value = '';
+          adminKeyStatus.value = '⚠ No key set for ' + adminKeyAgent.value;
+        }
       } catch {
         // Fall back to localStorage check
         const k = localStorage.getItem(agentKeyFor('fos_key', adminKeyAgent.value));
