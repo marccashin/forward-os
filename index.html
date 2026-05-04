@@ -11375,7 +11375,11 @@ No markdown. Valid JSON only.`;
       try{
         const fd=new FormData(); fd.append('file',bmrFile.value);
         const tok=SUPABASE_ANON_KEY;
-        const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/analyze',{method:'POST',headers:{Authorization:'Bearer '+tok},body:fd});
+        const ctrl=new AbortController(); const tid=setTimeout(()=>ctrl.abort(),120000);
+        let res;
+        try{ res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/analyze',{method:'POST',headers:{Authorization:'Bearer '+tok},body:fd,signal:ctrl.signal}); }
+        catch(fe){ if(fe.name==='AbortError') throw new Error('Request timed out after 2 minutes — the PDF may be too large or the server is busy. Please try again.'); throw fe; }
+        finally{ clearTimeout(tid); }
         if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
         bmrAnalysis.value=await res.json();
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
@@ -11389,10 +11393,14 @@ No markdown. Valid JSON only.`;
       try{
         const tok=SUPABASE_ANON_KEY;
         const aName=agentName.value||'';
-        const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
+        const ctrl2=new AbortController(); const tid2=setTimeout(()=>ctrl2.abort(),120000);
+        let res;
+        try{ res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
-          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value})
-        });
+          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value}),
+          signal:ctrl2.signal}); }
+        catch(fe){ if(fe.name==='AbortError') throw new Error('Deploy timed out — please try again.'); throw fe; }
+        finally{ clearTimeout(tid2); }
         if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
         bmrResult.value=await res.json(); bmrStep.value=4; Vue.nextTick(()=>window.scrollTo(0,0));
       }catch(e){bmrDeployError.value='Deploy failed: '+e.message;}
