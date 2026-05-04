@@ -12892,6 +12892,9 @@ async function voiceCrmSubmit() {
             // pre-fill buyer context for offer strategy if fields exist
           }
         }
+        if (v === 'buyer-market-report') {
+          if (b.buyer_name) { bmrClientName.value = b.buyer_name; }
+        }
       }
     }
     function copy(text) { navigator.clipboard.writeText(text).then(()=>showToast('✅ Copied!')); }
