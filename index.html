@@ -2893,7 +2893,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:12px;">Market Narrative</h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Market Narrative</h3>
+                  <button class="btn-secondary" @click="bmrRegenerate" :disabled="bmrRegenerating" style="font-size:11px;padding:6px 12px;white-space:nowrap;">
+                    <span v-if="bmrRegenerating">⏳ Regenerating…</span>
+                    <span v-else>↻ Regenerate from Comps</span>
+                  </button>
+                </div>
+                <div v-if="bmrRegenError" style="color:#dc2626;font-size:12px;margin-bottom:8px;">{{ bmrRegenError }}</div>
                 <textarea class="form-input" v-model="bmrAnalysis.narrative" rows="5" style="width:100%;resize:vertical;"></textarea>
                 <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
                 <textarea class="form-input" v-model="bmrAnalysis.offer_guidance" rows="4" style="width:100%;resize:vertical;"></textarea>
@@ -11159,7 +11166,7 @@ No markdown. No preamble. Valid JSON only.`;
 
     // ── Buyer Market Report state ──────────────────────────────────────────
     const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null);
-    const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]);
+    const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
     const bmrTermOptions=['Escalation clause','Waive inspection','Waive appraisal contingency','Pre-underwritten financing','Flexible settlement date','Rent-back offered','As-is purchase','Home warranty included','Personal property included'];
@@ -11383,13 +11390,29 @@ No markdown. Valid JSON only.`;
         try{ res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/analyze',{method:'POST',headers:{Authorization:'Bearer '+tok},body:fd,signal:ctrl.signal}); }
         catch(fe){ if(fe.name==='AbortError') throw new Error('Request timed out after 2 minutes — the PDF may be too large or the server is busy. Please try again.'); throw fe; }
         finally{ clearTimeout(tid); }
-        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
+        if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
         bmrAnalysis.value=await res.json();
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
         if(bmrAnalysis.value?.suggested_offer_price) bmrOfferPrice.value=bmrAnalysis.value.suggested_offer_price;
         bmrStep.value=2; Vue.nextTick(()=>window.scrollTo(0,0));
       }catch(e){bmrUploadError.value='Analysis failed: '+e.message;}
       bmrAnalyzing.value=false;
+    }
+    async function bmrRegenerate(){
+      if(!bmrAnalysis.value)return;
+      bmrRegenerating.value=true; bmrRegenError.value='';
+      try{
+        const tok=SUPABASE_ANON_KEY;
+        const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/regenerate',{
+          method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
+          body:JSON.stringify({subject:bmrAnalysis.value.subject,comps:bmrAnalysis.value.comps})});
+        if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
+        const r=await res.json();
+        bmrAnalysis.value.narrative=r.narrative;
+        bmrAnalysis.value.offer_guidance=r.offer_guidance;
+        if(r.suggested_offer_price) bmrOfferPrice.value=r.suggested_offer_price;
+      }catch(e){bmrRegenError.value='Regenerate failed: '+e.message;}
+      bmrRegenerating.value=false;
     }
     async function bmrDeploy(){
       if(!bmrAnalysis.value||!bmrClientName.value||!bmrOfferPrice.value||!bmrReportTitle.value)return;
@@ -11405,7 +11428,7 @@ No markdown. Valid JSON only.`;
           signal:ctrl2.signal}); }
         catch(fe){ if(fe.name==='AbortError') throw new Error('Deploy timed out — please try again.'); throw fe; }
         finally{ clearTimeout(tid2); }
-        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
+        if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
         bmrResult.value=await res.json(); bmrStep.value=4; Vue.nextTick(()=>window.scrollTo(0,0));
       }catch(e){bmrDeployError.value='Deploy failed: '+e.message;}
       bmrDeploying.value=false;
@@ -13889,7 +13912,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskModalShow, overdueTasks, daysOverdue,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
-      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,
+      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
