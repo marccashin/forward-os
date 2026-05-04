@@ -4108,9 +4108,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div style="padding:16px 18px;">
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
-                  <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="fos-spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
+                  <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
                 <div v-if="campGenerating" style="text-align:center;margin-top:8px;font-size:12px;color:var(--navy);opacity:.75;">Generating 6 campaign sections · this takes ~60 seconds…</div>
+                <div v-if="campGenerating" style="text-align:center;margin-top:6px;font-size:11px;color:#c0392b;font-weight:600;">Stay on this page — navigating away will cancel generation.</div>
                 <div v-if="campRawResult" style="margin-top:12px;">
                   <button @click="campShowPreview=true" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
                 </div>
@@ -6675,6 +6676,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     showToast('Please save a listing description before generating.', 5000);
     return;
   }
+  if (!_fosApiKey && !localStorage.getItem(agentKey('fos_key'))) {
+    showToast('Add your Claude API key in Settings before generating.', 5000);
+    return;
+  }
   campGenerating.value = true;
   const special = campSpecialInstructions.value.trim();
   const secs = campSections;
@@ -6687,7 +6692,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (secs.flyerCopy) sectionList.push('---SECTION: FLYER COPY---\nWrite a 250-300 word property flyer with headline.');
   if (secs.campaignPlan) sectionList.push('---SECTION: 30-DAY CAMPAIGN PLAN---\nPre-Market: Custom branding 2 weeks before, Broker Open ' + campBrokersOpenDays.value + ' days before, Photography ' + campPhotoDays.value + ' days before, Video ' + campVideoDays.value + ' days before. Weeks 1-2: list 5 activities. Weeks 3-4: list 5 targeting activities. Ongoing: list 5 sustained activities.');
 
-  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION — USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
+  const formatRules = '\n\nFORMATTING RULES (strictly follow):\n- Never use em dashes. Use a comma or period instead.\n- Never bold text with ** markers. Use plain text.\n- Never escape hashtags. Write #Example not \\#Example.\n- Never include the agent name as a hashtag.\n- Never wrap text in code blocks or use monospace formatting.\n- Write all text as plain paragraphs.';
+  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
     const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out — please try again')),90000));
@@ -6717,7 +6723,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     campShowPreview.value = true;
           setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
   } catch(e) {
-    showToast('Generation failed. Check your API key in Settings.', 5000);
+    showToast('Generation failed: ' + (e.message || 'Check your API key in Settings.'), 6000);
     console.error('campGenerate error:', e);
   } finally {
     campGenerating.value = false;
@@ -6732,7 +6738,7 @@ async function campApproveAndSend() {
 
 function campExportPDF() {
   const sections = campParsed.value;
-  if (!sections || !sections.length) { alert('No campaign content to export. Generate a campaign first.'); return; }
+  if (!sections || !sections.length) { showToast('No campaign content to export. Use the Campaign Generator first.', 5000); return; }
   const prop = lstActiveProp.value;
   if (!prop) { alert('No active property. Please select a listing first.'); return; }
 
@@ -6748,6 +6754,7 @@ function campExportPDF() {
   // Strip markdown and emojis for plain-text PDF rendering
   function clean(text) {
     return (text || '')
+      .replace(/```[\s\S]*?```/g, function(m){ return m.replace(/```[a-z]*/g,'').trim(); })
       .replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu, '')
       .replace(/\*\*([^*]+)\*\*/g, '$1')
       .replace(/\*([^*]+)\*/g, '$1')
@@ -6755,7 +6762,16 @@ function campExportPDF() {
       .replace(/^>\s*/gm, '    ')
       .replace(/^[+\-\*]\s+/gm, '- ')
       .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/`([^`]+)`/g, '$1');
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/\u2014/g, ',')
+      .replace(/\u2013/g, '-')
+      .replace(/\\#/g, '#')
+      .replace(/\\([^\\])/g, '$1')
+      .replace(/\u2192/g, '->')
+      .replace(/\u2018|\u2019/g, "'")
+      .replace(/\u201C|\u201D/g, '"')
+      .replace(/\u2022/g, '-')
+      .replace(/[^\x00-\x7E]/g, ' ');
   }
 
   // Render a block of text with markdown-aware line handling
@@ -6776,7 +6792,7 @@ function campExportPDF() {
         return;
       }
       // Detect bold-only lines (e.g. "1. Name: ..." or section subheads)
-      const isBold = /^\d+\.|^(Name:|The |PRE-MARKET|WEEK|ONGOING)/.test(line.trim());
+      const isBold = /^\d+\.\s+[A-Z]/.test(line.trim()) || /^(Name:|PRE-MARKET|WEEKS?\s*\d|ONGOING)/.test(line.trim());
       doc.setFont('helvetica', isBold ? 'bold' : 'normal');
       doc.setFontSize(10);
       doc.setTextColor(30, 30, 30);
@@ -6804,39 +6820,76 @@ function campExportPDF() {
     doc.setFont('helvetica', 'normal');
   }
 
-  // ── Cover header ──────────────────────────────────────────────
-  doc.setFillColor(10, 37, 64);
-  doc.rect(0, 0, W, 80, 'F');
-  doc.setTextColor(255, 219, 108);
-  doc.setFontSize(26);
-  doc.setFont('helvetica', 'bold');
-  doc.text('CAMPAIGN PACKAGE', ML, 44);
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
+  // ── Variables ──────────────────────────────────────────────────
   const addr = clean(prop.address || prop.full_address || '');
-  doc.text(addr, ML, 64);
-  y = 102;
-
-  // ── 1. PERSONALIZED LETTER ───────────────────────────────────
+  const agentDisplay = clean(prop.agent_name || 'Marc Cashin');
   const today = new Date();
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const sellerName = clean(prop.seller_name || prop.contact_name || '');
+  const firstName = sellerName ? sellerName.split(' ')[0] : '';
 
+  // ── Cover Page (Page 1) ──────────────────────────────────────
+  doc.setFillColor(10, 37, 64);
+  doc.rect(0, 0, W, H, 'F');
+  // Top gold rule
+  doc.setFillColor(200, 169, 110);
+  doc.rect(ML, 72, TW, 1.5, 'F');
+  // Wordmark
+  doc.setTextColor(200, 169, 110);
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FORWARD  |  CORCORAN MCENEARNEY', ML, 62);
+  // Title
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(42);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CAMPAIGN', ML, 224);
+  doc.text('PACKAGE', ML, 274);
+  // Gold rule under title
+  doc.setFillColor(200, 169, 110);
+  doc.rect(ML, 292, TW, 2, 'F');
+  // Property address
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'normal');
+  var addrLines = doc.splitTextToSize(addr, TW);
+  var coverBodyY = 322;
+  addrLines.forEach(function(al, i) { doc.text(al, ML, coverBodyY + i * 22); });
+  var coverY2 = coverBodyY + addrLines.length * 22 + 20;
+  // Agent name
+  doc.setFontSize(10);
+  doc.setTextColor(200, 169, 110);
+  doc.setFont('helvetica', 'bold');
+  doc.text(agentDisplay.toUpperCase(), ML, coverY2);
+  // Date
+  doc.setFontSize(10);
+  doc.setTextColor(170, 170, 170);
+  doc.setFont('helvetica', 'normal');
+  doc.text(dateStr, ML, coverY2 + 18);
+  // Bottom rule + label
+  doc.setFillColor(200, 169, 110);
+  doc.rect(ML, H - 72, TW, 1.5, 'F');
+  doc.setTextColor(200, 169, 110);
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('PREPARED EXCLUSIVELY FOR SELLER USE', ML, H - 52);
+
+  // ── Page 2: Letter to Seller ─────────────────────────────────
+  addPage();
   sectionHeader('Letter to Seller');
   y += 4;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   doc.setTextColor(30, 30, 30);
 
-  const greeting = sellerName ? ('Dear ' + sellerName + ',') : 'Dear Valued Client,';
+  const greeting = firstName ? ('Dear ' + firstName + ',') : 'Dear Valued Client,';
   doc.text(dateStr, ML, y); y += 18;
   doc.text(greeting, ML, y); y += 18;
 
   const letterBody = [
-    'It has been a privilege preparing this campaign package for ' + addr + '. What follows represents a comprehensive, multi-channel marketing strategy built specifically around your property — its history, its infrastructure, and the buyers who will recognize its true value.',
+    'It has been a privilege preparing this campaign package for ' + addr + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its infrastructure, and the buyers who will recognize its true value.',
     'Every element of this package has been designed to attract serious, qualified buyers: the buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social media, video, and advertising materials are ready to deploy across every relevant platform.',
-    'The 30-day campaign plan gives you full visibility into every step — from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
+    'The 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
     'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
   ];
 
@@ -6848,10 +6901,9 @@ function campExportPDF() {
 
   doc.text('Warm regards,', ML, y); y += 16;
   doc.setFont('helvetica', 'bold');
-  doc.text('Marc Cashin', ML, y); y += 14;
+  doc.text(agentDisplay, ML, y); y += 14;
   doc.setFont('helvetica', 'normal');
-  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 14;
-  doc.text('marc@marccashin.com', ML, y); y += 24;
+  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 24;
 
   // ── 2. LISTING DESCRIPTION ───────────────────────────────────
   const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
