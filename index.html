@@ -711,6 +711,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Photo lightbox */
 .photo-lightbox { position: fixed; inset: 0; background: rgba(10,35,66,0.92); z-index: 1000; display: flex; align-items: center; justify-content: center; }
 
+
+    .bmr-pill-over { display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534; }
+    .bmr-pill-at   { display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fef9c3;color:#92400e; }
+    .bmr-pill-under{ display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fee2e2;color:#991b1b; }
 </style>
 </head>
 <body>
@@ -788,7 +792,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           Seller Package
         </div>
         <div class="nav-section">Buyer Tools</div>
-        <div class="nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'}" @click="go('buyer-package')">
+        <div class="nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'||view==='buyer-market-report'}" @click="go('buyer-package')">
           <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="4" r="2.5"/><path d="M1.5 13c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
           Buyer Package
         </div>
@@ -2402,6 +2406,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div class="lp-card" @click="go('tour-tracker')"><div class="lp-icon">🏘️</div><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div>
                 <div class="lp-card" @click="go('buyer-needs')"><div class="lp-icon">📋</div><div class="lp-label">Buyer Needs Analysis</div><div class="lp-sub">Capture buyer requirements</div></div>
                 <div class="lp-card" @click="go('offer-strategy')"><div class="lp-icon">⚖️</div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div>
+                <div class="lp-card" @click="go('buyer-market-report')"><div class="lp-icon">📊</div><div class="lp-label">Buyer Market Report</div><div class="lp-sub">Upload MLS · Review comps · Deploy report</div></div>
               </div>
               <div v-else style="background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);overflow:hidden;">
                 <div class="lp-card-mobile" @click="go('cash-to-close')"><span class="lp-icon">💰</span><div><div class="lp-label">Cash to Close</div><div class="lp-sub">Closing cost estimate</div></div><span class="lp-arrow">›</span></div>
@@ -2409,6 +2414,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div class="lp-card-mobile" @click="go('tour-tracker')"><span class="lp-icon">🏘️</span><div><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('buyer-needs')"><span class="lp-icon">📋</span><div><div class="lp-label">Buyer Needs Analysis</div><div class="lp-sub">Capture buyer requirements</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('offer-strategy')"><span class="lp-icon">⚖️</span><div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div><span class="lp-arrow">›</span></div>
+                <div class="lp-card-mobile" @click="go('buyer-market-report')"><span class="lp-icon">📊</span><div><div class="lp-label">Buyer Market Report</div><div class="lp-sub">Upload MLS · Review comps · Deploy report</div></div><span class="lp-arrow">›</span></div>
               </div>
             </div>
           </div>
@@ -2816,6 +2822,148 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
         </template>
 
+
+        <!-- ============ BUYER MARKET REPORT ============ -->
+        <template v-else-if="view==='buyer-market-report'">
+          <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; {{ byrActiveBuyer ? byrActiveBuyer.buyer_name : 'All Buyers' }}</button>
+          <div style="max-width:860px;">
+            <div style="display:flex;gap:0;margin-bottom:28px;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+              <div v-for="(lbl,i) in ['1. Upload MLS','2. Review & Edit','3. Offer Details','4. Share Report']" :key="i"
+                   :style="{flex:1,padding:'10px 4px',textAlign:'center',fontSize:'12px',fontWeight:600,background:bmrStep===i+1?'var(--navy)':'var(--bg)',color:bmrStep===i+1?'#fff':'var(--muted)',borderRight:i<3?'1px solid var(--border)':'none'}">
+                {{ lbl }}
+              </div>
+            </div>
+            <!-- STEP 1 -->
+            <template v-if="bmrStep===1">
+              <div class="card" style="padding:32px;">
+                <h2 style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px;">Upload MLS Agent Full Report</h2>
+                <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Run a CMA in your MLS, export as "Agent Full" PDF, then upload here. Claude will extract all comp data automatically.</p>
+                <div style="border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer;"
+                     :style="{borderColor:bmrDragOver?'var(--navy)':'var(--border)'}"
+                     @dragover.prevent="bmrDragOver=true" @dragleave="bmrDragOver=false"
+                     @drop.prevent="e=>{bmrDragOver=false;bmrFile=e.dataTransfer.files[0]}"
+                     @click="$refs.bmrFileInput.click()">
+                  <div style="font-size:36px;margin-bottom:10px;">📄</div>
+                  <div style="font-weight:600;color:var(--navy);margin-bottom:4px;">{{ bmrFile ? bmrFile.name : 'Drop PDF here or click to browse' }}</div>
+                  <div style="font-size:12px;color:var(--muted);">MLS Agent Full export · PDF only · Max 20 MB</div>
+                  <input ref="bmrFileInput" type="file" accept=".pdf,application/pdf" style="display:none" @change="e=>bmrFile=e.target.files[0]">
+                </div>
+                <div v-if="bmrUploadError" style="color:#dc2626;font-size:13px;margin-top:12px;">{{ bmrUploadError }}</div>
+                <button class="btn-primary" style="margin-top:24px;width:100%;" :disabled="!bmrFile||bmrAnalyzing" @click="bmrAnalyze">
+                  <span v-if="bmrAnalyzing">⏳ Analyzing PDF with Claude… this may take 30–60 seconds</span>
+                  <span v-else>🔍 Analyze PDF</span>
+                </button>
+              </div>
+            </template>
+            <!-- STEP 2 -->
+            <template v-if="bmrStep===2 && bmrAnalysis">
+              <div class="card" style="padding:24px;margin-bottom:20px;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);">Subject Property</h3>
+                  <span style="font-size:11px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;border:1px solid var(--border);">Edit any field before proceeding</span>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+                  <div v-for="(fld,key) in {address:'Address',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price'}" :key="key">
+                    <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">{{ fld }}</label>
+                    <input class="form-input" v-model="bmrAnalysis.subject[key]" style="width:100%;">
+                  </div>
+                </div>
+              </div>
+              <div class="card" style="padding:24px;margin-bottom:20px;">
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">Comparable Sales <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
+                <div v-for="(comp,i) in bmrAnalysis.comps" :key="i" style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <span style="font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;">{{ i+1 }}</span>
+                    <input class="form-input" v-model="comp.address" style="flex:1;font-weight:600;">
+                    <button @click="bmrAnalysis.comps.splice(i,1)" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:16px;padding:0;">✕</button>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+                    <div v-for="(lbl,k) in {status:'Status',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price',sale_price:'Sale Price',dom:'DOM',ls_ratio:'L/S Ratio'}" :key="k">
+                      <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">{{ lbl }}</label>
+                      <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
+                        <input class="form-input" v-model="comp[k]" style="width:100%;"><span :class="bmrLsPillClass(comp.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ comp.ls_ratio || '—' }}</span>
+                      </div>
+                      <input v-else class="form-input" v-model="comp[k]" style="width:100%;">
+                    </div>
+                    <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="comp.notes" style="width:100%;"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="card" style="padding:24px;margin-bottom:20px;">
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:12px;">Market Narrative</h3>
+                <textarea class="form-input" v-model="bmrAnalysis.narrative" rows="5" style="width:100%;resize:vertical;"></textarea>
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
+                <textarea class="form-input" v-model="bmrAnalysis.offer_guidance" rows="4" style="width:100%;resize:vertical;"></textarea>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <button class="btn-secondary" @click="bmrStep=1">← Back</button>
+                <button class="btn-primary" style="flex:1;" @click="bmrStep=3">Continue to Offer Details →</button>
+              </div>
+            </template>
+            <!-- STEP 3 -->
+            <template v-if="bmrStep===3">
+              <div class="card" style="padding:24px;margin-bottom:20px;">
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">Offer Details</h3>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                  <div><label class="form-label">Client Name</label><input class="form-input" v-model="bmrClientName" placeholder="e.g. The Johnson Family" style="width:100%;"></div>
+                  <div><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
+                </div>
+                <div style="margin-bottom:16px;"><label class="form-label" style="margin-bottom:8px;display:block;">Report Title</label><input class="form-input" v-model="bmrReportTitle" placeholder="e.g. Market Report: 1234 Main St NW" style="width:100%;"></div>
+                <div>
+                  <label class="form-label" style="margin-bottom:8px;display:block;">Offer Terms <span style="font-size:11px;font-weight:400;color:var(--muted);">(check all that apply)</span></label>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
+                    <label v-for="t in bmrTermOptions" :key="t" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 12px;border:1px solid var(--border);border-radius:6px;"
+                           :style="{background:bmrOfferTerms.includes(t)?'#eff6ff':'',borderColor:bmrOfferTerms.includes(t)?'#3b82f6':'var(--border)'}">
+                      <input type="checkbox" :value="t" v-model="bmrOfferTerms" style="accent-color:var(--navy);"><span style="font-size:13px;">{{ t }}</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div class="card" style="padding:24px;margin-bottom:20px;background:#fffbeb;border:1px solid #fde68a;">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <span style="font-size:20px;">⚠️</span>
+                  <div>
+                    <div style="font-weight:600;font-size:14px;color:#92400e;margin-bottom:6px;">Disclaimer Acknowledgment</div>
+                    <p style="font-size:13px;color:#78350f;line-height:1.6;">By generating this report, you confirm that all data has been reviewed for accuracy and that this report is prepared for informational purposes only.</p>
+                    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
+                      <input type="checkbox" v-model="bmrDisclaimerAck" style="accent-color:var(--navy);width:16px;height:16px;">
+                      <span style="font-size:13px;font-weight:600;color:#92400e;">I acknowledge and agree</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div v-if="bmrDeployError" style="color:#dc2626;font-size:13px;margin-bottom:12px;">{{ bmrDeployError }}</div>
+              <div style="display:flex;gap:12px;">
+                <button class="btn-secondary" @click="bmrStep=2">← Back</button>
+                <button class="btn-primary" style="flex:1;" :disabled="!bmrClientName||!bmrOfferPrice||!bmrReportTitle||!bmrDisclaimerAck||bmrDeploying" @click="bmrDeploy">
+                  <span v-if="bmrDeploying">⏳ Generating &amp; deploying report…</span>
+                  <span v-else>🚀 Generate &amp; Deploy Report</span>
+                </button>
+              </div>
+            </template>
+            <!-- STEP 4 -->
+            <template v-if="bmrStep===4 && bmrResult">
+              <div class="card" style="padding:32px;text-align:center;">
+                <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+                <h2 style="font-size:22px;font-weight:700;color:var(--navy);margin-bottom:8px;">Report Ready!</h2>
+                <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Your buyer market report has been deployed and is ready to share.</p>
+                <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:24px;word-break:break-all;">
+                  <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Report URL</div>
+                  <a :href="bmrResult.url" target="_blank" style="font-size:14px;font-weight:600;color:var(--navy);text-decoration:underline;">{{ bmrResult.url }}</a>
+                </div>
+                <div style="font-size:12px;color:var(--muted);margin-bottom:24px;">Expires: {{ bmrResult.expires_at ? new Date(bmrResult.expires_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '90 days' }}</div>
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                  <button class="btn-primary" @click="bmrCopyLink">{{ bmrCopied ? '✅ Copied!' : '📋 Copy Link' }}</button>
+                  <button class="btn-secondary" @click="bmrOpenEmail">✉️ Open Email</button>
+                  <a :href="bmrResult.url" target="_blank" class="btn-secondary" style="text-decoration:none;">🔗 Open Report</a>
+                </div>
+                <div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border);">
+                  <button class="btn-secondary" @click="bmrReset">+ Create Another Report</button>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
         <!-- ============ PROPERTY TOUR TRACKER ============ -->
         <template v-else-if="view==='tour-tracker'" v-effect="tt.tours = ttLoadTours()">
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; {{ byrActiveBuyer ? byrActiveBuyer.buyer_name : 'All Buyers' }}</button>
@@ -5003,7 +5151,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <button class="mobile-nav-item" :class="{active:view==='listings'||view==='listing-detail'}" @click="go('listings')">
         <span class="mn-icon">📋</span>Sellers
       </button>
-      <button class="mobile-nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'}" @click="go('buyer-package')">
+      <button class="mobile-nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'||view==='buyer-market-report'}" @click="go('buyer-package')">
         <span class="mn-icon">👥</span>Buyers
       </button>
       <button class="mobile-nav-item" :class="{active:sidebarOpen}" @click="sidebarOpen=!sidebarOpen">
@@ -5185,12 +5333,12 @@ const AGENT_EMAILS = {
 };
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
-  'Ash McGowan':    '',
-  'Ashling McGowan':'',
-  'Niki Lang':      '',
-  'Cesar Rivera':   '',
-  'Charlotte Lee':  '',
-  'Shannon Casey':  '',
+  'Ash McGowan':    '202.779.6263',
+  'Ashling McGowan':'202.779.6263',
+  'Niki Lang':      '202.905.8828',
+  'Cesar Rivera':   '202.878.2897',
+  'Charlotte Lee':  '202.258.6608',
+  'Shannon Casey':  '540.222.2119',
 };
 const AGENT_WEBSITE = 'www.FwrdRealEstate.com';
 
@@ -11006,6 +11154,13 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaving = ref(false);
     const osgSaved = ref(false);
 
+    // ── Buyer Market Report state ──────────────────────────────────────────
+    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null);
+    const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]);
+    const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
+    const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
+    const bmrTermOptions=['Escalation clause','Waive inspection','Waive appraisal contingency','Pre-underwritten financing','Flexible settlement date','Rent-back offered','As-is purchase','Home warranty included','Personal property included'];
+
     async function osgFetchComps() {
       osgFetching.value = true; osgFetchError.value = '';
       try {
@@ -11212,6 +11367,49 @@ No markdown. Valid JSON only.`;
       osgAnalyzeError.value = ''; osgResult.value = null; osgSaving.value = false; osgSaved.value = false;
     }
 
+
+    // ── Buyer Market Report ────────────────────────────────────────────────
+    function bmrLsPillClass(r){if(!r)return '';const p=parseFloat(r.replace('%',''));if(isNaN(p))return '';return p>=100?'bmr-pill-over':p>=95?'bmr-pill-at':'bmr-pill-under';}
+    async function bmrAnalyze(){
+      if(!bmrFile.value)return; bmrAnalyzing.value=true; bmrUploadError.value='';
+      try{
+        const fd=new FormData(); fd.append('file',bmrFile.value);
+        const tok=supabase.auth.session()?.access_token||'';
+        const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/analyze',{method:'POST',headers:{Authorization:'Bearer '+tok},body:fd});
+        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
+        bmrAnalysis.value=await res.json();
+        if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
+        bmrStep.value=2; Vue.nextTick(()=>window.scrollTo(0,0));
+      }catch(e){bmrUploadError.value='Analysis failed: '+e.message;}
+      bmrAnalyzing.value=false;
+    }
+    async function bmrDeploy(){
+      if(!bmrAnalysis.value||!bmrClientName.value||!bmrOfferPrice.value||!bmrReportTitle.value)return;
+      bmrDeploying.value=true; bmrDeployError.value='';
+      try{
+        const tok=supabase.auth.session()?.access_token||'';
+        const aName=agentName.value||'';
+        const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
+          method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
+          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value})
+        });
+        if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.detail||res.statusText);}
+        bmrResult.value=await res.json(); bmrStep.value=4; Vue.nextTick(()=>window.scrollTo(0,0));
+      }catch(e){bmrDeployError.value='Deploy failed: '+e.message;}
+      bmrDeploying.value=false;
+    }
+    async function bmrCopyLink(){
+      if(!bmrResult.value?.url)return;
+      try{await navigator.clipboard.writeText(bmrResult.value.url);bmrCopied.value=true;setTimeout(()=>bmrCopied.value=false,2500);}
+      catch(e){showToast('Copy failed — please copy manually',3000);}
+    }
+    function bmrOpenEmail(){
+      if(!bmrResult.value?.url)return;
+      const s=encodeURIComponent(bmrReportTitle.value||'Your Buyer Market Report');
+      const b=encodeURIComponent('Hi '+bmrClientName.value+',\n\nYour personalized buyer market report is ready:\n\n'+bmrResult.value.url+'\n\nLet me know if you have any questions.\n\nBest,');
+      window.open('mailto:?subject='+s+'&body='+b,'_blank');
+    }
+    function bmrReset(){bmrStep.value=1;bmrFile.value=null;bmrDragOver.value=false;bmrAnalysis.value=null;bmrClientName.value='';bmrOfferPrice.value='';bmrReportTitle.value='';bmrOfferTerms.value=[];bmrDisclaimerAck.value=false;bmrAnalyzing.value=false;bmrDeploying.value=false;bmrUploadError.value='';bmrDeployError.value='';bmrResult.value=null;bmrCopied.value=false;}
     // == Buyer System (Supabase-backed) ==
     const byrBuyers = ref([]);
     const byrActiveBuyer = ref(null);
@@ -11643,7 +11841,7 @@ No markdown. Valid JSON only.`;
     const firstName  = computed(() => agentName.value.split(' ')[0]);
     const savedCount = computed(() => lib.value.length);
     const dashToolsCompleted = computed(() => Object.values(lstNotes).filter(v => v && v.trim()).length);
-    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','bio-writer':'Agent Bio Writer','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin' }[view.value]||'FORWARD OS'));
+    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','bio-writer':'Agent Bio Writer','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','buyer-market-report':'Buyer Market Report','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','buyer-market-report':'Buyer Market Report','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin' }[view.value]||'FORWARD OS'));
     const filteredLib = computed(() => libFilter.value==='all' ? lib.value : lib.value.filter(i=>i.type===libFilter.value));
     const jlTabObj   = computed(() => jlTabs.find(t=>t.k===jlTab.value));
     const jlCurrent  = computed(() => jlOutput.value ? (jlOutput.value[jlTab.value]||'') : '');
@@ -13676,6 +13874,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskModalShow, overdueTasks, daysOverdue,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
+      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
