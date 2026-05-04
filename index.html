@@ -2919,6 +2919,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
                 </div>
                 <div style="margin-bottom:16px;"><label class="form-label" style="margin-bottom:8px;display:block;">Report Title</label><input class="form-input" v-model="bmrReportTitle" placeholder="e.g. Market Report: 1234 Main St NW" style="width:100%;"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                  <div><label class="form-label">Market Conditions</label>
+                    <select class="form-input" v-model="bmrMarketConditions" style="width:100%;">
+                      <option value="low">Slow / Buyer Favored</option>
+                      <option value="balanced">Balanced Market</option>
+                      <option value="competitive">Competitive</option>
+                      <option value="high">Very Competitive</option>
+                      <option value="war">Bidding War / Multiple Offers</option>
+                    </select>
+                  </div>
+                  <div><label class="form-label">Subject Days on Market</label><input class="form-input" type="number" min="0" v-model="bmrSubjectDom" placeholder="e.g. 5" style="width:100%;"></div>
+                </div>
                 <div>
                   <label class="form-label" style="margin-bottom:8px;display:block;">Offer Terms <span style="font-size:11px;font-weight:400;color:var(--muted);">(check all that apply)</span></label>
                   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
@@ -11165,7 +11177,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaved = ref(false);
 
     // ── Buyer Market Report state ──────────────────────────────────────────
-    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null);
+    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref('');
     const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
@@ -11405,11 +11417,14 @@ No markdown. Valid JSON only.`;
         const tok=SUPABASE_ANON_KEY;
         const res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/regenerate',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
-          body:JSON.stringify({subject:bmrAnalysis.value.subject,comps:bmrAnalysis.value.comps})});
+          body:JSON.stringify({subject:bmrAnalysis.value.subject,comps:bmrAnalysis.value.comps,market_conditions:bmrMarketConditions.value,subject_dom:parseInt(bmrSubjectDom.value)||0})});
         if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
         const r=await res.json();
         bmrAnalysis.value.narrative=r.narrative;
-        bmrAnalysis.value.offer_guidance=r.offer_guidance;
+        bmrAnalysis.value.offer_guidance=r.offer_guidance||'';
+        bmrAnalysis.value.offer_summary=r.offer_summary||'';
+        bmrAnalysis.value.supported_value=r.supported_value||'';
+        bmrAnalysis.value.offer_range=r.offer_range||'';
         if(r.suggested_offer_price) bmrOfferPrice.value=r.suggested_offer_price;
       }catch(e){bmrRegenError.value='Regenerate failed: '+e.message;}
       bmrRegenerating.value=false;
@@ -11424,7 +11439,7 @@ No markdown. Valid JSON only.`;
         let res;
         try{ res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
-          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value}),
+          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value,market_conditions:bmrMarketConditions.value,subject_dom:parseInt(bmrSubjectDom.value)||0}),
           signal:ctrl2.signal}); }
         catch(fe){ if(fe.name==='AbortError') throw new Error('Deploy timed out — please try again.'); throw fe; }
         finally{ clearTimeout(tid2); }
