@@ -5117,7 +5117,7 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
 let _fosApiKey = '';
 
 // ── Constants ──────────────────────────────────────────────
-const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations'];
+const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations','Concierge'];
 const LISTING_PRESENTATIONS = {
   'Marc Cashin':    'https://www.canva.com/design/DAHECgtXhJc/edit',
   'Ashling McGowan':'https://www.canva.com/design/DAHEC0x1ja8/edit',
@@ -5755,7 +5755,7 @@ async function pushLib(item) {
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
 const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
-        const ADMIN_AGENTS = ['Marc Cashin', 'Operations']; // can see all agents' files
+        const ADMIN_AGENTS = ['Marc Cashin', 'Operations', 'Concierge']; // can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
@@ -7398,7 +7398,7 @@ async function lstSubmitToPipeline() {
         console.error('loadTaskFeed:', e);
       }
       taskFeedLoading.value = false;
-      if (agentName.value && agentName.value !== 'Operations' && overdueTasks.value.length > 0) {
+      if (agentName.value && agentName.value !== 'Operations' && agentName.value !== 'Concierge' && overdueTasks.value.length > 0) {
         taskModalShow.value = true;
       }
     }
