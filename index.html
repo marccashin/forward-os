@@ -6810,7 +6810,7 @@ function campExportPDF() {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text(title.toUpperCase(), ML, y);
-    y += 38;
+    y += 56;
     doc.setTextColor(30, 30, 30);
     doc.setFont('helvetica', 'normal');
   }
@@ -10583,7 +10583,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
           doc.setFontSize(10);
           doc.text(prop.price, W - 56, y + 18, { align:'right' });
         }
-        y += 38;
+        y += 56;
 
         // Score bar
         const avg = ttPropScore(prop);
