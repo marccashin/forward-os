@@ -2909,6 +2909,22 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+                  <div>
+                    <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Market Conditions</label>
+                    <select class="form-input" v-model="bmrMarketConditions" style="width:100%;">
+                      <option value="low">Slow / Buyer Favored</option>
+                      <option value="balanced">Balanced Market</option>
+                      <option value="competitive">Competitive</option>
+                      <option value="high">Very Competitive</option>
+                      <option value="war">Bidding War / Multiple Offers</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Subject Days on Market</label>
+                    <input class="form-input" type="number" min="0" v-model="bmrSubjectDom" placeholder="e.g. 5" style="width:100%;">
+                  </div>
+                </div>
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
                   <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Market Narrative</h3>
                   <div style="display:flex;align-items:center;gap:8px;">
@@ -2938,18 +2954,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
                 </div>
                 <div style="margin-bottom:16px;"><label class="form-label" style="margin-bottom:8px;display:block;">Report Title</label><input class="form-input" v-model="bmrReportTitle" placeholder="e.g. Market Report: 1234 Main St NW" style="width:100%;"></div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
-                  <div><label class="form-label">Market Conditions</label>
-                    <select class="form-input" v-model="bmrMarketConditions" style="width:100%;">
-                      <option value="low">Slow / Buyer Favored</option>
-                      <option value="balanced">Balanced Market</option>
-                      <option value="competitive">Competitive</option>
-                      <option value="high">Very Competitive</option>
-                      <option value="war">Bidding War / Multiple Offers</option>
-                    </select>
-                  </div>
-                  <div><label class="form-label">Subject Days on Market</label><input class="form-input" type="number" min="0" v-model="bmrSubjectDom" placeholder="e.g. 5" style="width:100%;"></div>
-                </div>
+
                 <div>
                   <label class="form-label" style="margin-bottom:8px;display:block;">Offer Terms <span style="font-size:11px;font-weight:400;color:var(--muted);">(check all that apply)</span></label>
                   <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px;">
