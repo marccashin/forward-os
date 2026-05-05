@@ -3923,6 +3923,129 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
+              <!-- Tool: CMA Snapshot -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstOpenTool('cma')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">📊</span>
+                    <span class="subfolder-tool-name">CMA Snapshot</span>
+                    <span style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='cma' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='cma'" class="subfolder-body">
+                  <!-- Saved CMA recall -->
+                  <div v-if="lstNotes.cma" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;">
+                    <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Saved CMA</div>
+                    <div style="font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:120px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.cma }}</div>
+                    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+                      <button class="btn-sm btn-navy" @click="copy(lstNotes.cma)" style="font-size:12px;">📋 Copy</button>
+                      <a v-if="lstSubfolderFiles('cma')[0]?.drive_link" :href="lstSubfolderFiles('cma')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;">📄 View File →</a>
+                    </div>
+                  </div>
+                  <!-- Persona gate -->
+                  <div v-if="!lstPersonaExists" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:14px;">
+                    <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;">Complete the Listing Description Writer first</div>
+                    <div style="font-size:12px;color:#78350f;margin-bottom:10px;line-height:1.5;">The CMA Builder uses your five buyer personas to tailor comparable analysis to your ideal buyers. Generate personas by completing the Listing Description Writer for this property.</div>
+                    <button class="btn-gold" @click="view='listing-desc'" style="font-size:12px;padding:8px 16px;">Go to Listing Description Writer</button>
+                  </div>
+                  <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
+                  <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:12px;font-size:13px;'>🔍 Open CMA Builder</button>
+                  <div style="border-top:1px solid #f0f0f0;padding-top:12px;">
+                    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Log CMA to This Property</div>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <input v-model="cmaLogAddress" :placeholder="lstActiveProp.address || 'Property address'" style="flex:1;font-size:13px;min-width:120px;">
+                      <button class="btn-navy" @click="saveCMAToProperty" :disabled="!cmaLogAddress.trim()||cmaSaving" style="white-space:nowrap;font-size:12px;min-width:90px;">
+                        <span v-if="cmaSaving" class="spinner spinner-dark"></span>{{ cmaSaving ? '' : '📁 Save' }}
+                      </button>
+                      <span v-if="cmaSaved" style="font-size:12px;color:#16a34a;font-weight:700;white-space:nowrap;">✓ Saved!</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              
+<!-- Tool: Seller Prep Guide -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstOpenTool('sellerprep')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">🏠</span>
+                    <span class="subfolder-tool-name">Seller Prep Guide</span>
+                    <span style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='sellerprep'" class="subfolder-body">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
+                      <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
+                      <button @click="sellerPrepType='condo'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:sellerPrepType==='condo'?'var(--navy)':'#fff',color:sellerPrepType==='condo'?'#fff':'var(--navy)',transition:'all .2s'}">Condo / Co-op</button>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                      <button class="btn-gold" @click="sellerPrepSendModal=true" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
+                      <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 14px;min-width:80px;">
+                        <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save' }}
+                      </button>
+                      <span v-if="sellerPrepSaved" style="font-size:11px;color:#16a34a;font-weight:700;">✓ Saved!</span>
+                    </div>
+                  </div>
+                  <div v-if="sellerPrepRemovedCount > 0" style="display:flex;align-items:center;justify-content:space-between;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+                    <span style="font-size:12px;color:#92400e;">{{ sellerPrepRemovedCount }} removed</span>
+                    <button @click="sellerPrepRestore" style="font-size:11px;font-weight:700;color:#92400e;background:none;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;cursor:pointer;">↩ Restore</button>
+                  </div>
+                  <div v-for="(section,si) in sellerPrepSections" :key="si" style="margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--gold);">
+                      <span style="font-size:14px;">{{ section.icon }}</span>
+                      <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;">{{ section.title }}</span>
+                    </div>
+                    <div v-for="(item,ii) in section.items.filter(i=>!i.removed)" :key="ii" style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
+                      <span style="font-size:12px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
+                      <button @click="item.removed=true" title="Remove" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+<!-- ACTIVE LISTING category -->
+              <div class="tool-category-header"><span class="tool-category-label">Active Listing</span><div class="tool-category-line"></div></div>
+
+              <!-- Tool: Listing Description -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstOpenTool('listingdesc')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">✍️</span>
+                    <span class="subfolder-tool-name">Listing Description</span>
+                    <span v-if="ldSavedToProperty" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
+                    <span v-else class="subfolder-tool-desc">AI-powered MLS copy</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='listingdesc' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='listingdesc'" class="subfolder-body">
+                  <!-- Saved listing description recall -->
+                  <div v-if="lstNotes.listing_remarks || lstSubfolderFiles('listing_remarks').length > 0" style="background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:14px;margin-bottom:14px;">
+                    <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:10px;">Saved Listing Description</div>
+                    <!-- Text content if loaded -->
+                    <div v-if="lstNotes.listing_remarks" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;">{{ lstNotes.listing_remarks }}</div>
+                    <!-- File links -->
+                    <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;margin-bottom:4px;">
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
+                      <a v-if="file.drive_link" :href="file.drive_link" target="_blank" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);text-decoration:none;white-space:nowrap;flex-shrink:0;border:1px solid var(--cream-dark);padding:4px 10px;border-radius:2px;">View →</a>
+                      <button @click="lstDeleteFile(file)" class="btn-del" title="Delete">✕</button>
+                    </div>
+                    <!-- If file saved but text not in memory, show note -->
+                    <div v-if="!lstNotes.listing_remarks && lstSubfolderFiles('listing_remarks').length > 0" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">Description saved as file above. Open the Writer to generate a new version.</div>
+                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                      <button v-if="lstNotes.listing_remarks" class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
+                      <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">{{ lstNotes.listing_remarks ? 'Edit in Writer' : 'Open Writer' }}</button>
+                    </div>
+                  </div>
+                  <div style="text-align:center;padding:4px 0 8px;">
+                    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Generate a new version or refine further:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
+                    <button class="btn-gold" @click="view='listing-desc'" style="padding:10px 28px;font-size:13px;">{{ lstNotes.listing_remarks ? '✏️ Open Writer' : 'Open Listing Description Writer' }}</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Tool: Seller Net Sheet -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstOpenTool('netsheet')">
@@ -4000,112 +4123,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-              <!-- ACTIVE LISTING category -->
-              <div class="tool-category-header"><span class="tool-category-label">Active Listing</span><div class="tool-category-line"></div></div>
-
-              <!-- Tool: Listing Description -->
-              <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('listingdesc')">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">✍️</span>
-                    <span class="subfolder-tool-name">Listing Description</span>
-                    <span v-if="ldSavedToProperty" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
-                    <span v-else class="subfolder-tool-desc">AI-powered MLS copy</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='listingdesc' ? '▼' : '▶' }}</span>
-                </div>
-                <div v-if="lstToolOpen==='listingdesc'" class="subfolder-body">
-                  <!-- Saved listing description recall -->
-                  <div v-if="lstNotes.listing_remarks || lstSubfolderFiles('listing_remarks').length > 0" style="background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:14px;margin-bottom:14px;">
-                    <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:10px;">Saved Listing Description</div>
-                    <!-- Text content if loaded -->
-                    <div v-if="lstNotes.listing_remarks" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;">{{ lstNotes.listing_remarks }}</div>
-                    <!-- File links -->
-                    <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;margin-bottom:4px;">
-                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
-                      <a v-if="file.drive_link" :href="file.drive_link" target="_blank" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);text-decoration:none;white-space:nowrap;flex-shrink:0;border:1px solid var(--cream-dark);padding:4px 10px;border-radius:2px;">View →</a>
-                      <button @click="lstDeleteFile(file)" class="btn-del" title="Delete">✕</button>
-                    </div>
-                    <!-- If file saved but text not in memory, show note -->
-                    <div v-if="!lstNotes.listing_remarks && lstSubfolderFiles('listing_remarks').length > 0" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">Description saved as file above. Open the Writer to generate a new version.</div>
-                    <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                      <button v-if="lstNotes.listing_remarks" class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
-                      <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">{{ lstNotes.listing_remarks ? 'Edit in Writer' : 'Open Writer' }}</button>
-                    </div>
-                  </div>
-                  <div style="text-align:center;padding:4px 0 8px;">
-                    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Generate a new version or refine further:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
-                    <button class="btn-gold" @click="view='listing-desc'" style="padding:10px 28px;font-size:13px;">{{ lstNotes.listing_remarks ? '✏️ Open Writer' : 'Open Listing Description Writer' }}</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tool: CMA Snapshot -->
-              <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('cma')">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">📊</span>
-                    <span class="subfolder-tool-name">CMA Snapshot</span>
-                    <span style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='cma' ? '▼' : '▶' }}</span>
-                </div>
-                <div v-if="lstToolOpen==='cma'" class="subfolder-body">
-                  <!-- Saved CMA recall -->
-                  <div v-if="lstNotes.cma" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;">
-                    <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Saved CMA</div>
-                    <div style="font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:120px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.cma }}</div>
-                    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-                      <button class="btn-sm btn-navy" @click="copy(lstNotes.cma)" style="font-size:12px;">📋 Copy</button>
-                      <a v-if="lstSubfolderFiles('cma')[0]?.drive_link" :href="lstSubfolderFiles('cma')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;">📄 View File →</a>
-                    </div>
-                  </div>
-                  <!-- Persona gate -->
-                  <div v-if="!lstPersonaExists" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:14px;">
-                    <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;">Complete the Listing Description Writer first</div>
-                    <div style="font-size:12px;color:#78350f;margin-bottom:10px;line-height:1.5;">The CMA Builder uses your five buyer personas to tailor comparable analysis to your ideal buyers. Generate personas by completing the Listing Description Writer for this property.</div>
-                    <button class="btn-gold" @click="view='listing-desc'" style="font-size:12px;padding:8px 16px;">Go to Listing Description Writer</button>
-                  </div>
-                  <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
-                  <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:12px;font-size:13px;'>🔍 Open CMA Builder</button>
-                  <div style="border-top:1px solid #f0f0f0;padding-top:12px;">
-                    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Log CMA to This Property</div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                      <input v-model="cmaLogAddress" :placeholder="lstActiveProp.address || 'Property address'" style="flex:1;font-size:13px;min-width:120px;">
-                      <button class="btn-navy" @click="saveCMAToProperty" :disabled="!cmaLogAddress.trim()||cmaSaving" style="white-space:nowrap;font-size:12px;min-width:90px;">
-                        <span v-if="cmaSaving" class="spinner spinner-dark"></span>{{ cmaSaving ? '' : '📁 Save' }}
-                      </button>
-                      <span v-if="cmaSaved" style="font-size:12px;color:#16a34a;font-weight:700;white-space:nowrap;">✓ Saved!</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tool: Market Report -->
-              <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('marketreport')">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">📈</span>
-                    <span class="subfolder-tool-name">Market Report</span>
-                    <span style="font-size:11px;color:#9ca3af;">Latest stats by region</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='marketreport' ? '▼' : '▶' }}</span>
-                </div>
-                <div v-if="lstToolOpen==='marketreport'" class="subfolder-body">
-                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
-                  <div style="display:flex;flex-direction:column;gap:8px;">
-                    <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row" style="text-decoration:none;">
-                      <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:16px;">📈</span>
-                        <div><div style="font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
-                      </div>
-                      <span style="font-size:11px;color:var(--gold);font-weight:600;">View →</span>
-                    </a>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Tool: Price Reduction Planner -->
+              
+<!-- Tool: Price Reduction Planner -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstOpenTool('pricereduction')">
                   <div style="display:flex;align-items:center;gap:10px;">
@@ -4144,46 +4163,33 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-              <!-- Tool: Seller Prep Guide -->
+              
+
+<!-- Tool: Market Report -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('sellerprep')">
+                <div class="subfolder-header" @click="lstOpenTool('marketreport')">
                   <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">🏠</span>
-                    <span class="subfolder-tool-name">Seller Prep Guide</span>
-                    <span style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
+                    <span style="font-size:16px;line-height:1;">📈</span>
+                    <span class="subfolder-tool-name">Market Report</span>
+                    <span style="font-size:11px;color:#9ca3af;">Latest stats by region</span>
                   </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='marketreport' ? '▼' : '▶' }}</span>
                 </div>
-                <div v-if="lstToolOpen==='sellerprep'" class="subfolder-body">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-                    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
-                      <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
-                      <button @click="sellerPrepType='condo'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:sellerPrepType==='condo'?'var(--navy)':'#fff',color:sellerPrepType==='condo'?'#fff':'var(--navy)',transition:'all .2s'}">Condo / Co-op</button>
-                    </div>
-                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                      <button class="btn-gold" @click="sellerPrepSendModal=true" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
-                      <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 14px;min-width:80px;">
-                        <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save' }}
-                      </button>
-                      <span v-if="sellerPrepSaved" style="font-size:11px;color:#16a34a;font-weight:700;">✓ Saved!</span>
-                    </div>
-                  </div>
-                  <div v-if="sellerPrepRemovedCount > 0" style="display:flex;align-items:center;justify-content:space-between;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
-                    <span style="font-size:12px;color:#92400e;">{{ sellerPrepRemovedCount }} removed</span>
-                    <button @click="sellerPrepRestore" style="font-size:11px;font-weight:700;color:#92400e;background:none;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;cursor:pointer;">↩ Restore</button>
-                  </div>
-                  <div v-for="(section,si) in sellerPrepSections" :key="si" style="margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--gold);">
-                      <span style="font-size:14px;">{{ section.icon }}</span>
-                      <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;">{{ section.title }}</span>
-                    </div>
-                    <div v-for="(item,ii) in section.items.filter(i=>!i.removed)" :key="ii" style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
-                      <span style="font-size:12px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
-                      <button @click="item.removed=true" title="Remove" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button>
-                    </div>
+                <div v-if="lstToolOpen==='marketreport'" class="subfolder-body">
+                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
+                  <div style="display:flex;flex-direction:column;gap:8px;">
+                    <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row" style="text-decoration:none;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:16px;">📈</span>
+                        <div><div style="font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
+                      </div>
+                      <span style="font-size:11px;color:var(--gold);font-weight:600;">View →</span>
+                    </a>
                   </div>
                 </div>
               </div>
+
+              
 
 
             </div>
