@@ -3755,7 +3755,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-              <!-- Tool: MLS Data (tabbed: Upload or Manual Form) -->
+              <!-- Tool: MLS Data (Manual Form) -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='mlsdata' ? null : 'mlsdata'">
                   <div style="display:flex;align-items:center;gap:10px;">
@@ -3779,23 +3779,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                   </div>
 
-                  <!-- Tab switcher -->
-                  <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);margin-bottom:14px;">
-                    <button @click="mlsTab='upload'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',background:mlsTab==='upload'?'var(--navy)':'#fff',color:mlsTab==='upload'?'#fff':'var(--navy)',transition:'all .15s'}">Upload MLS Sheet</button>
-                    <button @click="mlsTab='manual'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:mlsTab==='manual'?'var(--navy)':'#fff',color:mlsTab==='manual'?'#fff':'var(--navy)',transition:'all .15s'}">Enter Manually</button>
-                  </div>
-
-                  <!-- Tab A: Upload -->
-                  <div v-if="mlsTab==='upload'">
-                    <div v-if="lstUploading['mls_data']" style="margin-bottom:14px;"><div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Uploading...</div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div></div>
-                    <div v-if="lstActiveProp.status!=='running'&&lstActiveProp.status!=='submitted'" class="drop-zone" :class="{'drag-over':lstDragOver==='mls_data'}" @dragover.prevent="lstDragOver='mls_data'" @dragleave="lstDragOver=''" @drop.prevent="lstHandleDrop($event,'mls_data')" @click="$refs.mlsFileInput?.click()">
-                      <input ref="mlsFileInput" type="file" accept=".pdf,.xlsx,.csv,.doc,.docx" multiple style="display:none;" @change="lstHandleFileInput($event,'mls_data')">
-                      <div class="drop-zone-text"><span style="font-size:20px;">📁</span><br>Upload MLS data files<br><span style="font-size:11px;">.pdf, .xlsx, .csv, .doc</span></div>
-                    </div>
-                  </div>
-
-                  <!-- Tab B: Manual Form -->
-                  <div v-if="mlsTab==='manual'">
+                  <!-- Manual Form -->
+                  <div>
                     <div class="form-row">
                       <label>Property Address <span style="font-size:10px;color:#9ca3af;">(from property folder)</span></label>
                       <input :value="lstActiveProp.address" readonly style="background:#f9fafb;color:#111;font-weight:500;cursor:default;">
@@ -8068,7 +8053,6 @@ async function lstSubmitToPipeline() {
     // ── End generic inline mic ────────────────────────────────────────
 
     // ── MLS Data Form (Fix 4) ─────────────────────────────────────────────
-    const mlsTab    = ref('upload');
     const mlsForm   = Vue.reactive({
       listPrice: '', beds: '', baths: '', sqft: '', yearBuilt: '',
       hoa: '', propType: '', parking: '',
@@ -14008,7 +13992,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
       // MLS Data Form
-      mlsTab, mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool,
+      mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
