@@ -1140,6 +1140,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <button @click="openFeedback" style="display:block;width:100%;background:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--navy);padding:13px 18px;cursor:pointer;transition:opacity 0.13s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">★ Leave Feedback</button>
           </div>
 
+          <!-- New Property Modal -->
+          <div v-if="lstShowNewModal" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="lstShowNewModal=false">
+            <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:420px;padding:28px 24px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--navy);">New Property</div>
+                <button @click="lstShowNewModal=false" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy);opacity:0.4;line-height:1;">✕</button>
+              </div>
+              <div style="margin-bottom:14px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;">Address</div>
+                <input v-model="lstNewAddress" placeholder="e.g. 1234 Oak St NW, Washington DC 20010" @keyup.enter="lstCreateProperty" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+              </div>
+              <div style="margin-bottom:20px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;">Market</div>
+                <select v-model="lstNewMarket" style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+                  <option value="DC">Washington DC</option>
+                  <option value="MD">Maryland</option>
+                  <option value="VA">Virginia</option>
+                </select>
+              </div>
+              <div v-if="lstCreateError" style="font-family:'Montserrat',sans-serif;font-size:8.5px;color:#dc2626;margin-bottom:12px;letter-spacing:0.04em;">{{ lstCreateError }}</div>
+              <button @click="lstCreateProperty" :disabled="lstCreating || !lstNewAddress.trim()" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;opacity:1;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewAddress.trim())?'0.45':'1'}">
+                {{ lstCreating ? 'Creating…' : 'Create Property' }}
+              </button>
+            </div>
+          </div>
+
         </template>
         <!-- ============ CMA ============ -->
         <template v-else-if="view==='cma'">
@@ -3911,23 +3937,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <div v-if="lstToolOpen==='listingdesc'" class="subfolder-body">
                   <!-- Saved listing description recall -->
-                  <div v-if="lstNotes.listing_remarks" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;">
-                    <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📄 Saved Listing Description</div>
-                    <div style="font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.listing_remarks }}</div>
+                  <div v-if="lstNotes.listing_remarks" style="background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:14px;margin-bottom:14px;">
+                    <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:10px;">Saved Listing Description</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.listing_remarks }}</div>
                     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
-                      <button class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)" style="font-size:12px;">📋 Copy</button>
-                      <button class="btn-sm" style="background:#f3f4f6;border:1.5px solid #e5e7eb;font-size:12px;" @click="view='listing-desc'">✏️ Edit in Writer</button>
+                      <button class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
+                      <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">Edit in Writer</button>
                     </div>
                   </div>
                   <!-- Drive file links -->
                   <div v-if="lstSubfolderFiles('listing_remarks').length > 0" style="margin-bottom:14px;">
-                    <div style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📁 Saved Files</div>
-                    <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
-                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null">🗑 Delete</div>
-                      <div class="file-row" :class="{swiped: fileSwipedId===file.id}" @click="fileSwipedId===file.id ? fileSwipedId=null : null">
-                        <span style="font-size:13px;color:#374151;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
-                        <a v-if="file.drive_link" :href="file.drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:11px;flex-shrink:0;">View →</a>
-                      </div>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:8px;opacity:0.55;">Saved Files</div>
+                    <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;margin-bottom:4px;">
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
+                      <a v-if="file.drive_link" :href="file.drive_link" target="_blank" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);text-decoration:none;white-space:nowrap;flex-shrink:0;border:1px solid var(--cream-dark);padding:4px 10px;border-radius:2px;">View →</a>
+                      <button @click="lstDeleteFile(file)" style="background:none;border:none;cursor:pointer;color:var(--navy);opacity:0.3;font-size:13px;padding:2px 4px;flex-shrink:0;line-height:1;" title="Delete">✕</button>
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
