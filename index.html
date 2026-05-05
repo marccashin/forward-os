@@ -13361,10 +13361,27 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           );
         }
         ldMessages.value.push({ role:'assistant', content: reply });
-        // Auto-send address if we have an active property — skip the "what's the address?" step
+        // Auto-send address + any saved MLS data — skip questions we already have answers for
         if (lstActiveProp.value && lstActiveProp.value.address) {
           await nextTick();
           await ldSend(lstActiveProp.value.address);
+          // Now auto-inject MLS data if the form has the key fields filled
+          const _mf = mlsForm;
+          const _parts = [];
+          if (_mf.beds)      _parts.push(_mf.beds + ' bed' + (_mf.beds === '1' ? '' : 's'));
+          if (_mf.baths)     _parts.push(_mf.baths + ' bath' + (_mf.baths === '1' ? '' : 's'));
+          if (_mf.sqft)      _parts.push(_mf.sqft + ' sq ft');
+          if (_mf.listPrice) _parts.push('listed at ' + _mf.listPrice);
+          if (_mf.propType)  _parts.push('property type: ' + _mf.propType);
+          if (_mf.yearBuilt) _parts.push('year built: ' + _mf.yearBuilt);
+          if (_mf.hoa)       _parts.push('HOA: ' + _mf.hoa);
+          if (_mf.parking)   _parts.push('parking: ' + _mf.parking);
+          const _features = (_mf.features || []).filter(f => f && f.trim());
+          if (_features.length) _parts.push('key features: ' + _features.join(', '));
+          if (_parts.length >= 3) {
+            // We have enough data to skip the details question
+            await ldSend(_parts.join(', '));
+          }
           return;
         }
       } catch(e) {
