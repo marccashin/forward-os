@@ -3833,7 +3833,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Listing Photos (first tool) -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='photos' ? null : 'photos'">
+                <div class="subfolder-header" @click="lstOpenTool('photos')">
                   <span style="display:flex;align-items:center;gap:8px;">
                     <span>📸</span>
                     <strong>Listing Photos</strong>
@@ -3878,7 +3878,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <!-- Tool: Listing Presentation -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='presentation' ? null : 'presentation'">
+                <div class="subfolder-header" @click="lstOpenTool('presentation')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📑</span>
                     <span class="subfolder-tool-name">Listing Presentation</span>
@@ -3905,7 +3905,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Seller Net Sheet -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='netsheet' ? null : 'netsheet'">
+                <div class="subfolder-header" @click="lstOpenTool('netsheet')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">💰</span>
                     <span class="subfolder-tool-name">Seller Net Sheet</span>
@@ -3982,7 +3982,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Listing Description -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='listingdesc' ? null : 'listingdesc'">
+                <div class="subfolder-header" @click="lstOpenTool('listingdesc')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">✍️</span>
                     <span class="subfolder-tool-name">Listing Description</span>
@@ -4019,7 +4019,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: CMA Snapshot -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='cma' ? null : 'cma'">
+                <div class="subfolder-header" @click="lstOpenTool('cma')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📊</span>
                     <span class="subfolder-tool-name">CMA Snapshot</span>
@@ -4060,7 +4060,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Market Report -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='marketreport' ? null : 'marketreport'">
+                <div class="subfolder-header" @click="lstOpenTool('marketreport')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📈</span>
                     <span class="subfolder-tool-name">Market Report</span>
@@ -4084,7 +4084,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Price Reduction Planner -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='pricereduction' ? null : 'pricereduction'">
+                <div class="subfolder-header" @click="lstOpenTool('pricereduction')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📉</span>
                     <span class="subfolder-tool-name">Price Reduction Planner</span>
@@ -4123,7 +4123,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Seller Prep Guide -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='sellerprep' ? null : 'sellerprep'">
+                <div class="subfolder-header" @click="lstOpenTool('sellerprep')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">🏠</span>
                     <span class="subfolder-tool-name">Seller Prep Guide</span>
@@ -5184,6 +5184,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
     <!-- Mobile Bottom Navigation -->
 
+
+    <!-- MLS Gate Popup -->
+    <div v-if="mlsGate" style="position:fixed;inset:0;background:rgba(10,35,66,0.65);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="mlsGate=false">
+      <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:380px;padding:28px 24px;text-align:center;">
+        <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Action Required</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:12px;">Complete MLS Data First</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Please fill out and save the MLS Data section before accessing other listing tools. We need the address, list price, beds, baths, square footage, and property type to generate accurate results.</div>
+        <button @click="mlsGate=false" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;">Go to MLS Data</button>
+      </div>
+    </div>
 
     <!-- New Property Modal (global) -->
     <div v-if="lstShowNewModal" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="lstShowNewModal=false">
@@ -6676,6 +6686,21 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return (addr || '').replace(/\s+/g, ' ').trim();
     }
 
+    function lstOpenTool(key) {
+      // MLS always accessible; others require at least one saved MLS file
+      if (key === 'mlsdata') {
+        lstToolOpen.value = lstToolOpen.value === 'mlsdata' ? null : 'mlsdata';
+        return;
+      }
+      const hasMlsFile = lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data');
+      if (!hasMlsFile) {
+        mlsGate.value = true;
+        lstToolOpen.value = 'mlsdata'; // redirect to MLS tool
+        return;
+      }
+      lstToolOpen.value = lstToolOpen.value === key ? null : key;
+    }
+
     async function lstCreateProperty() {
       if (!lstNewAddress.value.trim()) return;
       lstCreating.value = true; lstCreateError.value = '';
@@ -8050,6 +8075,7 @@ async function lstSubmitToPipeline() {
       features: ['', '', '', '', '']
     });
     const mlsSaving = ref(false);
+    const mlsGate  = ref(false); // true = show 'complete MLS first' popup
 
     // Parse a price string like "$850,000" or "850000" → "$850,000"
     function mlsParsePrice(txt) {
@@ -13965,7 +13991,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
       // MLS Data Form
-      mlsTab, mlsForm, mlsSaving, mlsSaveManual, mlsFormatPrice, mlsFormatSqft,
+      mlsTab, mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
