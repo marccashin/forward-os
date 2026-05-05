@@ -672,14 +672,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .revision-tab:hover { border-color: var(--gold-muted); color: var(--navy); }
 .revision-tab.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
 /* Mobile nav — hidden on desktop */
-.mobile-nav { display: none; }
-@media (max-width: 768px) {
-  .mobile-nav {
-    display: flex; position: fixed; bottom: 0; left: 0; right: 0; z-index: 500;
-    background: var(--white); border-top: 1px solid var(--cream-mid);
-    padding: 6px 0 env(safe-area-inset-bottom, 6px);
-  }
-}
+
 .rev-submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 /* Pipeline steps */
@@ -5186,20 +5179,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="goldToast.show" class="toast-gold">{{ goldToast.msg }}</div>
 
     <!-- Mobile Bottom Navigation -->
-    <nav class="mobile-nav" v-show="view!=='buyer-market-report'">
-      <button class="mobile-nav-item" :class="{active:view==='dashboard'}" @click="go('dashboard')">
-        <span class="mn-icon">🏠</span>Home
-      </button>
-      <button class="mobile-nav-item" :class="{active:view==='listings'||view==='listing-detail'}" @click="go('listings')">
-        <span class="mn-icon">📋</span>Sellers
-      </button>
-      <button class="mobile-nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'||view==='buyer-market-report'}" @click="go('buyer-package')">
-        <span class="mn-icon">👥</span>Buyers
-      </button>
-      <button class="mobile-nav-item" :class="{active:sidebarOpen}" @click="sidebarOpen=!sidebarOpen">
-        <span class="mn-icon">☰</span>More
-      </button>
-    </nav>
+
 
     <!-- PDF Viewer Modal (full-screen, works on mobile) -->
     <div v-if="pdfViewerSrc" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#000;display:flex;flex-direction:column;overflow:hidden;">
@@ -7661,7 +7641,7 @@ async function lstSubmitToPipeline() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
       try {
-        await supaRest.insert('properties', { agent_name: agentName.value, address: addr, seller_name: newPropSellerName.value.trim() });
+        await supaRest.insert('properties', { agent_name: agentName.value, address: addr, seller_name: newPropSellerName.value.trim(), drive_folder_id: '', subfolder_drive_ids: {} });
         newPropAddress.value = ''; newPropSellerName.value = '';
         await refreshPropFiles();
         showToast('✅ Property file created!');
@@ -11962,7 +11942,7 @@ No markdown. Valid JSON only.`;
       try {
         await supaRest.insert('agent_feedback', {
           agent_name: agentName.value || 'Unknown',
-          type: feedbackModal.type,
+          type: feedbackModal.type === 'positive' ? 'praise' : 'bug',
           message: feedbackModal.transcript.trim()
         });
         feedbackModal.submitted = true; feedbackModal.submitting = false;
