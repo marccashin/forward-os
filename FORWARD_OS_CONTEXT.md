@@ -7,7 +7,7 @@
 A Vue 3 SPA (single-file, no build step) for real estate agents.
 - **Live site:** https://forward-os.netlify.app
 - **Source:** https://github.com/marccashin/forward-os (main branch)
-- ~13,499 lines of HTML/JS/CSS in a single index.html (as of Chat 17)
+- ~13,600 lines of HTML/JS/CSS in a single index.html (as of Chat 18)
 
 ---
 
@@ -266,6 +266,107 @@ Complete visual overhaul of the app to a luxury real estate aesthetic.
 1. **Removed "Ask AI to Revise" accordion** from campaign panel — direct editing is cleaner, AI revision adds unnecessary error layers — `a008c93`
 2. **Buyer side full restyle**: added `.lp-card`/`.lp-icon`/`.lp-label`/`.lp-sub`/`.lp-card-mobile`/`.lp-arrow` CSS; voice banner, Client Files cards, upload buttons, Offer Tracker header/form/rows all updated to cream/navy/gold aesthetic with 2px radius — `ddba209`
 
+### Chat 18 (May 4, 2026) — BMR: UAD methodology, market conditions, comp quality gates
+
+#### What is the BMR?
+The Buyer Market Report is a 4-step tool in FORWARD OS:
+1. Upload MLS Agent Full PDF → Claude extracts comps as JSON
+2. Agent reviews/edits extracted comp data, sets market conditions, regenerates narrative
+3. Enter offer details (client name, offer price, terms)
+4. Deploy as a live Netlify site (forward-XXXX.netlify.app)
+
+#### Backend (Railway — `marccashin/forward-command-center`, `backend/main.py`)
+All BMR logic lives here. Current HEAD: `9bd351a`
+
+**Key constants:**
+```python
+UAD = {"gla_per_sqft": 50, "bedroom": 15_000, "full_bath": 12_000, "half_bath": 5_000, "garage": 20_000,
+       "condition": {"A+": 15_000, "A": 10_000, "B": 5_000, "C": 0, "D": -10_000}}
+
+MARKET_COND_ADJ   = {"low": -0.03, "balanced": 0.00, "competitive": 0.03, "high": 0.06, "war": 0.10}
+MARKET_COND_LABEL = {"low": "Slow / Buyer Favored", "balanced": "Balanced Market",
+                     "competitive": "Competitive", "high": "Very Competitive",
+                     "war": "Bidding War / Multiple Offers"}
+MARKET_LIST_FLOOR = {"low": None, "balanced": 0.94, "competitive": 0.97, "high": 0.99, "war": 1.01}
+# Floor = minimum winning offer as fraction of list price. Never recommend more than this % below ask.
+
+MAX_NET_ADJ_PCT = 0.15  # Exclude comp from average if |net_adj| > 15% of its sale price
+MAX_GLA_PCT     = 0.15  # Flag (warn) if GLA adjustment alone > 15% of sale price
+```
+
+**`_dom_adj(dom)`** — adjustment % based on subject days on market:
+- 0 days → 0%, 1–7 → +2%, 8–21 → +1%, 22–45 → 0%, 46–90 → -2%, 90+ → -4%
+
+**`_uad_calc(analysis)`** — deterministic Python UAD math:
+- Runs on CLOSED comps only
+- Calculates GLA adj ($50/sqft × sqft diff), bed adj ($15k), bath adj ($12k/$5k)
+- Excludes comps where |net_adj| > 15% of sale price from the average
+- If exclusions leave < 2 comps, uses all (fallback mode, warns)
+- Returns: `avg_adjusted`, `supported_value_str`, `offer_range_str`, `detail_text`,
+  `quality_warnings` (list), `n_excluded`, `pct_diff`, `above_below`, `list_price`, `n_comps`
+
+**`_bmr_build_html(req)`** — builds the deployed report HTML:
+- Calls `_uad_calc()` then applies market conditions + DOM adjustment
+- Applies list-price floor: `win_offer = max(uad_win, list_price × MARKET_LIST_FLOOR[mc_key])`
+- Shows yellow floor-applied note when floor overrides raw UAD number
+- `py_market_box` = 3-column card: UAD Supported Value | Market Conditions | Market Adjustment $
+
+**`/api/buyer-report/regenerate`** endpoint:
+- Accepts: `subject`, `comps`, `market_conditions`, `subject_dom`
+- Python does ALL math; Claude only writes narrative + offer_summary text
+- Returns: `narrative`, `offer_summary`, `offer_guidance` (full detail incl. market-adjusted result),
+  `supported_value`, `offer_range`, `suggested_offer_price`, `quality_warnings`, `n_excluded`
+- `offer_guidance` returned to Step 2 includes: raw UAD comp detail + market conditions applied +
+  `✓ ESTIMATED WINNING OFFER: $XXX,XXX` line at bottom
+
+**`/api/buyer-report/analyze`** endpoint:
+- Accepts PDF, sends to Claude, extracts comp JSON
+- Also runs `_uad_calc()` and attaches `quality_warnings` + `n_excluded` to response
+
+**Pydantic models (all optional fields have defaults — required fields come first):**
+```python
+class BuyerReportDeployRequest(BaseModel):
+    analysis: BuyerReportAnalysis
+    offer_price: str; offer_terms: list[str]; client_name: str
+    agent_name: str; agent_email: str; agent_phone: str; report_title: str
+    market_conditions: str = "balanced"
+    subject_dom: int = 0
+```
+
+#### Frontend (Netlify — `marccashin/forward-os`, `index.html`)
+Current HEAD: `3bf2560`
+
+**Key refs added:**
+```javascript
+bmrMarketConditions = ref('balanced')  // market conditions key
+bmrSubjectDom       = ref('')          // subject days on market
+bmrQualityWarnings  = ref([])          // list of warning strings from backend
+bmrNExcluded        = ref(0)           // count of excluded comps
+bmrLastRegen        = ref('')          // timestamp of last successful regenerate (HH:MM:SS)
+```
+
+**Step 2 layout (top to bottom):**
+1. Yellow "Verify Extracted Data Before Proceeding" banner (always shown)
+   - If `bmrNExcluded > 0`: shows single-line count "N comps are too dissimilar..."
+2. Subject property card (editable fields)
+3. Comp cards (editable, each with ✕ to remove)
+4. Market Conditions grid (2 cols): dropdown + Subject DOM input ← MOVED HERE from Step 3
+5. Market Narrative header + Regenerate button + green ✓ Updated HH:MM:SS badge
+6. Narrative textarea
+7. Offer Guidance textarea (shows market-adjusted offer after regenerate)
+
+**Step 3:** Client name, offer price, report title, offer terms (market conditions removed from here)
+
+**Regenerate JS uses `Object.assign({}, bmrAnalysis.value, {...})` to force Vue reactivity on update.**
+
+#### Common Pitfalls (BMR-specific)
+- Railway sandbox proxy blocks `railway.app` — can never verify Railway health from Cowork shell. HTTP 000 always means proxy block, not Railway down.
+- Python 3.11 f-string restriction: can't use same quote type inside expression as outer f-string. Use single-quoted outer f-strings with double-quoted inner dict keys.
+- Pydantic v2 on Railway — required fields (no default) must come BEFORE optional fields (with defaults) in model class body.
+- Claude temperature=0 on regenerate → deterministic output, may look unchanged if same comps. Green timestamp badge confirms it ran.
+- `offer_guidance` textarea in Step 2 = detailed UAD + market adjustment text. `narrative` textarea = Claude-written prose.
+
+
 ---
 
 ## Common Pitfalls
@@ -287,3 +388,6 @@ Complete visual overhaul of the app to a luxury real estate aesthetic.
 15. **Between-call async**: Network I/O callbacks only complete with user interaction gaps between tool calls.
 16. **Vue `:style` object syntax** — never use bare unquoted keys like `{fontFamily:'Montserrat',sans-serif}`. Either quote as a string `"font-family:'Montserrat',sans-serif"` or split into static `style=""` + dynamic `:style="{}"`.
 17. **Campaign section bars collapsing** — section cards inside `display:flex;flex-direction:column` scroll containers are flex children and will shrink. Always add `flex-shrink:0` to section card divs.
+18. **BMR comp exclusions too aggressive** — threshold is percentage-based (15% of sale price), not fixed dollar. In a $700k market, a $30k threshold excludes too many comps.
+19. **BMR market conditions floor** — in Very Competitive/Bidding War markets, the winning offer is floored at 99–101% of list price even if UAD comps support less. This is intentional.
+20. **Railway deploy timing** — after pushing to GitHub, Railway takes ~2–3 min to rebuild Docker. Netlify takes ~30 sec. Don't test immediately after push.
