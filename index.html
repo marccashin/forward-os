@@ -3798,7 +3798,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
                   <!-- File list (shown in both tabs) -->
                   <div v-if="lstSubfolderFiles('mls_data').length>0" style="margin-bottom:14px;">
-                    <div v-for="file in lstSubfolderFiles('mls_data')" :key="file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
+                    <div v-for="file in lstSubfolderFiles('mls_data')" :key="file.id" class="file-row-wrap" @touchstart="fileTouchStart($event, file.id)" @touchmove.prevent="fileTouchMove($event)" @touchend="fileTouchEnd($event, file.id)">
                       <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null"><span class="del-icon">✕</span><span class="del-label">Delete</span></div>
                       <div class="file-row" :class="{swiped: fileSwipedId===file.id}">
                         <span class="file-icon">📄</span>
@@ -3811,8 +3811,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- Manual Form -->
                   <div>
                     <div class="form-row">
-                      <label>Property Address <span style="font-size:10px;color:#9ca3af;">(from property folder)</span></label>
-                      <input :value="lstActiveProp.address" readonly style="background:#f9fafb;color:#111;font-weight:500;cursor:default;">
+                      <label>Property Address</label>
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <div style="flex:1;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);padding:9px 12px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;line-height:1.3;">{{ lstActiveProp.address || '—' }}</div>
+                        <button @click="lstEditingAddress=true;lstEditAddressVal=lstActiveProp.address" style="background:none;border:none;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;white-space:nowrap;padding:0;">Edit ✎</button>
+                      </div>
                     </div>
                     <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" inputmode="numeric"></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -5210,26 +5213,61 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     </div>
 
     <!-- New Property Modal (global) -->
-    <div v-if="lstShowNewModal" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="lstShowNewModal=false">
-      <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:420px;padding:28px 24px;">
+    <div v-if="lstShowNewModal" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;" @click.self="lstShowNewModal=false">
+      <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:420px;padding:28px 24px;margin:auto;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
           <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--navy);">New Property</div>
           <button @click="lstShowNewModal=false" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy);opacity:0.4;line-height:1;">✕</button>
         </div>
-        <div style="margin-bottom:14px;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;">Address</div>
-          <input v-model="lstNewAddress" placeholder="e.g. 1234 Oak St NW, Washington DC 20010" @keyup.enter="lstCreateProperty" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+
+        <!-- Street address -->
+        <div class="form-row" style="margin-bottom:10px;">
+          <label>Street Address</label>
+          <input v-model="lstNewStreet" placeholder="e.g. 1234 Oak St NW" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
         </div>
-        <div style="margin-bottom:20px;">
-          <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;">Market</div>
-          <select v-model="lstNewMarket" style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
-            <option value="DC">Washington DC</option>
-            <option value="MD">Maryland</option>
-            <option value="VA">Virginia</option>
-          </select>
+
+        <!-- Unit -->
+        <div class="form-row" style="margin-bottom:10px;">
+          <label>Unit / Apt <span style="font-weight:400;opacity:0.5;font-size:9px;">(optional)</span></label>
+          <input v-model="lstNewUnit" placeholder="e.g. #4B" style="width:100%;box-sizing:border-box;">
         </div>
+
+        <!-- City + State in one row -->
+        <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;margin-bottom:10px;">
+          <div class="form-row">
+            <label>City</label>
+            <input v-model="lstNewCity" placeholder="Washington" style="width:100%;box-sizing:border-box;">
+          </div>
+          <div class="form-row">
+            <label>State</label>
+            <input v-model="lstNewState" placeholder="DC" maxlength="2" style="width:100%;box-sizing:border-box;text-transform:uppercase;" @input="lstNewState=lstNewState.toUpperCase()">
+          </div>
+        </div>
+
+        <!-- Zip + Market in one row -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <div class="form-row">
+            <label>Zip Code</label>
+            <input v-model="lstNewZip" placeholder="20010" inputmode="numeric" maxlength="10" style="width:100%;box-sizing:border-box;">
+          </div>
+          <div class="form-row">
+            <label>Market</label>
+            <select v-model="lstNewMarket" style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+              <option value="DC">DC</option>
+              <option value="MD">Maryland</option>
+              <option value="VA">Virginia</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Seller name -->
+        <div class="form-row" style="margin-bottom:20px;">
+          <label>Seller Name</label>
+          <input v-model="lstNewSeller" placeholder="e.g. John & Jane Smith" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
+        </div>
+
         <div v-if="lstCreateError" style="font-family:'Montserrat',sans-serif;font-size:8.5px;color:#dc2626;margin-bottom:12px;letter-spacing:0.04em;">{{ lstCreateError }}</div>
-        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewAddress.trim()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewAddress.trim())?'0.45':'1'}">
+        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewStreet.trim()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewStreet.trim())?'0.45':'1'}">
           <span v-if="lstCreating" style="display:inline-flex;gap:4px;align-items:center;">
             <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out infinite;"></span>
             <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out 0.2s infinite;"></span>
@@ -6597,7 +6635,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function lstStopPipelineAnim() { if (_lstPipelineTimer) { clearInterval(_lstPipelineTimer); _lstPipelineTimer = null; } }
     const lstShowNewModal = ref(false);
     const lstNewAddress = ref('');
-    const lstNewMarket = ref('DC');
+    const lstNewStreet  = ref('');
+    const lstNewUnit    = ref('');
+    const lstNewCity    = ref('');
+    const lstNewState   = ref('');
+    const lstNewZip     = ref('');
+    const lstNewSeller  = ref('');
+    const lstNewMarket  = ref('DC');
     const lstCreating = ref(false);
     const lstCreateError = ref('');
     const lstActiveProp = ref(null);
@@ -6630,14 +6674,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     let _lstPollTimer = null;
     // File row swipe-to-delete
     const fileSwipedId = ref(null);
-    let _fileTouchStartX = 0, _fileTouchCardId = null;
-    function fileTouchStart(e, id) { _fileTouchStartX = e.touches[0].clientX; _fileTouchCardId = id; }
+    let _fileTouchStartX = 0, _fileTouchStartY = 0, _fileTouchCardId = null, _fileTouchIsH = false;
+    function fileTouchStart(e, id) { _fileTouchStartX = e.touches[0].clientX; _fileTouchStartY = e.touches[0].clientY; _fileTouchCardId = id; _fileTouchIsH = false; }
+    function fileTouchMove(e) {
+      const dx = Math.abs(e.touches[0].clientX - _fileTouchStartX);
+      const dy = Math.abs(e.touches[0].clientY - _fileTouchStartY);
+      if (dx > dy && dx > 8) _fileTouchIsH = true;
+      if (!_fileTouchIsH) { e.stopPropagation(); return; }
+    }
     function fileTouchEnd(e, id) {
       if (_fileTouchCardId !== id) return;
       const dx = e.changedTouches[0].clientX - _fileTouchStartX;
       if (dx < -50) fileSwipedId.value = id;
       else if (dx > 30) { if (fileSwipedId.value === id) fileSwipedId.value = null; }
-      _fileTouchCardId = null;
+      _fileTouchCardId = null; _fileTouchIsH = false;
     }
 
     const lstSubfolders = reactive([
@@ -6716,6 +6766,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     async function lstCreateProperty() {
+      // Compose address from structured fields (or fall back to lstNewAddress)
+      if (lstNewStreet.value.trim()) {
+        const parts = [lstNewStreet.value.trim()];
+        if (lstNewUnit.value.trim()) parts.push('Unit ' + lstNewUnit.value.trim());
+        const cityStateZip = [lstNewCity.value.trim(), lstNewState.value.trim(), lstNewZip.value.trim()].filter(Boolean).join(' ');
+        if (cityStateZip) parts.push(cityStateZip);
+        lstNewAddress.value = parts.join(', ');
+      }
       if (!lstNewAddress.value.trim()) return;
       lstCreating.value = true; lstCreateError.value = '';
       try {
@@ -6726,6 +6784,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           address: lstNormalizeAddress(lstNewAddress.value),
           agent_email: sessionEmail.value,
           agent_name: agentName.value,
+          seller_name: lstNewSeller.value.trim(),
           market: lstNewMarket.value,
           status: 'draft',
           drive_folder_id: '',
@@ -6759,8 +6818,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         refreshPropFiles();
 
         lstShowNewModal.value = false;
-        lstNewAddress.value = '';
-        lstNewMarket.value = 'DC';
+        lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
+        lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
+        lstNewSeller.value = ''; lstNewMarket.value = 'DC';
 
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
@@ -14007,13 +14067,13 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       kbSyncing, kbSyncMsg, syncKnowledgeBase,
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewMarket,
+      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
       lstDeleteTarget, lstDeleting, lstSwipedId,
       lstTouchStart, lstTouchMove, lstTouchEnd,
-      fileSwipedId, fileTouchStart, fileTouchEnd,
+      fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campShowSettings, lstSaveSellerName, lstSaveNote,
