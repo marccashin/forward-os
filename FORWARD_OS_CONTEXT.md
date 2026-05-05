@@ -7,7 +7,7 @@
 A Vue 3 SPA (single-file, no build step) for real estate agents.
 - **Live site:** https://forward-os.netlify.app
 - **Source:** https://github.com/marccashin/forward-os (main branch)
-- ~13,600 lines of HTML/JS/CSS in a single index.html (as of Chat 18)
+- ~14,172 lines of HTML/JS/CSS in a single index.html (as of Chat 19)
 
 ---
 
@@ -391,3 +391,149 @@ bmrLastRegen        = ref('')          // timestamp of last successful regenerat
 18. **BMR comp exclusions too aggressive** — threshold is percentage-based (15% of sale price), not fixed dollar. In a $700k market, a $30k threshold excludes too many comps.
 19. **BMR market conditions floor** — in Very Competitive/Bidding War markets, the winning offer is floored at 99–101% of list price even if UAD comps support less. This is intentional.
 20. **Railway deploy timing** — after pushing to GitHub, Railway takes ~2–3 min to rebuild Docker. Netlify takes ~30 sec. Don't test immediately after push.
+
+### Chat 19 (May 5, 2026) — Listing Tools Restructure, Letter Fixes, Co-Seller
+
+#### Summary of all changes
+
+**1. MLS Data — removed PDF upload tab**
+The PDF upload tab was removed from the MLS Data tool. At the pre-listing stage there is no MLS PDF yet.
+
+**2. Delete styling unified app-wide**
+All delete interactions now use consistent styling:
+- `.btn-del` class: 24px circle, 50% border-radius, navy/cream-dark border, 0.5 opacity → 1 on hover with red tint
+- Swipe-to-delete reveal panel: navy bg, gold icon+label, 72px wide
+- Property delete: navy/gold modal matching the design system
+
+**3. Swipe-to-delete scroll fix**
+Fixed issue where swipe-to-delete on file rows was scrolling the page background.
+- Removed `.passive` from touchstart listener
+- Added separate `fileTouchMove` handler that calls `preventDefault()` only on horizontal movement
+
+**4. New Property modal — expanded address fields**
+Modal now collects structured address data instead of a single string:
+```
+Refs: lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket
+```
+Address is composed in `lstCreateProperty()`:
+```js
+const parts = [lstNewStreet.value.trim()];
+if (lstNewUnit.value.trim()) parts.push('Unit ' + lstNewUnit.value.trim());
+const cityStateZip = [lstNewCity.value.trim(), lstNewState.value.trim(), lstNewZip.value.trim()].filter(Boolean).join(' ');
+if (cityStateZip) parts.push(cityStateZip);
+lstNewAddress.value = parts.join(', ');
+```
+Seller Name and Co-Seller are side-by-side in a two-column row.
+`seller_name_2` is stored in Supabase `properties` table.
+
+**5. Property delete modal**
+Was entirely missing from the template despite `lstConfirmDelete` JS existing. Added a complete `v-if="lstDeleteTarget"` modal with navy/gold styling.
+
+**6. Address edit button fix**
+The edit button next to the property address in the property detail header now works correctly.
+Property header redesigned for mobile:
+- Display mode: address + Edit button in flex row
+- Edit mode: input + Save/Cancel buttons
+- Seller name editable inline below address
+- Status badge beside seller name
+
+**7. MLS inline address edit**
+Separate `mlsEditingAddress` ref for editing the address directly in the MLS Data section (avoids page scroll issues). Uses `mlsEditAddressVal` ref, bridges to `lstSaveAddress()` on save.
+
+**8. Activity indicator**
+`activityLabel` computed shows a fixed navy/gold bar at the bottom of the screen during any background task:
+```js
+const activityLabel = computed(() => {
+  if (lstCreating.value)  return 'Creating property…';
+  if (mlsSaving.value)    return 'Saving MLS data…';
+  if (ldLoading.value)    return 'Writing listing description…';
+  if (ldSaving.value)     return 'Saving description to property…';
+  if (Object.values(lstUploading).some(Boolean)) return 'Uploading file…';
+  if (lstSubmitting.value) return 'Submitting to FORWARD pipeline…';
+  if (lstDeleting.value)  return 'Deleting property…';
+  return null;
+});
+```
+
+**9. LD Writer auto-populate — single combined message**
+Previously address was sent first, then MLS details as a second call (causing out-of-order AI responses). Now combined into a single `ldSend()` call:
+```js
+let _autoMsg = 'Property address: ' + lstActiveProp.value.address + '. Please also research whether this address is a notable, named, or luxury building...';
+if (_parts.length >= 3) {
+  _autoMsg += ' I also have the following property details already: ' + _parts.join(', ') + '. Please skip any questions you already have the answers to...';
+}
+await ldSend(_autoMsg);
+```
+Also instructs the AI to research whether the building is named/notable/luxury.
+
+**10. "No listing description" false negative fix**
+`ldSavedToProperty` was evaluating falsy when only a file existed (text not in `property_notes`). Fixed by ORing with file existence check:
+```js
+lstNotes.listing_remarks || lstSubfolderFiles('listing_remarks').length > 0
+```
+
+**11. CMA address parser**
+CMA Builder (`cma-tool.html`) now parses the address URL param into separate fields (street, city, state, zip, unit):
+```js
+(function parseAndFill(raw) {
+  const parts = raw.split(',').map(s => s.trim()).filter(Boolean);
+  let street = parts[0] || '';
+  // detects "Unit/Apt/#/Suite" prefix in second segment → unit field
+  // remainder → city/state/zip via regex: /^(.*?)\s+([A-Z]{2})\s+(\d{5}...)\s*$/
+  set('s_address', street); set('s_city', city); set('s_state', state); set('s_zip', zip);
+})(_URL_ADDRESS);
+```
+
+**12. Listing Photos tool removed**
+The Listing Photos subfolder tool was removed entirely from the property tools section.
+
+**13. Tool subcategories — final correct order**
+```
+MLS Data (ungrouped, at top)
+
+── PRE-LISTING ──────────────
+  Listing Presentation
+  CMA Snapshot
+  Seller Prep Guide
+
+── ACTIVE LISTING ───────────
+  Listing Description
+  Seller Net Sheet
+  Price Reduction Planner
+
+Market Report (ungrouped, at bottom)
+```
+
+CSS for category headers:
+```css
+.tool-category-header { padding: 10px 20px 8px; background: var(--cream); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--cream-mid); }
+.tool-category-label { font-family: 'Montserrat', sans-serif; font-size: 7px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold-muted); }
+```
+
+**14. Campaign pipeline — brand auditor names**
+`lstPipelineSteps` now shows real team member names for each pipeline stage:
+```js
+const lstPipelineSteps = [
+  { name: 'Brand Strategist', desc: 'Analyzing property, comps, and target buyer profiles' },
+  { name: 'Copywriter', desc: 'Drafting social copy, flyer, and listing remarks' },
+  { name: 'Brand Auditor', desc: 'Reviewing all copy against FORWARD voice & tone standards' },
+  { name: 'Campaign Director', desc: 'Building 30-day marketing timeline and channel plan' },
+  { name: 'Brand Guardian', desc: 'Final review — compliance, accuracy, and quality sign-off' }
+];
+```
+
+**15. Letter to Seller — spacing, greeting, co-seller**
+- `y += 36` breathing room after section header before date
+- Font size bumped to 11pt, line-height 16pt per line + 14pt paragraph gap
+- Greeting logic:
+  - Both sellers: `Dear [First] and [Second],`
+  - One seller: `Dear [First],`
+  - No seller name: greeting line skipped entirely (no "Dear Seller")
+- `seller_name_2` pulled from `prop.seller_name_2`
+
+#### Key commits (Chat 19)
+- Tool order fix: `59171b0`
+- Letter + co-seller: `ac16d66`
+
+#### Supabase table update
+`properties` table now has a `seller_name_2` column (nullable text). Store co-seller full name here.
