@@ -1247,15 +1247,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="spinner" v-if="ldLoading"></span>{{ ldLoading ? '' : 'Send' }}
                 </button>
               </div>
-              <!-- Input bar — mobile iMessage style -->
-              <div v-if="ldStarted && isMobile" class="ld-input-mobile" style="position:relative;">
-                <div style="flex:1;position:relative;">
-                <textarea v-model="ldInput" @keydown.enter.exact.prevent="ldSend(ldInput)" rows="1" placeholder="Type your response…" :disabled="ldLoading" style="padding-right:38px;" onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='#d1d5db'"></textarea>
-                  <button @click="ldVoiceSend" :title="ldVoiceListening ? 'Tap to stop' : 'Speak your response'" :style="{position:'absolute',top:'50%',right:'10px',transform:'translateY(-50%)',width:'20px',height:'20px',borderRadius:'50%',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',background:ldVoiceListening?'var(--gold)':'transparent',color:ldVoiceListening?'#0A1628':'#9ca3af',transition:'all .15s',zIndex:2,padding:0}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                </div>
-                <button class="ld-send-btn-mobile" @click="ldSend(ldInput)" :disabled="ldLoading||!ldInput.trim()">
-                  <span class="spinner" v-if="ldLoading"></span>
-                  <span v-else style="line-height:1;margin-top:-2px;">↑</span>
+              <!-- Input bar — mobile brand style -->
+              <div v-if="ldStarted && isMobile" style="display:flex;align-items:center;gap:8px;padding-top:10px;border-top:1px solid var(--cream-mid);margin-top:8px;">
+                <textarea v-model="ldInput" @keydown.enter.exact.prevent="ldSend(ldInput)" rows="2" placeholder="Type your response…" :disabled="ldLoading"
+                  style="flex:1;font-family:'Cormorant Garamond',serif;font-size:15px;padding:10px 14px;border:1px solid var(--cream-dark);border-radius:2px;background:var(--cream);color:var(--navy);resize:none;outline:none;box-sizing:border-box;line-height:1.5;"
+                  onfocus="this.style.borderColor='var(--navy)'" onblur="this.style.borderColor='var(--cream-dark)'"></textarea>
+                <button @click="ldSend(ldInput)" :disabled="ldLoading||!ldInput.trim()"
+                  style="background:var(--navy);color:var(--gold);border:none;border-radius:2px;padding:0 16px;height:52px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:opacity 0.13s;"
+                  :style="{opacity:(ldLoading||!ldInput.trim())?'0.4':'1'}">
+                  <span v-if="ldLoading" style="display:inline-flex;gap:3px;">
+                    <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);animation:aiDot 1.2s ease-in-out infinite;display:inline-block;"></span>
+                    <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);animation:aiDot 1.2s ease-in-out 0.2s infinite;display:inline-block;"></span>
+                    <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);animation:aiDot 1.2s ease-in-out 0.4s infinite;display:inline-block;"></span>
+                  </span>
+                  <span v-else>Send</span>
                 </button>
               </div>
 
@@ -3750,6 +3755,82 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
+              <!-- Tool: MLS Data (tabbed: Upload or Manual Form) -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='mlsdata' ? null : 'mlsdata'">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">📋</span>
+                    <span class="subfolder-tool-name">MLS Data</span>
+                    <span v-if="lstSubfolderFiles('mls_data').length>0" style="font-size:11px;color:var(--gold);font-weight:600;">{{ lstSubfolderFiles('mls_data').length }} file{{ lstSubfolderFiles('mls_data').length===1?'':'s' }}</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='mlsdata' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='mlsdata'" class="subfolder-body">
+
+                  <!-- File list (shown in both tabs) -->
+                  <div v-if="lstSubfolderFiles('mls_data').length>0" style="margin-bottom:14px;">
+                    <div v-for="file in lstSubfolderFiles('mls_data')" :key="file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
+                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null">🗑 Delete</div>
+                      <div class="file-row" :class="{swiped: fileSwipedId===file.id}">
+                        <span class="file-icon">📄</span>
+                        <div class="file-info"><div class="file-name">{{ file.file_name }}</div><div class="file-meta">{{ file.uploaded_by ? file.uploaded_by.split('@')[0] : '' }} · {{ new Date(file.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div></div>
+                        <a v-if="file.drive_link" :href="file.drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:11px;">View</a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Tab switcher -->
+                  <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);margin-bottom:14px;">
+                    <button @click="mlsTab='upload'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',background:mlsTab==='upload'?'var(--navy)':'#fff',color:mlsTab==='upload'?'#fff':'var(--navy)',transition:'all .15s'}">Upload MLS Sheet</button>
+                    <button @click="mlsTab='manual'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:mlsTab==='manual'?'var(--navy)':'#fff',color:mlsTab==='manual'?'#fff':'var(--navy)',transition:'all .15s'}">Enter Manually</button>
+                  </div>
+
+                  <!-- Tab A: Upload -->
+                  <div v-if="mlsTab==='upload'">
+                    <div v-if="lstUploading['mls_data']" style="margin-bottom:14px;"><div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Uploading...</div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div></div>
+                    <div v-if="lstActiveProp.status!=='running'&&lstActiveProp.status!=='submitted'" class="drop-zone" :class="{'drag-over':lstDragOver==='mls_data'}" @dragover.prevent="lstDragOver='mls_data'" @dragleave="lstDragOver=''" @drop.prevent="lstHandleDrop($event,'mls_data')" @click="$refs.mlsFileInput?.click()">
+                      <input ref="mlsFileInput" type="file" accept=".pdf,.xlsx,.csv,.doc,.docx" multiple style="display:none;" @change="lstHandleFileInput($event,'mls_data')">
+                      <div class="drop-zone-text"><span style="font-size:20px;">📁</span><br>Upload MLS data files<br><span style="font-size:11px;">.pdf, .xlsx, .csv, .doc</span></div>
+                    </div>
+                  </div>
+
+                  <!-- Tab B: Manual Form -->
+                  <div v-if="mlsTab==='manual'">
+                    <div class="form-row">
+                      <label>Property Address <span style="font-size:10px;color:#9ca3af;">(from property folder)</span></label>
+                      <input :value="lstActiveProp.address" readonly style="background:#f9fafb;color:#111;font-weight:500;cursor:default;">
+                    </div>
+                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" inputmode="numeric"></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                      <div class="form-row"><label>Beds</label><input v-model="mlsForm.beds" inputmode="numeric" placeholder="3"></div>
+                      <div class="form-row"><label>Baths</label><input v-model="mlsForm.baths" inputmode="decimal" placeholder="2.5"></div>
+                    </div>
+                    <div class="form-row"><label>Square Footage</label><input v-model="mlsForm.sqft" placeholder="1,846" inputmode="numeric" @blur="mlsFormatSqft"></div>
+                    <div class="form-row"><label>Year Built</label><input v-model="mlsForm.yearBuilt" inputmode="numeric" placeholder="1985" maxlength="4"></div>
+                    <div class="form-row"><label>HOA Fee</label><input v-model="mlsForm.hoa" placeholder="None or $000/month"></div>
+                    <div class="form-row"><label>Property Type</label>
+                      <select v-model="mlsForm.propType">
+                        <option value="">Select type…</option>
+                        <option>Single Family</option><option>Townhouse</option><option>Condo</option>
+                        <option>Co-op</option><option>Multi-Family</option><option>Land</option><option>Other</option>
+                      </select>
+                    </div>
+                    <div class="form-row"><label>Parking</label><input v-model="mlsForm.parking" placeholder="e.g. 2-car garage, street parking, underground"></div>
+                    <div style="margin-bottom:10px;">
+                      <label style="font-size:11px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Key Features</label>
+                      <div v-for="(f,fi) in mlsForm.features" :key="fi" style="margin-bottom:6px;">
+                        <input v-model="mlsForm.features[fi]" :placeholder="'Feature ' + (fi+1)" style="width:100%;">
+                      </div>
+                    </div>
+                    <div v-if="lstUploading['mls_data']" style="margin-bottom:10px;"><div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Saving...</div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div></div>
+                    <button class="btn-gold" @click="mlsSaveManual" :disabled="lstActiveProp.status==='running'||lstActiveProp.status==='submitted'||mlsSaving" style="width:100%;margin-top:4px;">
+                      <span class="spinner" v-if="mlsSaving"></span>{{ mlsSaving ? '' : 'Save MLS Data' }}
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+
               <!-- Tool: Listing Photos (first tool) -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='photos' ? null : 'photos'">
@@ -4081,82 +4162,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-
-              <!-- Tool: MLS Data (tabbed: Upload or Manual Form) -->
-              <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='mlsdata' ? null : 'mlsdata'">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">📋</span>
-                    <span class="subfolder-tool-name">MLS Data</span>
-                    <span v-if="lstSubfolderFiles('mls_data').length>0" style="font-size:11px;color:var(--gold);font-weight:600;">{{ lstSubfolderFiles('mls_data').length }} file{{ lstSubfolderFiles('mls_data').length===1?'':'s' }}</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='mlsdata' ? '▼' : '▶' }}</span>
-                </div>
-                <div v-if="lstToolOpen==='mlsdata'" class="subfolder-body">
-
-                  <!-- File list (shown in both tabs) -->
-                  <div v-if="lstSubfolderFiles('mls_data').length>0" style="margin-bottom:14px;">
-                    <div v-for="file in lstSubfolderFiles('mls_data')" :key="file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
-                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null">🗑 Delete</div>
-                      <div class="file-row" :class="{swiped: fileSwipedId===file.id}">
-                        <span class="file-icon">📄</span>
-                        <div class="file-info"><div class="file-name">{{ file.file_name }}</div><div class="file-meta">{{ file.uploaded_by ? file.uploaded_by.split('@')[0] : '' }} · {{ new Date(file.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div></div>
-                        <a v-if="file.drive_link" :href="file.drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:11px;">View</a>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Tab switcher -->
-                  <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);margin-bottom:14px;">
-                    <button @click="mlsTab='upload'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',background:mlsTab==='upload'?'var(--navy)':'#fff',color:mlsTab==='upload'?'#fff':'var(--navy)',transition:'all .15s'}">Upload MLS Sheet</button>
-                    <button @click="mlsTab='manual'" :style="{flex:1,padding:'8px 0',fontSize:'12px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:mlsTab==='manual'?'var(--navy)':'#fff',color:mlsTab==='manual'?'#fff':'var(--navy)',transition:'all .15s'}">Enter Manually</button>
-                  </div>
-
-                  <!-- Tab A: Upload -->
-                  <div v-if="mlsTab==='upload'">
-                    <div v-if="lstUploading['mls_data']" style="margin-bottom:14px;"><div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Uploading...</div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div></div>
-                    <div v-if="lstActiveProp.status!=='running'&&lstActiveProp.status!=='submitted'" class="drop-zone" :class="{'drag-over':lstDragOver==='mls_data'}" @dragover.prevent="lstDragOver='mls_data'" @dragleave="lstDragOver=''" @drop.prevent="lstHandleDrop($event,'mls_data')" @click="$refs.mlsFileInput?.click()">
-                      <input ref="mlsFileInput" type="file" accept=".pdf,.xlsx,.csv,.doc,.docx" multiple style="display:none;" @change="lstHandleFileInput($event,'mls_data')">
-                      <div class="drop-zone-text"><span style="font-size:20px;">📁</span><br>Upload MLS data files<br><span style="font-size:11px;">.pdf, .xlsx, .csv, .doc</span></div>
-                    </div>
-                  </div>
-
-                  <!-- Tab B: Manual Form -->
-                  <div v-if="mlsTab==='manual'">
-                    <div class="form-row">
-                      <label>Property Address <span style="font-size:10px;color:#9ca3af;">(from property folder)</span></label>
-                      <input :value="lstActiveProp.address" readonly style="background:#f9fafb;color:#111;font-weight:500;cursor:default;">
-                    </div>
-                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" inputmode="numeric"></div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                      <div class="form-row"><label>Beds</label><input v-model="mlsForm.beds" inputmode="numeric" placeholder="3"></div>
-                      <div class="form-row"><label>Baths</label><input v-model="mlsForm.baths" inputmode="decimal" placeholder="2.5"></div>
-                    </div>
-                    <div class="form-row"><label>Square Footage</label><input v-model="mlsForm.sqft" placeholder="1,846" inputmode="numeric" @blur="mlsFormatSqft"></div>
-                    <div class="form-row"><label>Year Built</label><input v-model="mlsForm.yearBuilt" inputmode="numeric" placeholder="1985" maxlength="4"></div>
-                    <div class="form-row"><label>HOA Fee</label><input v-model="mlsForm.hoa" placeholder="None or $000/month"></div>
-                    <div class="form-row"><label>Property Type</label>
-                      <select v-model="mlsForm.propType">
-                        <option value="">Select type…</option>
-                        <option>Single Family</option><option>Townhouse</option><option>Condo</option>
-                        <option>Co-op</option><option>Multi-Family</option><option>Land</option><option>Other</option>
-                      </select>
-                    </div>
-                    <div class="form-row"><label>Parking</label><input v-model="mlsForm.parking" placeholder="e.g. 2-car garage, street parking, underground"></div>
-                    <div style="margin-bottom:10px;">
-                      <label style="font-size:11px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;display:block;margin-bottom:6px;">Key Features</label>
-                      <div v-for="(f,fi) in mlsForm.features" :key="fi" style="margin-bottom:6px;">
-                        <input v-model="mlsForm.features[fi]" :placeholder="'Feature ' + (fi+1)" style="width:100%;">
-                      </div>
-                    </div>
-                    <div v-if="lstUploading['mls_data']" style="margin-bottom:10px;"><div style="font-size:12px;color:var(--navy);margin-bottom:4px;">Saving...</div><div class="progress-bar-track"><div class="progress-bar-fill" style="width:60%;"></div></div></div>
-                    <button class="btn-gold" @click="mlsSaveManual" :disabled="lstActiveProp.status==='running'||lstActiveProp.status==='submitted'||mlsSaving" style="width:100%;margin-top:4px;">
-                      <span class="spinner" v-if="mlsSaving"></span>{{ mlsSaving ? '' : 'Save MLS Data' }}
-                    </button>
-                  </div>
-
-                </div>
-              </div>
 
             </div>
 
@@ -5200,8 +5205,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </select>
         </div>
         <div v-if="lstCreateError" style="font-family:'Montserrat',sans-serif;font-size:8.5px;color:#dc2626;margin-bottom:12px;letter-spacing:0.04em;">{{ lstCreateError }}</div>
-        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewAddress.trim()" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewAddress.trim())?'0.45':'1'}">
-          {{ lstCreating ? 'Creating…' : 'Create Property' }}
+        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewAddress.trim()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewAddress.trim())?'0.45':'1'}">
+          <span v-if="lstCreating" style="display:inline-flex;gap:4px;align-items:center;">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out 0.2s infinite;"></span>
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out 0.4s infinite;"></span>
+          </span>
+          <span>{{ lstCreating ? 'Creating…' : 'Create Property' }}</span>
         </button>
       </div>
     </div>
@@ -6716,6 +6726,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
         lstOpenProperty(prop);
+        lstToolOpen.value = 'mlsdata'; // Auto-open MLS Data first
         await lstFetchProperties();
         showGoldToast('Property created!');
       } catch (e) {
@@ -13324,6 +13335,12 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           );
         }
         ldMessages.value.push({ role:'assistant', content: reply });
+        // Auto-send address if we have an active property — skip the "what's the address?" step
+        if (lstActiveProp.value && lstActiveProp.value.address) {
+          await nextTick();
+          await ldSend(lstActiveProp.value.address);
+          return;
+        }
       } catch(e) {
         ldMessages.value.push({ role:'assistant', content: '\u274C Error: ' + e.message });
         showToast('\u274C '+e.message, 6000);
