@@ -5281,10 +5281,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
         </div>
 
-        <!-- Seller name -->
-        <div class="form-row" style="margin-bottom:20px;">
-          <label>Seller Name</label>
-          <input v-model="lstNewSeller" placeholder="e.g. John & Jane Smith" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
+        <!-- Seller name(s) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
+          <div class="form-row">
+            <label>Seller Name</label>
+            <input v-model="lstNewSeller" placeholder="First Last" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
+          </div>
+          <div class="form-row">
+            <label>Co-Seller <span style="font-weight:400;opacity:0.5;font-size:9px;">(optional)</span></label>
+            <input v-model="lstNewSeller2" placeholder="First Last" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
+          </div>
         </div>
 
         <div v-if="lstCreateError" style="font-family:'Montserrat',sans-serif;font-size:8.5px;color:#dc2626;margin-bottom:12px;letter-spacing:0.04em;">{{ lstCreateError }}</div>
@@ -6668,6 +6674,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstNewState   = ref('');
     const lstNewZip     = ref('');
     const lstNewSeller  = ref('');
+    const lstNewSeller2 = ref('');
     const lstNewMarket  = ref('DC');
 
     // ── Global activity indicator ──────────────────────────────────────────
@@ -6828,6 +6835,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           agent_email: sessionEmail.value,
           agent_name: agentName.value,
           seller_name: lstNewSeller.value.trim(),
+              seller_name_2: lstNewSeller2.value.trim() || null,
           market: lstNewMarket.value,
           status: 'draft',
           drive_folder_id: '',
@@ -6863,7 +6871,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstShowNewModal.value = false;
         lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
         lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
-        lstNewSeller.value = ''; lstNewMarket.value = 'DC';
+        lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = 'DC';
 
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
@@ -7226,12 +7234,22 @@ function campExportPDF() {
   addPage();
   sectionHeader('Letter to Seller');
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setTextColor(30, 30, 30);
 
-  const greeting = firstName ? ('Dear ' + firstName + ',') : 'Dear Valued Client,';
-  doc.text(dateStr, ML, y); y += 18;
-  doc.text(greeting, ML, y); y += 18;
+  // Build greeting — skip entirely if no seller name on file
+  const sellerName2 = clean(prop.seller_name_2 || '');
+  const firstName2 = sellerName2 ? sellerName2.split(' ')[0] : '';
+  let greeting = '';
+  if (firstName && firstName2) {
+    greeting = 'Dear ' + firstName + ' and ' + firstName2 + ',';
+  } else if (firstName) {
+    greeting = 'Dear ' + firstName + ',';
+  }
+
+  y += 36; // breathing room after section header
+  doc.text(dateStr, ML, y); y += 28;
+  if (greeting) { doc.text(greeting, ML, y); y += 28; }
 
   const letterBody = [
     'It has been a privilege preparing this campaign package for ' + addr + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its infrastructure, and the buyers who will recognize its true value.',
@@ -7240,17 +7258,19 @@ function campExportPDF() {
     'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
   ];
 
+  doc.setFontSize(11);
   letterBody.forEach(function(para) {
     const wrapped = doc.splitTextToSize(para, TW);
-    wrapped.forEach(function(line) { checkY(14); doc.text(line, ML, y); y += 14; });
-    y += 8;
+    wrapped.forEach(function(line) { checkY(16); doc.text(line, ML, y); y += 16; });
+    y += 14;
   });
 
-  doc.text('Warm regards,', ML, y); y += 16;
+  y += 8;
+  doc.text('Warm regards,', ML, y); y += 22;
   doc.setFont('helvetica', 'bold');
-  doc.text(agentDisplay, ML, y); y += 14;
+  doc.text(agentDisplay, ML, y); y += 18;
   doc.setFont('helvetica', 'normal');
-  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 24;
+  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 30;
 
   // ── 2. LISTING DESCRIPTION ───────────────────────────────────
   const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
@@ -14115,7 +14135,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       kbSyncing, kbSyncMsg, syncKnowledgeBase,
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewMarket,
+      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
