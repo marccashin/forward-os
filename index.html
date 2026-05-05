@@ -571,6 +571,35 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   margin-left: 8px;
 }
 .subfolder-body { padding: 16px 20px 18px; background: var(--cream); border-top: 1px solid var(--cream-mid); }
+
+/* ── FILE ROW (swipe-to-delete) ── */
+.file-row-wrap { position: relative; overflow: hidden; border-radius: 2px; margin-bottom: 4px; }
+.file-row-del-reveal {
+  position: absolute; right: 0; top: 0; bottom: 0; width: 72px;
+  background: var(--navy); color: var(--gold);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; cursor: pointer; z-index: 1; transition: background 0.15s;
+}
+.file-row-del-reveal:active { background: #8c1818; color: #fff; }
+.file-row-del-reveal .del-icon { font-size: 13px; line-height: 1; font-family: sans-serif; font-weight: 300; }
+.file-row-del-reveal .del-label { font-family: 'Montserrat', sans-serif; font-size: 6.5px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+.file-row {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px;
+  transition: transform 0.22s ease;
+}
+.file-row.swiped { transform: translateX(-72px); }
+.file-icon { font-size: 16px; flex-shrink: 0; }
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-family: 'Cormorant Garamond', 'Playfair Display', serif; font-size: 13px; color: var(--navy); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-meta { font-family: 'Montserrat', sans-serif; font-size: 9px; color: var(--ghost); letter-spacing: 0.06em; margin-top: 2px; }
+
+/* ── SMALL BUTTONS ── */
+.btn-sm { display: inline-flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 5px 12px; border-radius: 1px; cursor: pointer; border: 1px solid transparent; transition: all 0.13s; background: none; color: var(--navy); }
+.btn-del { width: 24px; height: 24px; padding: 0 !important; border-radius: 50% !important; font-size: 12px !important; letter-spacing: 0 !important; border: 1px solid var(--cream-dark) !important; color: var(--navy) !important; opacity: 0.5; background: none !important; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; font-family: sans-serif !important; }
+.btn-del:hover { opacity: 1; color: #b91c1c !important; border-color: #fca5a5 !important; background: #fff0f0 !important; }
 .subfolder-body-inner { padding-left: 46px; }
 /* Tool section header */
 .tool-section-label { font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:500; color:var(--navy); white-space:nowrap; margin:0; }
@@ -2435,7 +2464,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-for="f in byrSubfolderFiles(sf.key)" :key="f.id" style="display:flex;align-items:center;gap:4px;padding:4px 0;border-top:1px solid var(--cream-mid);margin-top:3px;">
                   <span style="flex:1;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" :title="f.file_name">{{ f.file_name }}</span>
                   <a v-if="f.drive_link" :href="f.drive_link" target="_blank" style="color:var(--navy);font-size:11px;text-decoration:none;" title="Download">⬇</a>
-                  <button @click="byrDeleteFile(f)" style="background:none;border:none;color:#e74c3c;cursor:pointer;font-size:11px;padding:0 2px;" title="Delete">✕</button>
+                  <button @click="byrDeleteFile(f)" class="btn-del" title="Delete">✕</button>
                 </div>
               </div>
             </div>
@@ -3033,7 +3062,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ tour.name }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:3px;">{{ tour.buyer || 'No buyer assigned' }} · {{ tour.properties.length }} propert{{ tour.properties.length === 1 ? 'y' : 'ies' }}</div>
                     <div style="font-size:11px;color:#9ca3af;">{{ new Date(tour.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
-                    <button class="btn-sm btn-del" @click.stop="ttDeleteTour(tour.id)" style="position:absolute;top:10px;right:10px;font-size:11px;">✕</button>
+                    <button class="btn-del" @click.stop="ttDeleteTour(tour.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                   </div>
                 </div>
               </div>
@@ -3100,7 +3129,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
                   <div v-for="(prop,pi) in tt.activeTour.properties" :key="prop.id" class="tool-card" @click="tt.activeProperty=prop" style="padding:18px;position:relative;">
                     <div style="position:absolute;top:12px;left:16px;background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">#{{ pi+1 }}</div>
-                    <button class="btn-sm btn-del" @click.stop="ttRemoveProperty(prop.id)" style="position:absolute;top:10px;right:10px;font-size:11px;">✕</button>
+                    <button class="btn-del" @click.stop="ttRemoveProperty(prop.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                     <div style="margin-top:20px;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ prop.address }}</div>
                     <div v-if="prop.price" style="font-size:13px;color:var(--gold);font-weight:600;margin-top:3px;">{{ ttFmtPrice(prop.price) }}</div>
                     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
@@ -3474,7 +3503,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;gap:6px;flex-shrink:0;">
                   <button class="btn-sm btn-copy" @click="copy(item.content)">Copy</button>
                   <button class="btn-sm" style="background:#f8fafc;color:var(--navy);border:1px solid #e5e7eb;" @click="expandItem=item">View</button>
-                  <button class="btn-sm btn-del" @click="delItem(item.id)">✕</button>
+                  <button class="btn-del" @click="delItem(item.id)" title="Delete">✕</button>
                 </div>
               </div>
               <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:10px;max-height:56px;overflow:hidden;">{{ item.content.substring(0,200) }}{{ item.content.length>200?'…':'' }}</div>
@@ -3720,7 +3749,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div v-for="file in lstSubfolderFiles(cat.key)" :key="file.id" style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.07);">
                         <span style="font-size:12px;color:rgba(255,255,255,0.85);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
                         <a v-if="file.drive_link" :href="file.drive_link" target="_blank" style="font-size:11px;font-weight:600;color:var(--gold);text-decoration:none;white-space:nowrap;flex-shrink:0;">↗ Open</a>
-                        <button @click="lstDeleteFile(file)" title="Delete" style="width:20px;height:20px;border-radius:50%;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.6);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;" @mouseenter="$event.currentTarget.style.background='rgba(220,38,38,0.35)';$event.currentTarget.style.color='#fca5a5'" @mouseleave="$event.currentTarget.style.background='rgba(255,255,255,0.1)';$event.currentTarget.style.color='rgba(255,255,255,0.6)'">✕</button>
+                        <button @click="lstDeleteFile(file)" title="Delete" style="width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.65);font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;font-family:sans-serif;" onmouseover="this.style.background='rgba(180,30,30,0.5)';this.style.borderColor='rgba(255,150,150,0.4)';this.style.color='#fff'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.borderColor='rgba(255,255,255,0.2)';this.style.color='rgba(255,255,255,0.65)'">✕</button>
                       </div>
                     </div>
                   </template>
@@ -3770,7 +3799,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- File list (shown in both tabs) -->
                   <div v-if="lstSubfolderFiles('mls_data').length>0" style="margin-bottom:14px;">
                     <div v-for="file in lstSubfolderFiles('mls_data')" :key="file.id" class="file-row-wrap" @touchstart.passive="fileTouchStart($event, file.id)" @touchend.passive="fileTouchEnd($event, file.id)">
-                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null">🗑 Delete</div>
+                      <div class="file-row-del-reveal" @click="lstDeleteFile(file); fileSwipedId=null"><span class="del-icon">✕</span><span class="del-label">Delete</span></div>
                       <div class="file-row" :class="{swiped: fileSwipedId===file.id}">
                         <span class="file-icon">📄</span>
                         <div class="file-info"><div class="file-name">{{ file.file_name }}</div><div class="file-meta">{{ file.uploaded_by ? file.uploaded_by.split('@')[0] : '' }} · {{ new Date(file.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div></div>
@@ -3992,7 +4021,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;margin-bottom:4px;">
                       <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
                       <a v-if="file.drive_link" :href="file.drive_link" target="_blank" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);text-decoration:none;white-space:nowrap;flex-shrink:0;border:1px solid var(--cream-dark);padding:4px 10px;border-radius:2px;">View →</a>
-                      <button @click="lstDeleteFile(file)" style="background:none;border:none;cursor:pointer;color:var(--navy);opacity:0.3;font-size:13px;padding:2px 4px;flex-shrink:0;line-height:1;" title="Delete">✕</button>
+                      <button @click="lstDeleteFile(file)" class="btn-del" title="Delete">✕</button>
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
@@ -4392,7 +4421,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
                     <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ pf.resources.length }} resource{{ pf.resources.length === 1 ? '' : 's' }} · {{ new Date(pf.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div>
-                    <button v-if="adminViewAgent === agentName" class="btn-sm btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:10px;right:10px;font-size:11px;">✕</button>
+                    <button v-if="adminViewAgent === agentName" class="btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                   </div>
                 </div>
               </template>
@@ -4419,7 +4448,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         <button v-if="r.driveLink" class="btn-sm" style="background:var(--gold);color:var(--navy);font-weight:700;" @click="viewResourceLink(r)">View</button>
                         <button v-if="r.driveLink" class="btn-sm btn-navy" style="font-size:11px;" @click="sendResourceToClient(r, activePropFile)">Send to Client</button>
                         <button v-if="!r.pdfData && !r.driveLink" class="btn-sm btn-copy" @click="copy(typeof r.data === 'string' ? r.data : JSON.stringify(r.data))">Copy</button>
-                        <button v-if="!activePropFile._viewingAgent || activePropFile._viewingAgent === agentName" class="btn-sm btn-del" @click="removeResource(activePropFile.id, r.id)">✕</button>
+                        <button v-if="!activePropFile._viewingAgent || activePropFile._viewingAgent === agentName" class="btn-del" @click="removeResource(activePropFile.id, r.id)" title="Delete">✕</button>
                       </div>
                     </div>
                   </div>
@@ -4503,7 +4532,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
                     <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ pf.resources.length }} resource{{ pf.resources.length === 1 ? '' : 's' }} · {{ new Date(pf.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div>
-                    <button class="btn-sm btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:10px;right:10px;font-size:11px;">✕</button>
+                    <button class="btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                   </div>
                 </div>
               </template>
@@ -4528,7 +4557,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         <button v-if="r.pdfData" class="btn-sm" style="background:var(--gold);color:var(--navy);font-weight:700;" @click="viewResourcePDF(r)">View PDF</button>
                         <button v-if="r.pdfData" class="btn-sm btn-navy" style="font-size:11px;" @click="downloadResourcePDF(r)">Download</button>
                         <button v-if="!r.pdfData" class="btn-sm btn-copy" @click="copy(typeof r.data === 'string' ? r.data : JSON.stringify(r.data))">Copy</button>
-                        <button class="btn-sm btn-del" @click="removeResource(activePropFile.id, r.id)">✕</button>
+                        <button class="btn-del" @click="removeResource(activePropFile.id, r.id)" title="Delete">✕</button>
                       </div>
                     </div>
                   </div>
