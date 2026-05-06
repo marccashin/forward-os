@@ -2968,12 +2968,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                   </div>
                 </template>
-                <!-- In subject mode: compact field grid as before, but now with all fields -->
+                <!-- In subject mode: full address row + fields including DOM -->
                 <template v-else>
-                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
-                    <div v-for="(fld,key) in {address:'Address',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price'}" :key="key">
+                  <div style="margin-bottom:12px;">
+                    <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Address</label>
+                    <input class="form-input" v-model="bmrAnalysis.subject.address" style="width:100%;" placeholder="Subject property address">
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;">
+                    <div v-for="(fld,key) in {beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price'}" :key="key">
                       <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">{{ fld }}</label>
                       <input class="form-input" v-model="bmrAnalysis.subject[key]" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">DOM <span @click.stop="bmrDomTip=!bmrDomTip" style="cursor:pointer;color:var(--gold);font-size:10px;margin-left:3px;font-weight:700;">?</span></label>
+                      <input class="form-input" v-model="bmrSubjectDom" placeholder="e.g. 5 or 84/285" style="width:100%;border:1.5px solid var(--gold);background:#fffdf5;">
                     </div>
                   </div>
                 </template>
@@ -11687,6 +11695,7 @@ No markdown. Valid JSON only.`;
         bmrNExcluded.value=bmrAnalysis.value?.n_excluded||0;
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
         if(bmrAnalysis.value?.suggested_offer_price) bmrOfferPrice.value=bmrAnalysis.value.suggested_offer_price;
+        if(!bmrClientName.value && byrActiveBuyer.value?.buyer_name) bmrClientName.value=byrActiveBuyer.value.buyer_name;
         bmrStep.value=2; Vue.nextTick(()=>window.scrollTo(0,0));
       }catch(e){bmrUploadError.value='Analysis failed: '+e.message;}
       bmrAnalyzing.value=false;
