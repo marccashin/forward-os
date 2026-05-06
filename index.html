@@ -2936,6 +2936,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </button>
                   </div>
                 </div>
+                <div v-if="bmrDomTip" style="background:#fef3c7;border:1px solid var(--gold);border-radius:6px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#78350f;line-height:1.6;">
+                  <strong>DOM format:</strong> Enter days on market as a number (e.g. <code>84</code>). If the property has been relisted, enter as <strong>current/total</strong> (e.g. <code>84/285</code> = 84 days this listing period, 285 cumulative). High total DOM signals seller motivation and stronger buyer leverage.
+                  <span @click="bmrDomTip=false" style="float:right;cursor:pointer;font-weight:700;opacity:0.6;">✕</span>
+                </div>
                 <div v-if="bmrNoSubject" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 16px;margin-bottom:14px;">
                   <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
                   <div style="font-size:12px;color:#713f12;line-height:1.6;">Claude will generate <strong>individual offer guidance</strong> for each property below — perfect when your buyer is still deciding. To switch to single-property mode, click <strong>Use as Subject</strong> on any listing.</div>
@@ -2951,14 +2955,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div v-for="(lbl,k) in {status:'Status',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price',sale_price:'Sale Price',dom:'DOM',ls_ratio:'L/S Ratio'}" :key="k">
                         <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">
                           {{ lbl }}
-                          <span v-if="k==='dom'" title="If relisted, enter as current/total (e.g. 84/285 means 84 days this listing, 285 total history)" style="cursor:help;opacity:0.6;margin-left:2px;">ⓘ</span>
+                          <span v-if="k==='dom'" @click.stop="bmrDomTip=!bmrDomTip" style="cursor:pointer;color:var(--gold);font-size:10px;margin-left:3px;font-weight:700;">?</span>
                         </label>
                         <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
                           <input class="form-input" v-model="bmrAnalysis.subject[k]" style="width:100%;"><span :class="bmrLsPillClass(bmrAnalysis.subject.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ bmrAnalysis.subject.ls_ratio || '—' }}</span>
                         </div>
                         <input v-else class="form-input" v-model="bmrAnalysis.subject[k]"
                           :placeholder="k==='dom'?'e.g. 5 or 84/285':k==='status'?'Active':k==='sale_price'?'If sold':''"
-                          style="width:100%;">
+                          :style="k==='dom'?{width:'100%',border:'1.5px solid var(--gold)',background:'#fffdf5'}:{width:'100%'}">
                       </div>
                       <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="bmrAnalysis.subject.notes" style="width:100%;"></div>
                     </div>
@@ -2988,13 +2992,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
                     <div v-for="(lbl,k) in {status:'Status',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price',sale_price:'Sale Price',dom:'DOM',ls_ratio:'L/S Ratio'}" :key="k">
-                      <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">{{ lbl }}<span v-if="k==='dom'" title="If relisted, enter as current/total (e.g. 84/285 = 84 days this listing, 285 total history)" style="cursor:help;opacity:0.6;margin-left:2px;">ⓘ</span></label>
+                      <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">{{ lbl }}<span v-if="k==='dom'" @click.stop="bmrDomTip=!bmrDomTip" style="cursor:pointer;color:var(--gold);font-size:10px;margin-left:3px;font-weight:700;">?</span></label>
                       <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
                         <input class="form-input" v-model="comp[k]" style="width:100%;"><span :class="bmrLsPillClass(comp.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ comp.ls_ratio || '—' }}</span>
                       </div>
                       <input v-else class="form-input" v-model="comp[k]"
                         :placeholder="k==='dom'?'e.g. 5 or 84/285':''"
-                        style="width:100%;">
+                        :style="k==='dom'?{width:'100%',border:'1.5px solid var(--gold)',background:'#fffdf5'}:{width:'100%'}">
                     </div>
                     <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="comp.notes" style="width:100%;"></div>
                   </div>
@@ -11452,7 +11456,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaved = ref(false);
 
     // ── Buyer Market Report state ──────────────────────────────────────────
-    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false),bmrCompareOffers=ref({});
+    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false),bmrCompareOffers=ref({}),bmrDomTip=ref(false);
     const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref(''),bmrLastRegen=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
@@ -14253,7 +14257,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskModalShow, overdueTasks, daysOverdue,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
-      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,
+      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
