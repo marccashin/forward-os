@@ -2924,7 +2924,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Subject Property</h3>
+                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">{{ bmrNoSubject ? "Property 1" : "Subject Property" }}</h3>
                   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <span v-if="!bmrNoSubject" style="font-size:11px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;border:1px solid var(--border);">Edit any field before proceeding</span>
                     <button @click="bmrNoSubject=!bmrNoSubject"
@@ -2947,10 +2947,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">Comparable Sales <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Additional Properties" : "Comparable Sales" }} <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
                 <div v-for="(comp,i) in bmrAnalysis.comps" :key="i" style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                    <span style="font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ i+1 }}</span>
+                    <span style="font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ bmrNoSubject ? i+2 : i+1 }}</span>
                     <input class="form-input" v-model="comp.address" style="flex:1;font-weight:600;min-width:0;">
                     <button v-if="bmrNoSubject" @click="bmrSetAsSubject(i)"
                       style="background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;padding:5px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
@@ -3016,12 +3016,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- STEP 3 -->
             <template v-if="bmrStep===3">
               <div class="card" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">Offer Details</h3>
+                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Comparison Report Details" : "Offer Details" }}</h3>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                   <div><label class="form-label">Client Name</label><input class="form-input" v-model="bmrClientName" placeholder="e.g. The Johnson Family" style="width:100%;"></div>
-                  <div><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
+                  <div v-if="!bmrNoSubject"><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
                 </div>
-                <div style="margin-bottom:16px;"><label class="form-label" style="margin-bottom:8px;display:block;">Report Title</label><input class="form-input" v-model="bmrReportTitle" placeholder="e.g. Market Report: 1234 Main St NW" style="width:100%;"></div>
+                <div v-if="!bmrNoSubject" style="margin-bottom:16px;"><label class="form-label" style="margin-bottom:8px;display:block;">Report Title</label><input class="form-input" v-model="bmrReportTitle" placeholder="e.g. Market Report: 1234 Main St NW" style="width:100%;"></div>
+                <div v-if="bmrNoSubject" style="margin-bottom:16px;">
+                  <label class="form-label" style="margin-bottom:10px;display:block;">Offer Price Per Property <span style="font-size:11px;font-weight:400;color:var(--muted);">(optional — leave blank for AI guidance only)</span></label>
+                  <div v-for="(prop, i) in [...(bmrAnalysis?.subject?.address?[bmrAnalysis.subject]:[]), ...(bmrAnalysis?.comps||[])]" :key="i" style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+                    <span style="font-size:12px;font-weight:700;color:var(--navy);min-width:90px;">Property {{ i+1 }}</span>
+                    <span style="font-size:12px;color:var(--muted);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ prop.address }}</span>
+                    <input class="form-input" v-model="bmrCompareOffers[i]" placeholder="e.g. $2,200,000" style="width:160px;flex-shrink:0;">
+                  </div>
+                </div>
 
                 <div>
                   <label class="form-label" style="margin-bottom:8px;display:block;">Offer Terms <span style="font-size:11px;font-weight:400;color:var(--muted);">(check all that apply)</span></label>
@@ -6706,7 +6714,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (ldLoading.value)    return 'Writing listing description…';
       if (ldSaving.value)     return 'Saving description to property…';
       if (Object.values(lstUploading).some(Boolean))  return 'Uploading file…';
-      if (Object.values(byrUploading || {}).some(Boolean)) return 'Uploading file…';
+      if (Object.values(byrUploading.value || {}).some(Boolean)) return 'Uploading file…';
       if (lstSubmitting.value) return 'Submitting to FORWARD pipeline…';
       if (lstDeleting.value)  return 'Deleting property…';
       return null;
@@ -11663,7 +11671,8 @@ No markdown. Valid JSON only.`;
       bmrRegenerating.value=false;
     }
     async function bmrDeploy(){
-      if(!bmrAnalysis.value||!bmrClientName.value||!bmrOfferPrice.value||!bmrReportTitle.value)return;
+      if(!bmrAnalysis.value||!bmrClientName.value)return;
+      if(!bmrNoSubject.value&&(!bmrOfferPrice.value||!bmrReportTitle.value))return;
       bmrDeploying.value=true; bmrDeployError.value='';
       try{
         const tok=SUPABASE_ANON_KEY;
