@@ -11664,9 +11664,16 @@ No markdown. Valid JSON only.`;
         const aName=agentName.value||'';
         const ctrl2=new AbortController(); const tid2=setTimeout(()=>ctrl2.abort(),120000);
         let res;
+        const _candidates = bmrNoSubject.value
+          ? [...(bmrAnalysis.value.subject?.address?[bmrAnalysis.value.subject]:[]), ...bmrAnalysis.value.comps]
+              .map((c,i)=>({...c, suggested_offer: bmrCompareOffers.value[i]||''}))
+          : null;
+        const _payload = bmrNoSubject.value
+          ? {comparison_mode:true, candidates:_candidates, client_name:bmrClientName.value, agent_name:aName, agent_email:AGENT_EMAILS[aName]||'', agent_phone:AGENT_PHONES[aName]||'', report_title:bmrReportTitle.value, market_conditions:bmrMarketConditions.value, offer_terms:bmrOfferTerms.value}
+          : {analysis:bmrAnalysis.value, offer_price:bmrOfferPrice.value, offer_terms:bmrOfferTerms.value, client_name:bmrClientName.value, agent_name:aName, agent_email:AGENT_EMAILS[aName]||'', agent_phone:AGENT_PHONES[aName]||'', report_title:bmrReportTitle.value, market_conditions:bmrMarketConditions.value, subject_dom:parseInt(bmrSubjectDom.value)||0};
         try{ res=await fetch(CC_RAILWAY_URL+'/api/buyer-report/deploy',{
           method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok},
-          body:JSON.stringify({analysis:bmrAnalysis.value,offer_price:bmrOfferPrice.value,offer_terms:bmrOfferTerms.value,client_name:bmrClientName.value,agent_name:aName,agent_email:AGENT_EMAILS[aName]||'',agent_phone:AGENT_PHONES[aName]||'',report_title:bmrReportTitle.value,market_conditions:bmrMarketConditions.value,subject_dom:parseInt(bmrSubjectDom.value)||0}),
+          body:JSON.stringify(_payload),
           signal:ctrl2.signal}); }
         catch(fe){ if(fe.name==='AbortError') throw new Error('Deploy timed out — please try again.'); throw fe; }
         finally{ clearTimeout(tid2); }
