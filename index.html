@@ -2934,8 +2934,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                 </div>
                 <div v-if="bmrNoSubject" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 16px;margin-bottom:14px;">
-                  <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">No subject property designated</div>
-                  <div style="font-size:12px;color:#713f12;line-height:1.6;">The buyer is still evaluating options. Click <strong>▶ Use as Subject</strong> on any listing below to designate it as the property you're analyzing — the others will become comps.</div>
+                  <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
+                  <div style="font-size:12px;color:#713f12;line-height:1.6;">Claude will generate <strong>individual offer guidance</strong> for each property below — perfect when your buyer is still deciding. To switch to single-property mode, click <strong>Use as Subject</strong> on any listing.</div>
                 </div>
                 <div :style="{opacity:bmrNoSubject?0.4:'1',pointerEvents:bmrNoSubject?'none':'auto'}">
                   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
@@ -2987,24 +2987,30 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <input class="form-input" type="number" min="0" v-model="bmrSubjectDom" placeholder="e.g. 5" style="width:100%;">
                   </div>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Market Narrative</h3>
-                  <div style="display:flex;align-items:center;gap:8px;">
-                    <button class="btn-secondary" @click="bmrRegenerate" :disabled="bmrRegenerating" style="font-size:13px;padding:10px 18px;white-space:nowrap;font-weight:600;">
-                      <span v-if="bmrRegenerating">⏳ Regenerating…</span>
-                      <span v-else>↻ Regenerate from Comps</span>
-                    </button>
-                    <span v-if="bmrLastRegen" style="font-size:11px;color:#166534;background:#dcfce7;padding:3px 10px;border-radius:20px;white-space:nowrap;">✓ Updated {{ bmrLastRegen }}</span>
+                <template v-if="!bmrNoSubject">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Market Narrative</h3>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <button class="btn-secondary" @click="bmrRegenerate" :disabled="bmrRegenerating" style="font-size:13px;padding:10px 18px;white-space:nowrap;font-weight:600;">
+                        <span v-if="bmrRegenerating">⏳ Regenerating…</span>
+                        <span v-else>↻ Regenerate from Comps</span>
+                      </button>
+                      <span v-if="bmrLastRegen" style="font-size:11px;color:#166534;background:#dcfce7;padding:3px 10px;border-radius:20px;white-space:nowrap;">✓ Updated {{ bmrLastRegen }}</span>
+                    </div>
                   </div>
+                  <div v-if="bmrRegenError" style="color:#dc2626;font-size:12px;margin-bottom:8px;">{{ bmrRegenError }}</div>
+                  <textarea class="form-input" v-model="bmrAnalysis.narrative" rows="5" style="width:100%;resize:vertical;"></textarea>
+                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
+                  <textarea class="form-input" v-model="bmrAnalysis.offer_guidance" rows="4" style="width:100%;resize:vertical;"></textarea>
+                </template>
+                <div v-if="bmrNoSubject" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;padding:16px 20px;margin-top:4px;">
+                  <p style="margin:0 0 6px;font-weight:700;color:#92400e;font-size:13px;">Independent Analysis Mode</p>
+                  <p style="margin:0;font-size:12px;color:#78350f;line-height:1.6;">Claude will generate personalized offer guidance for <strong>each property individually</strong> — no subject comparison needed. Review the properties above, then continue to set offer details for each one.</p>
                 </div>
-                <div v-if="bmrRegenError" style="color:#dc2626;font-size:12px;margin-bottom:8px;">{{ bmrRegenError }}</div>
-                <textarea class="form-input" v-model="bmrAnalysis.narrative" rows="5" style="width:100%;resize:vertical;"></textarea>
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
-                <textarea class="form-input" v-model="bmrAnalysis.offer_guidance" rows="4" style="width:100%;resize:vertical;"></textarea>
               </div>
-              <div style="display:flex;gap:12px;">
-                <button class="btn-secondary" @click="bmrStep=1">← Back</button>
-                <button class="btn-primary" style="flex:1;" :disabled="bmrNoSubject" :title="bmrNoSubject?'Select a subject property first':''" @click="bmrStep=3">{{ bmrNoSubject ? "Select a subject property to continue" : "Continue to Offer Details →" }}</button>
+              <div style="display:flex;gap:12px;padding-top:8px;padding-bottom:4px;">
+                <button @click="bmrStep=1" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;white-space:nowrap;">← BACK</button>
+                <button style="flex:1;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;" @click="bmrStep=3">{{ bmrNoSubject ? "COMPARE ALL PROPERTIES →" : "CONTINUE TO OFFER DETAILS →" }}</button>
               </div>
             </template>
             <!-- STEP 3 -->
