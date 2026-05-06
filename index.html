@@ -2902,9 +2902,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <input ref="bmrFileInput" type="file" accept=".pdf,application/pdf" style="display:none" @change="e=>bmrFile=e.target.files[0]">
                 </div>
                 <div v-if="bmrUploadError" style="color:#dc2626;font-size:13px;margin-top:12px;">{{ bmrUploadError }}</div>
-                <button class="btn-primary" style="margin-top:24px;width:100%;" :disabled="!bmrFile||bmrAnalyzing" @click="bmrAnalyze">
-                  <span v-if="bmrAnalyzing">⏳ Analyzing PDF with Claude… this may take 30–60 seconds</span>
-                  <span v-else>🔍 Analyze PDF</span>
+                <button :disabled="!bmrFile||bmrAnalyzing" @click="bmrAnalyze" style="margin-top:24px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:16px 24px;cursor:pointer;" :style="{opacity:(!bmrFile||bmrAnalyzing)?0.5:1}">
+                  <span v-if="bmrAnalyzing" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <span style="width:14px;height:14px;border:2px solid rgba(200,169,110,0.3);border-top-color:var(--gold);border-radius:50%;display:inline-block;animation:spin 0.7s linear infinite;"></span>
+                    ANALYZING PDF… THIS MAY TAKE 30–60 SECONDS
+                  </span>
+                  <span v-else>ANALYZE PDF →</span>
                 </button>
               </div>
             </template>
@@ -3055,32 +3058,44 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div v-if="bmrDeployError" style="color:#dc2626;font-size:13px;margin-bottom:12px;">{{ bmrDeployError }}</div>
+              <div v-if="bmrDeploying" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:14px 18px;margin-bottom:12px;">
+                <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:6px;">Claude is analyzing your properties…</div>
+                <div style="font-size:11px;color:#0284c7;line-height:1.7;">
+                  ✦ Reading market conditions and property specs<br>
+                  ✦ Calculating adjusted offer ranges using UAD methodology<br>
+                  ✦ Generating client-ready report and deploying to the web<br>
+                  <span style="opacity:0.7;">This typically takes 30–90 seconds — do not close this tab.</span>
+                </div>
+              </div>
               <div style="display:flex;gap:12px;padding:20px 0 8px;border-top:1px solid var(--border);margin-top:8px;">
                 <button @click="bmrStep=2" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;white-space:nowrap;">← BACK</button>
                 <button :disabled="!bmrClientName||(!bmrNoSubject&&(!bmrOfferPrice||!bmrReportTitle))||!bmrDisclaimerAck||bmrDeploying" @click="bmrDeploy" style="flex:1;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;opacity:1;" :style="{opacity:(!bmrClientName||(!bmrNoSubject&&(!bmrOfferPrice||!bmrReportTitle))||!bmrDisclaimerAck||bmrDeploying)?0.45:1}">
-                  <span v-if="bmrDeploying">GENERATING REPORT…</span>
+                  <span v-if="bmrDeploying" style="display:flex;align-items:center;justify-content:center;gap:10px;">
+                    <span style="width:14px;height:14px;border:2px solid rgba(200,169,110,0.3);border-top-color:var(--gold);border-radius:50%;display:inline-block;animation:spin 0.7s linear infinite;"></span>
+                    GENERATING REPORT… THIS TAKES 30–90 SECONDS
+                  </span>
                   <span v-else>{{ bmrNoSubject ? "GENERATE COMPARISON REPORT →" : "GENERATE &amp; DEPLOY REPORT →" }}</span>
                 </button>
               </div>
             </template>
             <!-- STEP 4 -->
             <template v-if="bmrStep===4 && bmrResult">
-              <div class="card" style="padding:32px;text-align:center;">
-                <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-                <h2 style="font-size:22px;font-weight:700;color:var(--navy);margin-bottom:8px;">Report Ready!</h2>
-                <p style="color:var(--muted);font-size:14px;margin-bottom:24px;">Your buyer market report has been deployed and is ready to share.</p>
+              <div class="card" style="padding:40px 32px;text-align:center;">
+                <div style="font-size:40px;margin-bottom:16px;">🎉</div>
+                <div style="font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:700;color:var(--navy);margin-bottom:8px;">Report Ready</div>
+                <p style="color:var(--muted);font-size:13px;margin-bottom:28px;letter-spacing:0.02em;">Your buyer market report has been deployed and is ready to share.</p>
                 <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:24px;word-break:break-all;">
                   <div style="font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px;">Report URL</div>
                   <a :href="bmrResult.url" target="_blank" style="font-size:14px;font-weight:600;color:var(--navy);text-decoration:underline;">{{ bmrResult.url }}</a>
                 </div>
                 <div style="font-size:12px;color:var(--muted);margin-bottom:24px;">Expires: {{ bmrResult.expires_at ? new Date(bmrResult.expires_at).toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}) : '90 days' }}</div>
-                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
-                  <button class="btn-primary" @click="bmrCopyLink">{{ bmrCopied ? '✅ Copied!' : '📋 Copy Link' }}</button>
-                  <button class="btn-secondary" @click="bmrOpenEmail">✉️ Open Email</button>
-                  <a :href="bmrResult.url" target="_blank" class="btn-secondary" style="text-decoration:none;">🔗 Open Report</a>
+                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+                  <button @click="bmrCopyLink" style="background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px 22px;cursor:pointer;">{{ bmrCopied ? '✓ COPIED!' : 'COPY LINK' }}</button>
+                  <button @click="bmrOpenEmail" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px 22px;cursor:pointer;">OPEN EMAIL</button>
+                  <a :href="bmrResult.url" target="_blank" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px 22px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;">OPEN REPORT</a>
                 </div>
                 <div style="margin-top:28px;padding-top:24px;border-top:1px solid var(--border);">
-                  <button class="btn-secondary" @click="bmrReset">+ Create Another Report</button>
+                  <button @click="bmrReset" style="background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:12px 22px;cursor:pointer;">+ CREATE ANOTHER REPORT</button>
                 </div>
               </div>
             </template>
