@@ -2940,14 +2940,37 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
                   <div style="font-size:12px;color:#713f12;line-height:1.6;">Claude will generate <strong>individual offer guidance</strong> for each property below — perfect when your buyer is still deciding. To switch to single-property mode, click <strong>Use as Subject</strong> on any listing.</div>
                 </div>
-                <div>
-                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
+                <!-- In no-subject mode: render subject like a numbered comp card -->
+                <template v-if="bmrNoSubject">
+                  <div style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:4px;">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                      <span style="font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">1</span>
+                      <input class="form-input" v-model="bmrAnalysis.subject.address" style="flex:1;font-weight:600;min-width:0;" placeholder="Property address">
+                    </div>
+                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
+                      <div v-for="(lbl,k) in {status:'Status',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price',sale_price:'Sale Price',dom:'DOM',ls_ratio:'L/S Ratio'}" :key="k">
+                        <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">
+                          {{ lbl }}
+                          <span v-if="k==='dom'" title="If relisted, enter as current/total (e.g. 84/285 means 84 days this listing, 285 total history)" style="cursor:help;opacity:0.6;margin-left:2px;">ⓘ</span>
+                        </label>
+                        <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
+                          <input class="form-input" v-model="bmrAnalysis.subject[k]" style="width:100%;"><span :class="bmrLsPillClass(bmrAnalysis.subject.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ bmrAnalysis.subject.ls_ratio || '—' }}</span>
+                        </div>
+                        <input v-else class="form-input" v-model="bmrAnalysis.subject[k]" style="width:100%;">
+                      </div>
+                      <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="bmrAnalysis.subject.notes" style="width:100%;"></div>
+                    </div>
+                  </div>
+                </template>
+                <!-- In subject mode: compact field grid as before, but now with all fields -->
+                <template v-else>
+                  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;">
                     <div v-for="(fld,key) in {address:'Address',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price'}" :key="key">
                       <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">{{ fld }}</label>
                       <input class="form-input" v-model="bmrAnalysis.subject[key]" style="width:100%;">
                     </div>
                   </div>
-                </div>
+                </template>
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
                 <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Additional Properties" : "Comparable Sales" }} <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
@@ -2963,7 +2986,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;">
                     <div v-for="(lbl,k) in {status:'Status',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price',sale_price:'Sale Price',dom:'DOM',ls_ratio:'L/S Ratio'}" :key="k">
-                      <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">{{ lbl }}</label>
+                      <label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">{{ lbl }}<span v-if="k==='dom'" title="If relisted, enter as current/total (e.g. 84/285 = 84 days this listing, 285 total history)" style="cursor:help;opacity:0.6;margin-left:2px;">ⓘ</span></label>
                       <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
                         <input class="form-input" v-model="comp[k]" style="width:100%;"><span :class="bmrLsPillClass(comp.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ comp.ls_ratio || '—' }}</span>
                       </div>
