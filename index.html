@@ -2214,11 +2214,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;">
                   <div class="form-row" style="margin:0;">
                     <label>First Name</label>
-                    <input type="text" :value="byrActiveBuyer.first_name||''" @blur="byrUpdateProfile('first_name',$event.target.value||null)" placeholder="e.g. Sarah" style="font-size:13px;padding:8px 10px;">
+                    <input type="text" :value="byrActiveBuyer.first_name||(byrActiveBuyer.buyer_name?byrActiveBuyer.buyer_name.trim().split(' ')[0]:'')" @blur="byrUpdateProfile('first_name',$event.target.value||null)" placeholder="e.g. Sarah" style="font-size:13px;padding:8px 10px;">
                   </div>
                   <div class="form-row" style="margin:0;">
                     <label>Last Name</label>
-                    <input type="text" :value="byrActiveBuyer.last_name||''" @blur="byrUpdateProfile('last_name',$event.target.value||null)" placeholder="e.g. Thompson" style="font-size:13px;padding:8px 10px;">
+                    <input type="text" :value="byrActiveBuyer.last_name||(byrActiveBuyer.buyer_name?byrActiveBuyer.buyer_name.trim().split(' ').slice(1).join(' '):'')" @blur="byrUpdateProfile('last_name',$event.target.value||null)" placeholder="e.g. Thompson" style="font-size:13px;padding:8px 10px;">
                   </div>
                   <div class="form-row" style="margin:0;">
                     <label>Email</label>
