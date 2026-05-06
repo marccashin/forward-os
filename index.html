@@ -2937,7 +2937,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
                   <div style="font-size:12px;color:#713f12;line-height:1.6;">Claude will generate <strong>individual offer guidance</strong> for each property below — perfect when your buyer is still deciding. To switch to single-property mode, click <strong>Use as Subject</strong> on any listing.</div>
                 </div>
-                <div :style="{opacity:bmrNoSubject?0.4:'1',pointerEvents:bmrNoSubject?'none':'auto'}">
+                <div>
                   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;">
                     <div v-for="(fld,key) in {address:'Address',beds:'Beds',baths:'Baths',sqft:'Sq Ft',list_price:'List Price'}" :key="key">
                       <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">{{ fld }}</label>
@@ -3008,7 +3008,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <p style="margin:0;font-size:12px;color:#78350f;line-height:1.6;">Claude will generate personalized offer guidance for <strong>each property individually</strong> — no subject comparison needed. Review the properties above, then continue to set offer details for each one.</p>
                 </div>
               </div>
-              <div style="display:flex;gap:12px;padding-top:8px;padding-bottom:4px;">
+              <div style="display:flex;gap:12px;padding:20px 0 8px;border-top:1px solid var(--border);margin-top:8px;">
                 <button @click="bmrStep=1" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;white-space:nowrap;">← BACK</button>
                 <button style="flex:1;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;" @click="bmrStep=3">{{ bmrNoSubject ? "COMPARE ALL PROPERTIES →" : "CONTINUE TO OFFER DETAILS →" }}</button>
               </div>
@@ -3047,11 +3047,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div v-if="bmrDeployError" style="color:#dc2626;font-size:13px;margin-bottom:12px;">{{ bmrDeployError }}</div>
-              <div style="display:flex;gap:12px;">
-                <button class="btn-secondary" @click="bmrStep=2">← Back</button>
-                <button class="btn-primary" style="flex:1;" :disabled="!bmrClientName||!bmrOfferPrice||!bmrReportTitle||!bmrDisclaimerAck||bmrDeploying" @click="bmrDeploy">
-                  <span v-if="bmrDeploying">⏳ Generating &amp; deploying report…</span>
-                  <span v-else>🚀 Generate &amp; Deploy Report</span>
+              <div style="display:flex;gap:12px;padding:20px 0 8px;border-top:1px solid var(--border);margin-top:8px;">
+                <button @click="bmrStep=2" style="background:transparent;color:var(--navy);border:2px solid var(--navy);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;white-space:nowrap;">← BACK</button>
+                <button :disabled="!bmrClientName||(!bmrNoSubject&&(!bmrOfferPrice||!bmrReportTitle))||!bmrDisclaimerAck||bmrDeploying" @click="bmrDeploy" style="flex:1;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px 24px;cursor:pointer;opacity:1;" :style="{opacity:(!bmrClientName||(!bmrNoSubject&&(!bmrOfferPrice||!bmrReportTitle))||!bmrDisclaimerAck||bmrDeploying)?0.45:1}">
+                  <span v-if="bmrDeploying">GENERATING REPORT…</span>
+                  <span v-else>{{ bmrNoSubject ? "GENERATE COMPARISON REPORT →" : "GENERATE &amp; DEPLOY REPORT →" }}</span>
                 </button>
               </div>
             </template>
@@ -11402,7 +11402,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaved = ref(false);
 
     // ── Buyer Market Report state ──────────────────────────────────────────
-    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false);
+    const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false),bmrCompareOffers=ref({});
     const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref(''),bmrLastRegen=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
@@ -14202,7 +14202,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskModalShow, overdueTasks, daysOverdue,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
-      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrSetAsSubject,
+      bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
