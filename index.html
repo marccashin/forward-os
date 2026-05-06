@@ -2956,7 +2956,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
                           <input class="form-input" v-model="bmrAnalysis.subject[k]" style="width:100%;"><span :class="bmrLsPillClass(bmrAnalysis.subject.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ bmrAnalysis.subject.ls_ratio || '—' }}</span>
                         </div>
-                        <input v-else class="form-input" v-model="bmrAnalysis.subject[k]" style="width:100%;">
+                        <input v-else class="form-input" v-model="bmrAnalysis.subject[k]"
+                          :placeholder="k==='dom'?'e.g. 5 or 84/285':k==='status'?'Active':k==='sale_price'?'If sold':''"
+                          style="width:100%;">
                       </div>
                       <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="bmrAnalysis.subject.notes" style="width:100%;"></div>
                     </div>
@@ -2990,7 +2992,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div v-if="k==='ls_ratio'" style="display:flex;align-items:center;gap:6px;">
                         <input class="form-input" v-model="comp[k]" style="width:100%;"><span :class="bmrLsPillClass(comp.ls_ratio)" style="padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;white-space:nowrap;">{{ comp.ls_ratio || '—' }}</span>
                       </div>
-                      <input v-else class="form-input" v-model="comp[k]" style="width:100%;">
+                      <input v-else class="form-input" v-model="comp[k]"
+                        :placeholder="k==='dom'?'e.g. 5 or 84/285':''"
+                        style="width:100%;">
                     </div>
                     <div><label style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px;">Notes</label><input class="form-input" v-model="comp.notes" style="width:100%;"></div>
                   </div>
@@ -3008,7 +3012,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <option value="war">Bidding War / Multiple Offers</option>
                     </select>
                   </div>
-                  <div>
+                  <div v-if="!bmrNoSubject">
                     <label style="font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:4px;">Subject Days on Market</label>
                     <input class="form-input" type="number" min="0" v-model="bmrSubjectDom" placeholder="e.g. 5" style="width:100%;">
                   </div>
