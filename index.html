@@ -4403,11 +4403,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <textarea v-model="campSpecialInstructions" placeholder="e.g. Skip broker's open, photography already scheduled, focus heavily on equestrian buyer personas..." style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;resize:vertical;min-height:56px;font-family:inherit;box-sizing:border-box;"></textarea>
                 </div>
               </div>
-              <div v-if="!lstNotes.listing_remarks" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
+              <div v-if="!ldSavedToProperty" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
                 ⚠️ No listing description saved yet — add one in the Listing Description tool above first.
               </div>
               <div style="padding:16px 18px;">
-                <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
+                <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !ldSavedToProperty" class="camp-generate-btn" :style="{opacity: campGenerating || !ldSavedToProperty ? 0.55 : 1}">
                   <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
                 <div v-if="campGenerating" style="margin-top:12px;background:var(--navy);border-radius:2px;padding:14px 16px;">
@@ -8190,7 +8190,7 @@ async function lstSubmitToPipeline() {
           const fileName = 'Listing-Description-' + prop.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') + '.pdf';
           const blob = buildTextPDF('Listing Description', 'Listing Description — ' + prop.address, text);
           // Also store in property_notes for in-app recall
-          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); } catch {}
+          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); lstNotes.listing_remarks = text; } catch {}
           const formData = new FormData();
           formData.append('file', blob, fileName);
           formData.append('folder_id', folderId);
