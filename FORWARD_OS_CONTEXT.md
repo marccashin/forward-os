@@ -15,7 +15,8 @@ A Vue 3 SPA (single-file, no build step) for real estate agents.
 
 | Service | Purpose | Details |
 |---|---|---|
-| Netlify | Hosting | Site ID: 7bcc28c5-97d0-4673-abda-309325eac663 |
+| Netlify (prod) | Hosting | Site ID: 7bcc28c5-97d0-4673-abda-309325eac663 — forward-os.netlify.app |
+| Netlify (staging) | Staging | Site ID: de05641c-5a1f-4a72-adbb-2c8ee507293d — forward-os-staging.netlify.app |
 | Supabase | Database | Project: forward-marketing-os (ID: ewedrgopezogifzysusn) |
 | Railway | Python backend | RAILWAY_URL in index.html |
 | Google Drive | LOTA video uploads + client file storage | OAuth via marc@marccashin.com |
@@ -35,14 +36,22 @@ The function at `/.netlify/functions/github-push`:
 - App ID: 3382390 | Installation ID: 124051198
 - Netlify env vars: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (base64 PEM)
 
-### Standard push workflow (from Claude Code / Cowork shell)
+### Staging vs Production workflow (set up in Chat 21)
+- **Always push to `staging` branch first** → auto-deploys to forward-os-staging.netlify.app
+- **Test on staging** → verify nothing broke
+- **Merge staging → main** via GitHub PR → auto-deploys to forward-os.netlify.app (production)
+
+### Standard push workflow (from Cowork shell) — push to STAGING
 ```bash
-cd /tmp && git clone https://github.com/marccashin/forward-os.git
+cd /tmp && git clone -b staging https://github.com/marccashin/forward-os.git
 # edit index.html via Python scripts
 cd forward-os && git config user.email "marc@marccashin.com" && git config user.name "Marc Cashin"
 git remote set-url origin https://marccashin:GITHUB_PAT@github.com/marccashin/forward-os.git
-git add index.html && git commit -m "describe change" && git push origin main
+git add index.html && git commit -m "describe change" && git push origin staging
 ```
+
+### Promoting staging → production
+On GitHub: open a PR from `staging` → `main`, merge it. Netlify auto-deploys in ~30 sec.
 
 ### CRITICAL: Use Python substring/replace scripts for edits — never hand-edit 13k line files.
 ### CRITICAL: Verify replacements were applied with grep/python checks before pushing.
@@ -359,7 +368,30 @@ bmrLastRegen        = ref('')          // timestamp of last successful regenerat
 
 **Regenerate JS uses `Object.assign({}, bmrAnalysis.value, {...})` to force Vue reactivity on update.**
 
-#### Common Pitfalls (BMR-specific)
+##### Chat 21 (May 7, 2026) — Staging Environment Setup
+
+#### Summary
+Set up a full staging environment to catch regressions before they hit production.
+
+**1. `staging` branch created** from `main` on GitHub.
+
+**2. `forward-os-staging.netlify.app` Netlify site created**
+- Deploys from the `staging` branch
+- All 14 env vars copied from production (GITHUB_APP_ID, GITHUB_APP_PRIVATE_KEY, RESEND_API_KEY, RESEND_FROM, SUPABASE_SERVICE_KEY, GOOGLE_MAPS_PLACES_KEY, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN, BRIGHT_MLS_PASSWORD, BRIGHT_MLS_USER_ID, GITHUB_TOKEN, VITE_SUPABASE_ANON_KEY, VITE_SUPABASE_URL, VITE_PIPELINE_WEBHOOK_URL)
+- `DEPLOY_BRANCH=staging` env var added so the github-push function targets the right branch
+
+**3. `github-push` Netlify function made branch-aware**
+- Now reads `process.env.DEPLOY_BRANCH || 'main'`
+- 4 changes: branch var at top of handler; `heads/${branch}` in get-sha; `?ref=${branch}` on contents GET; `branch` field added to PUT body
+- Production has no `DEPLOY_BRANCH` set → defaults to `main` (unchanged behavior)
+- Staging has `DEPLOY_BRANCH=staging` → pushes land on `staging` branch
+
+#### Key IDs
+- Staging Netlify site ID: `de05641c-5a1f-4a72-adbb-2c8ee507293d`
+- Production Netlify site ID: `7bcc28c5-97d0-4673-abda-309325eac663`
+- Netlify account ID: `69b17ee12548de114ff82132`
+
+## Common Pitfalls (BMR-specific)
 - Railway sandbox proxy blocks `railway.app` — can never verify Railway health from Cowork shell. HTTP 000 always means proxy block, not Railway down.
 - Python 3.11 f-string restriction: can't use same quote type inside expression as outer f-string. Use single-quoted outer f-strings with double-quoted inner dict keys.
 - Pydantic v2 on Railway — required fields (no default) must come BEFORE optional fields (with defaults) in model class body.
