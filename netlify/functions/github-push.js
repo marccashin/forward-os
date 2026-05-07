@@ -76,6 +76,7 @@ exports.handler = async (event) => {
     return { statusCode: 405, headers: corsHeaders, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
+  const branch = process.env.DEPLOY_BRANCH || 'main';
   const appId = process.env.GITHUB_APP_ID;
   const rawKey = process.env.GITHUB_APP_PRIVATE_KEY || '';
   if (!appId || !rawKey) {
@@ -112,7 +113,7 @@ exports.handler = async (event) => {
     const token = await getInstallationToken(appId, privateKey);
 
     if (action === 'get-sha') {
-      const refRes = await apiCall('GET', `/repos/${repo}/git/ref/heads/main`, token);
+      const refRes = await apiCall('GET', `/repos/${repo}/git/ref/heads/${branch}`, token);
       if (refRes.status !== 200) throw new Error('Bad ref: ' + JSON.stringify(refRes.data));
       const commitSha = refRes.data.object.sha;
       const commitRes = await apiCall('GET', `/repos/${repo}/git/commits/${commitSha}`, token);
@@ -131,11 +132,11 @@ exports.handler = async (event) => {
 
     let sha = bodySha;
     if (!sha) {
-      const metaRes = await apiCall('GET', `/repos/${repo}/contents/${filename}`, token);
+      const metaRes = await apiCall('GET', `/repos/${repo}/contents/${filename}?ref=${branch}`, token);
       if (metaRes.status === 200) sha = metaRes.data.sha;
     }
 
-    const putBody = { message, content };
+    const putBody = { message, content, branch };
     if (sha) putBody.sha = sha;
 
     const putRes = await apiCall('PUT', `/repos/${repo}/contents/${filename}`, token, putBody);
