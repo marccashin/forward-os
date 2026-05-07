@@ -37,21 +37,33 @@ The function at `/.netlify/functions/github-push`:
 - Netlify env vars: `GITHUB_APP_ID`, `GITHUB_APP_PRIVATE_KEY` (base64 PEM)
 
 ### Staging vs Production workflow (set up in Chat 21)
-- **Always push to `staging` branch first** → auto-deploys to forward-os-staging.netlify.app
-- **Test on staging** → verify nothing broke
-- **Merge staging → main** via GitHub PR → auto-deploys to forward-os.netlify.app (production)
 
-### Standard push workflow (from Cowork shell) — push to STAGING
-```bash
-cd /tmp && git clone -b staging https://github.com/marccashin/forward-os.git
-# edit index.html via Python scripts
-cd forward-os && git config user.email "marc@marccashin.com" && git config user.name "Marc Cashin"
-git remote set-url origin https://marccashin:GITHUB_PAT@github.com/marccashin/forward-os.git
-git add index.html && git commit -m "describe change" && git push origin staging
-```
+**Every change follows this 3-step process — no exceptions:**
 
-### Promoting staging → production
-On GitHub: open a PR from `staging` → `main`, merge it. Netlify auto-deploys in ~30 sec.
+#### STEP 1 — Claude makes the edit and pushes to staging
+Claude edits `index.html` via Python replace scripts and pushes to the `staging` branch.
+This auto-deploys to https://forward-os-staging.netlify.app within ~30 seconds.
+_(You don't do anything here — Claude handles it.)_
+
+#### STEP 2 — You test on staging
+1. Open https://forward-os-staging.netlify.app
+2. Log in as yourself (same credentials as prod)
+3. Navigate to the thing that changed and test it
+4. Check that nothing else broke (click around adjacent features)
+5. Tell Claude: **"looks good"** or **"something broke — [describe it]"**
+
+#### STEP 3 — Promote to production (after you approve)
+1. Go to: https://github.com/marccashin/forward-os/compare/main...staging
+2. Click **"Create pull request"**
+3. Title it anything (e.g. "deploy: [what changed]")
+4. Click **"Create pull request"** again, then **"Merge pull request"**
+5. Wait ~30 seconds → production is live at https://forward-os.netlify.app
+
+**Quick links:**
+- Staging site: https://forward-os-staging.netlify.app
+- Production site: https://forward-os.netlify.app
+- Open staging → main PR: https://github.com/marccashin/forward-os/compare/main...staging
+- GitHub repo: https://github.com/marccashin/forward-os
 
 ### CRITICAL: Use Python substring/replace scripts for edits — never hand-edit 13k line files.
 ### CRITICAL: Verify replacements were applied with grep/python checks before pushing.
