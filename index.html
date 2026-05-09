@@ -651,12 +651,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
 .mo-upload-lbl:hover { background:rgba(200,169,110,.35); }
 .mo-clear-btn { font-family:'Montserrat',sans-serif; font-size:7px; color:rgba(200,169,110,.55); cursor:pointer; background:none; border:none; padding:0; }
-.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; padding:4px 10px; line-height:1.3; }
+.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; padding:3px 10px; line-height:1.3; height:28px; max-height:28px; overflow:hidden; }
 .mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); }
-.mo-td-cell { background:var(--white); cursor:pointer; position:relative; }
+.mo-td-cell { background:var(--white); cursor:pointer; position:relative; height:28px; max-height:28px; overflow:hidden; }
 .mo-td-cell:hover { background:#f5f0e8; }
-.mo-cell-val { font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:3px 8px; min-height:24px; line-height:1.3; word-break:break-word; white-space:pre-wrap; }
-.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:3px 6px; resize:vertical; min-height:24px; box-sizing:border-box; }
+.mo-cell-val { font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:3px 8px; min-height:0; height:22px; line-height:1.3; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:2px 6px; resize:vertical; min-height:28px; box-sizing:border-box; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
@@ -4332,6 +4332,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                               <template v-else>
                                 <label :for="'mo-file-'+n" class="mo-upload-lbl">{{ Object.keys(moOffers[n]||{}).length ? '↺ Re-upload' : '+ Upload PDF' }}</label>
                                 <input :id="'mo-file-'+n" type="file" accept=".pdf,application/pdf" style="display:none" @change="moUploadPDF(n, $event)">
+                                <div v-if="moFileNames[n]" style="font-family:'Cormorant Garamond',serif;font-size:9px;color:rgba(200,169,110,.75);max-width:118px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;margin-top:2px;" :title="moFileNames[n]">{{ moFileNames[n] }}</div>
                                 <button v-if="Object.keys(moOffers[n]||{}).length" class="mo-clear-btn" @click.stop="moClearOffer(n)">Clear</button>
                               </template>
                             </div>
@@ -4357,7 +4358,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
 
                   <!-- Generate Analysis button -->
-                  <div style="margin-top:20px;text-align:center;">
+                  <div style="text-align:center;margin:12px 0 4px;font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;">Click any cell to edit · Upload PDF to auto-fill · Or type directly into any cell</div>
+                  <div style="margin-top:8px;text-align:center;">
                     <button class="camp-generate-btn" @click="moGenerateAnalysis" :disabled="moAnalysisLoading" style="max-width:380px;display:inline-block;">
                       <span v-if="moAnalysisLoading" style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
                         <span class="mo-spinner" style="border-top-color:var(--gold);border-color:rgba(200,169,110,.3);"></span>Analyzing offers…
@@ -6903,6 +6905,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moEditVal         = ref('');
     const moAnalysis        = ref('');
     const moAnalysisLoading = ref(false);
+    const moFileNames      = ref({ 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' });
 
     const moAnalysisParsed = computed(() => {
       const txt = moAnalysis.value;
@@ -6947,6 +6950,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     async function moUploadPDF(n, event) {
       const file = event.target.files?.[0];
       if (!file) return;
+      moFileNames.value[n] = file.name;
       moLoading.value = true;
       try {
         const fd = new FormData();
@@ -6985,8 +6989,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moEditVal.value  = moOffers.value[n]?.[key] ?? '';
     }
 
-    async function moCommitEdit(n, key) {
-      if (moEditCell.value !== `${n}_${key}`) return;
+    async function moCommitEdit() {
+      if (!moEditCell.value) return;
+      const parts = moEditCell.value.split('_');
+      const n = parseInt(parts[0]);
+      const key = parts.slice(1).join('_');
       moOffers.value[n] = { ...moOffers.value[n], [key]: moEditVal.value };
       moEditCell.value = null;
       await moSaveOffer(n);
@@ -7015,7 +7022,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const offers = [];
       for (let n = 1; n <= 6; n++) {
         const o = moOffers.value[n];
-        if (o && Object.keys(o).length) offers.push({ offer_number: n, ...o });
+        if (o && Object.keys(o).length) offers.push({ offer_number: n, offer_data: { ...o } });
       }
       if (!offers.length) { alert('Please upload at least one offer first.'); return; }
       moAnalysisLoading.value = true;
@@ -14570,7 +14577,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // MLS Data Form
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
-      MO_FIELDS, moOffers, moLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading,
+      MO_FIELDS, moOffers, moLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
       moAnalysisParsed, moLoadOffers, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
