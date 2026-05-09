@@ -4381,7 +4381,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- Generate Analysis button -->
                   <div style="text-align:center;margin:12px 0 4px;font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;">Click any cell to edit · Upload PDF to auto-fill · Or type directly into any cell</div>
                   <div style="margin-top:8px;text-align:center;">
-                    <button class="camp-generate-btn" @click="moGenerateAnalysis" :disabled="moAnalysisLoading" style="max-width:380px;display:inline-block;">
+                    <button class="camp-generate-btn" @click="!moAnalysisLoading && moGenerateAnalysis()" :style="{maxWidth:'380px',display:'inline-block',pointerEvents:moAnalysisLoading?'none':'auto',opacity:1}">
                       <span v-if="moAnalysisLoading" style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;justify-content:center;padding:4px 0;">
                         <span style="display:inline-flex;align-items:center;gap:3px;">
                           <span class="mo-wave-bar"></span>
@@ -7013,7 +7013,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const fresh = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
         (rows || []).forEach(r => { fresh[r.offer_number] = r.offer_data || {}; });
         moOffers.value = fresh;
-        moAnalysis.value = '';
       } finally {
         moTableLoading.value = false;
       }
@@ -7192,19 +7191,41 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moAnalysis.value = '';
       moChatMessages.value = [];
       try {
-        const ctrl = new AbortController();
-        const atimer = setTimeout(() => ctrl.abort(), 120000);
-        let res;
-        try { res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            offers,
-            property_address: lstActiveProp.value?.address || '',
-            list_price: lstActiveProp.value?.list_price || '',
-          }),
-          signal: ctrl.signal,
-        }); } finally { clearTimeout(atimer); }
+        // Wake Railway if cold-starting
+        fetch(`${RAILWAY_URL}/health`).catch(() => {});
+        await new Promise(r => setTimeout(r, 500));
+        moStatus.value = 'Connecting to analysis engine…';
+        let res, lastErr;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          if (attempt > 1) {
+            moStatus.value = `Analysis attempt ${attempt}/2 — Railway may be waking up…`;
+            await new Promise(r => setTimeout(r, 15000));
+          }
+          try {
+            const ctrl = new AbortController();
+            const atimer = setTimeout(() => ctrl.abort(), 120000);
+            try {
+              res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  offers,
+                  property_address: lstActiveProp.value?.address || '',
+                  list_price: lstActiveProp.value?.list_price || '',
+                }),
+                signal: ctrl.signal,
+              });
+            } finally { clearTimeout(atimer); }
+            if (res.ok) { lastErr = null; break; }
+            const errJson = await res.json().catch(() => ({}));
+            lastErr = new Error(`Railway error ${res.status}: ${errJson.detail || JSON.stringify(errJson)}`);
+            res = null;
+          } catch(fetchErr) {
+            lastErr = fetchErr;
+            res = null;
+          }
+        }
+        if (lastErr) throw lastErr;
         const json = await res.json();
         if (!res.ok) throw new Error(`Railway error ${res.status}: ${json.detail || JSON.stringify(json)}`);
         if (!json.analysis) throw new Error(`Empty response from analysis service. Raw: ${JSON.stringify(json).slice(0,200)}`);
