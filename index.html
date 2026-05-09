@@ -7081,7 +7081,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moAnalysisLoading.value = true;
       moAnalysis.value = '';
       try {
-        const res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
+        const ctrl = new AbortController();
+        const atimer = setTimeout(() => ctrl.abort(), 120000);
+        let res;
+        try { res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -7089,9 +7092,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             property_address: lstActiveProp.value?.address || '',
             list_price: lstActiveProp.value?.list_price || '',
           }),
-        });
+          signal: ctrl.signal,
+        }); } finally { clearTimeout(atimer); }
         const json = await res.json();
-        moAnalysis.value = json.analysis || 'No analysis returned.';
+        if (!res.ok) throw new Error(`Railway error ${res.status}: ${json.detail || JSON.stringify(json)}`);
+        if (!json.analysis) throw new Error(`Empty response from analysis service. Raw: ${JSON.stringify(json).slice(0,200)}`);
+        moAnalysis.value = json.analysis;
       } catch(e) {
         moAnalysis.value = 'Error generating analysis: ' + e.message;
       } finally {
