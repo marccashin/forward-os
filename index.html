@@ -6939,7 +6939,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     });
 
     // Only show filled columns + the next empty slot (min 2, max 6)
-    const moSlotCount = ref(2); // user-controlled, 2–6
+    const moSlotCount = ref(6); // user-controlled, 2–6
     const moActiveSlots = computed(() => {
       const arr = [];
       for (let n = 1; n <= moSlotCount.value; n++) arr.push(n);
@@ -6964,30 +6964,38 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
     }
 
+    // Serial upload queue — prevents concurrent Railway calls from failing
+    let moUploadQueue = Promise.resolve();
     async function moUploadPDF(n, event) {
       const file = event.target.files?.[0];
       if (!file) return;
       moFileNames.value[n] = file.name;
       moLoading.value[n] = true;
-      try {
-        const fd = new FormData();
-        fd.append('file', file);
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 90000);
-        let res;
-        try { res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd, signal: ctrl.signal }); }
-        finally { clearTimeout(timer); }
-        if (!res.ok) throw new Error(`Server error ${res.status}`);
-        const json = await res.json();
-        if (json.error) throw new Error(json.error);
-        moOffers.value[n] = { ...moOffers.value[n], ...json };
-        await moSaveOffer(n);
-      } catch(e) {
-        alert(`Offer ${n} parse failed: ${e.message === 'The user aborted a request.' ? 'Request timed out — please try again' : e.message}. Try re-uploading the PDF.`);
-      } finally {
-        moLoading.value[n] = false;
-        event.target.value = '';
-      }
+      event.target.value = '';
+      moUploadQueue = moUploadQueue.then(async () => {
+        try {
+          // Wake Railway if cold — best-effort ping
+          fetch(`${RAILWAY_URL}/health`).catch(()=>{});
+          await new Promise(r => setTimeout(r, 300));
+          const fd = new FormData();
+          fd.append('file', file);
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 120000);
+          let res;
+          try { res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd, signal: ctrl.signal }); }
+          finally { clearTimeout(timer); }
+          if (!res.ok) throw new Error(`Server error ${res.status}`);
+          const json = await res.json();
+          if (json.error) throw new Error(json.error);
+          moOffers.value[n] = { ...moOffers.value[n], ...json };
+          await moSaveOffer(n);
+        } catch(e) {
+          const msg = e.message.includes('aborted') ? 'Request timed out — Railway may be starting up. Please re-upload.' : e.message;
+          alert(`Offer ${n}: ${msg}`);
+        } finally {
+          moLoading.value[n] = false;
+        }
+      });
     }
 
     async function moSaveOffer(n) {
