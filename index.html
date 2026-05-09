@@ -4367,9 +4367,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="text-align:center;margin:12px 0 4px;font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;">Click any cell to edit · Upload PDF to auto-fill · Or type directly into any cell</div>
                   <div style="margin-top:8px;text-align:center;">
                     <button class="camp-generate-btn" @click="moGenerateAnalysis" :disabled="moAnalysisLoading" style="max-width:380px;display:inline-block;">
-                      <span v-if="moAnalysisLoading" style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
-                        <span class="mo-spinner" style="border-top-color:var(--gold);border-color:rgba(200,169,110,.3);"></span>
-                        <span>Analyzing offers — this takes 30–60 seconds…</span>
+                      <span v-if="moAnalysisLoading" style="display:inline-flex;flex-direction:column;align-items:center;gap:10px;justify-content:center;padding:4px 0;">
+                        <span style="display:inline-flex;align-items:center;gap:3px;">
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                          <span class="mo-wave-bar"></span>
+                        </span>
+                        <span style="font-size:7.5px;letter-spacing:0.18em;">ANALYZING OFFERS — 30–60 SECONDS</span>
                       </span>
                       <span v-else>✦ Generate Offer Analysis</span>
                     </button>
