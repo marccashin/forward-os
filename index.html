@@ -644,19 +644,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 0 8px; }
 .mo-table { border-collapse:collapse; min-width:760px; width:100%; }
 .mo-table th,.mo-table td { border:1px solid var(--cream-mid); vertical-align:top; }
-.mo-th-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--navy); text-align:left; padding:9px 12px; width:178px; min-width:178px; white-space:normal; }
+.mo-th-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--navy); text-align:left; padding:7px 10px; width:160px; min-width:160px; white-space:normal; }
 .mo-th-offer { background:var(--navy); text-align:center; padding:0; min-width:136px; width:136px; }
 .mo-th-inner { display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 8px; }
 .mo-offer-num { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); }
 .mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
 .mo-upload-lbl:hover { background:rgba(200,169,110,.35); }
 .mo-clear-btn { font-family:'Montserrat',sans-serif; font-size:7px; color:rgba(200,169,110,.55); cursor:pointer; background:none; border:none; padding:0; }
-.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:8px; font-weight:600; color:var(--navy); letter-spacing:0.04em; padding:7px 12px; line-height:1.35; }
+.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; padding:4px 10px; line-height:1.3; }
 .mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); }
 .mo-td-cell { background:var(--white); cursor:pointer; position:relative; }
 .mo-td-cell:hover { background:#f5f0e8; }
-.mo-cell-val { font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--navy); padding:7px 10px; min-height:33px; line-height:1.35; word-break:break-word; white-space:pre-wrap; }
-.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--navy); padding:6px 8px; resize:vertical; min-height:33px; box-sizing:border-box; }
+.mo-cell-val { font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:3px 8px; min-height:24px; line-height:1.3; word-break:break-word; white-space:pre-wrap; }
+.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:3px 6px; resize:vertical; min-height:24px; box-sizing:border-box; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
@@ -4390,6 +4390,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div class="mo-analysis-txt" style="color:#14532d;">{{ moAnalysisParsed.talking }}</div>
                     </div>
                   </div>
+                  <!-- Raw output fallback if parsing fails or Railway error -->
+                  <div v-else-if="moAnalysis && !moAnalysisLoading" style="margin-top:14px;padding:14px 16px;background:#fff8f0;border:1px solid var(--gold-muted);border-radius:2px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.6;">{{ moAnalysis }}</div>
 
                 </div>
               </div>
@@ -6905,25 +6907,26 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moAnalysisParsed = computed(() => {
       const txt = moAnalysis.value;
       if (!txt) return null;
-      const sections = [
-        { id: 'strongest',  label: '\uD83C\uDFC6 Strongest Offer',                       marker: '---STRONGEST OFFER---' },
-        { id: 'likelihood', label: '\uD83D\uDCCA Likelihood to Close',                    marker: '---LIKELIHOOD TO CLOSE---' },
-        { id: 'counter',    label: '\uD83D\uDD04 Counter Strategy',                       marker: '---COUNTER STRATEGY---' },
-        { id: 'talking',    label: '\uD83D\uDCAC Talking Points for Seller Conversation',  marker: '---TALKING POINTS FOR SELLER CONVERSATION---' },
-      ];
-      const result = [];
-      for (let i = 0; i < sections.length; i++) {
-        const s = sections[i];
-        const start = txt.indexOf(s.marker);
-        if (start === -1) continue;
-        const contentStart = start + s.marker.length;
-        const nextMarker = i < sections.length - 1 ? txt.indexOf(sections[i+1].marker) : -1;
-        const content = nextMarker !== -1
-          ? txt.slice(contentStart, nextMarker).trim()
+      const markers = {
+        strongest:  '---STRONGEST OFFER---',
+        likelihood: '---LIKELIHOOD TO CLOSE---',
+        counter:    '---COUNTER STRATEGY---',
+        talking:    '---TALKING POINTS FOR SELLER CONVERSATION---',
+      };
+      const keys = Object.keys(markers);
+      const result = {};
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+        const start = txt.indexOf(markers[key]);
+        if (start === -1) { result[key] = ''; continue; }
+        const contentStart = start + markers[key].length;
+        const nextKey = keys[i + 1];
+        const nextIdx = nextKey ? txt.indexOf(markers[nextKey]) : -1;
+        result[key] = nextIdx !== -1
+          ? txt.slice(contentStart, nextIdx).trim()
           : txt.slice(contentStart).trim();
-        result.push({ id: s.id, label: s.label, content });
       }
-      return result.length ? result : null;
+      return result.strongest || result.likelihood ? result : null;
     });
 
     async function moLoadOffers() {
