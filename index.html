@@ -640,6 +640,31 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .camp-pill label { font-family:'Montserrat',sans-serif; font-size:8px; color:var(--navy); cursor:pointer; background:var(--cream); padding:5px 12px; border-radius:1px; border:1px solid var(--cream-dark); display:flex; align-items:center; gap:5px; }
 .camp-pill label:hover { border-color:var(--gold-muted); }
 .camp-generate-btn { width:100%; padding:15px; background:var(--navy); color:var(--gold); border:none; border-radius:2px; font-family:'Montserrat',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; transition:background 0.15s; }
+/* ── Multiple Offers Grid ─────────────────────────────────────────────── */
+.mo-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 0 8px; }
+.mo-table { border-collapse:collapse; min-width:760px; width:100%; }
+.mo-table th,.mo-table td { border:1px solid var(--cream-mid); vertical-align:top; }
+.mo-th-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--navy); text-align:left; padding:9px 12px; width:178px; min-width:178px; white-space:normal; }
+.mo-th-offer { background:var(--navy); text-align:center; padding:0; min-width:136px; width:136px; }
+.mo-th-inner { display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 8px; }
+.mo-offer-num { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); }
+.mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
+.mo-upload-lbl:hover { background:rgba(200,169,110,.35); }
+.mo-clear-btn { font-family:'Montserrat',sans-serif; font-size:7px; color:rgba(200,169,110,.55); cursor:pointer; background:none; border:none; padding:0; }
+.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:8px; font-weight:600; color:var(--navy); letter-spacing:0.04em; padding:7px 12px; line-height:1.35; }
+.mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); }
+.mo-td-cell { background:var(--white); cursor:pointer; position:relative; }
+.mo-td-cell:hover { background:#f5f0e8; }
+.mo-cell-val { font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--navy); padding:7px 10px; min-height:33px; line-height:1.35; word-break:break-word; white-space:pre-wrap; }
+.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--navy); padding:6px 8px; resize:vertical; min-height:33px; box-sizing:border-box; }
+.mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
+.mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
+.mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
+.mo-analysis-wrap { margin-top:16px; border:1px solid var(--cream-mid); border-radius:2px; overflow:hidden; }
+.mo-analysis-block { padding:16px 20px; border-bottom:1px solid var(--cream-mid); }
+.mo-analysis-block:last-child { border-bottom:none; }
+.mo-analysis-lbl { font-family:'Montserrat',sans-serif; font-size:8px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+.mo-analysis-txt { font-family:'Cormorant Garamond',serif; font-size:14px; color:var(--navy); line-height:1.75; white-space:pre-wrap; }
 .camp-generate-btn:disabled { opacity:0.5; cursor:not-allowed; }
 
 /* ── CAMPAIGN SECTION ── */
@@ -4273,7 +4298,103 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-              
+
+
+              <!-- Tool: Multiple Offers -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstOpenTool('multioffers'); if(lstToolOpen.value==='multioffers'||lstToolOpen==='multioffers') moLoadOffers(lstActiveProp.id)">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">📋</span>
+                    <span class="subfolder-tool-name">Multiple Offers</span>
+                    <span class="subfolder-tool-desc">Compare &amp; analyze competing offers</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='multioffers' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='multioffers'" class="subfolder-body" style="padding:16px;">
+
+                  <!-- Disclaimer -->
+                  <div class="mo-disclaimer">⚠️ <strong>Agent Responsibility:</strong> The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</div>
+
+                  <!-- Grid -->
+                  <div class="mo-wrap">
+                    <table class="mo-table">
+                      <thead>
+                        <tr>
+                          <th class="mo-th-label"></th>
+                          <th v-for="n in [1,2,3,4,5,6]" :key="n" class="mo-th-offer">
+                            <div class="mo-th-inner">
+                              <span class="mo-offer-num">Offer {{ n }}</span>
+                              <!-- loading spinner -->
+                              <div v-if="moLoading[n]" class="mo-loading-cell" style="padding:4px 0;">
+                                <div class="mo-spinner"></div>
+                                <span style="font-family:'Montserrat',sans-serif;font-size:7px;color:var(--gold);">Parsing…</span>
+                              </div>
+                              <template v-else>
+                                <label :for="'mo-file-'+n" class="mo-upload-lbl">{{ Object.keys(moOffers[n]||{}).length ? '↺ Re-upload' : '+ Upload PDF' }}</label>
+                                <input :id="'mo-file-'+n" type="file" accept=".pdf,application/pdf" style="display:none" @change="e => moUploadPDF(n, e.target.files[0]); e.target.value=''">
+                                <button v-if="Object.keys(moOffers[n]||{}).length" class="mo-clear-btn" @click.stop="moClearOffer(n)">Clear</button>
+                              </template>
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="f in MO_FIELDS" :key="f.key">
+                          <td class="mo-td-label" :class="{'mo-row-bold':f.bold}">{{ f.label }}</td>
+                          <td v-for="n in [1,2,3,4,5,6]" :key="n" class="mo-td-cell"
+                              @click="moStartEdit(n, f.key)"
+                              @keydown.enter.prevent="moCommitEdit"
+                              @keydown.escape="moCancelEdit">
+                            <div v-if="moLoading[n]" class="mo-cell-val" style="color:#d1d5db;">—</div>
+                            <template v-else-if="moEditCell && moEditCell.n===n && moEditCell.key===f.key">
+                              <textarea class="mo-cell-input" v-model="moEditVal" @blur="moCommitEdit" @keydown.enter.exact.prevent="moCommitEdit" @keydown.escape="moCancelEdit" rows="2" autofocus></textarea>
+                            </template>
+                            <div v-else class="mo-cell-val">{{ (moOffers[n]||{})[f.key] || '' }}</div>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Generate Analysis button -->
+                  <div style="margin-top:20px;text-align:center;">
+                    <button class="camp-generate-btn" @click="moGenerateAnalysis" :disabled="moAnalysisLoading" style="max-width:380px;display:inline-block;">
+                      <span v-if="moAnalysisLoading" style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
+                        <span class="mo-spinner" style="border-top-color:var(--gold);border-color:rgba(200,169,110,.3);"></span>Analyzing offers…
+                      </span>
+                      <span v-else>✦ Generate Offer Analysis</span>
+                    </button>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;margin-top:8px;letter-spacing:0.08em;">Agent-only · Not visible to clients · Requires ≥ 2 offers uploaded</div>
+                  </div>
+
+                  <!-- Analysis Results -->
+                  <div v-if="moAnalysisParsed" class="mo-analysis-wrap">
+                    <div class="mo-analysis-block" style="background:var(--navy);">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Agent Analysis · Confidential</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--gold-muted);">Generated by Claude · Verify all terms independently before presenting to client</div>
+                    </div>
+                    <div class="mo-analysis-block">
+                      <div class="mo-analysis-lbl">Strongest Offer</div>
+                      <div class="mo-analysis-txt">{{ moAnalysisParsed.strongest }}</div>
+                    </div>
+                    <div class="mo-analysis-block">
+                      <div class="mo-analysis-lbl">Likelihood to Close</div>
+                      <div class="mo-analysis-txt">{{ moAnalysisParsed.likelihood }}</div>
+                    </div>
+                    <div class="mo-analysis-block">
+                      <div class="mo-analysis-lbl">Counter Strategy</div>
+                      <div class="mo-analysis-txt">{{ moAnalysisParsed.counter }}</div>
+                    </div>
+                    <div class="mo-analysis-block" style="background:#f0fdf4;">
+                      <div class="mo-analysis-lbl" style="color:#166534;">Talking Points for Seller Conversation</div>
+                      <div class="mo-analysis-txt" style="color:#14532d;">{{ moAnalysisParsed.talking }}</div>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+                            
 
 
             </div>
@@ -4403,11 +4524,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <textarea v-model="campSpecialInstructions" placeholder="e.g. Skip broker's open, photography already scheduled, focus heavily on equestrian buyer personas..." style="width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;resize:vertical;min-height:56px;font-family:inherit;box-sizing:border-box;"></textarea>
                 </div>
               </div>
-              <div v-if="!ldSavedToProperty" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
+              <div v-if="!lstNotes.listing_remarks" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
                 ⚠️ No listing description saved yet — add one in the Listing Description tool above first.
               </div>
               <div style="padding:16px 18px;">
-                <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !ldSavedToProperty" class="camp-generate-btn" :style="{opacity: campGenerating || !ldSavedToProperty ? 0.55 : 1}">
+                <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
                   <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
                 <div v-if="campGenerating" style="margin-top:12px;background:var(--navy);border-radius:2px;padding:14px 16px;">
@@ -6724,6 +6845,189 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstProperties = ref([]);
     const lstLoading = ref(false);
     const lstToolOpen = ref(null); // which listing tool panel is expanded in property folder
+
+    // ── Multiple Offer Presentation ──────────────────────────────────────────
+    const MO_FIELDS = [
+      { key: 'buyer_name',           label: 'Buyer Name(s)',                bold: false },
+      { key: 'buyer_agent',          label: 'Buyer Agent',                  bold: false },
+      { key: 'buyer_agent_company',  label: 'Buyer Agent Company',          bold: false },
+      { key: 'buyer_agent_comp',     label: 'Buyer Agent Compensation',     bold: true  },
+      { key: 'purchase_price',       label: 'Purchase Price',               bold: true  },
+      { key: 'earnest_money',        label: 'Earnest Money Deposit',        bold: false },
+      { key: 'down_payment',         label: 'Down Payment',                 bold: false },
+      { key: 'financing_type',       label: 'Financing Type',               bold: false },
+      { key: 'loan_amount',          label: 'Loan Amount',                  bold: false },
+      { key: 'pre_approval',         label: 'Pre-Approval Status',          bold: false },
+      { key: 'settlement_date',      label: 'Settlement / Closing Date',    bold: true  },
+      { key: 'possession_date',      label: 'Possession Date',              bold: false },
+      { key: 'inspection_period',    label: 'Inspection Period (days)',     bold: true  },
+      { key: 'inspection_cont',      label: 'Inspection Contingency',       bold: false },
+      { key: 'financing_cont',       label: 'Financing Contingency',        bold: true  },
+      { key: 'financing_cont_days',  label: 'Financing Contingency (days)', bold: false },
+      { key: 'appraisal_cont',       label: 'Appraisal Contingency',        bold: true  },
+      { key: 'appraisal_gap',        label: 'Appraisal Gap Coverage',       bold: false },
+      { key: 'home_sale_cont',       label: 'Home Sale Contingency',        bold: true  },
+      { key: 'escalation',           label: 'Escalation Clause',            bold: false },
+      { key: 'escalation_cap',       label: 'Escalation Cap',               bold: false },
+      { key: 'escalation_increment', label: 'Escalation Increment',         bold: false },
+      { key: 'closing_cost_assist',  label: 'Closing Cost Assistance',      bold: true  },
+      { key: 'closing_cost_amt',     label: 'Closing Cost Amount',          bold: false },
+      { key: 'home_warranty',        label: 'Home Warranty',                bold: false },
+      { key: 'home_warranty_amt',    label: 'Home Warranty Amount',         bold: false },
+      { key: 'personal_property',    label: 'Personal Property Included',   bold: false },
+      { key: 'exclusions',           label: 'Exclusions',                   bold: false },
+      { key: 'seller_rent_back',     label: 'Seller Rent Back',             bold: false },
+      { key: 'rent_back_days',       label: 'Rent Back Duration',           bold: false },
+      { key: 'rent_back_rate',       label: 'Rent Back Rate',               bold: false },
+      { key: 'as_is',                label: 'As-Is Sale',                   bold: false },
+      { key: 'radon_cont',           label: 'Radon Contingency',            bold: false },
+      { key: 'lead_paint_cont',      label: 'Lead Paint Contingency',       bold: false },
+      { key: 'hoa_cont',             label: 'HOA Contingency',              bold: false },
+      { key: 'septic_cont',          label: 'Septic / Well Contingency',    bold: false },
+      { key: 'other_cont',           label: 'Other Contingencies',          bold: false },
+      { key: 'expiration_date',      label: 'Offer Expiration Date',        bold: false },
+      { key: 'lender_name',          label: 'Lender / Loan Officer',        bold: false },
+      { key: 'lender_phone',         label: 'Lender Phone',                 bold: false },
+      { key: 'special_terms',        label: 'Special Terms / Notes',        bold: false },
+      { key: 'offer_letter',         label: 'Personal Offer Letter',        bold: false },
+      { key: 'proof_of_funds',       label: 'Proof of Funds Provided',      bold: false },
+      { key: 'due_diligence_fee',    label: 'Due Diligence Fee',            bold: false },
+      { key: 'concessions_total',    label: 'Total Concessions / Credits',  bold: false },
+    ];
+    const moOffers          = ref({ 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} });
+    const moLoading         = ref(false);
+    const moSaving          = ref(false);
+    const moEditCell        = ref(null);
+    const moEditVal         = ref('');
+    const moAnalysis        = ref('');
+    const moAnalysisLoading = ref(false);
+
+    const moAnalysisParsed = computed(() => {
+      const txt = moAnalysis.value;
+      if (!txt) return null;
+      const sections = [
+        { id: 'strongest',  label: '\uD83C\uDFC6 Strongest Offer',                       marker: '---STRONGEST OFFER---' },
+        { id: 'likelihood', label: '\uD83D\uDCCA Likelihood to Close',                    marker: '---LIKELIHOOD TO CLOSE---' },
+        { id: 'counter',    label: '\uD83D\uDD04 Counter Strategy',                       marker: '---COUNTER STRATEGY---' },
+        { id: 'talking',    label: '\uD83D\uDCAC Talking Points for Seller Conversation',  marker: '---TALKING POINTS FOR SELLER CONVERSATION---' },
+      ];
+      const result = [];
+      for (let i = 0; i < sections.length; i++) {
+        const s = sections[i];
+        const start = txt.indexOf(s.marker);
+        if (start === -1) continue;
+        const contentStart = start + s.marker.length;
+        const nextMarker = i < sections.length - 1 ? txt.indexOf(sections[i+1].marker) : -1;
+        const content = nextMarker !== -1
+          ? txt.slice(contentStart, nextMarker).trim()
+          : txt.slice(contentStart).trim();
+        result.push({ id: s.id, label: s.label, content });
+      }
+      return result.length ? result : null;
+    });
+
+    async function moLoadOffers() {
+      const propId = lstActiveProp.value?.id;
+      if (!propId) return;
+      moLoading.value = true;
+      try {
+        const rows = await supaRest('GET', \`property_offers?property_id=eq.\${propId}\`);
+        const fresh = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
+        (rows || []).forEach(r => { fresh[r.offer_number] = r.offer_data || {}; });
+        moOffers.value = fresh;
+        moAnalysis.value = '';
+      } finally {
+        moLoading.value = false;
+      }
+    }
+
+    async function moUploadPDF(n, event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      moLoading.value = true;
+      try {
+        const fd = new FormData();
+        fd.append('file', file);
+        const res = await fetch(\`\${RAILWAY_URL}/api/parse-offer\`, { method: 'POST', body: fd });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        moOffers.value[n] = { ...moOffers.value[n], ...json };
+        await moSaveOffer(n);
+      } catch(e) {
+        alert('Error parsing offer: ' + e.message);
+      } finally {
+        moLoading.value = false;
+        event.target.value = '';
+      }
+    }
+
+    async function moSaveOffer(n) {
+      const propId = lstActiveProp.value?.id;
+      if (!propId) return;
+      moSaving.value = true;
+      try {
+        await supaRest('POST', 'property_offers', {
+          property_id: propId,
+          offer_number: n,
+          offer_data: moOffers.value[n],
+          updated_at: new Date().toISOString(),
+        }, { 'Prefer': 'resolution=merge-duplicates' });
+      } finally {
+        moSaving.value = false;
+      }
+    }
+
+    function moStartEdit(n, key) {
+      moEditCell.value = \`\${n}_\${key}\`;
+      moEditVal.value  = moOffers.value[n]?.[key] ?? '';
+    }
+
+    async function moCommitEdit(n, key) {
+      if (moEditCell.value !== \`\${n}_\${key}\`) return;
+      moOffers.value[n] = { ...moOffers.value[n], [key]: moEditVal.value };
+      moEditCell.value = null;
+      await moSaveOffer(n);
+    }
+
+    function moCancelEdit() {
+      moEditCell.value = null;
+    }
+
+    async function moClearOffer(n) {
+      if (!confirm(\`Clear all data for Offer \${n}?\`)) return;
+      moOffers.value[n] = {};
+      const propId = lstActiveProp.value?.id;
+      if (!propId) return;
+      await supaRest('DELETE', \`property_offers?property_id=eq.\${propId}&offer_number=eq.\${n}\`);
+    }
+
+    async function moGenerateAnalysis() {
+      const offers = [];
+      for (let n = 1; n <= 6; n++) {
+        const o = moOffers.value[n];
+        if (o && Object.keys(o).length) offers.push({ offer_number: n, ...o });
+      }
+      if (!offers.length) { alert('Please upload at least one offer first.'); return; }
+      moAnalysisLoading.value = true;
+      moAnalysis.value = '';
+      try {
+        const res = await fetch(\`\${RAILWAY_URL}/api/analyze-offers\`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            offers,
+            property_address: lstActiveProp.value?.address || '',
+            list_price: lstActiveProp.value?.list_price || '',
+          }),
+        });
+        const json = await res.json();
+        moAnalysis.value = json.analysis || 'No analysis returned.';
+      } catch(e) {
+        moAnalysis.value = 'Error generating analysis: ' + e.message;
+      } finally {
+        moAnalysisLoading.value = false;
+      }
+    }
     const lstPkgMovedBanner = ref(!localStorage.getItem('fos_lp_moved_dismissed')); // one-time migration banner
     function lstDismissPkgBanner() { lstPkgMovedBanner.value = false; localStorage.setItem('fos_lp_moved_dismissed', '1'); }
     const lstShowCompleteModal = ref(true); // shown when status===complete, reset on dismiss
@@ -8190,7 +8494,7 @@ async function lstSubmitToPipeline() {
           const fileName = 'Listing-Description-' + prop.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') + '.pdf';
           const blob = buildTextPDF('Listing Description', 'Listing Description — ' + prop.address, text);
           // Also store in property_notes for in-app recall
-          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); lstNotes.listing_remarks = text; } catch {}
+          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); } catch {}
           const formData = new FormData();
           formData.append('file', blob, fileName);
           formData.append('folder_id', folderId);
@@ -14255,6 +14559,9 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
       // MLS Data Form
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
+      // Multiple Offer Presentation
+      MO_FIELDS, moOffers, moLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading,
+      moAnalysisParsed, moLoadOffers, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
