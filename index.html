@@ -650,6 +650,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-offer-num { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); }
 .mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
 .mo-upload-lbl:hover { background:rgba(200,169,110,.35); }
+.mo-chat-wrap { margin-top:20px; border:1px solid var(--gold-muted); border-radius:2px; overflow:hidden; }
+.mo-chat-header { background:var(--navy); padding:10px 14px; font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold); display:flex; align-items:center; gap:8px; }
+.mo-chat-thread { max-height:320px; overflow-y:auto; padding:12px 14px; display:flex; flex-direction:column; gap:10px; background:var(--cream); }
+.mo-chat-bubble { max-width:88%; padding:8px 12px; border-radius:2px; font-family:'Cormorant Garamond',serif; font-size:15px; line-height:1.55; white-space:pre-wrap; }
+.mo-chat-bubble.agent { background:var(--navy); color:var(--cream); align-self:flex-end; }
+.mo-chat-bubble.ai { background:#fff; color:var(--navy); border:1px solid var(--cream-mid); align-self:flex-start; }
+.mo-chat-input-row { display:flex; border-top:1px solid var(--cream-mid); background:#fff; }
+.mo-chat-input-row textarea { flex:1; border:none; outline:none; padding:10px 12px; font-family:'Cormorant Garamond',serif; font-size:15px; color:var(--navy); resize:none; height:56px; background:transparent; line-height:1.5; }
+.mo-chat-send { background:var(--navy); color:var(--gold); border:none; padding:0 18px; font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; cursor:pointer; white-space:nowrap; }
+.mo-chat-send:disabled { opacity:0.45; cursor:not-allowed; }
+.mo-chat-typing { display:inline-flex; gap:4px; align-items:center; padding:8px 12px; }
+.mo-chat-typing span { width:6px; height:6px; background:var(--gold-muted); border-radius:50%; animation:mo-chat-dot 1.2s ease-in-out infinite; }
+.mo-chat-typing span:nth-child(2){animation-delay:0.2s} .mo-chat-typing span:nth-child(3){animation-delay:0.4s}
+@keyframes mo-chat-dot { 0%,60%,100%{transform:scaleY(1);opacity:0.4} 30%{transform:scaleY(1.6);opacity:1} }
+.mo-clear-btn { font-family:'Montserrat',sans-serif;
 .mo-clear-btn { font-family:'Montserrat',sans-serif; font-size:7px; color:rgba(200,169,110,.55); cursor:pointer; background:none; border:none; padding:0; }
 .mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; line-height:36px; height:36px; overflow:hidden; white-space:nowrap; padding:0 10px; }
 .mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); line-height:36px; }
@@ -4409,6 +4424,31 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div class="mo-analysis-txt" style="color:#14532d;">{{ moAnalysisParsed.talking }}</div>
                     </div>
                   </div>
+                  <!-- Offer Chat -->
+                  <div v-if="moAnalysisParsed || moAnalysis" class="mo-chat-wrap">
+                    <div class="mo-chat-header">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                      Follow-Up with AI · Agent Only
+                    </div>
+                    <div class="mo-chat-thread" ref="moChatThreadEl">
+                      <div v-if="!moChatMessages.length" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#9ca3af;font-style:italic;text-align:center;padding:12px 0;">
+                        Ask a follow-up question — e.g. "If I remove the inspection contingency on Offer 2, does it become stronger?"
+                      </div>
+                      <div v-for="(msg,i) in moChatMessages" :key="i" :class="['mo-chat-bubble', msg.role]">{{ msg.text }}</div>
+                      <div v-if="moChatLoading" class="mo-chat-bubble ai" style="padding:6px 12px;">
+                        <span class="mo-chat-typing"><span></span><span></span><span></span></span>
+                      </div>
+                    </div>
+                    <div class="mo-chat-input-row">
+                      <textarea v-model="moChatInput" placeholder="Ask a follow-up question about the offers…"
+                        @keydown.enter.exact.prevent="moSendChat"
+                        :disabled="moChatLoading"></textarea>
+                      <button class="mo-chat-send" @click="moSendChat" :disabled="moChatLoading || !moChatInput.trim()">
+                        Send ↵
+                      </button>
+                    </div>
+                  </div>
+
                   <!-- Raw output fallback if parsing fails or Railway error -->
                   <div v-else-if="moAnalysis && !moAnalysisLoading" style="margin-top:14px;padding:14px 16px;background:#fff8f0;border:1px solid var(--gold-muted);border-radius:2px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.6;">{{ moAnalysis }}</div>
 
@@ -6923,6 +6963,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moAnalysis        = ref('');
     const moAnalysisLoading = ref(false);
     const moStatus          = ref('');
+    const moChatMessages    = ref([]);  // {role:'agent'|'ai', text}
+    const moChatInput       = ref('');
+    const moChatLoading     = ref(false);
     const moFileNames      = ref({ 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' });
 
     const moAnalysisParsed = computed(() => {
@@ -7086,7 +7129,45 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moOffers.value = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
       moFileNames.value = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' };
       moAnalysis.value = '';
+      moChatMessages.value = [];
       moSlotCount.value = 2;
+    }
+
+    async function moSendChat() {
+      const q = moChatInput.value.trim();
+      if (!q || moChatLoading.value) return;
+      moChatMessages.value.push({ role: 'agent', text: q });
+      moChatInput.value = '';
+      moChatLoading.value = true;
+      try {
+        const history = moChatMessages.value.slice(0,-1).map(m => ({
+          role: m.role === 'agent' ? 'user' : 'assistant', content: m.text
+        }));
+        const offers = [];
+        for (let n = 1; n <= 6; n++) {
+          const o = moOffers.value[n];
+          if (o && Object.keys(o).length) offers.push({ offer_number: n, offer_data: { ...o } });
+        }
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 60000);
+        let res;
+        try { res = await fetch(`${RAILWAY_URL}/api/chat-offers`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            offers, history, question: q,
+            analysis: moAnalysis.value,
+            property_address: lstActiveProp.value?.address || '',
+            list_price: lstActiveProp.value?.list_price || '',
+          }), signal: ctrl.signal,
+        }); } finally { clearTimeout(timer); }
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.detail || 'Error');
+        moChatMessages.value.push({ role: 'ai', text: json.answer });
+      } catch(e) {
+        moChatMessages.value.push({ role: 'ai', text: 'Sorry, something went wrong: ' + e.message });
+      } finally {
+        moChatLoading.value = false;
+      }
     }
 
     async function moGenerateAnalysis() {
@@ -7109,6 +7190,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
       moAnalysisLoading.value = true;
       moAnalysis.value = '';
+      moChatMessages.value = [];
       try {
         const ctrl = new AbortController();
         const atimer = setTimeout(() => ctrl.abort(), 120000);
@@ -14668,7 +14750,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
-      moAnalysisParsed, moActiveSlots, moSlotCount, moStatus, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
+      moAnalysisParsed, moActiveSlots, moSlotCount, moStatus, moChatMessages, moChatInput, moChatLoading, moSendChat, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
