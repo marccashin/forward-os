@@ -4373,6 +4373,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <span v-else>✦ Generate Offer Analysis</span>
                     </button>
                     <div style="font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;margin-top:8px;letter-spacing:0.08em;">Agent-only · Not visible to clients · Requires ≥ 2 offers uploaded</div>
+                    <div v-if="moStatus" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:8px;color:var(--navy);background:#f5f0e8;border:1px solid var(--gold-muted);border-radius:2px;padding:6px 12px;text-align:left;white-space:pre-wrap;">{{ moStatus }}</div>
                   </div>
 
                   <!-- Analysis Results -->
@@ -6911,6 +6912,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moEditVal         = ref('');
     const moAnalysis        = ref('');
     const moAnalysisLoading = ref(false);
+    const moStatus          = ref('');
     const moFileNames      = ref({ 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' });
 
     const moAnalysisParsed = computed(() => {
@@ -7066,18 +7068,23 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     async function moGenerateAnalysis() {
+      moStatus.value = '';
       // Guard: don't run if any slot is still parsing
       if (Object.values(moLoading.value).some(v => v)) {
-        alert('Please wait — offers are still being parsed.'); return;
+        moStatus.value = '⚠ Uploads still in progress — please wait.'; return;
       }
       // Reload from Supabase to ensure latest saved data
+      moStatus.value = 'Loading saved offers…';
       await moLoadOffers();
       const offers = [];
       for (let n = 1; n <= 6; n++) {
         const o = moOffers.value[n];
         if (o && Object.keys(o).length) offers.push({ offer_number: n, offer_data: { ...o } });
       }
-      if (!offers.length) { alert('Please upload at least one offer first.'); return; }
+      moStatus.value = `Found ${offers.length} offer(s) in Supabase. Sending to analysis…`;
+      if (!offers.length) {
+        moStatus.value = '⚠ No offer data found — please upload PDFs first.'; return;
+      }
       moAnalysisLoading.value = true;
       moAnalysis.value = '';
       try {
@@ -7098,8 +7105,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (!res.ok) throw new Error(`Railway error ${res.status}: ${json.detail || JSON.stringify(json)}`);
         if (!json.analysis) throw new Error(`Empty response from analysis service. Raw: ${JSON.stringify(json).slice(0,200)}`);
         moAnalysis.value = json.analysis;
+        moStatus.value = '';
       } catch(e) {
         moAnalysis.value = 'Error generating analysis: ' + e.message;
+        moStatus.value = '✗ ' + e.message;
       } finally {
         moAnalysisLoading.value = false;
       }
@@ -14637,7 +14646,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
-      moAnalysisParsed, moActiveSlots, moSlotCount, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
+      moAnalysisParsed, moActiveSlots, moSlotCount, moStatus, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
