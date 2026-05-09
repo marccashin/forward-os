@@ -642,10 +642,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .camp-generate-btn { width:100%; padding:15px; background:var(--navy); color:var(--gold); border:none; border-radius:2px; font-family:'Montserrat',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; transition:background 0.15s; }
 /* ── Multiple Offers Grid ─────────────────────────────────────────────── */
 .mo-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 0 8px; }
-.mo-table { border-collapse:collapse; min-width:760px; width:100%; }
+.mo-table { border-collapse:collapse; min-width:700px; width:100%; }
 .mo-table th,.mo-table td { border:1px solid var(--cream-mid); vertical-align:top; }
 .mo-th-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--navy); text-align:left; padding:7px 10px; width:160px; min-width:160px; white-space:normal; }
-.mo-th-offer { background:var(--navy); text-align:center; padding:0; min-width:136px; width:136px; }
+.mo-th-offer { background:var(--navy); text-align:center; padding:0; min-width:115px; width:115px; }
 .mo-th-inner { display:flex; flex-direction:column; align-items:center; gap:6px; padding:10px 8px; }
 .mo-offer-num { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); }
 .mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
@@ -6898,7 +6898,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       { key: 'additional_notes',          label: 'Additional Notes / Special Terms',    bold: false },
     ];
     const moOffers          = ref({ 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} });
-    const moLoading         = ref(false);
+    const moLoading         = ref({1:false,2:false,3:false,4:false,5:false,6:false});
+    const moTableLoading    = ref(false);
     const moSaving          = ref(false);
     const moEditCell        = ref(null);
     const moEditVal         = ref('');
@@ -6934,7 +6935,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     async function moLoadOffers() {
       const propId = lstActiveProp.value?.id;
       if (!propId) return;
-      moLoading.value = true;
+      moTableLoading.value = true;
       try {
         const rows = await supaRest.select('property_offers', `property_id=eq.${propId}`);
         const fresh = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
@@ -6942,7 +6943,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         moOffers.value = fresh;
         moAnalysis.value = '';
       } finally {
-        moLoading.value = false;
+        moTableLoading.value = false;
       }
     }
 
@@ -6950,19 +6951,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const file = event.target.files?.[0];
       if (!file) return;
       moFileNames.value[n] = file.name;
-      moLoading.value = true;
+      moLoading.value[n] = true;
       try {
         const fd = new FormData();
         fd.append('file', file);
         const res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd });
+        if (!res.ok) throw new Error(`Server error ${res.status}`);
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         moOffers.value[n] = { ...moOffers.value[n], ...json };
         await moSaveOffer(n);
       } catch(e) {
-        alert('Error parsing offer: ' + e.message);
+        alert(`Offer ${n} parse error: ${e.message}`);
       } finally {
-        moLoading.value = false;
+        moLoading.value[n] = false;
         event.target.value = '';
       }
     }
@@ -7018,6 +7020,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     async function moGenerateAnalysis() {
+      // Guard: don't run if any slot is still parsing
+      if (Object.values(moLoading.value).some(v => v)) {
+        alert('Please wait — offers are still being parsed.'); return;
+      }
+      // Reload from Supabase to ensure latest saved data
+      await moLoadOffers();
       const offers = [];
       for (let n = 1; n <= 6; n++) {
         const o = moOffers.value[n];
@@ -14576,7 +14584,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // MLS Data Form
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
-      MO_FIELDS, moOffers, moLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
+      MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
       moAnalysisParsed, moLoadOffers, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
