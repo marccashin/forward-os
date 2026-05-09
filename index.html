@@ -641,8 +641,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .camp-pill label:hover { border-color:var(--gold-muted); }
 .camp-generate-btn { width:100%; padding:15px; background:var(--navy); color:var(--gold); border:none; border-radius:2px; font-family:'Montserrat',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; cursor:pointer; transition:background 0.15s; }
 /* ── Multiple Offers Grid ─────────────────────────────────────────────── */
-.mo-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:0 -16px; padding:0 0 8px; }
-.mo-table { border-collapse:collapse; width:auto; }
+.mo-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:0 0 8px; display:inline-block; max-width:100%; }
+.mo-table { border-collapse:collapse; width:auto; table-layout:fixed; }
 .mo-table th,.mo-table td { border:1px solid var(--cream-mid); vertical-align:top; }
 .mo-th-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--navy); text-align:left; padding:7px 10px; width:160px; min-width:160px; white-space:normal; }
 .mo-th-offer { background:var(--navy); text-align:center; padding:0; min-width:115px; width:115px; }
@@ -6972,16 +6972,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd });
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 90000);
+        let res;
+        try { res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd, signal: ctrl.signal }); }
+        finally { clearTimeout(timer); }
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         moOffers.value[n] = { ...moOffers.value[n], ...json };
-        // Auto-expand to next slot if this was the last visible one
-        if (n >= moSlotCount.value && moSlotCount.value < 6) moSlotCount.value = n + 1;
         await moSaveOffer(n);
       } catch(e) {
-        alert(`Offer ${n} parse error: ${e.message}`);
+        alert(`Offer ${n} parse failed: ${e.message === 'The user aborted a request.' ? 'Request timed out — please try again' : e.message}. Try re-uploading the PDF.`);
       } finally {
         moLoading.value[n] = false;
         event.target.value = '';
