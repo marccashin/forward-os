@@ -4360,6 +4360,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </table>
                   </div>
 
+                  <!-- Add Another Offer -->
+                  <div style="margin:10px 0 2px;">
+                    <button v-if="moSlotCount < 6" @click="moAddSlot"
+                      style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:none;border:1px solid var(--gold-muted);color:var(--gold);padding:6px 16px;border-radius:2px;cursor:pointer;">
+                      + Add Another Offer
+                    </button>
+                    <span v-else style="font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;letter-spacing:0.08em;">Maximum 6 offers</span>
+                  </div>
+
                   <!-- Generate Analysis button -->
                   <div style="text-align:center;margin:12px 0 4px;font-family:'Montserrat',sans-serif;font-size:7px;color:#9ca3af;letter-spacing:0.08em;text-transform:uppercase;">Click any cell to edit · Upload PDF to auto-fill · Or type directly into any cell</div>
                   <div style="margin-top:8px;text-align:center;">
@@ -6936,19 +6945,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     });
 
     // Only show filled columns + the next empty slot (min 2, max 6)
+    const moSlotCount = ref(2); // user-controlled, 2–6
     const moActiveSlots = computed(() => {
-      const slots = [];
-      for (let n = 1; n <= 6; n++) {
-        const filled = moOffers.value[n] && Object.keys(moOffers.value[n]).length > 0;
-        if (filled) slots.push(n);
-      }
-      // Add one empty slot after the last filled one (for next upload)
-      const nextEmpty = slots.length > 0 ? Math.min(Math.max(...slots) + 1, 6) : 1;
-      if (!slots.includes(nextEmpty)) slots.push(nextEmpty);
-      // Always show at least 2
-      if (slots.length < 2 && !slots.includes(2)) slots.push(2);
-      return slots.sort((a,b) => a-b);
+      const arr = [];
+      for (let n = 1; n <= moSlotCount.value; n++) arr.push(n);
+      return arr;
     });
+    function moAddSlot() {
+      if (moSlotCount.value < 6) moSlotCount.value++;
+    }
 
     async function moLoadOffers() {
       const propId = lstActiveProp.value?.id;
@@ -6978,6 +6983,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         moOffers.value[n] = { ...moOffers.value[n], ...json };
+        // Auto-expand to next slot if this was the last visible one
+        if (n >= moSlotCount.value && moSlotCount.value < 6) moSlotCount.value = n + 1;
         await moSaveOffer(n);
       } catch(e) {
         alert(`Offer ${n} parse error: ${e.message}`);
@@ -7051,6 +7058,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moOffers.value = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
       moFileNames.value = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' };
       moAnalysis.value = '';
+      moSlotCount.value = 2;
     }
 
     async function moGenerateAnalysis() {
@@ -14619,7 +14627,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
-      moAnalysisParsed, moActiveSlots, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
+      moAnalysisParsed, moActiveSlots, moSlotCount, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
