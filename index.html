@@ -4313,7 +4313,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-if="lstToolOpen==='multioffers'" class="subfolder-body" style="padding:16px;">
 
                   <!-- Disclaimer -->
-                  <div class="mo-disclaimer">⚠️ <strong>Agent Responsibility:</strong> The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</div>
+                  <div class="mo-disclaimer" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                    <span>⚠️ <strong>Agent Responsibility:</strong> The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</span>
+                    <button @click="moClearAll" style="flex-shrink:0;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid #92400e;color:#92400e;padding:4px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;">✕ Clear All &amp; Start Over</button>
+                  </div>
 
                   <!-- Grid -->
                   <div class="mo-wrap">
@@ -4321,7 +4324,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <thead>
                         <tr>
                           <th class="mo-th-label"></th>
-                          <th v-for="n in [1,2,3,4,5,6]" :key="n" class="mo-th-offer">
+                          <th v-for="n in moActiveSlots" :key="n" class="mo-th-offer">
                             <div class="mo-th-inner">
                               <span class="mo-offer-num">Offer {{ n }}</span>
                               <!-- loading spinner -->
@@ -4344,7 +4347,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <tbody>
                         <tr v-for="f in MO_FIELDS" :key="f.key">
                           <td class="mo-td-label" :class="{'mo-row-bold':f.bold}">{{ f.label }}</td>
-                          <td v-for="n in [1,2,3,4,5,6]" :key="n" class="mo-td-cell"
+                          <td v-for="n in moActiveSlots" :key="n" class="mo-td-cell"
                               @click="moStartEdit(n, f.key)"
                               :title="'Click to edit ' + f.label">
                             <template v-if="moEditCell === String(n)+'_'+f.key">
@@ -6932,6 +6935,21 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return result.strongest || result.likelihood ? result : null;
     });
 
+    // Only show filled columns + the next empty slot (min 2, max 6)
+    const moActiveSlots = computed(() => {
+      const slots = [];
+      for (let n = 1; n <= 6; n++) {
+        const filled = moOffers.value[n] && Object.keys(moOffers.value[n]).length > 0;
+        if (filled) slots.push(n);
+      }
+      // Add one empty slot after the last filled one (for next upload)
+      const nextEmpty = slots.length > 0 ? Math.min(Math.max(...slots) + 1, 6) : 1;
+      if (!slots.includes(nextEmpty)) slots.push(nextEmpty);
+      // Always show at least 2
+      if (slots.length < 2 && !slots.includes(2)) slots.push(2);
+      return slots.sort((a,b) => a-b);
+    });
+
     async function moLoadOffers() {
       const propId = lstActiveProp.value?.id;
       if (!propId) return;
@@ -7017,6 +7035,22 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
         }
       });
+    }
+
+    async function moClearAll() {
+      const filled = Object.keys(moOffers.value).filter(n => Object.keys(moOffers.value[n]||{}).length);
+      if (!filled.length) { alert('No offers to clear.'); return; }
+      if (!confirm('Clear all offers and start over?')) return;
+      const propId = lstActiveProp.value?.id;
+      if (propId) {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_offers?property_id=eq.${propId}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
+        });
+      }
+      moOffers.value = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
+      moFileNames.value = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' };
+      moAnalysis.value = '';
     }
 
     async function moGenerateAnalysis() {
@@ -14585,7 +14619,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
-      moAnalysisParsed, moLoadOffers, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
+      moAnalysisParsed, moActiveSlots, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
       inlineMicActive, inlineMicToggle,
       // Listings Revision System
       lstRevisionRequests, lstRevSelectedVersion, lstRevInputTab, lstRevNotes,
