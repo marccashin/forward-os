@@ -6931,7 +6931,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!propId) return;
       moLoading.value = true;
       try {
-        const rows = await supaRest('GET', \`property_offers?property_id=eq.\${propId}\`);
+        const rows = await supaRest('GET', `property_offers?property_id=eq.${propId}`);
         const fresh = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
         (rows || []).forEach(r => { fresh[r.offer_number] = r.offer_data || {}; });
         moOffers.value = fresh;
@@ -6948,7 +6948,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         const fd = new FormData();
         fd.append('file', file);
-        const res = await fetch(\`\${RAILWAY_URL}/api/parse-offer\`, { method: 'POST', body: fd });
+        const res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd });
         const json = await res.json();
         if (json.error) throw new Error(json.error);
         moOffers.value[n] = { ...moOffers.value[n], ...json };
@@ -6978,12 +6978,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     function moStartEdit(n, key) {
-      moEditCell.value = \`\${n}_\${key}\`;
+      moEditCell.value = `${n}_${key}`;
       moEditVal.value  = moOffers.value[n]?.[key] ?? '';
     }
 
     async function moCommitEdit(n, key) {
-      if (moEditCell.value !== \`\${n}_\${key}\`) return;
+      if (moEditCell.value !== `${n}_${key}`) return;
       moOffers.value[n] = { ...moOffers.value[n], [key]: moEditVal.value };
       moEditCell.value = null;
       await moSaveOffer(n);
@@ -6994,11 +6994,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     async function moClearOffer(n) {
-      if (!confirm(\`Clear all data for Offer \${n}?\`)) return;
+      if (!confirm(`Clear all data for Offer ${n}?`)) return;
       moOffers.value[n] = {};
       const propId = lstActiveProp.value?.id;
       if (!propId) return;
-      await supaRest('DELETE', \`property_offers?property_id=eq.\${propId}&offer_number=eq.\${n}\`);
+      await supaRest('DELETE', `property_offers?property_id=eq.${propId}&offer_number=eq.${n}`);
     }
 
     async function moGenerateAnalysis() {
@@ -7011,7 +7011,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moAnalysisLoading.value = true;
       moAnalysis.value = '';
       try {
-        const res = await fetch(\`\${RAILWAY_URL}/api/analyze-offers\`, {
+        const res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -11576,7 +11576,7 @@ No markdown. No preamble. Valid JSON only.`;
         const raw = await claude(userPrompt, sysPrompt);
         // Parse JSON from response (handle possible markdown fences)
         let jsonStr = raw.trim();
-        if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.replace(/^\`\`\`[a-z]*\n?/, '').replace(/\n?\`\`\`$/, '');
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         const parsed = JSON.parse(jsonStr);
         if (!parsed.agentBrief || !parsed.buyerSummary) throw new Error('Missing agentBrief or buyerSummary in response');
         bnaResult.value = parsed;
@@ -11793,7 +11793,7 @@ address, salePrice, sqft, ppsf, dom, soldDate, spLp, notes
 Focus on properties sold within 6 months, within 0.5 miles, similar size and type. No markdown, no preamble, valid JSON array only.`;
         const raw = await claude(prompt, 'You are a real estate comp analyst. Return ONLY a valid JSON array. No markdown fences, no explanation.');
         let jsonStr = raw.trim();
-        if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.replace(/^\`\`\`[a-z]*\n?/, '').replace(/\n?\`\`\`$/, '');
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         const comps = JSON.parse(jsonStr);
         osgComps.value = comps.map(c => ({ ...c, editing: false }));
         osgStep.value = 2;
@@ -11841,7 +11841,7 @@ justinNote (string or null - only if using FORWARD financial team, specific acti
 No markdown. Valid JSON only.`;
         const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
         let jsonStr = raw.trim();
-        if (jsonStr.startsWith('\`\`\`')) jsonStr = jsonStr.replace(/^\`\`\`[a-z]*\n?/, '').replace(/\n?\`\`\`$/, '');
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         osgResult.value = JSON.parse(jsonStr);
         osgStep.value = 3;
         Vue.nextTick(() => window.scrollTo(0, 0));
