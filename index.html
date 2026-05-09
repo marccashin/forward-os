@@ -7014,8 +7014,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Split "• ..." bullet points
     function moSplitBullets(text) {
       if (!text) return [];
-      return text.split(/
-?[•·]\s+/).map(p => p.trim()).filter(Boolean);
+      return text.split(/[\n•·]+\s*/).map(p => p.trim()).filter(Boolean);
     }
 
     const moAnalysisParsed = computed(() => {
