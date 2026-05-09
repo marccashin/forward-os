@@ -651,12 +651,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-upload-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; background:rgba(200,169,110,.18); border:1px solid var(--gold-muted); color:var(--gold); padding:4px 10px; border-radius:2px; cursor:pointer; white-space:nowrap; display:inline-block; }
 .mo-upload-lbl:hover { background:rgba(200,169,110,.35); }
 .mo-clear-btn { font-family:'Montserrat',sans-serif; font-size:7px; color:rgba(200,169,110,.55); cursor:pointer; background:none; border:none; padding:0; }
-.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; line-height:28px; height:28px; overflow:hidden; white-space:nowrap; padding:0 10px; }
-.mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); line-height:28px; }
-.mo-td-cell { background:var(--white); cursor:pointer; position:relative; height:28px; overflow:hidden; padding:0; }
+.mo-td-label { background:var(--cream); font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:600; color:var(--navy); letter-spacing:0.04em; line-height:36px; height:36px; overflow:hidden; white-space:nowrap; padding:0 10px; }
+.mo-td-label.mo-row-bold { font-weight:700; background:var(--cream-mid); line-height:36px; }
+.mo-td-cell { background:var(--white); cursor:pointer; position:relative; height:36px; overflow:hidden; padding:0; }
 .mo-td-cell:hover { background:#f5f0e8; } .mo-td-cell:hover .mo-cell-val::after { content:' ✏'; font-size:9px; opacity:0.4; position:relative; }
-.mo-cell-val { position:absolute; inset:0; padding:4px 8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-family:'Cormorant Garamond',serif; font-size:13px; color:var(--navy); line-height:20px; }
-.mo-cell-input { width:100%; border:none; outline:2px solid var(--gold); background:#fffde7; font-family:'Cormorant Garamond',serif; font-size:12px; color:var(--navy); padding:2px 6px; resize:vertical; min-height:28px; box-sizing:border-box; }
+.mo-cell-val { position:absolute; inset:0; padding:4px 8px; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; font-family:'Cormorant Garamond',serif; font-size:15px; color:var(--navy); line-height:28px; }
+.mo-cell-input { position:absolute; inset:0; width:100%; height:100%; border:none; outline:2px solid var(--gold-muted); background:rgba(245,240,232,0.95); font-family:'Cormorant Garamond',serif; font-size:15px; color:var(--navy); padding:3px 8px; resize:none; box-sizing:border-box; z-index:10; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
@@ -4368,7 +4368,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="margin-top:8px;text-align:center;">
                     <button class="camp-generate-btn" @click="moGenerateAnalysis" :disabled="moAnalysisLoading" style="max-width:380px;display:inline-block;">
                       <span v-if="moAnalysisLoading" style="display:inline-flex;align-items:center;gap:10px;justify-content:center;">
-                        <span class="mo-spinner" style="border-top-color:var(--gold);border-color:rgba(200,169,110,.3);"></span>Analyzing offers…
+                        <span class="mo-spinner" style="border-top-color:var(--gold);border-color:rgba(200,169,110,.3);"></span>
+                        <span>Analyzing offers — this takes 30–60 seconds…</span>
                       </span>
                       <span v-else>✦ Generate Offer Analysis</span>
                     </button>
@@ -6884,7 +6885,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       { key: 'survey_paid_by',            label: 'Survey Paid By',                      bold: false },
       // Contingencies
       { key: 'buyer_contingencies',       label: 'Buyer Contingencies',                 bold: true  },
-      { key: 'seller_contingencies',      label: 'Seller Contingencies',                bold: false },
+      { key: 'seller_contingencies',      label: 'Seller Credit Requested',             bold: false },
       // HOA
       { key: 'hoa_resale_paid_by',        label: 'HOA Resale Paid By',                  bold: false },
       { key: 'hoa_resale_fees',           label: 'HOA Resale Fees Cap',                 bold: false },
@@ -7103,7 +7104,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const ctrl = new AbortController();
         const atimer = setTimeout(() => ctrl.abort(), 120000);
         let res;
-        try { res = await fetch(`/.netlify/functions/railway-proxy?endpoint=/api/analyze-offers`, {
+        try { res = await fetch(`${RAILWAY_URL}/api/analyze-offers`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
