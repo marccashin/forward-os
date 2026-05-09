@@ -6931,7 +6931,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!propId) return;
       moLoading.value = true;
       try {
-        const rows = await supaRest('GET', `property_offers?property_id=eq.${propId}`);
+        const rows = await supaRest.select('property_offers', `property_id=eq.${propId}`);
         const fresh = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
         (rows || []).forEach(r => { fresh[r.offer_number] = r.offer_data || {}; });
         moOffers.value = fresh;
@@ -6966,12 +6966,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!propId) return;
       moSaving.value = true;
       try {
-        await supaRest('POST', 'property_offers', {
+        await supaRest.upsert('property_offers', {
           property_id: propId,
           offer_number: n,
           offer_data: moOffers.value[n],
           updated_at: new Date().toISOString(),
-        }, { 'Prefer': 'resolution=merge-duplicates' });
+        }, 'property_id,offer_number');
       } finally {
         moSaving.value = false;
       }
@@ -6998,7 +6998,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moOffers.value[n] = {};
       const propId = lstActiveProp.value?.id;
       if (!propId) return;
-      await supaRest('DELETE', `property_offers?property_id=eq.${propId}&offer_number=eq.${n}`);
+      // Direct fetch for multi-condition delete
+      await fetch(`${SUPABASE_URL}/rest/v1/property_offers?property_id=eq.${propId}&offer_number=eq.${n}`, {
+        method: 'DELETE',
+        headers: {
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+        }
+      });
     }
 
     async function moGenerateAnalysis() {
