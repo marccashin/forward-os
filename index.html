@@ -4302,7 +4302,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Tool: Multiple Offers -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('multioffers'); if(lstToolOpen.value==='multioffers'||lstToolOpen==='multioffers') moLoadOffers(lstActiveProp.id)">
+                <div class="subfolder-header" @click="(lstOpenTool('multioffers'), moLoadOffers())">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📋</span>
                     <span class="subfolder-tool-name">Multiple Offers</span>
@@ -4331,7 +4331,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                               </div>
                               <template v-else>
                                 <label :for="'mo-file-'+n" class="mo-upload-lbl">{{ Object.keys(moOffers[n]||{}).length ? '↺ Re-upload' : '+ Upload PDF' }}</label>
-                                <input :id="'mo-file-'+n" type="file" accept=".pdf,application/pdf" style="display:none" @change="e => moUploadPDF(n, e.target.files[0]); e.target.value=''">
+                                <input :id="'mo-file-'+n" type="file" accept=".pdf,application/pdf" style="display:none" @change="moUploadPDF(n, $event)">
                                 <button v-if="Object.keys(moOffers[n]||{}).length" class="mo-clear-btn" @click.stop="moClearOffer(n)">Clear</button>
                               </template>
                             </div>
