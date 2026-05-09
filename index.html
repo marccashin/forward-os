@@ -6852,48 +6852,50 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // ── Multiple Offer Presentation ──────────────────────────────────────────
     const MO_FIELDS = [
-      { key: 'buyer_agent_comp',     label: 'Buyer Agent Compensation',     bold: true  },
-      { key: 'purchase_price',       label: 'Purchase Price',               bold: true  },
-      { key: 'earnest_money',        label: 'Earnest Money Deposit',        bold: false },
-      { key: 'down_payment',         label: 'Down Payment',                 bold: false },
-      { key: 'financing_type',       label: 'Financing Type',               bold: false },
-      { key: 'loan_amount',          label: 'Loan Amount',                  bold: false },
-      { key: 'pre_approval',         label: 'Pre-Approval Status',          bold: false },
-      { key: 'settlement_date',      label: 'Settlement / Closing Date',    bold: true  },
-      { key: 'possession_date',      label: 'Possession Date',              bold: false },
-      { key: 'inspection_period',    label: 'Inspection Period (days)',     bold: true  },
-      { key: 'inspection_cont',      label: 'Inspection Contingency',       bold: false },
-      { key: 'financing_cont',       label: 'Financing Contingency',        bold: true  },
-      { key: 'financing_cont_days',  label: 'Financing Contingency (days)', bold: false },
-      { key: 'appraisal_cont',       label: 'Appraisal Contingency',        bold: true  },
-      { key: 'appraisal_gap',        label: 'Appraisal Gap Coverage',       bold: false },
-      { key: 'home_sale_cont',       label: 'Home Sale Contingency',        bold: true  },
-      { key: 'escalation',           label: 'Escalation Clause',            bold: false },
-      { key: 'escalation_cap',       label: 'Escalation Cap',               bold: false },
-      { key: 'escalation_increment', label: 'Escalation Increment',         bold: false },
-      { key: 'closing_cost_assist',  label: 'Closing Cost Assistance',      bold: true  },
-      { key: 'closing_cost_amt',     label: 'Closing Cost Amount',          bold: false },
-      { key: 'home_warranty',        label: 'Home Warranty',                bold: false },
-      { key: 'home_warranty_amt',    label: 'Home Warranty Amount',         bold: false },
-      { key: 'personal_property',    label: 'Personal Property Included',   bold: false },
-      { key: 'exclusions',           label: 'Exclusions',                   bold: false },
-      { key: 'seller_rent_back',     label: 'Seller Rent Back',             bold: false },
-      { key: 'rent_back_days',       label: 'Rent Back Duration',           bold: false },
-      { key: 'rent_back_rate',       label: 'Rent Back Rate',               bold: false },
-      { key: 'as_is',                label: 'As-Is Sale',                   bold: false },
-      { key: 'radon_cont',           label: 'Radon Contingency',            bold: false },
-      { key: 'lead_paint_cont',      label: 'Lead Paint Contingency',       bold: false },
-      { key: 'hoa_cont',             label: 'HOA Contingency',              bold: false },
-      { key: 'septic_cont',          label: 'Septic / Well Contingency',    bold: false },
-      { key: 'other_cont',           label: 'Other Contingencies',          bold: false },
-      { key: 'expiration_date',      label: 'Offer Expiration Date',        bold: false },
-      { key: 'lender_name',          label: 'Lender / Loan Officer',        bold: false },
-      { key: 'lender_phone',         label: 'Lender Phone',                 bold: false },
-      { key: 'special_terms',        label: 'Special Terms / Notes',        bold: false },
-      { key: 'offer_letter',         label: 'Personal Offer Letter',        bold: false },
-      { key: 'proof_of_funds',       label: 'Proof of Funds Provided',      bold: false },
-      { key: 'due_diligence_fee',    label: 'Due Diligence Fee',            bold: false },
-      { key: 'concessions_total',    label: 'Total Concessions / Credits',  bold: false },
+      // Core Pricing
+      { key: 'sales_price',               label: 'Sales / Purchase Price',              bold: true  },
+      { key: 'earnest_money',             label: 'Earnest Money Deposit',               bold: false },
+      { key: 'option_fee',                label: 'Option / Due Diligence Fee',          bold: false },
+      { key: 'option_period',             label: 'Option / Inspection Period (days)',   bold: true  },
+      { key: 'additional_earnest_money',  label: 'Additional Earnest Money',            bold: false },
+      // Financing
+      { key: 'loan_type',                 label: 'Financing Type',                      bold: true  },
+      { key: 'loan_amount',               label: 'Loan Amount',                         bold: false },
+      { key: 'cash_portion',              label: 'Cash Portion',                        bold: false },
+      { key: 'lender_name',               label: 'Lender / Loan Officer',               bold: false },
+      { key: 'pre_approval_letter',       label: 'Pre-Approval Letter',                 bold: false },
+      { key: 'proof_of_funds',            label: 'Proof of Funds',                      bold: false },
+      // Dates & Possession
+      { key: 'closing_date',              label: 'Closing / Settlement Date',           bold: true  },
+      { key: 'possession',                label: 'Possession',                          bold: false },
+      // Appraisal
+      { key: 'appraisal_waiver',          label: 'Appraisal Contingency / Waiver',      bold: true  },
+      { key: 'appraisal_price_delta',     label: 'Appraisal Gap Coverage',              bold: false },
+      // Title & Survey
+      { key: 'title_policy_paid_by',      label: 'Title Policy Paid By',                bold: false },
+      { key: 'title_company',             label: 'Title Company',                       bold: false },
+      { key: 'survey_paid_by',            label: 'Survey Paid By',                      bold: false },
+      // Contingencies
+      { key: 'buyer_contingencies',       label: 'Buyer Contingencies',                 bold: true  },
+      { key: 'seller_contingencies',      label: 'Seller Contingencies',                bold: false },
+      // HOA
+      { key: 'hoa_resale_paid_by',        label: 'HOA Resale Paid By',                  bold: false },
+      { key: 'hoa_resale_fees',           label: 'HOA Resale Fees Cap',                 bold: false },
+      // Repairs & Warranty
+      { key: 'repairs_requested',         label: 'Repairs Requested',                   bold: false },
+      { key: 'residential_service_contract', label: 'Home Warranty / Service Contract', bold: false },
+      // Personal Property
+      { key: 'non_realty_items',          label: 'Personal Property / Non-Realty Items',bold: false },
+      { key: 'non_realty_sum',            label: 'Personal Property Sum',               bold: false },
+      // Leaseback
+      { key: 'seller_temp_lease_offered', label: 'Seller Leaseback Requested',          bold: false },
+      { key: 'seller_temp_lease_days',    label: 'Leaseback Duration (days)',           bold: false },
+      { key: 'seller_temp_lease_price',   label: 'Leaseback Rate / Day',               bold: false },
+      // Compensation & Net
+      { key: 'buyer_agent_compensation',  label: 'Buyer Agent Compensation',            bold: true  },
+      { key: 'net_to_seller',             label: 'Net to Seller',                       bold: true  },
+      // Notes
+      { key: 'additional_notes',          label: 'Additional Notes / Special Terms',    bold: false },
     ];
     const moOffers          = ref({ 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} });
     const moLoading         = ref(false);
