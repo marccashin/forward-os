@@ -5710,7 +5710,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 </script>
 
 <script>
-const { createApp, ref, reactive, computed, onMounted, nextTick, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEffect } = Vue;
 
 // ── Active API key (module-level so claude/claudeChat/claudeVision can access it) ──
 // Set by doLogin() after fetching from Supabase — ensures key works on any device
