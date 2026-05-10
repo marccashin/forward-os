@@ -675,23 +675,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
-.mo-analysis-wrap { margin-top:16px; border:1px solid var(--cream-mid); border-radius:3px; overflow:hidden; box-shadow:0 2px 12px rgba(10,35,66,0.07); }
-.mo-analysis-section { padding:24px 28px; border-bottom:1px solid var(--cream-mid); background:#fff; }
-.mo-analysis-section:last-child { border-bottom:none; }
-.mo-analysis-lbl { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.24em; text-transform:uppercase; color:var(--gold); margin-bottom:18px; display:flex; align-items:center; gap:14px; }
+.mo-analysis-wrap { margin-top:20px; border:1px solid var(--cream-mid); border-radius:3px; overflow:hidden; box-shadow:0 4px 20px rgba(10,35,66,0.10); }
+.mo-analysis-section { padding:26px 32px; border-bottom:1px solid var(--cream-mid); background:#fff; }
+.mo-analysis-section > div > .mo-analysis-bullet { border-bottom:1px solid var(--cream-mid); }
+.mo-analysis-section > div > .mo-analysis-bullet:last-child { border-bottom:none; }
+.mo-analysis-lbl { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.26em; text-transform:uppercase; color:var(--gold); margin-bottom:20px; display:flex; align-items:center; gap:14px; }
 .mo-analysis-lbl::after { content:''; flex:1; height:1px; background:var(--cream-mid); }
-.mo-analysis-txt { font-family:'Cormorant Garamond',serif; font-size:14px; color:var(--navy); line-height:1.85; }
-.mo-analysis-offer-block { margin-bottom:14px; padding:14px 18px 12px; border-left:3px solid var(--gold); background:var(--cream); border-radius:0 3px 3px 0; }
+.mo-analysis-txt { font-family:'Cormorant Garamond',serif; font-size:16px; color:var(--navy); line-height:1.85; }
+.mo-analysis-offer-block { margin-bottom:16px; border:1px solid var(--cream-mid); border-left:3px solid var(--gold); background:var(--cream); border-radius:0 3px 3px 0; overflow:hidden; }
 .mo-analysis-offer-block:last-child { margin-bottom:0; }
-.mo-analysis-offer-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.18em; text-transform:uppercase; color:var(--gold-muted); margin-bottom:10px; padding-bottom:8px; border-bottom:1px solid var(--cream-mid); }
-.mo-analysis-bullet { display:flex; gap:14px; align-items:flex-start; padding:9px 0; border-bottom:1px solid var(--cream-mid); font-family:'Cormorant Garamond',serif; font-size:14px; color:var(--navy); line-height:1.7; }
-.mo-analysis-bullet:last-child { border-bottom:none; padding-bottom:0; }
-.mo-analysis-bullet:first-child { padding-top:0; }
-.mo-analysis-bullet-dot { width:5px; height:5px; border-radius:50%; background:var(--gold); flex-shrink:0; margin-top:6px; }
-.mo-analysis-talking { padding:24px 28px; background:var(--navy); }
+.mo-analysis-offer-lbl { font-family:'Montserrat',sans-serif; font-size:7px; font-weight:700; letter-spacing:0.20em; text-transform:uppercase; color:var(--gold); padding:10px 18px; background:rgba(200,169,110,0.08); border-bottom:1px solid var(--cream-mid); }
+.mo-analysis-bullet { display:flex; gap:16px; align-items:flex-start; padding:12px 18px; border-bottom:1px solid var(--cream-mid); }
+.mo-analysis-offer-block .mo-analysis-bullet:last-child { border-bottom:none; }
+.mo-analysis-bullet-dot { width:6px; height:6px; border-radius:50%; background:var(--gold); flex-shrink:0; margin-top:7px; }
+.mo-analysis-talking { padding:26px 32px; background:var(--navy); }
 .mo-analysis-talking .mo-analysis-lbl { color:var(--gold); }
 .mo-analysis-talking .mo-analysis-lbl::after { background:rgba(200,169,110,0.2); }
-.mo-analysis-talking .mo-analysis-bullet { color:var(--cream); border-bottom-color:rgba(200,169,110,0.15); }
+.mo-analysis-talking .mo-analysis-bullet { border-bottom-color:rgba(200,169,110,0.12); padding:12px 0; }
+.mo-analysis-talking .mo-analysis-bullet:last-child { border-bottom:none; }
 .mo-analysis-talking .mo-analysis-bullet-dot { background:var(--gold); }
 .camp-generate-btn:disabled { opacity:0.5; cursor:not-allowed; }
 
@@ -4415,12 +4416,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
 
                   <!-- Analysis Results -->
-                  <div v-if="moAnalysisSections" class="mo-analysis-wrap">
-                    <!-- Header bar -->
+                  <div v-if="moDisplaySections" class="mo-analysis-wrap">
+                    <!-- Header -->
                     <div style="background:var(--navy);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;">
                       <div>
                         <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.26em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Agent Analysis · Confidential</div>
-                        <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:rgba(247,244,239,0.5);font-style:italic;">Generated by Claude · For agent use only</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:rgba(247,244,239,0.5);font-style:italic;">Generated by Claude · For agent use only</div>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(200,169,110,0.5)" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
                     </div>
@@ -4428,59 +4429,50 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <!-- Strongest Offer -->
                     <div class="mo-analysis-section">
                       <div class="mo-analysis-lbl">Strongest Offer</div>
-                      <div v-if="moAnalysisSections.strongest && moAnalysisSections.strongest.length">
-                        <div v-for="(pt, i) in moAnalysisSections.strongest" :key="i" class="mo-analysis-bullet">
+                      <div v-if="moDisplaySections.strongest && moDisplaySections.strongest.length">
+                        <div v-for="(pt, i) in moDisplaySections.strongest" :key="i" class="mo-analysis-bullet">
                           <div class="mo-analysis-bullet-dot"></div>
                           <span class="mo-analysis-txt">{{ pt }}</span>
                         </div>
                       </div>
-                      <div v-else class="mo-analysis-txt" style="white-space:pre-wrap;">{{ moAnalysisParsed && moAnalysisParsed.strongest }}</div>
+                      <div v-else class="mo-analysis-txt" style="font-style:italic;color:#9ca3af;">No data parsed for this section.</div>
                     </div>
 
                     <!-- Likelihood to Close -->
-                    <div class="mo-analysis-section">
+                    <div class="mo-analysis-section" v-if="moDisplaySections.likelihood && moDisplaySections.likelihood.length">
                       <div class="mo-analysis-lbl">Likelihood to Close</div>
-                      <template v-if="moAnalysisSections.likelihood && moAnalysisSections.likelihood.length">
-                        <div v-for="(blk, i) in moAnalysisSections.likelihood" :key="i" class="mo-analysis-offer-block">
-                          <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
-                          <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet">
-                            <div class="mo-analysis-bullet-dot"></div>
-                            <span class="mo-analysis-txt">{{ pt }}</span>
-                          </div>
+                      <div v-for="(blk, i) in moDisplaySections.likelihood" :key="i" class="mo-analysis-offer-block">
+                        <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
+                        <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet">
+                          <div class="mo-analysis-bullet-dot"></div>
+                          <span class="mo-analysis-txt">{{ pt }}</span>
                         </div>
-                      </template>
-                      <div v-else class="mo-analysis-txt" style="white-space:pre-wrap;">{{ moAnalysisParsed && moAnalysisParsed.likelihood }}</div>
+                      </div>
                     </div>
 
                     <!-- Counter Strategy -->
-                    <div class="mo-analysis-section">
+                    <div class="mo-analysis-section" v-if="moDisplaySections.counter && moDisplaySections.counter.length">
                       <div class="mo-analysis-lbl">Counter Strategy</div>
-                      <template v-if="moAnalysisSections.counter && moAnalysisSections.counter.length">
-                        <div v-for="(blk, i) in moAnalysisSections.counter" :key="i" class="mo-analysis-offer-block">
-                          <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
-                          <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet">
-                            <div class="mo-analysis-bullet-dot"></div>
-                            <span class="mo-analysis-txt">{{ pt }}</span>
-                          </div>
-                        </div>
-                      </template>
-                      <div v-else class="mo-analysis-txt" style="white-space:pre-wrap;">{{ moAnalysisParsed && moAnalysisParsed.counter }}</div>
-                    </div>
-
-                    <!-- Talking Points — navy background -->
-                    <div class="mo-analysis-talking">
-                      <div class="mo-analysis-lbl">Talking Points for Seller Conversation</div>
-                      <div v-if="moAnalysisSections.talking && moAnalysisSections.talking.length">
-                        <div v-for="(pt, i) in moAnalysisSections.talking" :key="i" class="mo-analysis-bullet">
+                      <div v-for="(blk, i) in moDisplaySections.counter" :key="i" class="mo-analysis-offer-block">
+                        <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
+                        <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet">
                           <div class="mo-analysis-bullet-dot"></div>
-                          <span class="mo-analysis-txt" style="color:var(--cream);">{{ pt }}</span>
+                          <span class="mo-analysis-txt">{{ pt }}</span>
                         </div>
                       </div>
-                      <div v-else class="mo-analysis-txt" style="color:var(--cream);white-space:pre-wrap;">{{ moAnalysisParsed && moAnalysisParsed.talking }}</div>
+                    </div>
+
+                    <!-- Talking Points -->
+                    <div class="mo-analysis-talking" v-if="moDisplaySections.talking && moDisplaySections.talking.length">
+                      <div class="mo-analysis-lbl">Talking Points for Seller Conversation</div>
+                      <div v-for="(pt, i) in moDisplaySections.talking" :key="i" class="mo-analysis-bullet">
+                        <div class="mo-analysis-bullet-dot"></div>
+                        <span class="mo-analysis-txt" style="color:var(--cream);">{{ pt }}</span>
+                      </div>
                     </div>
                   </div>
                   <!-- Offer Chat -->
-                  <div v-if="moAnalysisSections" class="mo-chat-wrap">
+                  <div v-if="moDisplaySections" class="mo-chat-wrap">
                     <div class="mo-chat-header">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
                       Follow-Up with AI · Agent Only
@@ -4504,8 +4496,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                   </div>
 
-                  <!-- Raw output fallback if parsing fails or Railway error -->
-                  <div v-else-if="moAnalysis && !moAnalysisLoading" style="margin-top:14px;padding:14px 16px;background:#fff8f0;border:1px solid var(--gold-muted);border-radius:2px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.6;">{{ moAnalysis }}</div>
 
                 </div>
               </div>
@@ -7025,97 +7015,119 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moFileNames      = ref({ 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' });
 
     // Split "Offer N: ..." blocks within a section
-    function moSplitOfferBlocks(text) {
+    // ── Parse offer sub-blocks (OFFER 1: / Offer 1 / etc.) ──
+    function moParseOfferBlocks(text) {
       if (!text) return [];
-      // Split on "OFFER N:" or "Offer N:" at start of line
-      const parts = text.split(/(?=^OFFER \d+:|^Offer \d+:)/im);
+      // Split on "Offer N:" with colon
+      let parts = text.split(/(?=(?:^|\n)(?:OFFER|Offer) \d+:)/m);
       if (parts.length <= 1) {
-        // Fallback: try splitting on "OFFER N" without colon
-        const parts2 = text.split(/(?=^OFFER \d+$|^Offer \d+$)/im);
-        if (parts2.length > 1) {
-          return parts2.map(p => p.trim()).filter(Boolean).map(p => {
-            const m = p.match(/^(OFFER \d+|Offer \d+)\s*:?\s*([\s\S]*)$/i);
-            return m ? { label: 'Offer ' + m[1].replace(/\D/g,''), bullets: moSplitBullets(m[2].trim()) } : { label: '', bullets: moSplitBullets(p) };
-          });
-        }
-        return [{ label: '', bullets: moSplitBullets(text) }];
+        // Split on "Offer N" standalone line (no colon)
+        parts = text.split(/(?=(?:^|\n)(?:OFFER|Offer) \d+[ \t]*(?:\n|$))/m);
       }
+      if (parts.length <= 1) return [{ label: '', bullets: moParseBullets(text) }];
       return parts.map(p => p.trim()).filter(Boolean).map(p => {
-        const m = p.match(/^(OFFER \d+|Offer \d+):\s*([\s\S]*)$/i);
-        return m ? { label: 'Offer ' + m[1].replace(/\D/g,''), bullets: moSplitBullets(m[2].trim()) } : { label: '', bullets: moSplitBullets(p) };
+        const m = p.match(/^(?:OFFER|Offer) (\d+):?[ \t]*([\s\S]*)$/i);
+        return m
+          ? { label: 'Offer ' + m[1], bullets: moParseBullets(m[2].trim()) }
+          : { label: '', bullets: moParseBullets(p) };
       });
     }
 
-    // Split "• ..." bullet points
-    function moSplitBullets(text) {
+    // ── Split bullet text into array ──
+    function moParseBullets(text) {
       if (!text) return [];
-      return text.split(/[\n•·]+\s*/).map(p => p.trim()).filter(Boolean);
+      // Split on bullet chars OR newline-only paragraph breaks
+      return text.split(/[•·]|\n{2,}|\n(?=\s*[A-Z])/).map(s => s.replace(/^[-–—\s]+/, '').trim()).filter(s => s.length > 4);
     }
 
-    const moAnalysisParsed = computed(() => {
-      const txt = moAnalysis.value;
-      if (!txt) return null;
-
-      // ── Strategy 1: explicit --- markers (new backend format) ──
-      const strictMarkers = {
-        strongest:  '---STRONGEST OFFER---',
-        likelihood: '---LIKELIHOOD TO CLOSE---',
-        counter:    '---COUNTER STRATEGY---',
-        talking:    '---TALKING POINTS FOR SELLER CONVERSATION---',
-      };
-      const sKeys = Object.keys(strictMarkers);
-      const r1 = {};
-      let foundStrict = false;
-      for (let i = 0; i < sKeys.length; i++) {
-        const key = sKeys[i];
-        const start = txt.indexOf(strictMarkers[key]);
-        if (start !== -1) foundStrict = true;
-        if (start === -1) { r1[key] = ''; continue; }
-        const contentStart = start + strictMarkers[key].length;
-        const nextIdx = sKeys[i+1] ? txt.indexOf(strictMarkers[sKeys[i+1]]) : -1;
-        r1[key] = nextIdx !== -1 ? txt.slice(contentStart, nextIdx).trim() : txt.slice(contentStart).trim();
+    // ── Master section parser — works with any AI response format ──
+    function moBuildSections(analysis, backendSections) {
+      // 1. Backend returned populated sections
+      if (backendSections) {
+        const hasContent = (backendSections.strongest && backendSections.strongest.length)
+          || (backendSections.likelihood && backendSections.likelihood.length)
+          || (backendSections.talking && backendSections.talking.length);
+        if (hasContent) return backendSections;
       }
-      if (foundStrict && (r1.strongest || r1.likelihood)) return r1;
 
-      // ── Strategy 2: plain section headings (old format / Claude variation) ──
-      // Scan line by line to find section boundary lines, avoiding multiline regex literals
-      const headingTests = [
-        { key: 'strongest',  test: (l) => /^(?:#+\s*)?Strongest Offer\s*$/i.test(l) },
-        { key: 'likelihood', test: (l) => /^(?:#+\s*)?Likelihood(?:\s+to\s+Close)?\s*$/i.test(l) },
-        { key: 'counter',    test: (l) => /^(?:#+\s*)?Counter(?:\s+Strategy)?\s*$/i.test(l) },
-        { key: 'talking',    test: (l) => /^(?:#+\s*)?(?:Talking Points|Seller Talking Points)(?:\s+for\s+Seller\s+Conversation)?\s*$/i.test(l) },
+      if (!analysis) return null;
+
+      // 2. Try ---MARKER--- format
+      const MARKERS = [
+        { key: 'strongest',  tag: '---STRONGEST OFFER---' },
+        { key: 'likelihood', tag: '---LIKELIHOOD TO CLOSE---' },
+        { key: 'counter',    tag: '---COUNTER STRATEGY---' },
+        { key: 'talking',    tag: '---TALKING POINTS FOR SELLER CONVERSATION---' },
       ];
-      const lines = txt.split('\n');
-      const sectionLines = []; // { key, lineIdx }
-      for (let li = 0; li < lines.length; li++) {
-        const stripped = lines[li].trim();
-        for (const { key, test } of headingTests) {
-          if (test(stripped)) { sectionLines.push({ key, lineIdx: li }); break; }
-        }
-      }
-      if (!sectionLines.length) return null;
-      const r2 = {};
-      for (let i = 0; i < sectionLines.length; i++) {
-        const { key, lineIdx } = sectionLines[i];
-        const nextLineIdx = sectionLines[i + 1] ? sectionLines[i + 1].lineIdx : lines.length;
-        r2[key] = lines.slice(lineIdx + 1, nextLineIdx).join('\n').trim();
-      }
-      return (r2.strongest || r2.likelihood) ? r2 : null;
-    });
+      const positions = MARKERS.map(({ key, tag }) => {
+        const idx = analysis.indexOf(tag);
+        return idx !== -1 ? { key, start: idx, end: idx + tag.length } : null;
+      }).filter(Boolean).sort((a, b) => a.start - b.start);
 
-    // Further parsed sections for premium rendering
-    const moAnalysisSections = computed(() => {
-      // Prefer pre-parsed sections from backend (reliable)
-      if (moSections.value) return moSections.value;
-      // Fallback: parse raw text client-side
-      const p = moAnalysisParsed.value;
-      if (!p) return null;
+      if (positions.length >= 2) {
+        const raw = {};
+        positions.forEach(({ key, end }, i) => {
+          const next = positions[i + 1];
+          raw[key] = (next ? analysis.slice(end, next.start) : analysis.slice(end)).trim();
+        });
+        return {
+          strongest:  moParseBullets(raw.strongest || ''),
+          likelihood: moParseOfferBlocks(raw.likelihood || ''),
+          counter:    moParseOfferBlocks(raw.counter || ''),
+          talking:    moParseBullets(raw.talking || ''),
+        };
+      }
+
+      // 3. Line-by-line heading scan (plain headings, no markers)
+      const HEADING_TESTS = [
+        { key: 'strongest',  fn: l => /^(?:\*{1,2})?Strongest Offer(?:\*{1,2})?\s*$/i.test(l) },
+        { key: 'likelihood', fn: l => /^(?:\*{1,2})?Likelihood(?:\s+to\s+Close)?(?:\*{1,2})?\s*$/i.test(l) },
+        { key: 'counter',    fn: l => /^(?:\*{1,2})?Counter(?:\s+Strategy)?(?:\*{1,2})?\s*$/i.test(l) },
+        { key: 'talking',    fn: l => /^(?:\*{1,2})?(?:Talking Points?|Seller Talking)(?:[^\n]*)?(?:\*{1,2})?\s*$/i.test(l) },
+      ];
+      const lines = analysis.split('\n');
+      const found = [];
+      lines.forEach((line, li) => {
+        const s = line.trim();
+        if (!s || s.length > 60) return; // headings are short
+        for (const { key, fn } of HEADING_TESTS) {
+          if (fn(s)) { found.push({ key, li }); break; }
+        }
+      });
+
+      if (found.length >= 2) {
+        const raw = {};
+        found.forEach(({ key, li }, i) => {
+          const nextLi = found[i + 1] ? found[i + 1].li : lines.length;
+          raw[key] = lines.slice(li + 1, nextLi).join('\n').trim();
+        });
+        return {
+          strongest:  moParseBullets(raw.strongest || ''),
+          likelihood: moParseOfferBlocks(raw.likelihood || ''),
+          counter:    moParseOfferBlocks(raw.counter || ''),
+          talking:    moParseBullets(raw.talking || ''),
+        };
+      }
+
+      // 4. Last resort — show everything as a single list under Strongest Offer
       return {
-        strongest: moSplitBullets(p.strongest),
-        likelihood: moSplitOfferBlocks(p.likelihood),
-        counter:    moSplitOfferBlocks(p.counter),
-        talking:    moSplitBullets(p.talking),
+        strongest:  moParseBullets(analysis),
+        likelihood: [],
+        counter:    [],
+        talking:    [],
       };
+    }
+
+    // ── Reactive display sections — always non-null when analysis exists ──
+    const moDisplaySections = ref(null);
+    watchEffect(() => {
+      const analysis = moAnalysis.value;
+      const bSections = moSections.value;
+      if (!analysis || analysis.startsWith('Error') || analysis.startsWith('Could not')) {
+        moDisplaySections.value = null;
+        return;
+      }
+      moDisplaySections.value = moBuildSections(analysis, bSections);
     });
 
     // Only show filled columns + the next empty slot (min 2, max 6)
