@@ -20,7 +20,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
   --navy: #0A2342; --navy-mid: #1b3461; --navy-light: #243d6b;
@@ -827,7 +827,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <div style="width:36px;height:2px;background:var(--gold);margin:14px auto 0;"></div>
       </div>
       <div class="card" style="border-radius:16px;padding:36px;box-shadow:0 24px 60px rgba(0,0,0,.35);">
-        <h2 style="margin:0 0 24px;font-size:20px;font-weight:700;color:var(--navy);">Sign In</h2>
+        <h2 style="font-family:'Cormorant Garamond',serif;margin:0 0 24px;font-size:20px;font-weight:600;color:var(--navy);">Sign In</h2>
         <div class="form-row">
           <label>Your Name</label>
           <select v-model="loginAgent">
@@ -1259,7 +1259,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens as a full-screen tool with its own 5-step wizard, appraiser-grade adjustment methodology, and luxury print-ready PDF output.</p>
             <button class='btn-gold' :data-addr="lstActiveProp&&lstActiveProp.address||''" onclick="localStorage.setItem('fos_supa_url',window.__FORWARD_SUPABASE_URL||'');localStorage.setItem('fos_supa_key',window.__FORWARD_SUPABASE_ANON_KEY||'');localStorage.setItem('fos_cma_address',this.dataset.addr||'');window.open('/cma-tool.html','_blank')" style='display:inline-block;margin-bottom:24px;'>🔍 Open CMA Builder</button>
             <div style="border-top:1.5px solid #f0f0f0;padding-top:20px;">
-              <h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">What's inside</h3>
+              <h3 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">What's inside</h3>
               <div style="font-size:13px;color:#4b5563;line-height:2.1;">
                 • Subject property data entry with property-type-specific fields<br>
                 • Up to 5 comparable sales with all major adjustment fields<br>
@@ -1272,7 +1272,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
           <!-- Save CMA to Property File -->
           <div class="card" style="max-width:640px;margin-top:16px;">
-            <h3 style="margin:0 0 10px;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">Log CMA to Property File</h3>
+            <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">Log CMA to Property File</h3>
             <p style="font-size:12px;color:#9ca3af;margin:0 0 12px;">After completing a CMA, save a record to the property file for your reference.</p>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
               <input v-model="cmaLogAddress" placeholder="Property address (e.g. 123 Main St. Unit 7E)" style="flex:1;min-width:180px;">
@@ -1296,7 +1296,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 180px);min-height:500px;">
               <!-- Chat header -->
               <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
-                <h3 style="margin:0 0 10px;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
+                <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span>{{ ldSaving ? '' : '📁 Save to Property' }}
                 </button>
@@ -1377,7 +1377,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span style="width:10px;height:10px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.5s ease-in-out infinite;"></span>
-                      <span style="font-size:17px;font-weight:700;color:var(--navy);">Listening…</span>
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:700;color:var(--navy);">Listening…</span>
                     </div>
                     <button @click="ldVoiceSend" style="width:34px;height:34px;border-radius:50%;background:#f3f4f6;border:none;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:#6b7280;touch-action:manipulation;">✕</button>
                   </div>
@@ -1408,7 +1408,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div style="display:flex;align-items:center;gap:12px;background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:12px 16px;margin-bottom:16px;">
               <button class="mic-btn" :class="{recording:voiceModal.show&&voiceModal.phase==='listening'}" @click="voiceStart" style="width:48px;height:48px;flex-shrink:0;display:flex;align-items:center;justify-content:center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
               <div>
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px;"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> Fill a form by voice</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:2px;"><span style="display:inline-flex;vertical-align:middle;margin-right:4px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> Fill a form by voice</div>
                 <div style="font-size:11px;color:#9ca3af;line-height:1.5;">Say: "Net sheet for 123 Main St DC, sale price $750,000" or "I need a CMA for 456 Oak Ave"</div>
               </div>
             </div>
@@ -1441,11 +1441,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="width:180px;height:240px;margin:0 auto 20px;background:linear-gradient(135deg,#0a1628 60%,#c8a951 100%);border-radius:12px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.15);">
                 <div style="color:#fff;text-align:center;padding:16px;">
                   <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;opacity:.7;margin-bottom:8px;">FORWARD</div>
-                  <div style="font-size:13px;font-weight:600;line-height:1.4;">A Guide to<br>Selling Your<br>Property</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;line-height:1.4;">A Guide to<br>Selling Your<br>Property</div>
                   <div style="margin-top:12px;font-size:10px;opacity:.5;">{{ agentName }}</div>
                 </div>
               </div>
-              <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
               <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">33 pages, personalized with your sales team</div>
               <a :href="listingPresentationUrl" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
                 <span style="font-size:16px;line-height:1;">&#8595;</span> Click to Download
@@ -1465,7 +1465,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-if="ns.salePrice||ns.address" class="voice-prefill-badge">✦ Voice pre-filled · Review before generating</div>
             <!-- Results open directly as PDF in a new window -->
             <div v-if="ns.result!==null" class="card" style="margin-bottom:16px;border:2px solid var(--navy);text-align:center;padding:20px;">
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
               <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;align-items:center;">
                 <button class="btn-gold" @click="nsDownloadPDF" style="font-size:12px;padding:8px 24px;">⬇ Download PDF</button>
                 <button class="btn-navy" @click="nsSaveToProperty" :disabled="nsSaving" style="font-size:12px;padding:8px 24px;min-width:140px;">
@@ -1476,7 +1476,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
 
             <div class="card">
-              <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--navy);">Seller Net Sheet</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Seller Net Sheet</h3>
               <div style="font-size:11px;color:#9ca3af;margin-bottom:18px;">Rates sourced from KVS Title, SMART Settlements, and Virginia/DC/MD code</div>
 
               <!-- Property Location -->
@@ -1507,7 +1507,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: Loan Payoffs ── -->
               <div style="margin-top:16px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showLoans = !ns._showLoans">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showLoans = !ns._showLoans">
                   {{ ns._showLoans ? '\u25BC' : '\u25B6' }} Loan Payoff(s)
                 </div>
                 <div v-if="ns._showLoans" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -1518,7 +1518,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: Real Estate Compensation ── -->
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showComp = !ns._showComp">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showComp = !ns._showComp">
                   {{ ns._showComp ? '\u25BC' : '\u25B6' }} Real Estate Compensation
                 </div>
                 <div v-if="ns._showComp">
@@ -1542,7 +1542,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: Seller Concession ── -->
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showConcession = !ns._showConcession">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showConcession = !ns._showConcession">
                   {{ ns._showConcession ? '\u25BC' : '\u25B6' }} Seller Concession
                 </div>
                 <div v-if="ns._showConcession">
@@ -1556,7 +1556,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: HOA / Condo Dues ── -->
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showHOA = !ns._showHOA">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showHOA = !ns._showHOA">
                   {{ ns._showHOA ? '\u25BC' : '\u25B6' }} Homeowner's Association Dues
                 </div>
                 <div v-if="ns._showHOA">
@@ -1574,7 +1574,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: Property Taxes ── -->
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showTax = !ns._showTax">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showTax = !ns._showTax">
                   {{ ns._showTax ? '▼' : '▶' }} Property Taxes
                 </div>
                 <div v-if="ns._showTax">
@@ -1585,7 +1585,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- ── Section: Other Expenses ── -->
               <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showOther = !ns._showOther">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ns._showOther = !ns._showOther">
                   {{ ns._showOther ? '\u25BC' : '\u25B6' }} Other Seller Expenses &amp; Credits
                 </div>
                 <div v-if="ns._showOther">
@@ -1602,14 +1602,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-else-if="lpActivePanel==='marketreport'" style="max-width:640px;margin:0 auto;">
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card">
-              <h3 style="margin:0 0 18px;font-size:15px;font-weight:700;color:var(--navy);">Monthly Market Reports</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
               <div style="font-size:13px;color:#6b7280;margin-bottom:16px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:20px;">📈</span>
                     <div>
-                      <div style="font-size:14px;font-weight:600;color:var(--navy);">{{ region.label }}</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ region.label }}</div>
                       <div style="font-size:11px;color:#9ca3af;">PDF + Instagram graphic</div>
                     </div>
                   </div>
@@ -1623,15 +1623,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-else-if="lpActivePanel==='pricereduction'" style="max-width:640px;margin:0 auto;">
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card">
-              <h3 style="margin:0 0 18px;font-size:15px;font-weight:700;color:var(--navy);">Price Reduction Planner</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:15px;font-weight:600;color:var(--navy);">Price Reduction Planner</h3>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
                 <div class="form-row"><label>List Date</label><input v-model="pr.listDate" type="date"/></div>
                 <div class="form-row"><label>Current List Price</label><input type="text" inputmode="numeric" :value="pr.price ? Number(pr.price).toLocaleString('en-US') : ''" @focus="$event.target.value = pr.price || ''" @blur="pr.price = +$event.target.value.replace(/[^0-9]/g,'') || null; $event.target.value = pr.price ? Number(pr.price).toLocaleString('en-US') : ''" placeholder="750,000"/></div>
               </div>
               <div v-if="prDom>0" style="margin-bottom:20px;">
                 <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;">
-                  <span style="font-size:13px;font-weight:600;color:var(--navy);">Days on Market</span>
-                  <span style="font-size:28px;font-weight:800;color:var(--navy);">{{ prDom }}</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">Days on Market</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:800;color:var(--navy);">{{ prDom }}</span>
                 </div>
                 <div style="height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden;position:relative;">
                   <div :style="{width:Math.min(prDom/90*100,100)+'%',height:'100%',background:prDom<21?'#22c55e':prDom<45?'var(--gold)':'#ef4444',borderRadius:'4px',transition:'width .3s'}"></div>
@@ -1643,7 +1643,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     {{ prDom>=ms.day ? '&#9888;' : '&#9711;' }}
                   </div>
                   <div style="flex:1;">
-                    <div style="font-size:14px;font-weight:600;color:#1f2937;">Day {{ ms.day }}: {{ ms.label }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:#1f2937;">Day {{ ms.day }}: {{ ms.label }}</div>
                     <div style="font-size:12px;color:#6b7280;">{{ ms.action }}</div>
                     <div v-if="pr.price && ms.pct" style="font-size:12px;font-weight:600;color:var(--gold);margin-top:2px;">Suggested: {{ nsFmt(Math.round(pr.price * (1 - ms.pct/100))) }} ({{ ms.pct }}% reduction)</div>
                   </div>
@@ -1658,7 +1658,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <div class="card" style="border-top:3px solid var(--gold);margin-bottom:16px;">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--navy);font-family:'Playfair Display',serif;">Preparing Your Property for Market</h3>
+                <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">Preparing Your Property for Market</h3>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
                   <button class="btn-gold" @click="sellerPrepSendModal=true" style="font-size:11px;padding:6px 18px;">📤 Send to Seller</button>
                   <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 18px;min-width:110px;">
@@ -1695,7 +1695,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <div style="margin-top:16px;padding:14px;background:linear-gradient(135deg,#1a2744,#243660);border-radius:10px;text-align:center;">
                 <div style="font-size:11px;color:rgba(255,255,255,.6);margin-bottom:4px;">Your FORWARD agent is here to coordinate every detail.</div>
-                <div style="font-size:13px;font-weight:600;color:var(--gold);">Let us handle the complexity — you focus on your next chapter.</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--gold);">Let us handle the complexity — you focus on your next chapter.</div>
               </div>
             </div>
           </div>
@@ -1706,7 +1706,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div class="two-col">
             <!-- Input -->
             <div class="card">
-              <h3 style="margin:0 0 18px;font-size:13px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;">Post Details</h3>
+              <h3 style="margin:0 0 18px;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;">Post Details</h3>
               <div class="form-row"><label>Topic Category</label>
                 <select v-model="sp.cat">
                   <option value="market-update">Market Update / Statistics</option>
@@ -1785,7 +1785,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Intro + search -->
             <div class="card" style="margin-bottom:16px;">
-              <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:var(--navy);">🧠 Meeting Prep</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">🧠 Meeting Prep</h3>
               <p style="margin:0 0 16px;font-size:13px;color:#6b7280;line-height:1.6;">Get a 60-second brief before any client meeting — DISC personality profile, conversation topics, communication tips, and an opening line. Search by name or describe the person by voice.</p>
 
               <!-- Search -->
@@ -1814,7 +1814,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;gap:12px;align-items:flex-start;">
                     <button class="mic-btn" :class="{recording:voiceModal.show&&voiceModal.phase==='listening'}" @click="voiceStart" style="width:52px;height:52px;flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;" title="Describe the person you're meeting"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                     <div>
-                      <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px;">Tell us about the person</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:4px;">Tell us about the person</div>
                       <div style="font-size:12px;color:#6b7280;line-height:1.65;">Say something like: <em>"I have a meeting with Sarah Chen tomorrow. She's a corporate attorney, very data-driven and analytical. We met at a Corcoran event last month. She wants to buy in Capitol Hill in the next 6 months."</em></div>
                     </div>
                   </div>
@@ -1839,7 +1839,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;align-items:center;gap:10px;background:var(--navy);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
                   <div style="font-size:24px;">👤</div>
                   <div style="flex:1;">
-                    <div style="font-size:14px;font-weight:700;color:#fff;">{{ mp.selectedPerson.name }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#fff;">{{ mp.selectedPerson.name }}</div>
                     <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">{{ mp.selectedPerson.email || mp.selectedPerson.stage || 'Follow Up Boss contact' }}</div>
                   </div>
                   <button @click="mpReset" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">✕ Change</button>
@@ -1875,7 +1875,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Brief output -->
             <template v-if="mp.brief">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-                <div style="font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
                 <button class="btn-outline" @click="mpReset" style="font-size:12px;padding:6px 14px;">New Search</button>
               </div>
 
@@ -1946,7 +1946,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="flex:1;height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
                 <div :style="{width: tcOverallProgress+'%', height:'100%', background:'var(--gold)', borderRadius:'99px', transition:'width 0.4s ease'}"></div>
               </div>
-              <span style="font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;">{{ tcOverallProgress }}%</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);white-space:nowrap;">{{ tcOverallProgress }}%</span>
             </div>
           </div>
 
@@ -1955,7 +1955,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px;">
               <div v-for="p in tcPillars" :key="p.id" class="tool-card" @click="tcActivePillar=p.id" style="text-align:center;padding:28px 20px;">
                 <div style="font-size:36px;margin-bottom:10px;">{{ p.icon }}</div>
-                <div style="font-size:16px;font-weight:800;color:var(--navy);margin-bottom:4px;">{{ p.label }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:800;color:var(--navy);margin-bottom:4px;">{{ p.label }}</div>
                 <div style="font-size:12px;color:#9ca3af;margin-bottom:16px;line-height:1.5;">{{ p.tagline }}</div>
                 <!-- Pillar progress ring -->
                 <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
@@ -1979,7 +1979,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div class="card" style="margin-bottom:24px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;">
                   <div style="font-size:40px;">{{ p.icon }}</div>
                   <div style="flex:1;min-width:200px;">
-                    <h2 style="margin:0;font-size:20px;font-weight:800;color:var(--navy);">{{ p.label }}</h2>
+                    <h2 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:20px;font-weight:600;color:var(--navy);">{{ p.label }}</h2>
                     <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">{{ p.tagline }}</p>
                   </div>
                   <div style="display:flex;align-items:center;gap:10px;min-width:180px;">
@@ -2010,7 +2010,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                           <span style="font-size:11px;font-weight:800;color:#9ca3af;">MODULE {{ idx+1 }}</span>
                           <span v-if="m.done" style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:#ecfdf5;color:#059669;">COMPLETE</span>
                         </div>
-                        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-top:2px;" :style="{textDecoration: m.done ? 'none' : 'none'}">{{ m.title }}</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-top:2px;" :style="{textDecoration: m.done ? 'none' : 'none'}">{{ m.title }}</div>
                       </div>
                       <!-- Expand arrow -->
                       <span style="font-size:18px;color:#9ca3af;transition:transform 0.2s;flex-shrink:0;" :style="{transform: tcExpandedModule===m.id ? 'rotate(180deg)' : 'rotate(0)'}">▾</span>
@@ -2023,7 +2023,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         <a v-if="m.videoUrl" :href="m.videoUrl" target="_blank" rel="noopener" class="btn-navy" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13px;padding:9px 18px;">
                           ▶ Watch Module
                         </a>
-                        <span v-else style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#f3f4f6;color:#9ca3af;border-radius:8px;font-size:13px;font-weight:600;">
+                        <span v-else style="font-family:'Cormorant Garamond',serif;display:inline-flex;align-items:center;gap:6px;padding:9px 18px;background:#f3f4f6;color:#9ca3af;border-radius:8px;font-size:13px;font-weight:600;">
                           ▶ Video Coming Soon
                         </span>
                         <!-- Material button -->
@@ -2047,11 +2047,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">Your all-in-one Agent Resource Hub — SOPs, essential forms, vetted vendor contacts, and on-demand training.</p>
 
           <!-- Row 1: Core Documents -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Core Documents</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Core Documents</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atCoreDocs" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2060,11 +2060,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Row 2: Marketing & Sales -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Marketing &amp; Sales</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Marketing &amp; Sales</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atMarketing" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2073,11 +2073,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Row 3: Training & Resources -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Training &amp; Resources</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Training &amp; Resources</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atTraining" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2086,11 +2086,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Row 4: Templates & Vendors -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Templates &amp; Vendors</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Templates &amp; Vendors</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atTemplates" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2099,11 +2099,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Row 5: Transaction Requests -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Transaction Requests</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Transaction Requests</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atTransactions" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-gold" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2112,11 +2112,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- Row 6: Contract to Close -->
-          <h2 style="font-size:14px;font-weight:700;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Contract to Close</h2>
+          <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Contract to Close</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:32px;">
             <div v-for="item in atContractClose" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
               <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-gold" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
@@ -2131,7 +2131,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div style="max-width:900px;">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
               <div>
-                <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--navy);">My Buyers</h2>
+                <h2 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:18px;font-weight:600;color:var(--navy);">My Buyers</h2>
                 <p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">Manage buyer files and access all buyer tools inside each file.</p>
               </div>
               <button class="btn-gold" @click="byrShowNewModal=true" style="white-space:nowrap;">+ New Buyer</button>
@@ -2140,7 +2140,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-else-if="byrBuyers.length===0" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 260px);text-align:center;">
               <div style="max-width:420px;padding:40px 24px;">
                 <div style="width:80px;height:80px;margin:0 auto 20px;background:linear-gradient(135deg,var(--navy),#243660);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;">👥</div>
-                <h2 style="margin:0 0 8px;font-size:22px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Welcome to My Buyers</h2>
+                <h2 style="margin:0 0 8px;font-size:22px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Welcome to My Buyers</h2>
                 <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 24px;">Create a buyer file to organize your buyer tools — Cash to Close, Consultation Kit, Tour Tracker, and more — all inside one place.</p>
                 <button class="btn-navy" @click="byrShowNewModal=true" style="padding:14px 36px;font-size:15px;font-weight:700;color:var(--gold);border-radius:12px;">Add Your First Buyer</button>
               </div>
@@ -2169,7 +2169,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                           <span class="market-badge" style="background:rgba(201,168,76,0.15);color:var(--gold);">👥 Buyer</span>
                           <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
                         </div>
-                        <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
                         <div style="font-size:12px;color:#9ca3af;">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                       </div>
                     </div>
@@ -2188,7 +2188,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <span class="market-badge" style="background:rgba(201,168,76,0.15);color:var(--gold);">👥 Buyer</span>
                       <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
                     </div>
-                    <div style="font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
                     <div style="font-size:12px;color:#9ca3af;">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                   </div>
                 </div>
@@ -2198,7 +2198,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-if="byrDeleteTarget" class="modal-bg" @click.self="byrDeleteTarget=null">
             <div class="modal-box" style="max-width:400px;text-align:center;">
               <div style="font-size:36px;margin-bottom:12px;">🗑️</div>
-              <h3 style="margin:0 0 8px;font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Delete {{ byrDeleteTarget.buyer_name }}?</h3>
+              <h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Delete {{ byrDeleteTarget.buyer_name }}?</h3>
               <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This cannot be undone.</p>
               <div style="display:flex;gap:10px;">
                 <button class="btn-outline" @click="byrDeleteTarget=null" style="flex:1;">Cancel</button>
@@ -2208,7 +2208,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
           <div v-if="byrShowNewModal" class="modal-bg" @click.self="byrShowNewModal=false">
             <div class="modal-box" style="max-width:460px;">
-              <h3 style="margin:0 0 18px;font-size:18px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Add New Buyer</h3>
+              <h3 style="margin:0 0 18px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Add New Buyer</h3>
               <div class="form-row"><label>Buyer Name *</label><input v-model="byrNewName" type="text" placeholder="e.g. Sarah & James Miller" @keyup.enter="byrCreateBuyer" autofocus></div>
               <div class="form-row"><label>Email</label><input v-model="byrNewEmail" type="email" placeholder="buyer@email.com"></div>
               <div class="form-row"><label>Phone</label><input v-model="byrNewPhone" type="tel" placeholder="(202) 555-0100"></div>
@@ -2230,22 +2230,22 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div style="background:linear-gradient(135deg,var(--navy) 0%,#1e3a5f 100%);border-radius:12px;padding:16px;margin-bottom:16px;color:#fff;">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;">
                 <div>
-                  <div style="font-size:19px;font-weight:700;line-height:1.2;">{{ byrActiveBuyer.buyer_name }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;line-height:1.2;">{{ byrActiveBuyer.buyer_name }}</div>
                   <div style="font-size:12px;color:#94a3b8;margin-top:3px;">{{ byrActiveBuyer.email || '' }}{{ (byrActiveBuyer.email && byrActiveBuyer.phone) ? ' · ' : '' }}{{ byrActiveBuyer.phone || '' }}</div>
                 </div>
                 <span :class="'status-badge status-'+(byrActiveBuyer.status||'active')" style="flex-shrink:0;margin-left:8px;">{{ byrActiveBuyer.status || 'Active' }}</span>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
                 <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:22px;font-weight:700;">{{ byrSubfolderFiles('pre_approval').length }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;">{{ byrSubfolderFiles('pre_approval').length }}</div>
                   <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Pre-Approvals</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='tour_tracker').length }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='tour_tracker').length }}</div>
                   <div style="font-size:10px;color:#94a3b8;margin-top:1px;">Tours Saved</div>
                 </div>
                 <div style="background:rgba(255,255,255,0.1);border-radius:8px;padding:8px;text-align:center;">
-                  <div style="font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='cash_to_close').length }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;">{{ byrActiveFiles.filter(f=>f.subfolder==='cash_to_close').length }}</div>
                   <div style="font-size:10px;color:#94a3b8;margin-top:1px;">CTC Reports</div>
                 </div>
               </div>
@@ -2485,7 +2485,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div style="margin-top:28px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
-                <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">Buyer Tools</h3>
+                <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">Buyer Tools</h3>
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
               </div>
               <p style="font-size:13px;color:#9ca3af;margin:0 0 14px;text-align:center;">Generate assets for this buyer.</p>
@@ -2595,7 +2595,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">Generate a branded Buyer Consultation Kit PDF to share with prospective buyers. Customize the buyer's info and the kit auto-populates with your name, FORWARD branding, and a complete guide to the home buying process.</p>
 
             <div class="card" style="margin-bottom:16px;">
-              <h3 style="margin:0 0 14px;font-size:14px;font-weight:700;color:var(--navy);">Buyer Information</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:14px;font-weight:600;color:var(--navy);">Buyer Information</h3>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                 <div class="form-row"><label>Buyer Name(s)</label><input v-model="bck.buyerName" type="text" placeholder="e.g. Sarah & James Miller"/></div>
                 <div class="form-row"><label>Email</label><input v-model="bck.buyerEmail" type="email" placeholder="buyer@email.com"/></div>
@@ -2630,12 +2630,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Kit Preview Sections -->
             <div class="card" style="margin-bottom:16px;">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">Kit Sections Included</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Kit Sections Included</h3>
               <p style="font-size:12px;color:#9ca3af;margin:0 0 14px;">These sections will appear in your branded PDF. Toggle any section off to exclude it.</p>
               <div v-for="(sec,i) in bckSections" :key="i" style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f3f4f6;">
                 <input type="checkbox" v-model="sec.enabled" style="width:18px;height:18px;accent-color:var(--navy);cursor:pointer;flex-shrink:0;"/>
                 <div style="flex:1;min-width:0;">
-                  <div style="font-size:13px;font-weight:600;color:var(--navy);">{{ sec.icon }} {{ sec.title }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ sec.icon }} {{ sec.title }}</div>
                   <div style="font-size:11px;color:#9ca3af;line-height:1.4;">{{ sec.preview }}</div>
                 </div>
               </div>
@@ -2658,7 +2658,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <template v-else-if="view==='buyer-needs'">
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; Back to Buyers</button>
           <div style="max-width:800px;">
-            <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--navy);margin:0 0 4px;">Buyer Needs Analysis</h2>
+            <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy);margin:0 0 4px;">Buyer Needs Analysis</h2>
             <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;">Describe your buyer's wants, needs, and situation. AI will generate an agent brief and a buyer-facing summary.</p>
 
             <!-- Input / Result view toggle -->
@@ -2715,7 +2715,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;justify-content:center;margin-bottom:16px;">
                   <div class="spinner" style="width:48px;height:12px;"></div>
                 </div>
-                <div style="color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Building Buyer Profile</div>
+                <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Building Buyer Profile</div>
                 <div style="color:rgba(255,255,255,0.55);font-size:13px;">Extracting needs, priorities, and budget signals from your notes. This takes 15&ndash;30 seconds.</div>
               </div>
               <div v-if="bnaError" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ bnaError }}</div>
@@ -2733,7 +2733,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <!-- Apply to Profile banner -->
               <div v-if="bnaResult.structuredFields && byrActiveBuyer && !bnaApplied" style="background:linear-gradient(135deg,#0a1628 0%,#1a2f4e 100%);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:180px;">
-                  <div style="font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;">Auto-fill Buyer Profile</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;">Auto-fill Buyer Profile</div>
                   <div style="font-size:11px;color:#94a3b8;">AI extracted {{ Object.values(bnaResult.structuredFields).filter(v=>v!==null&&v!=='').length }} fields from your notes</div>
                 </div>
                 <button class="btn-gold" @click="bnaApplyToProfile" :disabled="bnaApplying" style="font-size:13px;padding:9px 18px;white-space:nowrap;">
@@ -2741,7 +2741,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   {{ bnaApplying ? 'Applying...' : '⚡ Apply to Profile' }}
                 </button>
               </div>
-              <div v-if="bnaApplied" style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:600;">✓ Profile updated — all extracted fields saved to buyer record.</div>
+              <div v-if="bnaApplied" style="font-family:'Cormorant Garamond',serif;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:600;">✓ Profile updated — all extracted fields saved to buyer record.</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button class="btn-navy" @click="bnaDownloadPDF" style="font-size:13px;padding:10px 18px;">Download PDF</button>
                 <button class="btn-gold" @click="bnaSavePDF" :disabled="bnaSaving" style="font-size:13px;padding:10px 18px;">
@@ -2758,7 +2758,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <template v-else-if="view==='offer-strategy'">
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; Back to Buyers</button>
           <div style="max-width:800px;">
-            <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--navy);margin:0 0 4px;">Offer Strategy Generator</h2>
+            <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy);margin:0 0 4px;">Offer Strategy Generator</h2>
             <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;">Build a data-driven offer strategy with comp analysis, market positioning, and tactical recommendations.</p>
 
             <!-- Step indicator -->
@@ -2769,7 +2769,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- STEP 1: Property Details -->
             <div v-if="osgStep===1">
               <div class="card">
-                <h3 style="margin:0 0 14px;font-size:15px;font-weight:700;color:var(--navy);">Subject Property</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Subject Property</h3>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div class="form-row" style="grid-column:1/-1;"><label>Property Address *</label><input v-model="osgAddress" type="text" placeholder="123 Main St, Arlington VA 22201"></div>
                   <div class="form-row"><label>List Price *</label><input :value="osgListPrice" type="text" inputmode="numeric" placeholder="750,000"
@@ -2797,11 +2797,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- STEP 2: Comp Review + Offer Parameters -->
             <div v-if="osgStep===2">
-              <h3 style="margin:0 0 14px;font-size:15px;font-weight:700;color:var(--navy);">Comparable Sales ({{ osgComps.length }})</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Comparable Sales ({{ osgComps.length }})</h3>
               <div v-for="(comp, ci) in osgComps" :key="ci" class="card" style="margin-bottom:12px;position:relative;">
                 <button @click="osgComps.splice(ci, 1)" style="position:absolute;top:8px;right:8px;background:#fef2f2;color:#dc2626;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">✕</button>
                 <template v-if="!comp.editing">
-                  <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ comp.address }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ comp.address }}</div>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;color:#6b7280;">
                     <div>Sale: <strong style="color:var(--navy);">{{ fmtDollar(comp.salePrice) || comp.salePrice }}</strong></div>
                     <div>$/SF: <strong>{{ comp.ppsf ? '$' + fmtComma(comp.ppsf) : comp.ppsf }}</strong></div>
@@ -2833,7 +2833,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <button class="btn-outline" @click="osgAddingComp=true" style="font-size:13px;">+ Add Your Own Comp</button>
               </div>
               <div v-else class="card" style="margin-bottom:20px;border:2px dashed var(--gold);">
-                <h4 style="margin:0 0 10px;font-size:13px;font-weight:700;color:var(--navy);">Add Comp</h4>
+                <h4 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);">Add Comp</h4>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
                   <div class="form-row" style="grid-column:1/-1;"><label>Address *</label><input v-model="osgNewComp.address"></div>
                   <div class="form-row"><label>Sale Price *</label><input v-model="osgNewComp.salePrice"></div>
@@ -2852,7 +2852,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Offer Parameters -->
               <div class="card" style="border-top:3px solid var(--gold);">
-                <h3 style="margin:0 0 14px;font-size:15px;font-weight:700;color:var(--navy);">Offer Parameters</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Offer Parameters</h3>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div class="form-row"><label>Competition Level</label>
                     <select v-model="osgCompetition"><option value="low">Low</option><option value="moderate">Moderate</option><option value="high">High</option><option value="war">Bidding War</option></select>
@@ -2876,7 +2876,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;justify-content:center;margin-bottom:16px;">
                     <div class="spinner" style="width:48px;height:12px;"></div>
                   </div>
-                  <div style="color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Comps &amp; Building Strategy</div>
+                  <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Comps &amp; Building Strategy</div>
                   <div style="color:rgba(255,255,255,0.55);font-size:13px;">Reviewing {{ osgComps.length }} comparable{{ osgComps.length===1?'':'s' }} and market conditions. This takes 15&ndash;30 seconds.</div>
                 </div>
                 <div v-if="osgAnalyzeError" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgAnalyzeError }}</div>
@@ -2889,31 +2889,31 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;" class="osg-stat-grid">
                 <div style="background:var(--navy);border-radius:12px;padding:14px 10px;text-align:center;">
                   <div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Max Value</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--gold);word-break:break-word;">{{ osgResult.maxValue }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--gold);word-break:break-word;">{{ osgResult.maxValue }}</div>
                 </div>
                 <div style="background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:14px 10px;text-align:center;">
                   <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Market Value</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--navy);word-break:break-word;">{{ osgResult.marketValue }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--navy);word-break:break-word;">{{ osgResult.marketValue }}</div>
                 </div>
                 <div style="background:linear-gradient(135deg,#c9a84c,#e8c96a);border-radius:12px;padding:14px 10px;text-align:center;">
                   <div style="font-size:10px;color:rgba(10,22,40,0.6);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Winning Offer</div>
-                  <div style="font-size:18px;font-weight:700;color:var(--navy);word-break:break-word;">{{ osgResult.winningOffer }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:700;color:var(--navy);word-break:break-word;">{{ osgResult.winningOffer }}</div>
                 </div>
               </div>
               <style>.osg-stat-grid{min-width:0;width:100%;} @media(max-width:500px){.osg-stat-grid{grid-template-columns:1fr !important;}}</style>
 
               <!-- Appraisal gap warning -->
               <div v-if="osgResult.appraisalGap" style="background:#fefce8;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-                <div style="font-size:14px;font-weight:700;color:#92400e;">Appraisal Gap Risk: {{ osgResult.appraisalGap }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#92400e;">Appraisal Gap Risk: {{ osgResult.appraisalGap }}</div>
                 <div v-if="osgResult.appraisalGapNote" style="font-size:13px;color:#78350f;margin-top:4px;">{{ osgResult.appraisalGapNote }}</div>
               </div>
 
               <!-- Content cards -->
-              <div class="card" style="margin-bottom:12px;"><h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--navy);">Valuation Reasoning</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--navy);">Recommended Offer Structure</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div></div>
-              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;"><h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--navy);">Escalation Clause</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--navy);">Pre-Offer Call Talking Points</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div></div>
-              <div v-if="osgResult.justinNote" style="background:var(--navy);border-radius:12px;padding:16px;margin-bottom:16px;"><h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--gold);">Financial Team Action</h3><div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;white-space:pre-wrap;">{{ osgResult.justinNote }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Valuation Reasoning</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Recommended Offer Structure</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div></div>
+              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Escalation Clause</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Pre-Offer Call Talking Points</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div></div>
+              <div v-if="osgResult.justinNote" style="background:var(--navy);border-radius:12px;padding:16px;margin-bottom:16px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--gold);">Financial Team Action</h3><div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;white-space:pre-wrap;">{{ osgResult.justinNote }}</div></div>
 
               <!-- Action buttons -->
               <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
@@ -2943,7 +2943,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- STEP 1 -->
             <template v-if="bmrStep===1">
               <div class="card" style="padding:32px;">
-                <h2 style="font-size:20px;font-weight:700;color:var(--navy);margin-bottom:6px;">Upload MLS Agent Full Report</h2>
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--navy);margin-bottom:6px;">Upload MLS Agent Full Report</h2>
                 <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">Run a CMA in your MLS, export as "Agent Full" PDF, then upload here. Claude will extract all comp data automatically.</p>
                 <div style="border:2px dashed var(--border);border-radius:10px;padding:40px;text-align:center;cursor:pointer;"
                      :style="{borderColor:bmrDragOver?'var(--navy)':'var(--border)'}"
@@ -2969,7 +2969,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <template v-if="bmrStep===2 && bmrAnalysis">
               <!-- Extraction verification banner -->
               <div style="background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:16px 20px;margin-bottom:16px;">
-                <div style="font-weight:700;color:#854d0e;font-size:13px;margin-bottom:6px;">⚠ Verify Extracted Data Before Proceeding</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-weight:700;color:#854d0e;font-size:13px;margin-bottom:6px;">⚠ Verify Extracted Data Before Proceeding</div>
                 <div style="font-size:12px;color:#713f12;line-height:1.6;">
                   Claude read the PDF and extracted the values below — but it can misread dense MLS layouts.
                   <strong>Check subject sqft, beds, and baths first</strong>, then verify each closed comp's sale price and sqft.
@@ -2981,7 +2981,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">{{ bmrNoSubject ? "Property 1" : "Subject Property" }}</h3>
+                  <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);margin:0;">{{ bmrNoSubject ? "Property 1" : "Subject Property" }}</h3>
                   <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                     <span v-if="!bmrNoSubject" style="font-size:11px;color:var(--muted);background:var(--bg);padding:4px 10px;border-radius:20px;border:1px solid var(--border);">Edit any field before proceeding</span>
                     <button @click="bmrNoSubject=!bmrNoSubject"
@@ -2995,7 +2995,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span @click="bmrDomTip=false" style="float:right;cursor:pointer;font-weight:700;opacity:0.6;">✕</span>
                 </div>
                 <div v-if="bmrNoSubject" style="background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:14px 16px;margin-bottom:14px;">
-                  <div style="font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-weight:700;font-size:13px;color:#854d0e;margin-bottom:4px;">Independent Offer Guidance Mode</div>
                   <div style="font-size:12px;color:#713f12;line-height:1.6;">Claude will generate <strong>individual offer guidance</strong> for each property below — perfect when your buyer is still deciding. To switch to single-property mode, click <strong>Use as Subject</strong> on any listing.</div>
                 </div>
                 <!-- In no-subject mode: render subject like a numbered comp card -->
@@ -3041,7 +3041,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </template>
               </div>
               <div class="card" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Additional Properties" : "Comparable Sales" }} <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Additional Properties" : "Comparable Sales" }} <span style="font-size:13px;font-weight:400;color:var(--muted);">({{ bmrAnalysis.comps.length }} found)</span></h3>
                 <div v-for="(comp,i) in bmrAnalysis.comps" :key="i" style="border:1px solid var(--border);border-radius:8px;padding:16px;margin-bottom:12px;">
                   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                     <span style="font-size:11px;font-weight:700;color:#fff;background:var(--navy);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">{{ bmrNoSubject ? i+2 : i+1 }}</span>
@@ -3085,7 +3085,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <template v-if="!bmrNoSubject">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-                    <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:0;">Market Narrative</h3>
+                    <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);margin:0;">Market Narrative</h3>
                     <div style="display:flex;align-items:center;gap:8px;">
                       <button class="btn-secondary" @click="bmrRegenerate" :disabled="bmrRegenerating" style="font-size:13px;padding:10px 18px;white-space:nowrap;font-weight:600;">
                         <span v-if="bmrRegenerating">⏳ Regenerating…</span>
@@ -3096,11 +3096,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <div v-if="bmrRegenError" style="color:#dc2626;font-size:12px;margin-bottom:8px;">{{ bmrRegenError }}</div>
                   <textarea class="form-input" v-model="bmrAnalysis.narrative" rows="5" style="width:100%;resize:vertical;"></textarea>
-                  <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
+                  <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);margin:16px 0 12px;">Offer Guidance</h3>
                   <textarea class="form-input" v-model="bmrAnalysis.offer_guidance" rows="4" style="width:100%;resize:vertical;"></textarea>
                 </template>
                 <div v-if="bmrNoSubject" style="background:#fef3c7;border:1px solid #fbbf24;border-radius:6px;padding:16px 20px;margin-top:4px;">
-                  <p style="margin:0 0 6px;font-weight:700;color:#92400e;font-size:13px;">Independent Analysis Mode</p>
+                  <p style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-weight:700;color:#92400e;font-size:13px;">Independent Analysis Mode</p>
                   <p style="margin:0;font-size:12px;color:#78350f;line-height:1.6;">Claude will generate personalized offer guidance for <strong>each property individually</strong> — no subject comparison needed. Review the properties above, then continue to set offer details for each one.</p>
                 </div>
               </div>
@@ -3112,7 +3112,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- STEP 3 -->
             <template v-if="bmrStep===3">
               <div class="card" style="padding:24px;margin-bottom:20px;">
-                <h3 style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Comparison Report Details" : "Offer Details" }}</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--navy);margin-bottom:16px;">{{ bmrNoSubject ? "Comparison Report Details" : "Offer Details" }}</h3>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
                   <div><label class="form-label">Client Name</label><input class="form-input" v-model="bmrClientName" placeholder="e.g. The Johnson Family" style="width:100%;"></div>
                   <div v-if="!bmrNoSubject"><label class="form-label">Recommended Offer Price</label><input class="form-input" v-model="bmrOfferPrice" placeholder="e.g. $625,000" style="width:100%;"></div>
@@ -3141,11 +3141,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;gap:10px;align-items:flex-start;">
                   <span style="font-size:20px;">⚠️</span>
                   <div>
-                    <div style="font-weight:600;font-size:14px;color:#92400e;margin-bottom:6px;">Disclaimer Acknowledgment</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:14px;color:#92400e;margin-bottom:6px;">Disclaimer Acknowledgment</div>
                     <p style="font-size:13px;color:#78350f;line-height:1.6;">By generating this report, you confirm that all data has been reviewed for accuracy and that this report is prepared for informational purposes only.</p>
                     <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
                       <input type="checkbox" v-model="bmrDisclaimerAck" style="accent-color:var(--navy);width:16px;height:16px;">
-                      <span style="font-size:13px;font-weight:600;color:#92400e;">I acknowledge and agree</span>
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:#92400e;">I acknowledge and agree</span>
                     </label>
                   </div>
                 </div>
@@ -3205,7 +3205,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Create new tour -->
               <div class="card" style="margin-bottom:16px;">
-                <h3 style="margin:0 0 10px;font-size:14px;font-weight:700;color:var(--navy);">New Tour</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">New Tour</h3>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div class="form-row"><label>Tour Name</label><input v-model="tt.newTourName" placeholder="e.g. Saturday Showings — Sarah Miller" @keyup.enter="ttCreateTour"/></div>
                   <div class="form-row"><label>Buyer Name</label><input v-model="tt.newTourBuyer" placeholder="e.g. Sarah & James Miller"/></div>
@@ -3215,11 +3215,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Existing tours -->
               <div v-if="tt.tours.length > 0">
-                <h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:var(--navy);">Your Tours</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);">Your Tours</h3>
                 <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;">
                   <div v-for="tour in tt.tours" :key="tour.id" class="tool-card" @click="ttOpenTour(tour)" style="padding:18px;position:relative;">
                     <div style="font-size:28px;margin-bottom:8px;">🏘️</div>
-                    <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ tour.name }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ tour.name }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:3px;">{{ tour.buyer || 'No buyer assigned' }} · {{ tour.properties.length }} propert{{ tour.properties.length === 1 ? 'y' : 'ies' }}</div>
                     <div style="font-size:11px;color:#9ca3af;">{{ new Date(tour.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                     <button class="btn-del" @click.stop="ttDeleteTour(tour.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
@@ -3237,7 +3237,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div class="card" style="margin-bottom:16px;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
                   <div>
-                    <h2 style="margin:0;font-size:18px;font-weight:700;color:var(--navy);font-family:'Playfair Display',serif;">{{ tt.activeTour.name }}</h2>
+                    <h2 style="margin:0;font-size:18px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">{{ tt.activeTour.name }}</h2>
                     <div style="font-size:13px;color:#9ca3af;margin-top:3px;">{{ tt.activeTour.buyer || 'No buyer assigned' }} · {{ tt.activeTour.properties.length }} propert{{ tt.activeTour.properties.length === 1 ? 'y' : 'ies' }}</div>
                   </div>
                   <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -3260,7 +3260,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;justify-content:center;margin-bottom:16px;">
                   <div class="spinner" style="width:48px;height:12px;"></div>
                 </div>
-                <div style="color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Tour Properties</div>
+                <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Tour Properties</div>
                 <div style="color:rgba(255,255,255,0.55);font-size:13px;">Comparing {{ tt.activeTour ? tt.activeTour.properties.length : 0 }} {{ (tt.activeTour && tt.activeTour.properties.length===1) ? 'property' : 'properties' }} and generating your recommendation. This takes 15&ndash;30 seconds.</div>
               </div>
 
@@ -3268,14 +3268,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div v-if="tt.recommendation" class="card" style="margin-bottom:16px;border:2px solid var(--gold);">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
                   <span style="font-size:20px;">🤖</span>
-                  <h3 style="margin:0;font-size:15px;font-weight:700;color:var(--navy);">AI Recommendation</h3>
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">AI Recommendation</h3>
                 </div>
                 <div style="font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">{{ tt.recommendation }}</div>
               </div>
 
               <!-- Add property -->
               <div class="card" style="margin-bottom:16px;">
-                <h3 style="margin:0 0 10px;font-size:13px;font-weight:700;color:var(--navy);">Add Property</h3>
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);">Add Property</h3>
                 <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end;">
                   <div class="form-row" style="margin:0;"><label>Address</label><input v-model="tt.newPropAddr" placeholder="e.g. 1234 Q St NW" @keyup.enter="ttAddProperty"/></div>
                   <div class="form-row" style="margin:0;"><label>List Price</label><input v-model="tt.newPropPrice" placeholder="$650,000"/></div>
@@ -3290,13 +3290,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div v-for="(prop,pi) in tt.activeTour.properties" :key="prop.id" class="tool-card" @click="tt.activeProperty=prop" style="padding:18px;position:relative;">
                     <div style="position:absolute;top:12px;left:16px;background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">#{{ pi+1 }}</div>
                     <button class="btn-del" @click.stop="ttRemoveProperty(prop.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
-                    <div style="margin-top:20px;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ prop.address }}</div>
-                    <div v-if="prop.price" style="font-size:13px;color:var(--gold);font-weight:600;margin-top:3px;">{{ ttFmtPrice(prop.price) }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;margin-top:20px;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ prop.address }}</div>
+                    <div v-if="prop.price" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--gold);font-weight:600;margin-top:3px;">{{ ttFmtPrice(prop.price) }}</div>
                     <div style="margin-top:10px;display:flex;align-items:center;gap:8px;">
                       <div style="flex:1;height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
                         <div :style="{width: ttPropScore(prop)/5*100+'%', height:'100%', background: ttPropScore(prop)>=4?'#16a34a':ttPropScore(prop)>=3?'var(--gold)':'#dc2626', borderRadius:'3px', transition:'width 0.3s'}"></div>
                       </div>
-                      <span style="font-size:13px;font-weight:700;color:var(--navy);">{{ ttPropScore(prop) > 0 ? ttPropScore(prop).toFixed(1) : '—' }}</span>
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);">{{ ttPropScore(prop) > 0 ? ttPropScore(prop).toFixed(1) : '—' }}</span>
                     </div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ ttScoredCount(prop) }}/{{ TT_CATEGORIES.length }} scored</div>
                   </div>
@@ -3304,7 +3304,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
                 <!-- Comparison table (if 2+ properties) -->
                 <div v-if="tt.activeTour.properties.length >= 2" style="margin-top:24px;">
-                  <h3 style="margin:0 0 12px;font-size:14px;font-weight:700;color:var(--navy);">Side-by-Side Comparison</h3>
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);">Side-by-Side Comparison</h3>
                   <div class="scroll-table-wrap" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
                     <table style="border-collapse:collapse;font-size:12px;min-width:500px;width:100%;">
                       <thead>
@@ -3338,13 +3338,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <template v-else>
                 <button class="lp-back" @click="tt.activeProperty=null" style="margin-bottom:12px;">← All Properties</button>
                 <div class="card" style="margin-bottom:16px;">
-                  <h2 style="margin:0 0 4px;font-size:17px;font-weight:700;color:var(--navy);font-family:'Playfair Display',serif;">{{ tt.activeProperty.address }}</h2>
-                  <div v-if="tt.activeProperty.price" style="font-size:14px;color:var(--gold);font-weight:600;margin-bottom:16px;">{{ ttFmtPrice(tt.activeProperty.price) }}</div>
+                  <h2 style="margin:0 0 4px;font-size:17px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">{{ tt.activeProperty.address }}</h2>
+                  <div v-if="tt.activeProperty.price" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--gold);font-weight:600;margin-bottom:16px;">{{ ttFmtPrice(tt.activeProperty.price) }}</div>
 
                   <!-- Score categories -->
                   <div v-for="cat in TT_CATEGORIES" :key="cat.key" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid #f3f4f6;">
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                      <span style="font-size:13px;font-weight:600;color:var(--navy);">{{ cat.icon }} {{ cat.label }}</span>
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ cat.icon }} {{ cat.label }}</span>
                       <span style="font-size:12px;color:#9ca3af;">{{ tt.activeProperty.scores[cat.key] || 0 }}/5</span>
                     </div>
                     <div style="display:flex;gap:6px;">
@@ -3402,8 +3402,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div class="card" style="max-width:740px;">
             <!-- Result banner -->
             <div v-if="ctc.result!==null" class="card" style="margin-bottom:16px;border:2px solid var(--navy);text-align:center;padding:20px;">
-              <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Estimated Cash to Close</div>
-              <div style="font-size:28px;font-weight:800;color:var(--gold);margin-bottom:8px;">{{ ctcFmt(ctc.result) }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Estimated Cash to Close</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:800;color:var(--gold);margin-bottom:8px;">{{ ctcFmt(ctc.result) }}</div>
               <div style="font-size:11px;color:#6b7280;margin-bottom:12px;" v-if="ctc._loanAmt">Loan Amount: {{ ctcFmt(ctc._loanAmt) }}</div>
               <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
                 <button class="btn-gold" @click="ctcDownloadPDF" style="font-size:12px;padding:8px 24px;">⬇ Download PDF</button>
@@ -3412,7 +3412,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
             </div>
 
-            <h3 style="margin:0 0 4px;font-size:15px;font-weight:700;color:var(--navy);">Cash to Close Estimate</h3>
+            <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Cash to Close Estimate</h3>
             <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.5;">Jurisdiction-aware buyer closing cost calculator for DC, MD, and VA. Modeled after KVS Title buyer estimate.</p>
 
             <!-- Property Address with autocomplete -->
@@ -3480,7 +3480,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Title & Settlement -->
             <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showTitle = !ctc._showTitle">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showTitle = !ctc._showTitle">
                 {{ ctc._showTitle ? '\u25BC' : '\u25B6' }} Title &amp; Settlement
               </div>
               <div v-if="ctc._showTitle">
@@ -3501,7 +3501,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Lender Charges (granular like KVS) -->
             <div v-if="ctc.loanType!=='cash'" style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showLender = !ctc._showLender">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showLender = !ctc._showLender">
                 {{ ctc._showLender ? '\u25BC' : '\u25B6' }} Lender Charges
               </div>
               <div v-if="ctc._showLender">
@@ -3528,7 +3528,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Impounds / Prepaids & Escrows (detailed like KVS) -->
             <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showPrepaids = !ctc._showPrepaids">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showPrepaids = !ctc._showPrepaids">
                 {{ ctc._showPrepaids ? '\u25BC' : '\u25B6' }} Impounds, Prepaids &amp; Escrows
               </div>
               <div v-if="ctc._showPrepaids">
@@ -3559,7 +3559,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Buyer's Agent Compensation -->
             <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showAgent = !ctc._showAgent">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showAgent = !ctc._showAgent">
                 {{ ctc._showAgent ? '\u25BC' : '\u25B6' }} Buyer's Agent Compensation
               </div>
               <div v-if="ctc._showAgent">
@@ -3579,7 +3579,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Credits & Concessions -->
             <div style="background:#f8fafc;border-radius:10px;padding:16px;margin-bottom:16px;">
-              <div style="font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showCredits = !ctc._showCredits">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:10px;cursor:pointer;" @click="ctc._showCredits = !ctc._showCredits">
                 {{ ctc._showCredits ? '\u25BC' : '\u25B6' }} Credits &amp; Concessions
               </div>
               <div v-if="ctc._showCredits">
@@ -3619,21 +3619,21 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- Breakdown -->
             <div v-if="ctc.result!==null" style="margin-top:24px;">
-              <h4 style="margin:0 0 12px;font-size:14px;font-weight:700;color:var(--navy);">Estimate Breakdown</h4>
+              <h4 style="font-family:'Cormorant Garamond',serif;margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);">Estimate Breakdown</h4>
               <div v-for="(section,si) in ctc.sections" :key="si" style="margin-bottom:16px;">
                 <div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">{{ section.label }}</div>
                 <div v-for="item in section.items" :key="item.label" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f3f4f6;font-size:13px;">
                   <span style="color:#374151;">{{ item.label }}</span>
                   <span :style="{color: item.amount < 0 ? '#16a34a' : 'var(--navy)', fontWeight:600}">{{ item.amount < 0 ? '-' : '' }}{{ ctcFmt(Math.abs(item.amount)) }}</span>
                 </div>
-                <div style="display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--navy);">
+                <div style="font-family:'Cormorant Garamond',serif;display:flex;justify-content:space-between;padding:8px 0;font-size:13px;font-weight:700;color:var(--navy);">
                   <span>{{ section.label }} Subtotal</span>
                   <span :style="{color: section.subtotal < 0 ? '#16a34a' : 'var(--navy)'}">{{ section.subtotal < 0 ? '-' : '' }}{{ ctcFmt(Math.abs(section.subtotal)) }}</span>
                 </div>
               </div>
               <div style="background:var(--navy);color:#fff;padding:16px;border-radius:10px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                <span style="font-size:15px;font-weight:700;">Total Cash to Close</span>
-                <span style="font-size:20px;font-weight:700;color:var(--gold);">{{ ctcFmt(ctc.result) }}</span>
+                <span style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;">Total Cash to Close</span>
+                <span style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--gold);">{{ ctcFmt(ctc.result) }}</span>
               </div>
               <!-- Bottom action buttons -->
               <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
@@ -3657,7 +3657,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in filteredLib" :key="item.id" class="card" style="padding:18px 22px;">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
                 <div style="flex:1;min-width:0;">
-                  <div style="font-size:15px;font-weight:600;color:var(--navy);white-space:normal;">{{ item.title }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--navy);white-space:normal;">{{ item.title }}</div>
                   <div style="font-size:12px;color:#9ca3af;margin-top:3px;">{{ item.toolLabel }} · {{ fmtDate(item.savedAt) }} · {{ item.agent }}</div>
                 </div>
                 <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -3674,7 +3674,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="modal-box">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
                 <div>
-                  <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--navy);">{{ expandItem.title }}</h3>
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:17px;font-weight:600;color:var(--navy);">{{ expandItem.title }}</h3>
                   <p style="margin:4px 0 0;font-size:12px;color:#9ca3af;">{{ expandItem.toolLabel }} · {{ fmtDate(expandItem.savedAt) }}</p>
                 </div>
                 <button @click="expandItem=null" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;">✕</button>
@@ -3864,7 +3864,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-bg"></div>
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-box">
               <div style="font-size:48px;margin-bottom:16px;">&#10003;</div>
-              <h2 style="margin:0 0 12px;font-size:28px;font-weight:700;color:var(--gold);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.2;">Campaign Complete</h2>
+              <h2 style="margin:0 0 12px;font-size:28px;font-weight:600;color:var(--gold);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.2;">Campaign Complete</h2>
               <p style="margin:0 0 24px;font-size:15px;color:rgba(255,255,255,0.85);line-height:1.6;">Your FORWARD Marketing OS campaign package has been sent to <strong style="color:#fff;">{{ sessionEmail }}</strong>.</p>
               <button @click="lstShowCompleteModal=false" style="background:var(--gold);color:#0A1628;border:none;border-radius:12px;padding:14px 48px;font-size:16px;font-weight:700;cursor:pointer;font-family:'Cormorant Garamond','Playfair Display',serif;letter-spacing:0.3px;transition:opacity .15s;">Got It</button>
             </div>
@@ -3886,14 +3886,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div style="margin-top:20px;text-align:center;">
-                <div style="font-size:14px;font-weight:600;color:var(--gold);">Building your campaign. This takes 3–5 minutes.</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--gold);">Building your campaign. This takes 3–5 minutes.</div>
                 <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:6px;">Safe to close the app — we'll update when complete.</div>
               </div>
             </div>
 
             <!-- Error banner -->
             <div v-if="lstActiveProp.status==='error'" style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
-              <div style="font-size:15px;font-weight:700;color:#dc2626;">Something went wrong</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:#dc2626;">Something went wrong</div>
               <div style="font-size:13px;color:#b91c1c;margin-top:4px;">Contact Marc at marc.cashin@corcoranmce.com.</div>
             </div>
 
@@ -3901,14 +3901,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-if="lstActiveProp.status==='complete'" style="margin-top:20px;margin-bottom:8px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
-                <h3 style="margin:0;font-size:17px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">📦 Campaign Package</h3>
+                <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">📦 Campaign Package</h3>
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
               </div>
               <div style="background:linear-gradient(135deg,#0A1628,#1C2B3A);border:1.5px solid rgba(201,168,76,0.3);border-radius:14px;padding:20px;margin-bottom:16px;">
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
                   <div style="width:40px;height:40px;background:rgba(201,168,76,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">✅</div>
                   <div>
-                    <div style="font-size:15px;font-weight:700;color:var(--gold);">Campaign Complete</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--gold);">Campaign Complete</div>
                     <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-top:2px;">All deliverables have been sent to {{ sessionEmail }}</div>
                   </div>
                 </div>
@@ -4052,7 +4052,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="margin-top:8px;font-size:9px;opacity:.5;">{{ agentName }}</div>
                     </div>
                   </div>
-                  <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
                   <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">33 pages, personalized with your sales team</div>
                   <a :href="listingPresentationUrl" target="_blank" rel="noopener" class="btn-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 24px;font-size:13px;">
                     ↓ Click to Download
@@ -4083,7 +4083,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <!-- Persona gate -->
                   <div v-if="!lstPersonaExists" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:14px;">
-                    <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;">Complete the Listing Description Writer first</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:#92400e;margin-bottom:6px;">Complete the Listing Description Writer first</div>
                     <div style="font-size:12px;color:#78350f;margin-bottom:10px;line-height:1.5;">The CMA Builder uses your five buyer personas to tailor comparable analysis to your ideal buyers. Generate personas by completing the Listing Description Writer for this property.</div>
                     <button class="btn-gold" @click="view='listing-desc'" style="font-size:12px;padding:8px 16px;">Go to Listing Description Writer</button>
                   </div>
@@ -4206,7 +4206,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                   <div v-if="ns.salePrice||ns.address" class="voice-prefill-badge" style="margin-bottom:10px;">✦ Voice pre-filled · Review before generating</div>
                   <div v-if="ns.result!==null" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;">
-                    <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;align-items:center;">
                       <button class="btn-gold" @click="nsDownloadPDF" style="font-size:12px;padding:8px 20px;">⬇ Download PDF</button>
                       <button class="btn-navy" @click="nsSaveToProperty" :disabled="nsSaving" style="font-size:12px;padding:8px 20px;min-width:130px;">
@@ -4280,7 +4280,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div v-if="prDom>0" style="margin-bottom:16px;">
                     <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
                       <span style="font-size:12px;font-weight:600;color:var(--navy);">Days on Market</span>
-                      <span style="font-size:24px;font-weight:800;color:var(--navy);">{{ prDom }}</span>
+                      <span style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:800;color:var(--navy);">{{ prDom }}</span>
                     </div>
                     <div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;">
                       <div :style="{width:Math.min(prDom/90*100,100)+'%',height:'100%',background:prDom<21?'#22c55e':prDom<45?'var(--gold)':'#ef4444',borderRadius:'3px',transition:'width .3s'}"></div>
@@ -4292,7 +4292,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         {{ prDom>=ms.day ? '⚠' : '○' }}
                       </div>
                       <div style="flex:1;">
-                        <div style="font-size:13px;font-weight:600;color:#1f2937;">Day {{ ms.day }}: {{ ms.label }}</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:#1f2937;">Day {{ ms.day }}: {{ ms.label }}</div>
                         <div style="font-size:11px;color:#6b7280;">{{ ms.action }}</div>
                         <div v-if="pr.price && ms.pct" style="font-size:11px;font-weight:600;color:var(--gold);margin-top:2px;">Suggested: {{ nsFmt(Math.round(pr.price * (1 - ms.pct/100))) }} ({{ ms.pct }}% reduction)</div>
                       </div>
@@ -4319,7 +4319,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row" style="text-decoration:none;">
                       <div style="display:flex;align-items:center;gap:8px;">
                         <span style="font-size:16px;">📈</span>
-                        <div><div style="font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
+                        <div><div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
                       </div>
                       <span style="font-size:11px;color:var(--gold);font-weight:600;">View →</span>
                     </a>
@@ -4699,7 +4699,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-if="lstShowSubmitConfirm" class="modal-bg" @click.self="lstShowSubmitConfirm=false">
             <div class="modal-box" style="max-width:440px;text-align:center;">
               <div style="font-size:36px;margin-bottom:12px;">🚀</div>
-              <h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Submit to FORWARD Marketing OS?</h3>
+              <h3 style="margin:0 0 8px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Submit to FORWARD Marketing OS?</h3>
               <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This will send all uploaded assets for <strong>{{ lstActiveProp.address }}</strong> to the FORWARD pipeline for campaign generation. You will not be able to edit files while the campaign is running.</p>
               <div style="display:flex;gap:10px;">
                 <button class="btn-outline" @click="lstShowSubmitConfirm=false" style="flex:1;">Cancel</button>
@@ -4748,7 +4748,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-else class="prop-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
                   <div v-for="pf in adminGetAgentFiles(adminViewAgent)" :key="pf.id" class="tool-card" @click="adminOpenPropFile(adminViewAgent, pf)" style="padding:18px;position:relative;">
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
-                    <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ pf.resources.length }} resource{{ pf.resources.length === 1 ? '' : 's' }} · {{ new Date(pf.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div>
                     <button v-if="adminViewAgent === agentName" class="btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                   </div>
@@ -4768,7 +4768,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div v-else>
                     <div v-for="r in activePropFile.resources" :key="r.id" class="lp-report-row" style="margin-bottom:8px;cursor:default;">
                       <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:600;color:var(--navy);">{{ r.label }}</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ r.label }}</div>
                         <div style="font-size:11px;color:#9ca3af;">{{ r.type }}<span v-if="r._fromAgent"> · from {{ r._fromAgent.split(' ')[0] }}</span> · {{ new Date(r.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                       </div>
                       <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -4859,7 +4859,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-else class="prop-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
                   <div v-for="pf in propFiles" :key="pf.id" class="tool-card" @click="openPropFile(pf)" style="padding:18px;position:relative;">
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
-                    <div style="font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);line-height:1.35;">{{ pf.address }}</div>
                     <div style="font-size:11px;color:#9ca3af;margin-top:4px;">{{ pf.resources.length }} resource{{ pf.resources.length === 1 ? '' : 's' }} · {{ new Date(pf.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</div>
                     <button class="btn-del" @click.stop="removePropFile(pf.id)" style="position:absolute;top:8px;right:8px;" title="Delete">✕</button>
                   </div>
@@ -4879,7 +4879,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div v-else>
                     <div v-for="r in activePropFile.resources" :key="r.id" class="lp-report-row" style="margin-bottom:8px;cursor:default;">
                       <div style="flex:1;min-width:0;">
-                        <div style="font-size:13px;font-weight:600;color:var(--navy);">{{ r.label }}</div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ r.label }}</div>
                         <div style="font-size:11px;color:#9ca3af;">{{ r.type }} · {{ new Date(r.savedAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                       </div>
                       <div style="display:flex;gap:6px;flex-shrink:0;">
@@ -4959,7 +4959,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div class="settings-card" style="max-width:560px;display:flex;flex-direction:column;gap:16px;">
             <!-- API Key — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">Claude API Key</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Claude API Key</h3>
               <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">Required for all AI tools. Get yours at <a href="https://console.anthropic.com" target="_blank" style="color:var(--navy);font-weight:700;">console.anthropic.com</a></p>
               <div style="display:flex;gap:10px;">
                 <input :type="showKey?'text':'password'" v-model="settKey" placeholder="sk-ant-api03-…" style="flex:1;"/>
@@ -4973,7 +4973,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
             <!-- Team API Key Manager — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'" style="border:1.5px solid #e0e7ff;background:#f8faff;">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">🔑 Manage Team API Keys</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">🔑 Manage Team API Keys</h3>
               <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Set or clear the Claude API key for any team member. Useful for configuring shared or demo devices.</p>
               <div class="form-row">
                 <label>Agent</label>
@@ -4993,7 +4993,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
             <!-- Model -->
             <div class="card">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">AI Model</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">AI Model</h3>
               <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Select the Claude model used for all AI generation.</p>
               <select v-model="settModel">
                 <option value="claude-opus-4-6">Claude Opus 4 — Best quality</option>
@@ -5004,7 +5004,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
             <!-- Branding -->
             <div class="card">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">Team Branding Context</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Team Branding Context</h3>
               <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">This context is included in every AI prompt to keep outputs on-brand.</p>
               <div class="form-row"><label>Brokerage Name</label><input v-model="settBrokerage"/></div>
               <div class="form-row"><label>Markets</label><input v-model="settMarkets" placeholder="Washington DC, Maryland, Virginia"/></div>
@@ -5013,13 +5013,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
             <!-- Access codes -->
             <div class="card">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">Access Codes</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Access Codes</h3>
               <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Current team code: <code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:600;">forward2026</code></p>
               <p style="margin:0;font-size:12px;color:#9ca3af;">Individual agent accounts with unique codes coming in Phase 2 (Supabase Auth).</p>
             </div>
             <!-- Follow Up Boss — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'">
-              <h3 style="margin:0 0 6px;font-size:14px;font-weight:700;color:var(--navy);">Follow Up Boss CRM</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Follow Up Boss CRM</h3>
               <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Connect your team's FUB account to enable voice-to-contact. Use Marc's admin API key. Get it from <strong>FUB Admin → API</strong>.</p>
               <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;">✅ Connected · {{ fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
               <div v-else class="fub-status disconnected" style="margin-bottom:12px;">⚠️ Not connected</div>
@@ -5038,7 +5038,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
             <!-- Training Admin (Marc only) -->
             <div class="card" v-if="agentName === 'Marc Cashin'" style="border:1.5px solid var(--gold);background:linear-gradient(135deg,#fffbeb,#fff);">
-              <h3 style="margin:0 0 4px;font-size:14px;font-weight:700;color:var(--navy);">📚 Training Library Admin</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:14px;font-weight:600;color:var(--navy);">📚 Training Library Admin</h3>
               <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">Add or remove custom entries that appear in the voice assistant and Training Center.</p>
               <button class="btn-gold" @click="go('admin-training')" style="width:100%;">Open Admin Panel</button>
             </div>
@@ -5048,7 +5048,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
           <!-- AI Disclaimer -->
           <div class="card" style="margin-top:16px;border:1.5px solid #fde68a;background:#fffbeb;">
-            <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">⚠️ AI Disclaimer</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:#92400e;margin-bottom:8px;">⚠️ AI Disclaimer</div>
             <p style="font-size:12px;color:#78350f;line-height:1.65;margin:0;">
               FORWARD OS is powered by multiple AI models and trained on FORWARD Real Estate's internal processes, documentation, and playbooks. While designed to support and accelerate your workflow, <strong>AI can and does make mistakes.</strong>
               <br><br>
@@ -5066,7 +5066,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <button class="lp-back" @click="go('settings')" style="margin-bottom:12px;">&larr; Settings</button>
 
             <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
-              <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;color:var(--navy);">📚 Training Library Admin</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:16px;font-weight:600;color:var(--navy);">📚 Training Library Admin</h3>
               <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">Add custom training entries that appear in the voice assistant and Training Center. Only visible to you.</p>
 
               <!-- Add entry form -->
@@ -5118,7 +5118,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                   <div style="flex:1;min-width:0;">
                     <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">{{ entry.section }}</div>
-                    <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ entry.title }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ entry.title }}</div>
                     <div style="font-size:12px;color:#6b7280;line-height:1.5;white-space:pre-wrap;">{{ entry.desc.length > 200 ? entry.desc.slice(0,200)+'…' : entry.desc }}</div>
                   </div>
                   <button @click="atDeleteEntry(entry.id)" style="background:#fff0f0;border:1.5px solid #fecaca;color:#dc2626;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">Delete</button>
@@ -5134,7 +5134,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Client File Picker Modal — global (Supabase buyers + Supabase listings) -->
     <div v-if="showClientFilePicker" class="modal-bg" @click.self="showClientFilePicker=false" style="z-index:10001;">
       <div class="modal-box" style="max-width:480px;max-height:78vh;display:flex;flex-direction:column;">
-        <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;color:var(--navy);font-family:'Playfair Display',serif;">📁 Save to Client File</h3>
+        <h3 style="margin:0 0 4px;font-size:16px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">📁 Save to Client File</h3>
         <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Choose which client folder to save this PDF to.</p>
         <div style="overflow-y:auto;flex:1;">
           <!-- Buyers section -->
@@ -5147,7 +5147,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               @mouseleave="$event.currentTarget.style.borderColor='#e5e7eb';$event.currentTarget.style.background='#fff';">
               <div style="font-size:22px;flex-shrink:0;">👥</div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);">{{ b.buyer_name }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);">{{ b.buyer_name }}</div>
                 <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ b.email || 'No email' }} &middot; {{ b.status || 'active' }}</div>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -5163,7 +5163,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               @mouseleave="$event.currentTarget.style.borderColor='#e5e7eb';$event.currentTarget.style.background='#fff';">
               <div style="font-size:22px;flex-shrink:0;">🏠</div>
               <div style="flex:1;min-width:0;">
-                <div style="font-size:13px;font-weight:700;color:var(--navy);">{{ sp.address }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);">{{ sp.address }}</div>
                 <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ sp.status || 'active' }}</div>
               </div>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
@@ -5219,7 +5219,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <button class="btn-gold" @click="voiceParse" :disabled="voiceModal.parsing" style="flex:2;min-height:50px;font-weight:700;">
           <span v-if="voiceModal.parsing" style="display:flex;align-items:center;justify-content:center;gap:4px;">
             <span class="ai-dots" style="margin-bottom:0;gap:5px;"><span style="width:7px;height:7px;background:var(--navy);"></span><span style="width:7px;height:7px;background:var(--navy);"></span><span style="width:7px;height:7px;background:var(--navy);"></span></span>
-            <span style="font-size:13px;color:var(--navy);font-weight:700;">Processing…</span>
+            <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);font-weight:700;">Processing…</span>
           </span>
           <span v-else>{{ voiceModal.imageData ? '📷 Parse Card →' : '✦ Parse & Fill →' }}</span>
         </button>
@@ -5245,7 +5245,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
       <!-- CONFIRM MODE (default — read-only) -->
       <template v-if="!voiceModal.crmEditing">
-        <div style="font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Ready to Add Contact?</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Ready to Add Contact?</div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:12px;">Review what was captured. Tap <strong style="color:var(--navy);">Edit</strong> to fix anything, or <strong style="color:#059669;">Submit</strong> to send straight to Follow Up Boss.</div>
         <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:14px;max-height:320px;overflow-y:auto;">
           <div class="crm-result-row"><span class="crm-result-icon">👤</span><span class="crm-result-label">Name</span><span class="crm-result-value">{{ voiceModal.crmReview.firstName }} {{ voiceModal.crmReview.lastName }}</span></div>
@@ -5271,7 +5271,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <template v-else>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
           <button @click="voiceModal.crmEditing=false" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--navy);padding:0;line-height:1;">←</button>
-          <div style="font-size:15px;font-weight:700;color:var(--navy);">Edit Contact Info</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">Edit Contact Info</div>
         </div>
         <div style="max-height:330px;overflow-y:auto;padding-right:4px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -5309,7 +5309,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <template v-else-if="voiceModal.phase==='crm-result'">
       <div style="text-align:center;margin-bottom:14px;">
         <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 10px;">✓</div>
-        <div style="font-size:16px;font-weight:700;color:var(--navy);">Contact Added to Follow Up Boss</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);">Contact Added to Follow Up Boss</div>
       </div>
       <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:16px;">
         <div class="crm-result-row"><span class="crm-result-icon">👤</span><span class="crm-result-label">Name</span><span class="crm-result-value">{{ voiceModal.crmResult?.name }}</span></div>
@@ -5329,7 +5329,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <template v-else-if="voiceModal.phase==='done'">
       <div style="text-align:center;padding:20px 0 8px;">
         <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;">✓</div>
-        <div style="font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;">Form pre-filled!</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;">Form pre-filled!</div>
         <div style="font-size:13px;color:#9ca3af;margin-bottom:20px;">Opening {{ voiceModal.detectedTool }}…</div>
         <button class="btn-outline" @click="voiceClose" style="min-height:50px;width:100%;">Close</button>
       </div>
@@ -5367,9 +5367,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Phase: confirm-write -->
               <template v-else-if="voiceModal.phase==='confirm-write'">
                 <div style="padding:12px 0 4px;">
-                  <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Address</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Address</div>
                   <input v-model="voiceModal.confirmAddress" style="width:100%;box-sizing:border-box;border:1.5px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:14px;margin-bottom:12px;outline:none;" placeholder="Address..." />
-                  <div style="font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Content type</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);margin-bottom:6px;">Content type</div>
                   <div style="display:flex;gap:6px;margin-bottom:14px;">
                     <button v-for="t in [{v:'both',l:'Both'},{v:'open-house',l:'Open House'},{v:'social-post',l:'Social Post'}]" :key="t.v" @click="voiceModal.confirmType=t.v" :style="{flex:1,padding:'8px 4px',borderRadius:'8px',border:'1.5px solid '+(voiceModal.confirmType===t.v?'var(--navy)':'#e2e8f0'),background:voiceModal.confirmType===t.v?'var(--navy)':'#fff',color:voiceModal.confirmType===t.v?'#fff':'#374151',fontWeight:600,cursor:'pointer',fontSize:'12px'}">{{t.l}}</button>
                   </div>
@@ -5380,7 +5380,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <template v-else-if="voiceModal.phase==='error'">
       <div style="text-align:center;padding:16px 0;">
         <div style="margin-bottom:12px;color:#dc2626;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
-        <div style="font-size:14px;font-weight:600;color:var(--navy);margin-bottom:8px;">Something went wrong</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:8px;">Something went wrong</div>
         <div style="font-size:13px;color:#dc2626;background:#fff5f5;border-radius:10px;padding:10px 14px;margin-bottom:18px;line-height:1.5;">{{ voiceModal.errorMsg }}</div>
         <button class="btn-navy" @click="voiceRestart" style="width:100%;min-height:50px;">Try Again</button>
       </div>
@@ -5395,7 +5395,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       @click.self="cancelSaveToProp">
       <div :class="isMobile ? 'save-prop-sheet-box' : 'card'" :style="isMobile ? '' : 'width:460px;max-width:92vw;'">
         <div v-if="isMobile" class="save-prop-sheet-handle"></div>
-        <h3 style="margin:0 0 6px;font-size:15px;font-weight:700;color:var(--navy);">Save to Property File</h3>
+        <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">Save to Property File</h3>
         <p style="font-size:12px;color:#9ca3af;margin:0 0 14px;">
           {{ saveToPropData && saveToPropData.toolName ? saveToPropData.toolName + ' output will route to the correct subfolder automatically.' : 'Select a property to save this resource.' }}
         </p>
@@ -5418,7 +5418,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-for="sp in supaProperties" :key="sp.id"
             @click="saveToPropSelected = sp.id; saveToPropNewAddr = '';"
             :style="{padding:'12px 14px', borderRadius:'10px', cursor:'pointer', border: saveToPropSelected === sp.id ? '2px solid var(--navy)' : '1.5px solid #e5e7eb', background: saveToPropSelected === sp.id ? '#f0f4ff' : '#fff', marginBottom:'8px', transition:'all .15s'}">
-            <div style="font-size:14px;font-weight:600;color:var(--navy);">{{ sp.address }}</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ sp.address }}</div>
             <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ sp.status || 'active' }}</div>
             <!-- Asset completion tracker -->
             <div class="asset-tracker" style="margin-top:6px;">
@@ -5437,7 +5437,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-for="pf in propFiles" :key="pf.id"
             @click="saveToPropSelected = pf.id; saveToPropNewAddr = '';"
             :style="{padding:'12px 14px', borderRadius:'10px', cursor:'pointer', border: saveToPropSelected === pf.id ? '2px solid var(--navy)' : '1.5px solid #e5e7eb', background: saveToPropSelected === pf.id ? '#f0f4ff' : '#fff', marginBottom:'8px', transition:'all .15s'}">
-            <div style="font-size:14px;font-weight:600;color:var(--navy);">{{ pf.address }}</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ pf.address }}</div>
             <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ pf.resources.length }} resource{{ pf.resources.length === 1 ? '' : 's' }}</div>
           </div>
         </div>
@@ -5468,7 +5468,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
           <div style="display:flex;align-items:center;gap:10px;">
             <span style="font-size:22px;">📇</span>
-            <span style="font-size:16px;font-weight:700;color:var(--navy);">
+            <span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);">
               {{ cardScan.phase==='capture' ? 'Scan Business Card' : cardScan.phase==='preview' ? 'Review Photo' : 'Reading Card…' }}
             </span>
           </div>
@@ -5481,7 +5481,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <!-- Big camera button -->
           <label style="display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),#243660);border-radius:20px;padding:40px 20px;cursor:pointer;touch-action:manipulation;gap:12px;margin-bottom:14px;min-height:180px;">
             <span style="font-size:56px;line-height:1;">📷</span>
-            <span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px;">Take Photo</span>
+            <span style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:#fff;letter-spacing:.3px;">Take Photo</span>
             <span style="font-size:12px;color:rgba(255,255,255,0.6);display:block;text-align:center;">or tap to choose from camera roll</span>
             <input type="file" accept="image/*" style="display:none;" @change="cardScanAttach">
           </label>
@@ -5619,7 +5619,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- PDF Viewer Modal (full-screen, works on mobile) -->
     <div v-if="pdfViewerSrc" style="position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;background:#000;display:flex;flex-direction:column;overflow:hidden;">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#0A1628;flex-shrink:0;min-height:52px;">
-        <div style="font-size:13px;font-weight:700;color:#C9A84C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">{{ pdfViewerName }}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:#C9A84C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;margin-right:8px;">{{ pdfViewerName }}</div>
         <div style="display:flex;gap:8px;flex-shrink:0;">
           <button @click="downloadFromPDFViewer" style="background:#C9A84C;color:#0A1628;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">⬇ Save</button>
           <button @click="closePDFViewer" style="background:rgba(255,255,255,0.15);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;">✕</button>
@@ -5633,7 +5633,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Buyer Consultation Kit — Send to Buyer Modal -->
     <div v-if="bckSendModal" class="modal-bg" @click.self="bckSendModal=false">
       <div class="modal-box" style="max-width:460px;">
-        <h3 style="margin:0 0 6px;font-size:18px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Buyer Consultation Kit</h3>
+        <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Buyer Consultation Kit</h3>
         <p style="font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and then attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
         <div class="form-row" style="margin-bottom:12px;">
           <label>Buyer Email</label>
@@ -5655,7 +5655,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Property Tour Tracker — Send to Client Modal -->
     <div v-if="ttSendModal" class="modal-bg" @click.self="ttSendModal=false">
       <div class="modal-box" style="max-width:460px;">
-        <h3 style="margin:0 0 6px;font-size:18px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Tour Summary to Client</h3>
+        <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Tour Summary to Client</h3>
         <p style="font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
         <div class="form-row" style="margin-bottom:12px;">
           <label>Buyer Email</label>
@@ -5677,7 +5677,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Seller Prep Guide — Send to Seller Modal -->
     <div v-if="sellerPrepSendModal" class="modal-bg" @click.self="sellerPrepSendModal=false">
       <div class="modal-box" style="max-width:460px;">
-        <h3 style="margin:0 0 6px;font-size:18px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Prep Guide to Seller</h3>
+        <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Prep Guide to Seller</h3>
         <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.55;">The branded PDF will be generated and shared directly. On supported devices (mobile, modern browsers) the file attaches automatically. Otherwise it will download and your email/text app will open — just attach the downloaded PDF.</p>
         <div class="form-row">
           <label>Seller Email (optional)</label>
@@ -14933,6 +14933,6 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
   }
 }).mount('#app');
 </script>
-<script id="_upload_ux">(function(){const _f=window.fetch,s={n:0,wl:null,el:null};function init(){if(s.el)return;const st=document.createElement('style');st.textContent='@keyframes _sp{to{transform:rotate(360deg)}}#_ub{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;color:#fff;padding:14px 18px;z-index:2147483646;align-items:center;gap:13px;border-top:2px solid #2563eb;display:none}#_ub._on{display:flex}._spn{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:#60a5fa;border-radius:50%;animation:_sp .8s linear infinite;flex-shrink:0}';document.head.appendChild(st);s.el=document.createElement('div');s.el.id='_ub';s.el.innerHTML='<span class="_spn"></span><div><div id="_um" style="font-weight:600;font-size:14px"></div><div style="font-size:11px;opacity:.65;margin-top:3px">Keep this screen on · Don\'t lock your phone or close the app · You\'ll see a confirmation when it\'s done</div></div>';document.body.appendChild(s.el);}function upd(){init();document.getElementById('_um').textContent='Uploading'+(s.n>1?' ('+s.n+' files)':'')+'…';s.el.classList.add('_on');}function done(){if(s.el)s.el.classList.remove('_on');}async function lk(){if('wakeLock'in navigator&&!s.wl)try{s.wl=await navigator.wakeLock.request('screen');}catch(e){}}function ulk(){if(s.wl){s.wl.release();s.wl=null;}}window.fetch=async function(u,o){const up=o&&o.body instanceof FormData&&typeof u==='string'&&(u.toLowerCase().includes('upload')||u.toLowerCase().includes('railway'));if(up){s.n++;upd();if(s.n===1)lk();}try{return await _f.apply(this,arguments);}finally{if(up){s.n=Math.max(0,s.n-1);if(!s.n){done();ulk();}else upd();}}};})();</script>
+<script id="_upload_ux">(function(){const _f=window.fetch,s={n:0,wl:null,el:null};function init(){if(s.el)return;const st=document.createElement('style');st.textContent='@keyframes _sp{to{transform:rotate(360deg)}}#_ub{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;color:#fff;padding:14px 18px;z-index:2147483646;align-items:center;gap:13px;border-top:2px solid #2563eb;display:none}#_ub._on{display:flex}._spn{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:#60a5fa;border-radius:50%;animation:_sp .8s linear infinite;flex-shrink:0}';document.head.appendChild(st);s.el=document.createElement('div');s.el.id='_ub';s.el.innerHTML='<span class="_spn"></span><div><div id="_um" style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:14px"></div><div style="font-size:11px;opacity:.65;margin-top:3px">Keep this screen on · Don\'t lock your phone or close the app · You\'ll see a confirmation when it\'s done</div></div>';document.body.appendChild(s.el);}function upd(){init();document.getElementById('_um').textContent='Uploading'+(s.n>1?' ('+s.n+' files)':'')+'…';s.el.classList.add('_on');}function done(){if(s.el)s.el.classList.remove('_on');}async function lk(){if('wakeLock'in navigator&&!s.wl)try{s.wl=await navigator.wakeLock.request('screen');}catch(e){}}function ulk(){if(s.wl){s.wl.release();s.wl=null;}}window.fetch=async function(u,o){const up=o&&o.body instanceof FormData&&typeof u==='string'&&(u.toLowerCase().includes('upload')||u.toLowerCase().includes('railway'));if(up){s.n++;upd();if(s.n===1)lk();}try{return await _f.apply(this,arguments);}finally{if(up){s.n=Math.max(0,s.n-1);if(!s.n){done();ulk();}else upd();}}};})();</script>
 </body>
 </html>
