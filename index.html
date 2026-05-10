@@ -7055,26 +7055,52 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const moAnalysisParsed = computed(() => {
       const txt = moAnalysis.value;
       if (!txt) return null;
-      const markers = {
+
+      // ── Strategy 1: explicit --- markers (new backend format) ──
+      const strictMarkers = {
         strongest:  '---STRONGEST OFFER---',
         likelihood: '---LIKELIHOOD TO CLOSE---',
         counter:    '---COUNTER STRATEGY---',
         talking:    '---TALKING POINTS FOR SELLER CONVERSATION---',
       };
-      const keys = Object.keys(markers);
-      const result = {};
-      for (let i = 0; i < keys.length; i++) {
-        const key = keys[i];
-        const start = txt.indexOf(markers[key]);
-        if (start === -1) { result[key] = ''; continue; }
-        const contentStart = start + markers[key].length;
-        const nextKey = keys[i + 1];
-        const nextIdx = nextKey ? txt.indexOf(markers[nextKey]) : -1;
-        result[key] = nextIdx !== -1
-          ? txt.slice(contentStart, nextIdx).trim()
-          : txt.slice(contentStart).trim();
+      const sKeys = Object.keys(strictMarkers);
+      const r1 = {};
+      let foundStrict = false;
+      for (let i = 0; i < sKeys.length; i++) {
+        const key = sKeys[i];
+        const start = txt.indexOf(strictMarkers[key]);
+        if (start !== -1) foundStrict = true;
+        if (start === -1) { r1[key] = ''; continue; }
+        const contentStart = start + strictMarkers[key].length;
+        const nextIdx = sKeys[i+1] ? txt.indexOf(strictMarkers[sKeys[i+1]]) : -1;
+        r1[key] = nextIdx !== -1 ? txt.slice(contentStart, nextIdx).trim() : txt.slice(contentStart).trim();
       }
-      return result.strongest || result.likelihood ? result : null;
+      if (foundStrict && (r1.strongest || r1.likelihood)) return r1;
+
+      // ── Strategy 2: plain section headings (old format / Claude variation) ──
+      // Scan line by line to find section boundary lines, avoiding multiline regex literals
+      const headingTests = [
+        { key: 'strongest',  test: (l) => /^(?:#+\s*)?Strongest Offer\s*$/i.test(l) },
+        { key: 'likelihood', test: (l) => /^(?:#+\s*)?Likelihood(?:\s+to\s+Close)?\s*$/i.test(l) },
+        { key: 'counter',    test: (l) => /^(?:#+\s*)?Counter(?:\s+Strategy)?\s*$/i.test(l) },
+        { key: 'talking',    test: (l) => /^(?:#+\s*)?(?:Talking Points|Seller Talking Points)(?:\s+for\s+Seller\s+Conversation)?\s*$/i.test(l) },
+      ];
+      const lines = txt.split('\n');
+      const sectionLines = []; // { key, lineIdx }
+      for (let li = 0; li < lines.length; li++) {
+        const stripped = lines[li].trim();
+        for (const { key, test } of headingTests) {
+          if (test(stripped)) { sectionLines.push({ key, lineIdx: li }); break; }
+        }
+      }
+      if (!sectionLines.length) return null;
+      const r2 = {};
+      for (let i = 0; i < sectionLines.length; i++) {
+        const { key, lineIdx } = sectionLines[i];
+        const nextLineIdx = sectionLines[i + 1] ? sectionLines[i + 1].lineIdx : lines.length;
+        r2[key] = lines.slice(lineIdx + 1, nextLineIdx).join('\n').trim();
+      }
+      return (r2.strongest || r2.likelihood) ? r2 : null;
     });
 
     // Further parsed sections for premium rendering
