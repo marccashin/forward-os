@@ -6621,7 +6621,7 @@ async function pushLib(item) {
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
 const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
-        const ADMIN_AGENTS = ['Marc Cashin', 'Operations', 'Concierge']; // can see all agents' files
+        const ADMIN_AGENTS = ['Marc Cashin', 'Ash McGowan', 'Ashling McGowan', 'Operations', 'Concierge']; // can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
@@ -7780,9 +7780,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!RAILWAY_URL) return;
       lstLoading.value = true;
       try {
-        // Always fetch all team properties via Railway (service_role) — no agent filter
+        // Admins see all; agents see only their own
+        const _propUrl = isAdmin.value
+          ? RAILWAY_URL + '/properties'
+          : RAILWAY_URL + '/properties?agent_name=' + encodeURIComponent(agentName.value);
         const [props, allAssets] = await Promise.all([
-          fetch(RAILWAY_URL + '/properties').then(r => r.ok ? r.json() : []),
+          fetch(_propUrl).then(r => r.ok ? r.json() : []),
           supaRest.select('property_assets', 'select=property_id,subfolder').catch(() => [])
         ]);
         // Build a map of property_id → {subfolder: true}
@@ -12702,7 +12705,10 @@ No markdown. Valid JSON only.`;
       if (!SUPABASE_URL) return;
       byrLoading.value = true;
       try {
-        const _bRes = await fetch(RAILWAY_URL + '/buyers');
+        const _buyUrl = isAdmin.value
+          ? RAILWAY_URL + '/buyers'
+          : RAILWAY_URL + '/buyers?agent_name=' + encodeURIComponent(agentName.value);
+        const _bRes = await fetch(_buyUrl);
         const data = _bRes.ok ? await _bRes.json() : [];
         byrBuyers.value = data || [];
       } catch(e) { showToast('Could not load buyers.', 3000); }
