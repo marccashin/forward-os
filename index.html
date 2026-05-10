@@ -164,8 +164,9 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; color: var(--navy); font-
 /* But labels, buttons, meta stay Montserrat */
 .card label, .card .btn-navy, .card .btn-gold, .card .btn-outline, .card .btn-sm,
 .card input, .card select, .card textarea,
-.card [style*="letter-spacing"], .card [style*="text-transform:uppercase"],
-.card [style*="font-size:8"], .card [style*="font-size:9"], .card [style*="font-size:10"], .card [style*="font-size:11"] { font-family: 'Montserrat', sans-serif; }
+.card div[style*="letter-spacing"], .card div[style*="text-transform:uppercase"],
+.card div[style*="font-size:8"], .card div[style*="font-size:9"], .card div[style*="font-size:10"], .card div[style*="font-size:11"],
+.card span[style*="font-size:8"], .card span[style*="font-size:9"], .card span[style*="font-size:10"], .card span[style*="font-size:11"] { font-family: 'Montserrat', sans-serif; }
 
 /* ── SCROLLBARS ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -2170,9 +2171,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-else-if="byrBuyers.length===0" class="empty-state">
             <div class="empty-state-title">No buyers yet</div>
             <div class="empty-state-sub">Create a buyer file to organise tools and track each client</div>
-            <div class="empty-state-actions">
-              <button class="btn-navy" @click="byrShowNewModal=true" style="padding:10px 24px;">Add First Buyer</button>
-            </div>
           </div>
 
           <div v-else>
@@ -2228,8 +2226,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
         
           <!-- Delete confirm modal -->
-          <div v-if="byrDeleteTarget" class="modal-bg" @click.self="byrDeleteTarget=null">
-            <div class="modal-box" style="max-width:400px;text-align:center;">
+          <div v-if="byrDeleteTarget" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="byrDeleteTarget=null">
+            <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:380px;padding:28px 24px;text-align:center;">
               <div style="font-family:'Cormorant Garamond',serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:16px;">Delete Buyer</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:8px;">{{ byrDeleteTarget.buyer_name }}</div>
               <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5;">This will permanently remove the buyer file and all associated data. This cannot be undone.</p>
@@ -2243,8 +2241,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           </div>
 
           <!-- New buyer modal -->
-          <div v-if="byrShowNewModal" class="modal-bg" @click.self="byrShowNewModal=false">
-            <div class="modal-box" style="max-width:460px;">
+          <div v-if="byrShowNewModal" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9000;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="byrShowNewModal=false">
+            <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:460px;padding:28px 24px;">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:22px;font-weight:500;color:var(--navy);">Add New Buyer</h3>
               <div class="form-row"><label>Buyer Name *</label><input v-model="byrNewName" type="text" placeholder="e.g. Sarah & James Miller" @keyup.enter="byrCreateBuyer" autofocus></div>
               <div class="form-row"><label>Email</label><input v-model="byrNewEmail" type="email" placeholder="buyer@email.com"></div>
