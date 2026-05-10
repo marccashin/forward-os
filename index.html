@@ -8805,12 +8805,25 @@ async function lstSubmitToPipeline() {
     }
 
     // Load listings on mount
-    onMounted(() => {
+    onMounted(async () => {
       if (loggedIn.value && SUPABASE_URL) {
         lstFetchProperties();
         byrFetchBuyers();
         loadPropFiles();
         loadTaskFeed();
+
+        // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
+        if (!apiKeySet.value && agentName.value) {
+          try {
+            const rows = await supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(agentName.value)}`);
+            const remoteKey = rows && rows[0] && rows[0].claude_api_key;
+            if (remoteKey) {
+              localStorage.setItem(agentKeyFor('fos_key', agentName.value), remoteKey);
+              _fosApiKey = remoteKey;
+              apiKeySet.value = true;
+            }
+          } catch(e) { /* silent — user can re-enter manually in Settings */ }
+        }
       }
     });
 
