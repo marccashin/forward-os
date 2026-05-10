@@ -5999,7 +5999,11 @@ const supaRest = {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: 'POST', headers: this.headers(), body: JSON.stringify(data)
     });
-    if (!res.ok) throw new Error(`Supabase insert error: ${res.status}`);
+    if (!res.ok) {
+      let detail = `Supabase insert error: ${res.status}`;
+      try { const e = await res.json(); detail = e.message || e.hint || e.details || detail; } catch {}
+      throw new Error(detail);
+    }
     return res.json();
   },
   async update(table, matchCol, matchVal, data) {
@@ -7773,15 +7777,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     });
 
     async function lstFetchProperties() {
-      if (!SUPABASE_URL) return;
+      if (!RAILWAY_URL) return;
       lstLoading.value = true;
       try {
-        const agentFilter = isAdmin.value ? '' : `&agent_name=eq.${encodeURIComponent(agentName.value)}`;
-        // Fetch properties and all their assets in just 2 parallel requests (not N+1)
+        // Always fetch all team properties via Railway (service_role) — no agent filter
         const [props, allAssets] = await Promise.all([
-          supaRest.select('properties', `select=*${agentFilter}&order=created_at.desc`),
-          supaRest.select('property_assets', `select=property_id,subfolder${agentFilter ? '&properties.agent_name=eq.' + encodeURIComponent(agentName.value) : ''}`)
-            .catch(() => [])
+          fetch(RAILWAY_URL + '/properties').then(r => r.ok ? r.json() : []),
+          supaRest.select('property_assets', 'select=property_id,subfolder').catch(() => [])
         ]);
         // Build a map of property_id → {subfolder: true}
         const assetsByProp = {};
@@ -7832,41 +7834,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
 
-        // 1. Create Supabase record first to get UUID
-        const propData = {
-          address: lstNormalizeAddress(lstNewAddress.value),
-          agent_email: sessionEmail.value,
-          agent_name: agentName.value,
-          seller_name: lstNewSeller.value.trim(),
-              seller_name_2: lstNewSeller2.value.trim() || null,
-          market: lstNewMarket.value,
-          status: 'draft',
-          drive_folder_id: '',
-          subfolder_drive_ids: {}
-        };
-        const inserted = await supaRest.insert('properties', propData);
-        if (!inserted || inserted.length === 0) throw new Error('Failed to create property record.');
-        const prop = inserted[0];
-
-        // 2. Call Railway to create Drive folder structure
-        try {
-          const driveRes = await fetch(RAILWAY_URL + '/create-property-structure', {
-            method:'POST', headers:{'Content-Type':'application/json'},
-            body: JSON.stringify({ address: prop.address, property_id: prop.id })
-          });
-          if (driveRes.ok) {
-            const driveData = await driveRes.json();
-            const driveFolderId = driveData.property_folder_id || '';
-            const subfolderDriveIds = driveData.subfolder_ids || {};
-            // Update Supabase record with Drive IDs
-            await supaRest.update('properties', 'id', prop.id, {
-              drive_folder_id: driveFolderId,
-              subfolder_drive_ids: subfolderDriveIds
-            });
-            prop.drive_folder_id = driveFolderId;
-            prop.subfolder_drive_ids = subfolderDriveIds;
-          }
-        } catch (driveErr) { console.warn('Drive folder creation skipped:', driveErr.message); }
+        // Create property via Railway backend (service_role key — bypasses RLS for all agents)
+        const createRes = await fetch(RAILWAY_URL + '/create-property', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            address:      lstNormalizeAddress(lstNewAddress.value),
+            agent_name:   agentName.value,
+            agent_email:  sessionEmail.value,
+            seller_name:  lstNewSeller.value.trim(),
+            seller_name_2: lstNewSeller2.value.trim() || '',
+            market:       lstNewMarket.value,
+            status:       'draft'
+          })
+        });
+        if (!createRes.ok) {
+          let errMsg = `Server error ${createRes.status}`;
+          try { const e = await createRes.json(); errMsg = e.detail || errMsg; } catch {}
+          throw new Error(errMsg);
+        }
+        const prop = await createRes.json();
+        if (!prop || !prop.id) throw new Error('Failed to create property record.');
 
         // Auto-create a linked client file folder for this listing/seller
         refreshPropFiles();
