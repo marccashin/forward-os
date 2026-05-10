@@ -4421,29 +4421,41 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <!-- Strongest Offer -->
                     <div class="mo-analysis-section">
                       <div class="mo-analysis-lbl">Strongest Offer</div>
-                      <div class="mo-analysis-txt">{{ moAnalysisSections.strongest }}</div>
+                      <div v-if="moAnalysisSections.strongest.length">
+                        <div v-for="(pt, i) in moAnalysisSections.strongest" :key="i" class="mo-analysis-bullet" style="color:var(--navy);">
+                          <span class="mo-analysis-bullet-dot" style="color:var(--gold-muted);">·</span>
+                          <span class="mo-analysis-txt" style="display:inline;">{{ pt }}</span>
+                        </div>
+                      </div>
+                      <div v-else class="mo-analysis-txt">{{ moAnalysisParsed.strongest }}</div>
                     </div>
                     <!-- Likelihood to Close -->
                     <div class="mo-analysis-section">
                       <div class="mo-analysis-lbl">Likelihood to Close</div>
-                      <template v-if="moAnalysisSections.likelihood.length">
+                      <template v-if="moAnalysisSections.likelihood.length && moAnalysisSections.likelihood[0].label">
                         <div v-for="(blk, i) in moAnalysisSections.likelihood" :key="i" class="mo-analysis-offer-block">
                           <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
-                          <div class="mo-analysis-txt">{{ blk.text }}</div>
+                          <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet" style="color:var(--navy);">
+                            <span class="mo-analysis-bullet-dot" style="color:var(--gold-muted);">·</span>
+                            <span class="mo-analysis-txt" style="display:inline;">{{ pt }}</span>
+                          </div>
                         </div>
                       </template>
-                      <div v-else class="mo-analysis-txt">{{ moAnalysisParsed.likelihood }}</div>
+                      <div v-else class="mo-analysis-txt" style="white-space:pre-wrap;">{{ moAnalysisParsed.likelihood }}</div>
                     </div>
                     <!-- Counter Strategy -->
                     <div class="mo-analysis-section">
                       <div class="mo-analysis-lbl">Counter Strategy</div>
-                      <template v-if="moAnalysisSections.counter.length">
+                      <template v-if="moAnalysisSections.counter.length && moAnalysisSections.counter[0].label">
                         <div v-for="(blk, i) in moAnalysisSections.counter" :key="i" class="mo-analysis-offer-block">
                           <div v-if="blk.label" class="mo-analysis-offer-lbl">{{ blk.label }}</div>
-                          <div class="mo-analysis-txt">{{ blk.text }}</div>
+                          <div v-for="(pt, j) in blk.bullets" :key="j" class="mo-analysis-bullet" style="color:var(--navy);">
+                            <span class="mo-analysis-bullet-dot" style="color:var(--gold-muted);">·</span>
+                            <span class="mo-analysis-txt" style="display:inline;">{{ pt }}</span>
+                          </div>
                         </div>
                       </template>
-                      <div v-else class="mo-analysis-txt">{{ moAnalysisParsed.counter }}</div>
+                      <div v-else class="mo-analysis-txt" style="white-space:pre-wrap;">{{ moAnalysisParsed.counter }}</div>
                     </div>
                     <!-- Talking Points -->
                     <div class="mo-analysis-talking">
@@ -7004,10 +7016,22 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Split "Offer N: ..." blocks within a section
     function moSplitOfferBlocks(text) {
       if (!text) return [];
-      const parts = text.split(/(?=Offer \d+:)/i);
+      // Split on "OFFER N:" or "Offer N:" at start of line
+      const parts = text.split(/(?=^OFFER \d+:|^Offer \d+:)/im);
+      if (parts.length <= 1) {
+        // Fallback: try splitting on "OFFER N" without colon
+        const parts2 = text.split(/(?=^OFFER \d+$|^Offer \d+$)/im);
+        if (parts2.length > 1) {
+          return parts2.map(p => p.trim()).filter(Boolean).map(p => {
+            const m = p.match(/^(OFFER \d+|Offer \d+)\s*:?\s*([\s\S]*)$/i);
+            return m ? { label: 'Offer ' + m[1].replace(/\D/g,''), bullets: moSplitBullets(m[2].trim()) } : { label: '', bullets: moSplitBullets(p) };
+          });
+        }
+        return [{ label: '', bullets: moSplitBullets(text) }];
+      }
       return parts.map(p => p.trim()).filter(Boolean).map(p => {
-        const m = p.match(/^(Offer \d+):\s*([\s\S]*)$/i);
-        return m ? { label: m[1], text: m[2].trim() } : { label: '', text: p };
+        const m = p.match(/^(OFFER \d+|Offer \d+):\s*([\s\S]*)$/i);
+        return m ? { label: 'Offer ' + m[1].replace(/\D/g,''), bullets: moSplitBullets(m[2].trim()) } : { label: '', bullets: moSplitBullets(p) };
       });
     }
 
@@ -7047,7 +7071,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const p = moAnalysisParsed.value;
       if (!p) return null;
       return {
-        strongest: p.strongest,
+        strongest: moSplitBullets(p.strongest),
         likelihood: moSplitOfferBlocks(p.likelihood),
         counter:    moSplitOfferBlocks(p.counter),
         talking:    moSplitBullets(p.talking),
