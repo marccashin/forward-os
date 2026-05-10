@@ -143,6 +143,22 @@ tbody tr:hover td { background: var(--cream); }
 
 /* ── HEADINGS ── */
 h1, h2, h3 { font-family: 'Cormorant Garamond', serif; color: var(--navy); font-weight: 500; letter-spacing: 0.02em; }
+
+/* ── tool-card: define layout and Cormorant for all inner text ── */
+.tool-card { background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px; padding: 16px 20px; transition: border-color 0.13s; }
+.tool-card:hover { border-color: var(--gold-muted); cursor: pointer; }
+.tool-card div, .tool-card p, .tool-card span:not(.status-badge):not(.market-badge) { font-family: 'Cormorant Garamond', serif; }
+/* Keep labels, buttons, small uppercase text in Montserrat inside tool-card */
+.tool-card .btn-navy, .tool-card .btn-gold, .tool-card .btn-sm,
+.tool-card [style*="text-transform:uppercase"], .tool-card [style*="letter-spacing"] { font-family: 'Montserrat', sans-serif; }
+
+/* ── tab-pill: Cormorant styled pills ── */
+.tab-pill { display: inline-flex; align-items: center; padding: 6px 16px; border: 1px solid var(--cream-dark); border-radius: 2px; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--navy); cursor: pointer; transition: border-color 0.13s, background 0.13s, color 0.13s; background: var(--white); }
+.tab-pill.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
+.tab-pill:hover:not(.active) { border-color: var(--navy); }
+
+/* ── page intro paragraphs ── */
+.content > p, .content > div > p { font-family: 'Cormorant Garamond', serif; font-size: 15px; }
 /* Brand font enforcement — all card/panel body text */
 .card p, .card > div { font-family: 'Cormorant Garamond', serif; }
 /* But labels, buttons, meta stay Montserrat */
@@ -1263,11 +1279,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </button>
           </div>
           <div class="card" style="max-width:640px;">
-            <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens as a full-screen tool with its own 5-step wizard, appraiser-grade adjustment methodology, and luxury print-ready PDF output.</p>
+            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens as a full-screen tool with its own 5-step wizard, appraiser-grade adjustment methodology, and luxury print-ready PDF output.</p>
             <button class='btn-gold' :data-addr="lstActiveProp&&lstActiveProp.address||''" onclick="localStorage.setItem('fos_supa_url',window.__FORWARD_SUPABASE_URL||'');localStorage.setItem('fos_supa_key',window.__FORWARD_SUPABASE_ANON_KEY||'');localStorage.setItem('fos_cma_address',this.dataset.addr||'');window.open('/cma-tool.html','_blank')" style='display:inline-block;margin-bottom:24px;'>🔍 Open CMA Builder</button>
             <div style="border-top:1.5px solid #f0f0f0;padding-top:20px;">
               <h3 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">What's inside</h3>
-              <div style="font-size:13px;color:#4b5563;line-height:2.1;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#4b5563;line-height:2.1;">
                 • Subject property data entry with property-type-specific fields<br>
                 • Up to 5 comparable sales with all major adjustment fields<br>
                 • Auto-calculated adjustments: GLA, condition, garage, baths, HOA, concessions<br>
@@ -1290,7 +1306,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
           </div>
           <div class="card" style="max-width:640px;margin-top:16px;background:#f0f4ff;border:1.5px solid #c7d2fe;">
-            <p style="margin:0;font-size:13px;color:#3730a3;">
+            <p style="font-family:'Cormorant Garamond',serif;margin:0;font-size:13px;color:#3730a3;">
               <strong>Coming soon (Phase 2):</strong> Bright MLS integration will auto-populate comparable sales once API credentials are approved. Marc has submitted the request to licensing@brightmls.com.
             </p>
           </div>
@@ -1315,8 +1331,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div>
                     <div style="font-size:40px;margin-bottom:12px;">✍️</div>
                     <h3 style="margin:0 0 8px;color:var(--navy);font-size:18px;">FORWARD Listing Description Writer</h3>
-                    <p style="font-size:13px;color:#9ca3af;margin:0 0 16px;line-height:1.6;">Type or tap <span style="display:inline-flex;vertical-align:middle;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> to get started. You can say things like: <em>"I need a listing description for 123 Main Street NW, 4 bed 3 bath, 2,400 sqft, recently renovated kitchen, listed at $850,000."</em></p>
-                    <p style="color:#6b7280;font-size:14px;margin:0 0 20px;max-width:400px;">I'll walk you through crafting a compelling, story-driven listing description tailored to your property's ideal buyers.</p>
+                    <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin:0 0 16px;line-height:1.6;">Type or tap <span style="display:inline-flex;vertical-align:middle;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> to get started. You can say things like: <em>"I need a listing description for 123 Main Street NW, 4 bed 3 bath, 2,400 sqft, recently renovated kitchen, listed at $850,000."</em></p>
+                    <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;max-width:400px;">I'll walk you through crafting a compelling, story-driven listing description tailored to your property's ideal buyers.</p>
                     <button class="btn-gold" @click.stop="ldBegin()" :disabled="ldLoading" style="padding:12px 40px;font-size:15px;cursor:pointer;position:relative;z-index:10;">
                       <span class="spinner" v-if="ldLoading"></span><span v-else>Get Started</span>
                     </button>
@@ -1453,7 +1469,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
-              <div style="font-size:13px;color:#6b7280;margin-bottom:20px;">33 pages, personalized with your sales team</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:20px;">33 pages, personalized with your sales team</div>
               <a :href="listingPresentationUrl" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
                 <span style="font-size:16px;line-height:1;">&#8595;</span> Click to Download
               </a>
@@ -1492,7 +1508,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <label>Property Location</label>
                   <input id="ns-address-input" v-model="ns.address" type="text" placeholder="Start typing an address..." @input="nsOnAddressInput" autocomplete="off"/>
                   <div v-if="ns._suggestions.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:220px;overflow-y:auto;">
-                    <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
+                    <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
                     <div style="padding:4px 14px 6px;font-size:9px;color:#9ca3af;text-align:right;">Powered by Google</div>
                   </div>
                 </div>
@@ -1610,7 +1626,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
-              <div style="font-size:13px;color:#6b7280;margin-bottom:16px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:16px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
               <div style="display:flex;flex-direction:column;gap:10px;">
                 <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
                   <div style="display:flex;align-items:center;gap:10px;">
@@ -1684,7 +1700,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Restore banner -->
               <div v-if="sellerPrepRemovedCount > 0" style="display:flex;align-items:center;justify-content:space-between;background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:10px 14px;margin-bottom:16px;">
-                <span style="font-size:13px;color:#92400e;">{{ sellerPrepRemovedCount }} item{{ sellerPrepRemovedCount===1?'':'s' }} removed from list</span>
+                <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#92400e;">{{ sellerPrepRemovedCount }} item{{ sellerPrepRemovedCount===1?'':'s' }} removed from list</span>
                 <button @click="sellerPrepRestore" style="font-size:12px;font-weight:700;color:#92400e;background:none;border:1px solid #fde68a;border-radius:6px;padding:4px 10px;cursor:pointer;">↩ Restore All</button>
               </div>
 
@@ -1695,7 +1711,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <!-- Only show items that haven't been removed -->
                 <div v-for="(item,ii) in section.items.filter(i=>!i.removed)" :key="ii" style="display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid #f3f4f6;">
-                  <span style="font-size:13px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
                   <button @click="item.removed=true" title="Remove from client list" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:18px;line-height:1;padding:0 2px;flex-shrink:0;transition:color .15s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button>
                 </div>
               </div>
@@ -1769,7 +1785,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <button class="btn-sm btn-save" @click="saveOut('social-post',sp.cat+' v'+(idx+1),fmtPost(post))">Save</button>
                     </div>
                   </div>
-                  <div style="font-size:14px;color:#1f2937;line-height:1.7;white-space:pre-wrap;">{{ fmtPost(post) }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#1f2937;line-height:1.7;white-space:pre-wrap;">{{ fmtPost(post) }}</div>
                   <div v-if="post.hashtags&&post.hashtags.length" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;">
                     <span v-for="tag in post.hashtags" :key="tag" style="font-size:12px;color:var(--gold);font-weight:600;background:#fefce8;padding:2px 8px;border-radius:4px;">#{{ tag.replace('#','') }}</span>
                   </div>
@@ -1777,7 +1793,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div v-else-if="spLoading" class="card" style="text-align:center;padding:60px 24px;">
                 <div class="spinner spinner-dark" style="margin:0 auto;"></div>
-                <p style="margin:16px 0 0;color:#6b7280;font-size:14px;">Writing your posts…</p>
+                <p style="font-family:'Cormorant Garamond',serif;margin:16px 0 0;color:#6b7280;font-size:14px;">Writing your posts…</p>
               </div>
               <div v-else class="card empty-state"><div class="empty-icon">📱</div><p style="margin:0;">Choose a topic, add your key points, and generate platform-optimized posts.</p></div>
             </div>
@@ -1793,7 +1809,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Intro + search -->
             <div class="card" style="margin-bottom:16px;">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">🧠 Meeting Prep</h3>
-              <p style="margin:0 0 16px;font-size:13px;color:#6b7280;line-height:1.6;">Get a 60-second brief before any client meeting — DISC personality profile, conversation topics, communication tips, and an opening line. Search by name or describe the person by voice.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 16px;font-size:13px;color:#6b7280;line-height:1.6;">Get a 60-second brief before any client meeting — DISC personality profile, conversation topics, communication tips, and an opening line. Search by name or describe the person by voice.</p>
 
               <!-- Search -->
               <template v-if="!mp.selectedPerson && !mp.brief">
@@ -1806,7 +1822,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <span v-else>Search</span>
                   </button>
                 </div>
-                <div v-if="mp.error" style="color:#dc2626;font-size:13px;padding:8px 0;">{{ mp.error }}</div>
+                <div v-if="mp.error" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;padding:8px 0;">{{ mp.error }}</div>
 
                 <!-- Divider -->
                 <div style="display:flex;align-items:center;gap:10px;margin:16px 0;">
@@ -1863,7 +1879,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="spinner spinner-dark" v-if="mp.loading"></span>
                   <span v-else>✦ Generate My Brief</span>
                 </button>
-                <div v-if="mp.error" style="color:#dc2626;font-size:13px;margin-top:8px;">{{ mp.error }}</div>
+                <div v-if="mp.error" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;margin-top:8px;">{{ mp.error }}</div>
               </template>
 
               <!-- Manual entry (no FUB) -->
@@ -1896,14 +1912,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div class="disc-sub">{{ mp.brief.disc.confidence }} confidence</div>
                   </div>
                 </div>
-                <div style="font-size:13px;color:#374151;line-height:1.6;margin-bottom:8px;">{{ mp.brief.disc.description }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;margin-bottom:8px;">{{ mp.brief.disc.description }}</div>
                 <div style="font-size:12px;color:#9ca3af;font-style:italic;">Why: {{ mp.brief.disc.signals }}</div>
               </div>
 
               <!-- Summary -->
               <div class="brief-card">
                 <div class="brief-section-title">Who They Are</div>
-                <div style="font-size:13px;color:#374151;line-height:1.65;">{{ mp.brief.summary }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.65;">{{ mp.brief.summary }}</div>
               </div>
 
               <!-- Talking points -->
@@ -1931,9 +1947,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <!-- Opener + Goal -->
               <div class="brief-card">
                 <div class="brief-section-title">Opening Line</div>
-                <div style="font-size:14px;color:var(--navy);font-style:italic;line-height:1.6;margin-bottom:14px;">"{{ mp.brief.opener }}"</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);font-style:italic;line-height:1.6;margin-bottom:14px;">"{{ mp.brief.opener }}"</div>
                 <div class="brief-section-title">Your Goal for This Meeting</div>
-                <div style="font-size:13px;color:#374151;line-height:1.6;">{{ mp.brief.goal }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;">{{ mp.brief.goal }}</div>
               </div>
 
             </template>
@@ -1948,7 +1964,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
           <!-- Overall progress bar -->
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
-            <p style="color:#6b7280;font-size:15px;margin:0;flex:1;">Your personalized training roadmap — 5 pillars, 25 modules, built for DMV luxury.</p>
+            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:15px;margin:0;flex:1;">Your personalized training roadmap — 5 pillars, 25 modules, built for DMV luxury.</p>
             <div style="display:flex;align-items:center;gap:8px;min-width:200px;">
               <div style="flex:1;height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
                 <div :style="{width: tcOverallProgress+'%', height:'100%', background:'var(--gold)', borderRadius:'99px', transition:'width 0.4s ease'}"></div>
@@ -1987,7 +2003,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="font-size:40px;">{{ p.icon }}</div>
                   <div style="flex:1;min-width:200px;">
                     <h2 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:20px;font-weight:600;color:var(--navy);">{{ p.label }}</h2>
-                    <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">{{ p.tagline }}</p>
+                    <p style="font-family:'Cormorant Garamond',serif;margin:4px 0 0;font-size:13px;color:#6b7280;">{{ p.tagline }}</p>
                   </div>
                   <div style="display:flex;align-items:center;gap:10px;min-width:180px;">
                     <div style="flex:1;height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
@@ -2024,7 +2040,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                     <!-- Expanded content -->
                     <div v-if="tcExpandedModule===m.id" style="padding:0 20px 20px;border-top:1px solid #f0f0f0;">
-                      <p style="font-size:14px;color:#4b5563;line-height:1.65;margin:16px 0;">{{ m.desc }}</p>
+                      <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#4b5563;line-height:1.65;margin:16px 0;">{{ m.desc }}</p>
                       <div style="display:flex;gap:10px;flex-wrap:wrap;">
                         <!-- Video button -->
                         <a v-if="m.videoUrl" :href="m.videoUrl" target="_blank" rel="noopener" class="btn-navy" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;font-size:13px;padding:9px 18px;">
@@ -2051,7 +2067,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
         <!-- ============ AGENT TOOLS ============ -->
         <template v-else-if="view==='agent-tools'">
-          <p style="color:#6b7280;font-size:15px;margin:0 0 24px;">Your all-in-one Agent Resource Hub — SOPs, essential forms, vetted vendor contacts, and on-demand training.</p>
+          <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:15px;margin:0 0 24px;">Your all-in-one Agent Resource Hub — SOPs, essential forms, vetted vendor contacts, and on-demand training.</p>
 
           <!-- Row 1: Core Documents -->
           <h2 style="font-size:14px;font-weight:600;color:var(--navy);margin:0 0 14px;letter-spacing:.3px;text-transform:uppercase;">Core Documents</h2>
@@ -2059,7 +2075,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atCoreDocs" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2072,7 +2088,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atMarketing" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2085,7 +2101,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atTraining" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2098,7 +2114,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atTemplates" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-navy" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2111,7 +2127,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atTransactions" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-gold" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2124,7 +2140,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div v-for="item in atContractClose" :key="item.title" class="tool-card" style="cursor:default;">
               <div style="font-size:28px;margin-bottom:10px;">{{ item.icon }}</div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ item.title }}</div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.55;margin-bottom:14px;">{{ item.desc }}</div>
               <a :href="item.url" target="_blank" rel="noopener" class="btn-gold" style="display:inline-block;text-decoration:none;font-size:13px;padding:8px 18px;">
                 {{ item.action }}
               </a>
@@ -2247,7 +2263,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
                 <div style="flex:1;min-width:0;">
                   <div style="font-size:20px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.3;">{{ byrActiveBuyer.buyer_name }}</div>
-                  <div style="font-size:13px;color:#6b7280;margin-top:4px;">{{ byrActiveBuyer.email || 'No email' }} · {{ byrActiveBuyer.phone || 'No phone' }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-top:4px;">{{ byrActiveBuyer.email || 'No email' }} · {{ byrActiveBuyer.phone || 'No phone' }}</div>
                 </div>
                 <span :class="'status-badge status-'+(byrActiveBuyer.status||'active')">{{ byrActiveBuyer.status || 'active' }}</span>
               </div>
@@ -2478,7 +2494,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">Buyer Tools</h3>
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
               </div>
-              <p style="font-size:13px;color:#9ca3af;margin:0 0 14px;text-align:center;">Generate assets for this buyer.</p>
+              <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin:0 0 14px;text-align:center;">Generate assets for this buyer.</p>
               <div style="margin-bottom:18px;">
                 <button class="btn-navy" @click="byrGeneratePackage" :disabled="byrPackageLoading || !byrActiveBuyer" style="width:100%;padding:13px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;border-radius:2px;display:flex;align-items:center;justify-content:center;gap:10px;">
                   <span v-if="byrPackageLoading" class="spinner" style="width:16px;height:16px;border-width:2px;"></span>
@@ -2582,7 +2598,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <template v-else-if="view==='buyer-consult'">
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; {{ byrActiveBuyer ? byrActiveBuyer.buyer_name : 'All Buyers' }}</button>
           <div style="max-width:700px;">
-            <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">Generate a branded Buyer Consultation Kit PDF to share with prospective buyers. Customize the buyer's info and the kit auto-populates with your name, FORWARD branding, and a complete guide to the home buying process.</p>
+            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">Generate a branded Buyer Consultation Kit PDF to share with prospective buyers. Customize the buyer's info and the kit auto-populates with your name, FORWARD branding, and a complete guide to the home buying process.</p>
 
             <div class="card" style="margin-bottom:16px;">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:14px;font-weight:600;color:var(--navy);">Buyer Information</h3>
@@ -2649,7 +2665,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; Back to Buyers</button>
           <div style="max-width:800px;">
             <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy);margin:0 0 4px;">Buyer Needs Analysis</h2>
-            <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;">Describe your buyer's wants, needs, and situation. AI will generate an agent brief and a buyer-facing summary.</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin:0 0 20px;">Describe your buyer's wants, needs, and situation. AI will generate an agent brief and a buyer-facing summary.</p>
 
             <!-- Input / Result view toggle -->
             <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -2692,7 +2708,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div class="live-rec-dot-wrap"><div class="live-rec-dot"></div></div>
               </div>
               <!-- Recap mode: simple listening indicator -->
-              <div v-if="bnaListening && bnaMode==='recap'" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
+              <div v-if="bnaListening && bnaMode==='recap'" style="font-family:'Cormorant Garamond',serif;background:#fef3c7;border:1.5px solid #f59e0b;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e;display:flex;align-items:center;gap:10px;">
                 <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:liveRecDot 1s ease-in-out infinite;flex-shrink:0;"></div>
                 Listening… speak about your buyer's needs, budget, timeline, and preferences.
               </div>
@@ -2708,7 +2724,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Building Buyer Profile</div>
                 <div style="color:rgba(255,255,255,0.55);font-size:13px;">Extracting needs, priorities, and budget signals from your notes. This takes 15&ndash;30 seconds.</div>
               </div>
-              <div v-if="bnaError" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ bnaError }}</div>
+              <div v-if="bnaError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ bnaError }}</div>
             </div>
 
             <!-- RESULT PANEL -->
@@ -2749,7 +2765,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <button class="lp-back" @click="byrActiveBuyer ? go('buyer-detail') : go('buyer-package')" style="margin-bottom:4px;">&larr; Back to Buyers</button>
           <div style="max-width:800px;">
             <h2 style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600;color:var(--navy);margin:0 0 4px;">Offer Strategy Generator</h2>
-            <p style="font-size:13px;color:#9ca3af;margin:0 0 20px;">Build a data-driven offer strategy with comp analysis, market positioning, and tactical recommendations.</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin:0 0 20px;">Build a data-driven offer strategy with comp analysis, market positioning, and tactical recommendations.</p>
 
             <!-- Step indicator -->
             <div style="display:flex;gap:0;margin-bottom:20px;">
@@ -2781,7 +2797,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="spinner" v-if="osgFetching"></span>
                   {{ osgFetching ? 'Searching for comps...' : 'Search for Comparable Sales' }}
                 </button>
-                <div v-if="osgFetchError" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgFetchError }}</div>
+                <div v-if="osgFetchError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgFetchError }}</div>
               </div>
             </div>
 
@@ -2869,7 +2885,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Comps &amp; Building Strategy</div>
                   <div style="color:rgba(255,255,255,0.55);font-size:13px;">Reviewing {{ osgComps.length }} comparable{{ osgComps.length===1?'':'s' }} and market conditions. This takes 15&ndash;30 seconds.</div>
                 </div>
-                <div v-if="osgAnalyzeError" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgAnalyzeError }}</div>
+                <div v-if="osgAnalyzeError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgAnalyzeError }}</div>
               </div>
             </div>
 
@@ -2895,14 +2911,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <!-- Appraisal gap warning -->
               <div v-if="osgResult.appraisalGap" style="background:#fefce8;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#92400e;">Appraisal Gap Risk: {{ osgResult.appraisalGap }}</div>
-                <div v-if="osgResult.appraisalGapNote" style="font-size:13px;color:#78350f;margin-top:4px;">{{ osgResult.appraisalGapNote }}</div>
+                <div v-if="osgResult.appraisalGapNote" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#78350f;margin-top:4px;">{{ osgResult.appraisalGapNote }}</div>
               </div>
 
               <!-- Content cards -->
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Valuation Reasoning</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Recommended Offer Structure</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div></div>
-              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Escalation Clause</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Pre-Offer Call Talking Points</h3><div style="font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Valuation Reasoning</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Recommended Offer Structure</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div></div>
+              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Escalation Clause</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div></div>
+              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Pre-Offer Call Talking Points</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div></div>
               <div v-if="osgResult.justinNote" style="background:var(--navy);border-radius:12px;padding:16px;margin-bottom:16px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--gold);">Financial Team Action</h3><div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;white-space:pre-wrap;">{{ osgResult.justinNote }}</div></div>
 
               <!-- Action buttons -->
@@ -2945,7 +2961,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="font-size:12px;color:var(--muted);">MLS Agent Full export · PDF only · Max 20 MB</div>
                   <input ref="bmrFileInput" type="file" accept=".pdf,application/pdf" style="display:none" @change="e=>bmrFile=e.target.files[0]">
                 </div>
-                <div v-if="bmrUploadError" style="color:#dc2626;font-size:13px;margin-top:12px;">{{ bmrUploadError }}</div>
+                <div v-if="bmrUploadError" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;margin-top:12px;">{{ bmrUploadError }}</div>
                 <button :disabled="!bmrFile||bmrAnalyzing" @click="bmrAnalyze" style="margin-top:24px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:16px 24px;cursor:pointer;" :style="{opacity:(!bmrFile||bmrAnalyzing)?0.5:1}">
                   <span v-if="bmrAnalyzing" style="display:flex;align-items:center;justify-content:center;gap:10px;">
                     <span style="width:14px;height:14px;border:2px solid rgba(200,169,110,0.3);border-top-color:var(--gold);border-radius:50%;display:inline-block;animation:spin 0.7s linear infinite;"></span>
@@ -3132,7 +3148,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span style="font-size:20px;">⚠️</span>
                   <div>
                     <div style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:14px;color:#92400e;margin-bottom:6px;">Disclaimer Acknowledgment</div>
-                    <p style="font-size:13px;color:#78350f;line-height:1.6;">By generating this report, you confirm that all data has been reviewed for accuracy and that this report is prepared for informational purposes only.</p>
+                    <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#78350f;line-height:1.6;">By generating this report, you confirm that all data has been reviewed for accuracy and that this report is prepared for informational purposes only.</p>
                     <label style="display:flex;align-items:center;gap:8px;margin-top:12px;cursor:pointer;">
                       <input type="checkbox" v-model="bmrDisclaimerAck" style="accent-color:var(--navy);width:16px;height:16px;">
                       <span style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:#92400e;">I acknowledge and agree</span>
@@ -3140,7 +3156,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                 </div>
               </div>
-              <div v-if="bmrDeployError" style="color:#dc2626;font-size:13px;margin-bottom:12px;">{{ bmrDeployError }}</div>
+              <div v-if="bmrDeployError" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;margin-bottom:12px;">{{ bmrDeployError }}</div>
               <div v-if="bmrDeploying" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:6px;padding:14px 18px;margin-bottom:12px;">
                 <div style="font-size:12px;font-weight:700;color:#0369a1;margin-bottom:6px;">Claude is analyzing your properties…</div>
                 <div style="font-size:11px;color:#0284c7;line-height:1.7;">
@@ -3191,7 +3207,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <!-- No active tour: Tour List -->
             <template v-if="!tt.activeTour">
-              <p style="color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">Create a tour, score properties during showings, and get an AI-powered recommendation for your buyer.</p>
+              <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">Create a tour, score properties during showings, and get an AI-powered recommendation for your buyer.</p>
 
               <!-- Create new tour -->
               <div class="card" style="margin-bottom:16px;">
@@ -3216,7 +3232,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </div>
                 </div>
               </div>
-              <div v-else style="color:#9ca3af;font-size:13px;padding:20px 0;">No tours yet. Create one above to start tracking properties.</div>
+              <div v-else style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:20px 0;">No tours yet. Create one above to start tracking properties.</div>
             </template>
 
             <!-- Active tour -->
@@ -3228,7 +3244,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
                   <div>
                     <h2 style="margin:0;font-size:18px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">{{ tt.activeTour.name }}</h2>
-                    <div style="font-size:13px;color:#9ca3af;margin-top:3px;">{{ tt.activeTour.buyer || 'No buyer assigned' }} · {{ tt.activeTour.properties.length }} propert{{ tt.activeTour.properties.length === 1 ? 'y' : 'ies' }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin-top:3px;">{{ tt.activeTour.buyer || 'No buyer assigned' }} · {{ tt.activeTour.properties.length }} propert{{ tt.activeTour.properties.length === 1 ? 'y' : 'ies' }}</div>
                   </div>
                   <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <button class="btn-gold" @click="ttAnalyze" :disabled="ttAnalyzing || tt.activeTour.properties.length === 0" style="font-size:12px;padding:8px 18px;">
@@ -3260,7 +3276,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span style="font-size:20px;">🤖</span>
                   <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">AI Recommendation</h3>
                 </div>
-                <div style="font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">{{ tt.recommendation }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">{{ tt.recommendation }}</div>
               </div>
 
               <!-- Add property -->
@@ -3275,7 +3291,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- No active property: Property cards grid -->
               <template v-if="!tt.activeProperty">
-                <div v-if="tt.activeTour.properties.length === 0" style="color:#9ca3af;font-size:13px;padding:20px 0;text-align:center;">Add properties above to start scoring.</div>
+                <div v-if="tt.activeTour.properties.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:20px 0;text-align:center;">Add properties above to start scoring.</div>
                 <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
                   <div v-for="(prop,pi) in tt.activeTour.properties" :key="prop.id" class="tool-card" @click="tt.activeProperty=prop" style="padding:18px;position:relative;">
                     <div style="position:absolute;top:12px;left:16px;background:var(--navy);color:#fff;font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">#{{ pi+1 }}</div>
@@ -3403,14 +3419,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
 
             <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Cash to Close Estimate</h3>
-            <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.5;">Jurisdiction-aware buyer closing cost calculator for DC, MD, and VA. Modeled after KVS Title buyer estimate.</p>
+            <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.5;">Jurisdiction-aware buyer closing cost calculator for DC, MD, and VA. Modeled after KVS Title buyer estimate.</p>
 
             <!-- Property Address with autocomplete -->
             <div class="form-row" style="position:relative;">
               <label>Property Address</label>
               <input id="ctc-address-input" v-model="ctc.address" type="text" placeholder="Start typing an address..." @input="ctcOnAddressInput" autocomplete="off"/>
               <div v-if="ctc._suggestions.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:220px;overflow-y:auto;">
-                <div v-for="(s,i) in ctc._suggestions" :key="i" @mousedown.prevent="ctcSelectSuggestion(s)" style="padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
+                <div v-for="(s,i) in ctc._suggestions" :key="i" @mousedown.prevent="ctcSelectSuggestion(s)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
               </div>
             </div>
 
@@ -3656,7 +3672,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <button class="btn-del" @click="delItem(item.id)" title="Delete">✕</button>
                 </div>
               </div>
-              <div style="font-size:13px;color:#6b7280;line-height:1.6;margin-top:10px;max-height:56px;overflow:hidden;">{{ item.content.substring(0,200) }}{{ item.content.length>200?'…':'' }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.6;margin-top:10px;max-height:56px;overflow:hidden;">{{ item.content.substring(0,200) }}{{ item.content.length>200?'…':'' }}</div>
             </div>
           </div>
           <!-- Full item modal -->
@@ -3669,7 +3685,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <button @click="expandItem=null" style="background:none;border:none;font-size:22px;cursor:pointer;color:#9ca3af;line-height:1;">✕</button>
               </div>
-              <div style="white-space:pre-wrap;font-size:14px;line-height:1.75;color:#1f2937;">{{ expandItem.content }}</div>
+              <div style="font-family:'Cormorant Garamond',serif;white-space:pre-wrap;font-size:14px;line-height:1.75;color:#1f2937;">{{ expandItem.content }}</div>
               <div style="margin-top:20px;display:flex;gap:10px;">
                 <button class="btn-navy" @click="copy(expandItem.content);expandItem=null">Copy to Clipboard</button>
                 <button class="btn-outline" @click="expandItem=null">Close</button>
@@ -3884,7 +3900,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Error banner -->
             <div v-if="lstActiveProp.status==='error'" style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:16px;margin-bottom:16px;text-align:center;">
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:#dc2626;">Something went wrong</div>
-              <div style="font-size:13px;color:#b91c1c;margin-top:4px;">Contact Marc at marc.cashin@corcoranmce.com.</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#b91c1c;margin-top:4px;">Contact Marc at marc.cashin@corcoranmce.com.</div>
             </div>
 
             <!-- ── Campaign Package Viewer (shown when campaign is complete) ── -->
@@ -4065,7 +4081,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- Saved CMA recall -->
                   <div v-if="lstNotes.cma" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;">
                     <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">📊 Saved CMA</div>
-                    <div style="font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:120px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.cma }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:120px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.cma }}</div>
                     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.cma)" style="font-size:12px;">📋 Copy</button>
                       <a v-if="lstSubfolderFiles('cma')[0]?.drive_link" :href="lstSubfolderFiles('cma')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;">📄 View File →</a>
@@ -4077,7 +4093,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div style="font-size:12px;color:#78350f;margin-bottom:10px;line-height:1.5;">The CMA Builder uses your five buyer personas to tailor comparable analysis to your ideal buyers. Generate personas by completing the Listing Description Writer for this property.</div>
                     <button class="btn-gold" @click="view='listing-desc'" style="font-size:12px;padding:8px 16px;">Go to Listing Description Writer</button>
                   </div>
-                  <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
+                  <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
                   <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:12px;font-size:13px;'>🔍 Open CMA Builder</button>
                   <div style="border-top:1px solid #f0f0f0;padding-top:12px;">
                     <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Log CMA to This Property</div>
@@ -4168,7 +4184,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
-                    <p style="font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Generate a new version or refine further:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
+                    <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Generate a new version or refine further:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
                     <button class="btn-gold" @click="view='listing-desc'" style="padding:10px 28px;font-size:13px;">{{ lstNotes.listing_remarks ? '✏️ Open Writer' : 'Open Listing Description Writer' }}</button>
                   </div>
                 </div>
@@ -4188,7 +4204,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- Saved Net Sheet recall -->
                   <div v-if="lstNotes.seller_net_sheet" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;">
                     <div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">💰 Saved Net Sheet</div>
-                    <div style="font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:160px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.seller_net_sheet }}</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:12px;max-height:160px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ lstNotes.seller_net_sheet }}</div>
                     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.seller_net_sheet)" style="font-size:12px;">📋 Copy</button>
                       <a v-if="lstSubfolderFiles('seller_net_sheet')[0]?.drive_link" :href="lstSubfolderFiles('seller_net_sheet')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;">📄 View PDF →</a>
@@ -4690,7 +4706,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="modal-box" style="max-width:440px;text-align:center;">
               <div style="font-size:36px;margin-bottom:12px;">🚀</div>
               <h3 style="margin:0 0 8px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Submit to FORWARD Marketing OS?</h3>
-              <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This will send all uploaded assets for <strong>{{ lstActiveProp.address }}</strong> to the FORWARD pipeline for campaign generation. You will not be able to edit files while the campaign is running.</p>
+              <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 20px;">This will send all uploaded assets for <strong>{{ lstActiveProp.address }}</strong> to the FORWARD pipeline for campaign generation. You will not be able to edit files while the campaign is running.</p>
               <div style="display:flex;gap:10px;">
                 <button class="btn-outline" @click="lstShowSubmitConfirm=false" style="flex:1;">Cancel</button>
                 <button class="btn-gold" @click="lstSubmitToPipeline" :disabled="lstSubmitting" style="flex:2;">
@@ -4727,14 +4743,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="margin-bottom:14px;display:flex;align-items:center;gap:12px;">
                   <span class="subfolder-tool-name">{{ adminViewAgent }}'s Properties</span>
                 </div>
-                <p v-if="adminViewAgent === agentName" style="font-size:13px;color:#6b7280;margin:0 0 14px;line-height:1.55;">Create a folder for each property you're working on. Use <strong style="color:var(--navy);">📁 Save to Property</strong> from any tool to keep everything organized.</p>
+                <p v-if="adminViewAgent === agentName" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 14px;line-height:1.55;">Create a folder for each property you're working on. Use <strong style="color:var(--navy);">📁 Save to Property</strong> from any tool to keep everything organized.</p>
                 <!-- Create new (only for own files) -->
                 <div v-if="adminViewAgent === agentName" style="display:flex;gap:8px;margin-bottom:16px;">
                   <input v-model="newPropAddress" placeholder="e.g. 123 Main St. Unit 7E" style="max-width:340px;" @keyup.enter="createPropFile">
                   <input v-model="newPropSellerName" placeholder="Seller name (e.g. John Smith)" style="max-width:340px;" @keyup.enter="createPropFile">
                   <button class="btn-navy" @click="createPropFile" style="white-space:nowrap;">+ New Property</button>
                 </div>
-                <div v-if="adminGetAgentFiles(adminViewAgent).length === 0" style="color:#9ca3af;font-size:13px;padding:20px 0;">No property files yet.</div>
+                <div v-if="adminGetAgentFiles(adminViewAgent).length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:20px 0;">No property files yet.</div>
                 <div v-else class="prop-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
                   <div v-for="pf in adminGetAgentFiles(adminViewAgent)" :key="pf.id" class="tool-card" @click="adminOpenPropFile(adminViewAgent, pf)" style="padding:18px;position:relative;">
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
@@ -4754,7 +4770,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Agent: {{ activePropFile._viewingAgent || agentName }} · Created {{ new Date(activePropFile.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                     </div>
                   </div>
-                  <div v-if="!activePropFile.resources || activePropFile.resources.length === 0" style="color:#9ca3af;font-size:13px;padding:16px 0;text-align:center;">No resources saved yet. Use the tools to create content, then save it here.</div>
+                  <div v-if="!activePropFile.resources || activePropFile.resources.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:16px 0;text-align:center;">No resources saved yet. Use the tools to create content, then save it here.</div>
                   <div v-else>
                     <div v-for="r in activePropFile.resources" :key="r.id" class="lp-report-row" style="margin-bottom:8px;cursor:default;">
                       <div style="flex:1;min-width:0;">
@@ -4840,12 +4856,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
               <!-- Property list -->
               <template v-if="!activePropFile">
-                <p style="font-size:13px;color:#6b7280;margin:0 0 14px;line-height:1.55;">Create a folder for each property you're working on. As you build net sheets, listing descriptions, CMAs, and prep guides, use the <strong style="color:var(--navy);">📁 Save to Property</strong> button to keep everything organized in one place.</p>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 14px;line-height:1.55;">Create a folder for each property you're working on. As you build net sheets, listing descriptions, CMAs, and prep guides, use the <strong style="color:var(--navy);">📁 Save to Property</strong> button to keep everything organized in one place.</p>
                 <div style="display:flex;gap:8px;margin-bottom:16px;">
                   <input v-model="newPropAddress" placeholder="e.g. 123 Main St. Unit 7E" style="max-width:340px;" @keyup.enter="createPropFile">
                   <button class="btn-navy" @click="createPropFile" style="white-space:nowrap;">+ New Property</button>
                 </div>
-                <div v-if="propFiles.length === 0" style="color:#9ca3af;font-size:13px;padding:20px 0;">No property files yet. Create one above or use 📁 Save to Property from any tool.</div>
+                <div v-if="propFiles.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:20px 0;">No property files yet. Create one above or use 📁 Save to Property from any tool.</div>
                 <div v-else class="prop-files-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;">
                   <div v-for="pf in propFiles" :key="pf.id" class="tool-card" @click="openPropFile(pf)" style="padding:18px;position:relative;">
                     <div style="font-size:28px;margin-bottom:8px;">🏠</div>
@@ -4865,7 +4881,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="font-size:12px;color:#9ca3af;margin-top:2px;">Created {{ new Date(activePropFile.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
                     </div>
                   </div>
-                  <div v-if="!activePropFile.resources || activePropFile.resources.length === 0" style="color:#9ca3af;font-size:13px;padding:16px 0;text-align:center;">No resources saved yet. Use the tools to create content, then save it here.</div>
+                  <div v-if="!activePropFile.resources || activePropFile.resources.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:16px 0;text-align:center;">No resources saved yet. Use the tools to create content, then save it here.</div>
                   <div v-else>
                     <div v-for="r in activePropFile.resources" :key="r.id" class="lp-report-row" style="margin-bottom:8px;cursor:default;">
                       <div style="flex:1;min-width:0;">
@@ -4950,7 +4966,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- API Key — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Claude API Key</h3>
-              <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">Required for all AI tools. Get yours at <a href="https://console.anthropic.com" target="_blank" style="color:var(--navy);font-weight:700;">console.anthropic.com</a></p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 16px;font-size:13px;color:#6b7280;">Required for all AI tools. Get yours at <a href="https://console.anthropic.com" target="_blank" style="color:var(--navy);font-weight:700;">console.anthropic.com</a></p>
               <div style="display:flex;gap:10px;">
                 <input :type="showKey?'text':'password'" v-model="settKey" placeholder="sk-ant-api03-…" style="flex:1;"/>
                 <button @click="showKey=!showKey" style="padding:10px 14px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:13px;white-space:nowrap;">{{ showKey?'Hide':'Show' }}</button>
@@ -4959,12 +4975,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <button class="btn-navy" @click="saveKey" style="flex:1;">Save API Key</button>
                 <button v-if="apiKeySet" @click="clearKey" style="padding:10px 16px;background:#fff0f0;border:1.5px solid #fecaca;border-radius:8px;cursor:pointer;color:#dc2626;font-weight:600;font-size:14px;">Clear</button>
               </div>
-              <div v-if="apiKeySet" style="margin-top:10px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#166534;">✅ API key is set — AI tools are ready</div>
+              <div v-if="apiKeySet" style="font-family:'Cormorant Garamond',serif;margin-top:10px;padding:10px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:13px;color:#166534;">✅ API key is set — AI tools are ready</div>
             </div>
             <!-- Team API Key Manager — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'" style="border:1.5px solid #e0e7ff;background:#f8faff;">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">🔑 Manage Team API Keys</h3>
-              <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Set or clear the Claude API key for any team member. Useful for configuring shared or demo devices.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Set or clear the Claude API key for any team member. Useful for configuring shared or demo devices.</p>
               <div class="form-row">
                 <label>Agent</label>
                 <select v-model="adminKeyAgent" @change="adminKeyValue='';adminRefreshStatus()">
@@ -4984,7 +5000,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Model -->
             <div class="card">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">AI Model</h3>
-              <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Select the Claude model used for all AI generation.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Select the Claude model used for all AI generation.</p>
               <select v-model="settModel">
                 <option value="claude-opus-4-6">Claude Opus 4 — Best quality</option>
                 <option value="claude-sonnet-4-6">Claude Sonnet 4 — Recommended (best value)</option>
@@ -4995,7 +5011,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Branding -->
             <div class="card">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Team Branding Context</h3>
-              <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">This context is included in every AI prompt to keep outputs on-brand.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">This context is included in every AI prompt to keep outputs on-brand.</p>
               <div class="form-row"><label>Brokerage Name</label><input v-model="settBrokerage"/></div>
               <div class="form-row"><label>Markets</label><input v-model="settMarkets" placeholder="Washington DC, Maryland, Virginia"/></div>
               <div class="form-row"><label>Brand Voice Notes (optional)</label><textarea v-model="settVoice" rows="3" placeholder="E.g. Professional but approachable. No clichés. Always reference the DMV luxury market…" style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='sett-voice'}" @click="inlineMicToggle('sett-voice',()=>settVoice.value,v=>settVoice.value=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
@@ -5004,13 +5020,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Access codes -->
             <div class="card">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Access Codes</h3>
-              <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Current team code: <code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:600;">forward2026</code></p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 8px;font-size:13px;color:#6b7280;">Current team code: <code style="background:#f3f4f6;padding:2px 8px;border-radius:4px;font-size:13px;font-weight:600;">forward2026</code></p>
               <p style="margin:0;font-size:12px;color:#9ca3af;">Individual agent accounts with unique codes coming in Phase 2 (Supabase Auth).</p>
             </div>
             <!-- Follow Up Boss — Marc only -->
             <div class="card" v-if="agentName === 'Marc Cashin'">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Follow Up Boss CRM</h3>
-              <p style="margin:0 0 14px;font-size:13px;color:#6b7280;">Connect your team's FUB account to enable voice-to-contact. Use Marc's admin API key. Get it from <strong>FUB Admin → API</strong>.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Connect your team's FUB account to enable voice-to-contact. Use Marc's admin API key. Get it from <strong>FUB Admin → API</strong>.</p>
               <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;">✅ Connected · {{ fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
               <div v-else class="fub-status disconnected" style="margin-bottom:12px;">⚠️ Not connected</div>
               <div style="display:flex;gap:10px;margin-bottom:10px;">
@@ -5029,7 +5045,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Training Admin (Marc only) -->
             <div class="card" v-if="agentName === 'Marc Cashin'" style="border:1.5px solid var(--gold);background:linear-gradient(135deg,#fffbeb,#fff);">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:14px;font-weight:600;color:var(--navy);">📚 Training Library Admin</h3>
-              <p style="margin:0 0 12px;font-size:13px;color:#6b7280;">Add or remove custom entries that appear in the voice assistant and Training Center.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 12px;font-size:13px;color:#6b7280;">Add or remove custom entries that appear in the voice assistant and Training Center.</p>
               <button class="btn-gold" @click="go('admin-training')" style="width:100%;">Open Admin Panel</button>
             </div>
             <!-- Sign out -->
@@ -5057,7 +5073,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
             <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:16px;font-weight:600;color:var(--navy);">📚 Training Library Admin</h3>
-              <p style="margin:0 0 16px;font-size:13px;color:#6b7280;">Add custom training entries that appear in the voice assistant and Training Center. Only visible to you.</p>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 16px;font-size:13px;color:#6b7280;">Add custom training entries that appear in the voice assistant and Training Center. Only visible to you.</p>
 
               <!-- Add entry form -->
               <div style="background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:20px;">
@@ -5103,7 +5119,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">
                 Custom Entries ({{ atEntries.length }})
               </div>
-              <div v-if="atEntries.length === 0" style="color:#9ca3af;font-size:13px;padding:12px 0;">No custom entries yet. Add one above.</div>
+              <div v-if="atEntries.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:12px 0;">No custom entries yet. Add one above.</div>
               <div v-for="entry in atEntries" :key="entry.id" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:8px;">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
                   <div style="flex:1;min-width:0;">
@@ -5125,7 +5141,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="showClientFilePicker" class="modal-bg" @click.self="showClientFilePicker=false" style="z-index:10001;">
       <div class="modal-box" style="max-width:480px;max-height:78vh;display:flex;flex-direction:column;">
         <h3 style="margin:0 0 4px;font-size:16px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">📁 Save to Client File</h3>
-        <p style="font-size:13px;color:#6b7280;margin:0 0 14px;">Choose which client folder to save this PDF to.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 14px;">Choose which client folder to save this PDF to.</p>
         <div style="overflow-y:auto;flex:1;">
           <!-- Buyers section -->
           <div v-if="byrBuyers.length>0">
@@ -5159,7 +5175,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
             </div>
           </div>
-          <div v-if="byrBuyers.length===0 && (!supaProperties||supaProperties.length===0)" style="color:#9ca3af;font-size:13px;padding:24px 0;text-align:center;">No client files yet. Add a buyer or listing first.</div>
+          <div v-if="byrBuyers.length===0 && (!supaProperties||supaProperties.length===0)" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:24px 0;text-align:center;">No client files yet. Add a buyer or listing first.</div>
         </div>
         <button class="btn-outline" @click="showClientFilePicker=false" style="width:100%;margin-top:12px;">Cancel</button>
       </div>
@@ -5320,7 +5336,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <div style="text-align:center;padding:20px 0 8px;">
         <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;">✓</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;">Form pre-filled!</div>
-        <div style="font-size:13px;color:#9ca3af;margin-bottom:20px;">Opening {{ voiceModal.detectedTool }}…</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin-bottom:20px;">Opening {{ voiceModal.detectedTool }}…</div>
         <button class="btn-outline" @click="voiceClose" style="min-height:50px;width:100%;">Close</button>
       </div>
     </template>
@@ -5343,9 +5359,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <!-- Phase: answer -->
     <template v-else-if="voiceModal.phase==='answer'">
       <div style="font-size:12px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Question</div>
-      <div style="font-size:13px;color:var(--navy);font-style:italic;margin-bottom:12px;padding:10px 12px;background:#f9fafb;border-radius:10px;line-height:1.5;">"{{ voiceModal.answerQuestion }}"</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);font-style:italic;margin-bottom:12px;padding:10px 12px;background:#f9fafb;border-radius:10px;line-height:1.5;">"{{ voiceModal.answerQuestion }}"</div>
       <div style="overflow-y:auto;max-height:340px;padding-right:4px;margin-bottom:12px;">
-        <div style="font-size:14px;color:#1f2937;line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.split('📚')[0] }}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#1f2937;line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.split('📚')[0] }}</div>
         <div v-if="voiceModal.answerText.includes('📚')" style="font-size:11px;color:#9ca3af;background:#f9fafb;border-radius:8px;padding:7px 10px;margin-top:10px;">📚{{ voiceModal.answerText.split('📚')[1] }}</div>
       </div>
       <div style="display:flex;gap:10px;">
@@ -5371,7 +5387,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <div style="text-align:center;padding:16px 0;">
         <div style="margin-bottom:12px;color:#dc2626;"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:8px;">Something went wrong</div>
-        <div style="font-size:13px;color:#dc2626;background:#fff5f5;border-radius:10px;padding:10px 14px;margin-bottom:18px;line-height:1.5;">{{ voiceModal.errorMsg }}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;background:#fff5f5;border-radius:10px;padding:10px 14px;margin-bottom:18px;line-height:1.5;">{{ voiceModal.errorMsg }}</div>
         <button class="btn-navy" @click="voiceRestart" style="width:100%;min-height:50px;">Try Again</button>
       </div>
     </template>
@@ -5419,7 +5435,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
           </div>
         </div>
-        <div v-else-if="supaPropsLoading" style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Loading properties...</div>
+        <div v-else-if="supaPropsLoading" style="font-family:'Cormorant Garamond',serif;text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Loading properties...</div>
 
         <!-- Fallback: local property files when no Supabase results -->
         <div v-if="propFiles.length > 0 && supaProperties.length === 0 && !supaPropsLoading" style="margin-bottom:14px;max-height:220px;overflow-y:auto;">
@@ -5475,17 +5491,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <span style="font-size:12px;color:rgba(255,255,255,0.6);display:block;text-align:center;">or tap to choose from camera roll</span>
             <input type="file" accept="image/*" style="display:none;" @change="cardScanAttach">
           </label>
-          <div v-if="cardScan.error" style="font-size:13px;color:#ef4444;text-align:center;padding:8px;">{{ cardScan.error }}</div>
+          <div v-if="cardScan.error" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#ef4444;text-align:center;padding:8px;">{{ cardScan.error }}</div>
         </template>
 
         <!-- Phase: preview -->
         <template v-else-if="cardScan.phase==='preview'">
-          <div style="font-size:13px;color:#6b7280;text-align:center;margin-bottom:14px;">Make sure the card is clear and legible.</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;text-align:center;margin-bottom:14px;">Make sure the card is clear and legible.</div>
           <!-- Card preview image -->
           <div style="border-radius:16px;overflow:hidden;border:2px solid var(--gold);margin-bottom:16px;background:#f9fafb;min-height:160px;display:flex;align-items:center;justify-content:center;">
             <img :src="'data:'+cardScan.imageMediaType+';base64,'+cardScan.imageData" style="width:100%;max-height:240px;object-fit:contain;display:block;" alt="Business card preview">
           </div>
-          <div v-if="cardScan.error" style="font-size:13px;color:#ef4444;text-align:center;margin-bottom:10px;">{{ cardScan.error }}</div>
+          <div v-if="cardScan.error" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#ef4444;text-align:center;margin-bottom:10px;">{{ cardScan.error }}</div>
           <div style="display:flex;gap:10px;">
             <!-- Retake -->
             <label style="flex:1;min-height:50px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;font-weight:600;color:#374151;gap:8px;touch-action:manipulation;">
@@ -5624,7 +5640,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="bckSendModal" class="modal-bg" @click.self="bckSendModal=false">
       <div class="modal-box" style="max-width:460px;">
         <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Buyer Consultation Kit</h3>
-        <p style="font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and then attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and then attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
         <div class="form-row" style="margin-bottom:12px;">
           <label>Buyer Email</label>
           <input v-model="bckSendEmail" type="email" placeholder="buyer@email.com" style="font-size:13px;padding:9px 10px;">
@@ -5646,7 +5662,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="ttSendModal" class="modal-bg" @click.self="ttSendModal=false">
       <div class="modal-box" style="max-width:460px;">
         <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Tour Summary to Client</h3>
-        <p style="font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 18px;line-height:1.55;">The PDF will open in the viewer — tap <strong>⬇ Download</strong> and attach it to your email or text. Or use the options below to open your email/messages app with a pre-filled draft.</p>
         <div class="form-row" style="margin-bottom:12px;">
           <label>Buyer Email</label>
           <input v-model="ttSendEmail" type="email" placeholder="buyer@email.com" style="font-size:13px;padding:9px 10px;">
@@ -5668,7 +5684,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     <div v-if="sellerPrepSendModal" class="modal-bg" @click.self="sellerPrepSendModal=false">
       <div class="modal-box" style="max-width:460px;">
         <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Prep Guide to Seller</h3>
-        <p style="font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.55;">The branded PDF will be generated and shared directly. On supported devices (mobile, modern browsers) the file attaches automatically. Otherwise it will download and your email/text app will open — just attach the downloaded PDF.</p>
+        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.55;">The branded PDF will be generated and shared directly. On supported devices (mobile, modern browsers) the file attaches automatically. Otherwise it will download and your email/text app will open — just attach the downloaded PDF.</p>
         <div class="form-row">
           <label>Seller Email (optional)</label>
           <input v-model="sellerPrepRecipientEmail" type="email" placeholder="seller@email.com" style="font-size:13px;"/>
