@@ -5443,7 +5443,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div>
             <div style="font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Follow Up Boss</div>
             <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);">
-              {{ logAct.phase==='input' ? 'Log Activity' : logAct.phase==='searching' ? 'Searching…' : logAct.phase==='select' ? 'Select Contact' : logAct.phase==='confirm' ? 'Confirm Actions' : logAct.phase==='executing' ? 'Updating FUB…' : logAct.phase==='done' ? 'Activity Logged' : 'Something Went Wrong' }}
+              {{ logAct.phase==='input' ? 'Log Activity' : logAct.phase==='parsing' ? 'Reading Command…' : logAct.phase==='parsed' ? 'Verify &amp; Search' : logAct.phase==='searching' ? 'Searching…' : logAct.phase==='select' ? 'Select Contact' : logAct.phase==='confirm' ? 'Confirm Actions' : logAct.phase==='executing' ? 'Updating FUB…' : logAct.phase==='done' ? 'Activity Logged' : 'Something Went Wrong' }}
             </div>
           </div>
           <button @click="logAct.show=false" style="width:28px;height:28px;border-radius:50%;background:var(--cream);border:1px solid var(--cream-dark);cursor:pointer;font-size:14px;color:var(--navy-mid);display:flex;align-items:center;justify-content:center;">✕</button>
@@ -5461,6 +5461,50 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div style="display:flex;gap:10px;">
             <button class="btn-outline-navy" @click="logAct.show=false" style="flex:1;min-height:44px;">Cancel</button>
             <button class="btn-navy" @click="logActParse" :disabled="!logAct.command.trim()" style="flex:2;min-height:44px;">Parse Command →</button>
+          </div>
+        </div>
+
+        <!-- Phase: parsing (AI reading the command) -->
+        <div v-else-if="logAct.phase==='parsing'" style="padding:40px 24px;text-align:center;">
+          <div class="spinner spinner-dark" style="margin:0 auto 16px;"></div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--navy);">Reading your command…</div>
+        </div>
+
+        <!-- Phase: parsed — agent reviews extracted fields before search fires -->
+        <div v-else-if="logAct.phase==='parsed'" style="padding:24px;">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin:0 0 18px;line-height:1.6;">Here's what was extracted. Review and correct anything before searching Follow Up Boss.</p>
+
+          <!-- Contact name to search — most important to verify -->
+          <div style="margin-bottom:14px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:6px;">Contact to find in FUB</div>
+            <input v-model="logAct.contactQuery" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;color:var(--navy);border:1.5px solid var(--navy);border-radius:2px;padding:10px 14px;outline:none;" placeholder="Full name…">
+            <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Edit if the name looks wrong (speech recognition isn't perfect)</div>
+          </div>
+
+          <!-- Note preview -->
+          <div v-if="logAct.note!==undefined && logAct.note!==null && logAct.note!==false" style="margin-bottom:14px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:6px;">📝 Note to add</div>
+            <input v-model="logAct.note" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);border:1px solid var(--cream-dark);border-radius:2px;padding:8px 12px;outline:none;" placeholder="Note text (leave blank to skip)">
+          </div>
+
+          <!-- Birthday preview -->
+          <div v-if="logAct.birthday" style="margin-bottom:14px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:6px;">🎂 Birthday (MM-DD)</div>
+            <input v-model="logAct.birthday" style="width:120px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);border:1px solid var(--cream-dark);border-radius:2px;padding:8px 12px;outline:none;" placeholder="07-28">
+          </div>
+
+          <!-- Task preview -->
+          <div v-if="logAct.taskText!==undefined && logAct.taskText!==null && logAct.taskText!==false" style="margin-bottom:18px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:6px;">⏰ Task</div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <input v-model="logAct.taskText" style="flex:2;min-width:140px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);border:1px solid var(--cream-dark);border-radius:2px;padding:8px 12px;outline:none;" placeholder="Task (leave blank to skip)">
+              <input v-model="logAct.taskDue" style="flex:1;min-width:100px;font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);border:1px solid var(--cream-dark);border-radius:2px;padding:8px 12px;outline:none;" placeholder="Due: tomorrow 2pm">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline-navy" @click="logAct.phase='input'" style="flex:1;min-height:46px;">← Edit Command</button>
+            <button class="btn-navy" @click="logActSearch" :disabled="!logAct.contactQuery.trim()" style="flex:2;min-height:46px;">Search FUB for "{{ logAct.contactQuery }}" →</button>
           </div>
         </div>
 
@@ -13649,8 +13693,7 @@ async function voiceParse() {
     logAct.taskDue = f.taskDue || '';
     logAct.stage = f.stage || '';
     logAct.show = true;
-    logAct.phase = 'confirm-search';
-    logActSearch();
+    logAct.phase = 'parsed';
     return;
   }
 
@@ -14049,7 +14092,7 @@ Rules:
 
 async function logActParse() {
   if (!logAct.command.trim()) return;
-  logAct.phase = 'searching';
+  logAct.phase = 'parsing';
   logAct.error = '';
   try {
     const key = localStorage.getItem(agentKey('fos_key'));
@@ -14065,7 +14108,8 @@ async function logActParse() {
     logAct.taskText = p.taskText || '';
     logAct.taskDue = p.taskDue || '';
     logAct.stage = p.stage || '';
-    await logActSearch();
+    // Stop here — show the agent what was extracted before searching
+    logAct.phase = 'parsed';
   } catch(e) {
     logAct.phase = 'error';
     logAct.error = e.message;
