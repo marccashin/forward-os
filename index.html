@@ -143,6 +143,13 @@ tbody tr:hover td { background: var(--cream); }
 
 /* ── HEADINGS ── */
 h1, h2, h3 { font-family: 'Cormorant Garamond', serif; color: var(--navy); font-weight: 500; letter-spacing: 0.02em; }
+/* Brand font enforcement — all card/panel body text */
+.card p, .card > div { font-family: 'Cormorant Garamond', serif; }
+/* But labels, buttons, meta stay Montserrat */
+.card label, .card .btn-navy, .card .btn-gold, .card .btn-outline, .card .btn-sm,
+.card input, .card select, .card textarea,
+.card [style*="letter-spacing"], .card [style*="text-transform:uppercase"],
+.card [style*="font-size:8"], .card [style*="font-size:9"], .card [style*="font-size:10"], .card [style*="font-size:11"] { font-family: 'Montserrat', sans-serif; }
 
 /* ── SCROLLBARS ── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -2128,100 +2135,81 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <!-- ============ BUYER CONSULTATION KIT ============ -->
         <!-- ============ BUYER PACKAGE (Listings-style) ============ -->
         <template v-else-if="view==='buyer-package'">
-          <div style="max-width:900px;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
-              <div>
-                <h2 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:18px;font-weight:600;color:var(--navy);">My Buyers</h2>
-                <p style="margin:4px 0 0;font-size:13px;color:#9ca3af;">Manage buyer files and access all buyer tools inside each file.</p>
-              </div>
-              <button class="btn-gold" @click="byrShowNewModal=true" style="white-space:nowrap;">+ New Buyer</button>
+          <!-- Page header — matches Seller Package exactly -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
+            <div>
+              <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;color:var(--navy);margin:0;">My Buyers</h2>
+              <p style="font-size:8.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);margin:4px 0 0;">Buyer Files · Client Tools · Pipeline</p>
             </div>
-            <div v-if="byrLoading" style="text-align:center;padding:40px;color:#9ca3af;font-size:13px;">Loading buyers...</div>
-            <div v-else-if="byrBuyers.length===0" style="display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 260px);text-align:center;">
-              <div style="max-width:420px;padding:40px 24px;">
-                <div style="width:80px;height:80px;margin:0 auto 20px;background:linear-gradient(135deg,var(--navy),#243660);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:36px;">👥</div>
-                <h2 style="margin:0 0 8px;font-size:22px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Welcome to My Buyers</h2>
-                <p style="font-size:14px;color:#6b7280;line-height:1.6;margin:0 0 24px;">Create a buyer file to organize your buyer tools — Cash to Close, Consultation Kit, Tour Tracker, and more — all inside one place.</p>
-                <button class="btn-navy" @click="byrShowNewModal=true" style="padding:14px 36px;font-size:15px;font-weight:700;color:var(--gold);border-radius:12px;">Add Your First Buyer</button>
-              </div>
-            </div>
-            <!-- Buyer cards: agent-grouped for Marc, flat for others -->
-            <div v-else>
-              <template v-if="isAdmin">
-                <div v-for="agentGroup in byrGroupedByAgent" :key="agentGroup.name" style="margin-bottom:28px;">
-                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;" @click="agentGroup._open = !agentGroup._open">
-                    <div style="width:34px;height:34px;background:linear-gradient(135deg,var(--gold),#b8963c);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;">👤</div>
-                    <div style="flex:1;">
-                      <div class="subfolder-tool-name">{{ agentGroup.name }}</div>
-                      <div style="font-size:11px;color:#9ca3af;">{{ agentGroup.buyers.length }} buyer{{ agentGroup.buyers.length===1?'':'s' }}</div>
-                    </div>
-                    <span style="font-size:13px;color:#9ca3af;">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
-                  </div>
-                  <div v-if="agentGroup._open !== false" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;padding-left:44px;">
-                    <div v-for="buyer in agentGroup.buyers" :key="buyer.id" class="listing-card-wrap">
-                      <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                      <span>delete</span>
-                    </div>
-                      <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
-                      <div class="listing-card" @click="byrOpenBuyer(buyer)">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                          <span class="market-badge" style="background:rgba(201,168,76,0.15);color:var(--gold);">👥 Buyer</span>
-                          <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
-                        </div>
-                        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
-                        <div style="font-size:12px;color:#9ca3af;">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </template>
-              <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;">
-                <div v-for="buyer in byrBuyers" :key="buyer.id" class="listing-card-wrap">
-                  <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                      <span>delete</span>
-                    </div>
-                  <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
-                  <div class="listing-card" @click="byrOpenBuyer(buyer)">
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                      <span class="market-badge" style="background:rgba(201,168,76,0.15);color:var(--gold);">👥 Buyer</span>
-                      <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
-                    </div>
-                    <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);line-height:1.35;margin-bottom:6px;">{{ buyer.buyer_name }}</div>
-                    <div style="font-size:12px;color:#9ca3af;">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <button class="btn-navy" @click="byrShowNewModal=true" style="white-space:nowrap;display:inline-flex;align-items:center;gap:7px;">
+              <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4.5" y1="0.5" x2="4.5" y2="8.5"/><line x1="0.5" y1="4.5" x2="8.5" y2="4.5"/></svg>
+              New Buyer
+            </button>
           </div>
-          <div v-if="byrDeleteTarget" class="modal-bg" @click.self="byrDeleteTarget=null">
-            <div class="modal-box" style="max-width:400px;text-align:center;">
-              <div style="font-size:36px;margin-bottom:12px;">🗑️</div>
-              <h3 style="margin:0 0 8px;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Delete {{ byrDeleteTarget.buyer_name }}?</h3>
-              <p style="font-size:13px;color:#6b7280;margin:0 0 20px;">This cannot be undone.</p>
-              <div style="display:flex;gap:10px;">
-                <button class="btn-outline" @click="byrDeleteTarget=null" style="flex:1;">Cancel</button>
-                <button style="flex:1;background:#dc2626;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;" @click="byrDoDelete">Delete</button>
-              </div>
-            </div>
-          </div>
-          <div v-if="byrShowNewModal" class="modal-bg" @click.self="byrShowNewModal=false">
-            <div class="modal-box" style="max-width:460px;">
-              <h3 style="margin:0 0 18px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Add New Buyer</h3>
-              <div class="form-row"><label>Buyer Name *</label><input v-model="byrNewName" type="text" placeholder="e.g. Sarah & James Miller" @keyup.enter="byrCreateBuyer" autofocus></div>
-              <div class="form-row"><label>Email</label><input v-model="byrNewEmail" type="email" placeholder="buyer@email.com"></div>
-              <div class="form-row"><label>Phone</label><input v-model="byrNewPhone" type="tel" placeholder="(202) 555-0100"></div>
-              <div style="display:flex;gap:10px;margin-top:18px;">
-                <button class="btn-outline" @click="byrShowNewModal=false" style="flex:1;">Cancel</button>
-                <button class="btn-gold" @click="byrCreateBuyer" :disabled="byrCreating" style="flex:1;">
-                  <span class="spinner" v-if="byrCreating"></span>{{ byrCreating ? '' : 'Create Buyer' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </template>
 
+          <!-- Loading -->
+          <div v-if="byrLoading" style="text-align:center;padding:48px;color:#aaa;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;">Loading buyers…</div>
+
+          <!-- Empty state -->
+          <div v-else-if="byrBuyers.length===0" class="empty-state">
+            <div class="empty-state-title">No buyers yet</div>
+            <div class="empty-state-sub">Create a buyer file to organise tools and track each client</div>
+            <div class="empty-state-actions">
+              <button class="btn-navy" @click="byrShowNewModal=true" style="padding:10px 24px;">Add First Buyer</button>
+            </div>
+          </div>
+
+          <div v-else>
+            <!-- Admin: grouped by agent -->
+            <template v-if="isAdmin">
+              <div v-for="agentGroup in byrGroupedByAgent" :key="agentGroup.name" style="margin-bottom:24px;">
+                <div class="agent-group-header" @click="agentGroup._open = agentGroup._open === false ? true : false">
+                  <div class="agent-group-avatar">{{ agentGroup.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
+                  <div>
+                    <div class="agent-group-name">{{ agentGroup.name }}</div>
+                    <div class="agent-group-count">{{ agentGroup.buyers.length }} buyer{{ agentGroup.buyers.length===1?'':'s' }}</div>
+                  </div>
+                  <span class="agent-group-caret">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
+                </div>
+                <div v-if="agentGroup._open !== false" class="prop-grid">
+                  <div v-for="buyer in agentGroup.buyers" :key="buyer.id" class="listing-card-wrap">
+                    <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                      <span>delete</span>
+                    </div>
+                    <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
+                    <div class="listing-card" @click="byrOpenBuyer(buyer)">
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                        <span class="market-badge">{{ buyer.budget_max ? '$'+Number(buyer.budget_max).toLocaleString() : 'Buyer' }}</span>
+                        <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
+                      </div>
+                      <div class="listing-address">{{ buyer.buyer_name }}</div>
+                      <div class="listing-date">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Non-admin: flat grid -->
+            <div v-else class="prop-grid">
+              <div v-for="buyer in byrBuyers" :key="buyer.id" class="listing-card-wrap">
+                <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  <span>delete</span>
+                </div>
+                <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
+                <div class="listing-card" @click="byrOpenBuyer(buyer)">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                    <span class="market-badge">{{ buyer.budget_max ? '$'+Number(buyer.budget_max).toLocaleString() : 'Buyer' }}</span>
+                    <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
+                  </div>
+                  <div class="listing-address">{{ buyer.buyer_name }}</div>
+                  <div class="listing-date">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
         <!-- ============ BUYER DETAIL (tools inside) ============ -->
         <template v-else-if="view==='buyer-detail'">
           <div style="max-width:800px;">
