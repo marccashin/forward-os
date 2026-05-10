@@ -25,6 +25,56 @@ A Vue 3 SPA (single-file, no build step) for real estate agents.
 
 ---
 
+## Railway Backend Deployment (REQUIRED after every backend change)
+
+Railway auto-deploys from the `marccashin/forward-command-center` GitHub repo, `main` branch.
+
+**After every change to `backend/main.py` (or any backend file):**
+
+```bash
+cd /sessions/*/mnt/forward-command-center
+git add backend/main.py
+git commit -m "fix/feat: describe the change"
+git push origin HEAD:main --force
+```
+
+> The `--force` is needed because the sandbox sometimes gets ahead of origin. This is safe — the workspace is the source of truth for the backend.
+
+**If git is locked** (`.git/index.lock` or `HEAD.lock` exists and can't be removed):
+Use the GitHub API directly:
+```python
+import base64, json, urllib.request
+TOKEN = "ghp_[GET FROM: git remote -v in forward-command-center workspace]"
+REPO  = "marccashin/forward-command-center"
+FILE  = "backend/main.py"
+
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/{FILE}?ref=main",
+    headers={"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
+)
+with urllib.request.urlopen(req) as resp:
+    current_sha = json.loads(resp.read().decode())["sha"]
+
+with open(f'/sessions/gallant-hopeful-shannon/mnt/forward-command-center/{FILE}', 'rb') as f:
+    content = base64.b64encode(f.read()).decode()
+
+payload = {"message": "your commit message", "content": content, "sha": current_sha, "branch": "main"}
+put_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/{FILE}",
+    data=json.dumps(payload).encode(),
+    headers={"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json", "Content-Type": "application/json"},
+    method="PUT"
+)
+with urllib.request.urlopen(put_req, timeout=120) as resp:
+    result = json.loads(resp.read().decode())
+    print("✓ New SHA:", result['content']['sha'][:12])
+```
+
+**Railway rebuild time:** ~2–3 minutes after push. Do not test Railway endpoints immediately after pushing.
+
+**CRITICAL:** Never leave backend changes uncommitted and unpushed. Every chat session that modifies `backend/main.py` MUST push to GitHub before ending — otherwise Railway will run stale code and the next session will have a 54-commit gap to recover.
+
+---
 ## Pushing Code (No PAT Required — Permanent Setup)
 
 The function at `/.netlify/functions/github-push`:
