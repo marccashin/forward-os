@@ -1107,6 +1107,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <div class="fub-arrow">→</div>
               </div>
+              <div class="fub-method" @click="logAct.show=true;logAct.phase='input';logAct.command='';logAct.contactQuery='';logAct.note='';logAct.birthday='';logAct.taskText='';logAct.taskDue='';logAct.stage='';logAct.matches=[];logAct.selected=null;logAct.error='';logAct.results={};">
+                <div class="fub-icon fub-icon-c">
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#9e8158" stroke-width="1.5">
+                    <path d="M3 14V5a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v9"/><line x1="1" y1="14" x2="17" y2="14"/><line x1="6" y1="8" x2="12" y2="8"/><line x1="6" y1="11" x2="10" y2="11"/>
+                  </svg>
+                </div>
+                <div style="flex:1">
+                  <div class="fub-mname">Log Activity</div>
+                  <div class="fub-mdesc">Add note, task, or update an existing contact</div>
+                </div>
+                <div class="fub-arrow">→</div>
+              </div>
             </div>
           </div>
 
@@ -5221,7 +5233,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <div style="display:flex;align-items:center;gap:8px;">
         <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);" :style="{animation:voiceModal.phase==='listening'?'micPulse 1.2s infinite':'none'}"></div>
         <span style="font-size:15px;font-weight:700;color:var(--cream);letter-spacing:0.04em;">
-          {{ voiceModal.phase==='listening' ? 'Listening…' : voiceModal.phase==='review' ? 'Review' : voiceModal.phase==='followup' ? 'A few more details' : voiceModal.phase==='crm-result' ? (voiceModal.crmResult?.demo ? 'Demo Preview' : 'Contact Added') : voiceModal.phase==='done' ? 'All set!' : voiceModal.phase==='answer-loading' ? 'Searching…' : voiceModal.phase==='answer' ? 'From Your Training' : voiceModal.phase==='crm-review' ? 'Ready to Add Contact?' : 'Error' }}
+          {{ voiceModal.phase==='listening' ? 'Listening…' : voiceModal.phase==='review' ? 'Review' : voiceModal.phase==='followup' ? 'A few more details' : voiceModal.phase==='crm-result' ? (voiceModal.crmResult?.demo ? 'Demo Preview' : 'Contact Added') : voiceModal.phase==='done' ? 'All set!' : voiceModal.phase==='answer-loading' ? 'Searching…' : voiceModal.phase==='answer' ? 'From Your Training' : voiceModal.phase==='crm-review' ? 'Ready to Add Contact?' : voiceModal.phase==='log-activity-confirm' ? 'Confirm Activity' : voiceModal.phase==='log-activity-done' ? 'Activity Logged!' : 'Error' }}
         </span>
       </div>
       <button @click="voiceClose" style="width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(200,169,110,0.3);cursor:pointer;font-size:11px;color:rgba(200,169,110,0.7);display:flex;align-items:center;justify-content:center;transition:background 0.13s;">✕</button>
@@ -5421,6 +5433,163 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     </template>
   </div>
 </div>
+
+    <!-- ── Log Activity Modal ── -->
+    <div v-if="logAct.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="logAct.show=false">
+      <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;display:flex;flex-direction:column;">
+
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--cream-mid);">
+          <div>
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Follow Up Boss</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);">
+              {{ logAct.phase==='input' ? 'Log Activity' : logAct.phase==='searching' ? 'Searching…' : logAct.phase==='select' ? 'Select Contact' : logAct.phase==='confirm' ? 'Confirm Actions' : logAct.phase==='executing' ? 'Updating FUB…' : logAct.phase==='done' ? 'Activity Logged' : 'Something Went Wrong' }}
+            </div>
+          </div>
+          <button @click="logAct.show=false" style="width:28px;height:28px;border-radius:50%;background:var(--cream);border:1px solid var(--cream-dark);cursor:pointer;font-size:14px;color:var(--navy-mid);display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+
+        <!-- Phase: input -->
+        <div v-if="logAct.phase==='input'" style="padding:24px;">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin:0 0 16px;line-height:1.6;">Speak or type what you want to log — include the contact's name, note, birthday, and any task. Example: <em>"Add a note to Sarah Chen that she just got married, her birthday is March 4th, and remind me to call her tomorrow."</em></p>
+          <div style="position:relative;margin-bottom:16px;">
+            <textarea v-model="logAct.command" rows="4" placeholder="Add a note to [name] that… remind me to call [name] tomorrow at 2pm…" style="width:100%;box-sizing:border-box;resize:vertical;padding:12px 44px 12px 14px;font-family:'Cormorant Garamond',serif;font-size:15px;border:1.5px solid var(--cream-dark);border-radius:2px;outline:none;color:var(--navy);line-height:1.6;min-height:100px;" @keydown.ctrl.enter="logActParse"></textarea>
+            <button @click="logActMicToggle" :style="{position:'absolute',right:'10px',top:'10px',width:'30px',height:'30px',borderRadius:'50%',border:'1px solid var(--cream-dark)',background:logAct.micListening?'var(--gold)':'var(--cream)',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center'}" :title="logAct.micListening?'Stop':'Dictate'">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" :stroke="logAct.micListening?'var(--navy)':'var(--navy-mid)'" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+            </button>
+          </div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline-navy" @click="logAct.show=false" style="flex:1;min-height:44px;">Cancel</button>
+            <button class="btn-navy" @click="logActParse" :disabled="!logAct.command.trim()" style="flex:2;min-height:44px;">Parse Command →</button>
+          </div>
+        </div>
+
+        <!-- Phase: searching -->
+        <div v-else-if="logAct.phase==='searching'" style="padding:40px 24px;text-align:center;">
+          <div class="spinner spinner-dark" style="margin:0 auto 16px;"></div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--navy);">Searching Follow Up Boss for <strong>{{ logAct.contactQuery }}</strong>…</div>
+        </div>
+
+        <!-- Phase: select -->
+        <div v-else-if="logAct.phase==='select'" style="padding:24px;">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 14px;">Multiple matches found. Select the correct contact:</p>
+          <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+            <div v-for="m in logAct.matches" :key="m.id" @click="logAct.selected=m;logAct.phase='confirm'" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border:1.5px solid var(--cream-dark);border-radius:2px;cursor:pointer;transition:border-color 0.13s;" onmouseover="this.style.borderColor='var(--navy)'" onmouseout="this.style.borderColor='var(--cream-dark)'">
+              <div style="width:36px;height:36px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--gold);flex-shrink:0;">{{ m.name.charAt(0) }}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--navy);">{{ m.name }}</div>
+                <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ [m.email, m.phone, m.stage].filter(Boolean).join(' · ') || 'No additional details' }}</div>
+              </div>
+              <div style="color:var(--gold-muted);font-size:16px;">→</div>
+            </div>
+          </div>
+          <button class="btn-outline-navy" @click="logAct.phase='input'" style="width:100%;min-height:42px;">← Back</button>
+        </div>
+
+        <!-- Phase: confirm -->
+        <div v-else-if="logAct.phase==='confirm'" style="padding:24px;">
+          <!-- Contact chip -->
+          <div style="display:flex;align-items:center;gap:12px;background:var(--navy);border-radius:2px;padding:12px 16px;margin-bottom:18px;">
+            <div style="width:38px;height:38px;border-radius:50%;background:rgba(200,169,110,0.2);border:1px solid var(--gold-muted);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:var(--gold);flex-shrink:0;">{{ logAct.selected?.name?.charAt(0) }}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:600;color:#fff;">{{ logAct.selected?.name }}</div>
+              <div v-if="logAct.selected?.email||logAct.selected?.stage" style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">{{ [logAct.selected?.email,logAct.selected?.stage].filter(Boolean).join(' · ') }}</div>
+            </div>
+            <button @click="logAct.phase='select'" v-if="logAct.matches.length>1" style="background:rgba(255,255,255,0.08);border:none;color:rgba(255,255,255,0.5);border-radius:2px;padding:4px 8px;cursor:pointer;font-size:11px;">Change</button>
+          </div>
+
+          <!-- Actions to be performed -->
+          <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:10px;">Actions to perform</div>
+          <div style="border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;margin-bottom:18px;">
+            <div v-if="!logAct.note && !logAct.birthday && !logAct.taskText" style="padding:14px 16px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;text-align:center;">No actions detected — go back and rephrase your command.</div>
+            <div v-if="logAct.note" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;border-bottom:1px solid var(--cream-mid);">
+              <span style="font-size:16px;margin-top:1px;">📝</span>
+              <div style="flex:1;">
+                <div style="font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Add Note</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);line-height:1.5;">{{ logAct.note }}</div>
+                <input v-model="logAct.note" style="margin-top:6px;font-family:'Cormorant Garamond',serif;font-size:13px;padding:6px 10px;width:100%;box-sizing:border-box;" placeholder="Edit note…">
+              </div>
+            </div>
+            <div v-if="logAct.birthday" style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--cream-mid);">
+              <span style="font-size:16px;">🎂</span>
+              <div style="flex:1;">
+                <div style="font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Update Birthday</div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <input v-model="logAct.birthday" placeholder="MM-DD" style="font-family:'Cormorant Garamond',serif;font-size:14px;padding:5px 10px;width:90px;">
+                  <span style="font-size:12px;color:#9ca3af;">MM-DD format</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="logAct.taskText" style="display:flex;align-items:flex-start;gap:12px;padding:12px 16px;">
+              <span style="font-size:16px;margin-top:1px;">⏰</span>
+              <div style="flex:1;">
+                <div style="font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Create Task</div>
+                <input v-model="logAct.taskText" style="font-family:'Cormorant Garamond',serif;font-size:14px;padding:5px 10px;width:100%;box-sizing:border-box;margin-bottom:6px;" placeholder="Task name…">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <span style="font-size:12px;color:#9ca3af;white-space:nowrap;">Due:</span>
+                  <input v-model="logAct.taskDue" placeholder="e.g. tomorrow 2pm" style="font-family:'Cormorant Garamond',serif;font-size:13px;padding:5px 10px;flex:1;">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add missing fields manually -->
+          <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+            <button v-if="!logAct.note" @click="logAct.note=''" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--cream-dark);border-radius:2px;background:var(--cream);color:var(--navy);cursor:pointer;">+ Add Note</button>
+            <button v-if="!logAct.birthday" @click="logAct.birthday=''" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--cream-dark);border-radius:2px;background:var(--cream);color:var(--navy);cursor:pointer;">+ Birthday</button>
+            <button v-if="!logAct.taskText" @click="logAct.taskText='';logAct.taskDue=''" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:5px 12px;border:1px solid var(--cream-dark);border-radius:2px;background:var(--cream);color:var(--navy);cursor:pointer;">+ Task</button>
+          </div>
+
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline-navy" @click="logAct.phase='input'" style="flex:1;min-height:46px;">← Back</button>
+            <button class="btn-gold" @click="logActSubmit" :disabled="logAct.submitting||(!logAct.note&&!logAct.birthday&&!logAct.taskText)" style="flex:2;min-height:46px;font-size:14px;font-weight:700;">
+              <span v-if="logAct.submitting"><span class="spinner spinner-dark"></span> Logging…</span>
+              <span v-else>Confirm &amp; Log to FUB</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Phase: executing -->
+        <div v-else-if="logAct.phase==='executing'" style="padding:40px 24px;text-align:center;">
+          <div class="spinner spinner-dark" style="margin:0 auto 16px;"></div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--navy);">Updating Follow Up Boss…</div>
+        </div>
+
+        <!-- Phase: done -->
+        <div v-else-if="logAct.phase==='done'" style="padding:32px 24px;text-align:center;">
+          <div style="width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#10b981,#059669);display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;">✓</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:18px;font-weight:500;color:var(--navy);margin-bottom:6px;">Activity Logged</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin-bottom:20px;">{{ logAct.selected?.name }} has been updated in Follow Up Boss.</div>
+          <div style="text-align:left;border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;margin-bottom:20px;">
+            <div v-if="logAct.results.noteAdded" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--cream-mid);">
+              <span style="color:#10b981;font-size:14px;">✓</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);">Note added</span>
+            </div>
+            <div v-if="logAct.results.birthdayUpdated" style="display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--cream-mid);">
+              <span style="color:#10b981;font-size:14px;">✓</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);">Birthday updated ({{ logAct.birthday }})</span>
+            </div>
+            <div v-if="logAct.results.taskAdded" style="display:flex;align-items:center;gap:10px;padding:10px 14px;">
+              <span style="color:#10b981;font-size:14px;">✓</span>
+              <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);">Task created{{ logAct.results.taskDue ? ' · due ' + logAct.results.taskDue : '' }}</span>
+            </div>
+          </div>
+          <button class="btn-navy" @click="logAct.show=false" style="width:100%;min-height:46px;">Done</button>
+        </div>
+
+        <!-- Phase: error -->
+        <div v-else-if="logAct.phase==='error'" style="padding:32px 24px;text-align:center;">
+          <div style="width:52px;height:52px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;font-size:24px;margin:0 auto 14px;">✕</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;color:var(--navy);margin-bottom:8px;">Something went wrong</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;background:#fff5f5;border-radius:2px;padding:12px 14px;margin-bottom:20px;line-height:1.5;text-align:left;">{{ logAct.error }}</div>
+          <div style="display:flex;gap:10px;">
+            <button class="btn-outline-navy" @click="logAct.show=false" style="flex:1;min-height:44px;">Close</button>
+            <button class="btn-navy" @click="logAct.phase='input'" style="flex:1;min-height:44px;">Try Again</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
 
     <!-- ── Enhanced Save-to-Property Modal (Feature 1: Drive Routing) ── -->
     <div v-if="showSaveToProp"
@@ -6263,6 +6432,20 @@ async function fubCreateTask(personId, taskName, dueDate, assignedUserId) {
     assignedUserId: assignedUserId || null,
     type: 'Follow Up'
   });
+}
+
+async function fubUpdatePerson(personId, fields) {
+  // PATCH existing person — used for birthday, stage, custom fields etc.
+  const body = {};
+  if (fields.birthday) {
+    // FUB expects YYYY-MM-DD; if only MM-DD supplied, use 1900 as placeholder year
+    body.birthdate = fields.birthday.length === 5
+      ? '1900-' + fields.birthday
+      : fields.birthday;
+  }
+  if (fields.stage) body.stage = fields.stage;
+  if (Object.keys(body).length === 0) return null;
+  return fubFetch('/people/' + personId, 'PATCH', body);
 }
 
 // Search FUB for a person by name or email
@@ -13008,6 +13191,26 @@ const voiceModal = reactive({
 
 let _voiceRecognition = null;
 let _voiceFollowupRecognition = null;
+
+// ── Log Activity modal state ────────────────────────────────────
+const logAct = reactive({
+  show: false,
+  phase: 'input', // input | searching | select | confirm | executing | done | error
+  command: '',       // raw text/voice command
+  contactQuery: '',  // extracted contact name to search
+  note: '',
+  birthday: '',      // MM-DD
+  taskText: '',
+  taskDue: '',
+  stage: '',
+  matches: [],       // FUB search results
+  selected: null,    // chosen contact { id, name, email, phone, stage }
+  submitting: false,
+  error: '',
+  results: {},       // what actually happened { noteAdded, taskAdded, birthdayUpdated }
+  micListening: false
+});
+let _logActMic = null;
 let _micPermissionGranted = false;
 
 // Request mic permission once — browser remembers it for the domain (HTTPS)
@@ -13031,7 +13234,7 @@ const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Es
 
 Return format:
 {
-  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "meeting-prep" | "general-question" | "navigate" | "write-content",
+  "tool": one of: "net-sheet" | "cash-to-close" | "listing-desc" | "cma" | "buyer-consult" | "add-contact" | "log-activity" | "meeting-prep" | "general-question" | "navigate" | "write-content",
   "fields": { all key-value pairs you could extract from the speech },
   "missing": [ every field from the REQUIRED list below that was NOT mentioned ]
 }
@@ -13087,6 +13290,19 @@ Field keys: query (the address or name as spoken), type ("listing" or "buyer" �
 ━━ WRITE CONTENT ━━
 Use when agent says: write / generate / create / draft + (open house copy / social post / Instagram / Facebook / marketing copy) + for [address].
 Field keys: query (address as spoken), content_type ("open-house" | "social-post" | "both" — if unclear, use "both")
+
+━━ LOG ACTIVITY (add note/task/update to EXISTING contact) ━━
+Use when agent says: add a note / log / update / remind me / set a task / set a reminder for a person who ALREADY EXISTS in Follow Up Boss.
+Key signals: mentions a full person name + wants to note something, set a task, or update a field on that person.
+Field keys:
+  contactQuery (full name as spoken — used to search FUB),
+  note (text of the note to add, or null),
+  birthday (MM-DD format extracted from "birthday is July 28" → "07-28", or null),
+  taskText (task name/description, or null),
+  taskDue (relative: "tomorrow 2pm", "next Tuesday at 10am", "in 3 days" — or null),
+  stage (pipeline stage change if mentioned, or null)
+IMPORTANT: Use "log-activity" NOT "add-contact" when the contact already exists.
+Signals it's an existing contact: agent says "add a note TO [name]", "update [name]", "remind me to call [name]", "log that [name]".
 
 ━━ RULES ━━
 - Strip $ signs and commas from all numbers ("800000" not "$800,000", "2.5" not "2.5%")
@@ -13418,6 +13634,23 @@ async function voiceParse() {
     voiceModal.answerText = '';
     voiceModal.pendingAnswer = true;  // watch() in setup() handles the answer
     voiceModal.phase = 'answer-loading';
+    return;
+  }
+
+  // Route log-activity to the dedicated Log Activity modal
+  if (parsed.tool === 'log-activity') {
+    voiceClose();
+    const f = parsed.fields || {};
+    logAct.command = voiceModal.transcript;
+    logAct.contactQuery = f.contactQuery || '';
+    logAct.note = f.note || '';
+    logAct.birthday = f.birthday || '';
+    logAct.taskText = f.taskText || '';
+    logAct.taskDue = f.taskDue || '';
+    logAct.stage = f.stage || '';
+    logAct.show = true;
+    logAct.phase = 'confirm-search';
+    logActSearch();
     return;
   }
 
@@ -13797,6 +14030,159 @@ async function voiceCrmSubmit() {
     voiceModal.crmSubmitting = false;
   }
 }
+// ── Log Activity handlers ──────────────────────────────────────────────
+const LOG_ACTIVITY_SYSTEM = `You are parsing a voice/text command from a real estate agent who wants to log activity on an EXISTING Follow Up Boss contact. Return ONLY valid JSON.
+Format:
+{
+  "contactQuery": "full name or email to search in FUB (required)",
+  "note": "note text to add (or null)",
+  "birthday": "MM-DD format only — extract from phrases like 'birthday is July 28' → '07-28' (or null)",
+  "taskText": "task name (or null)",
+  "taskDue": "relative date/time like 'tomorrow 2pm', 'next Tuesday at 10am', 'in 3 days' (or null)",
+  "stage": "pipeline stage change if mentioned (or null)"
+}
+Rules:
+- contactQuery is ALWAYS required — extract the person's full name from the command
+- If the agent says "remind me to call X tomorrow", taskText = "Call X", taskDue = "tomorrow"
+- Birthday: convert month name to 2-digit month (July → 07, March → 03, etc.)
+- Return ONLY the JSON, no explanation`;
+
+async function logActParse() {
+  if (!logAct.command.trim()) return;
+  logAct.phase = 'searching';
+  logAct.error = '';
+  try {
+    const key = localStorage.getItem(agentKey('fos_key'));
+    if (!key) throw new Error('No Claude API key. Add it in Settings.');
+    const raw = await claude(logAct.command, LOG_ACTIVITY_SYSTEM);
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) throw new Error('Could not parse command. Try rephrasing.');
+    const p = JSON.parse(m[0]);
+    if (!p.contactQuery) throw new Error('Could not identify a contact name. Please include the person\'s full name.');
+    logAct.contactQuery = p.contactQuery;
+    logAct.note = p.note || '';
+    logAct.birthday = p.birthday || '';
+    logAct.taskText = p.taskText || '';
+    logAct.taskDue = p.taskDue || '';
+    logAct.stage = p.stage || '';
+    await logActSearch();
+  } catch(e) {
+    logAct.phase = 'error';
+    logAct.error = e.message;
+  }
+}
+
+async function logActSearch() {
+  logAct.phase = 'searching';
+  logAct.error = '';
+  try {
+    const results = await fubSearchPerson(logAct.contactQuery);
+    if (!results || results.length === 0) {
+      logAct.phase = 'error';
+      logAct.error = 'No contact found for "' + logAct.contactQuery + '" in Follow Up Boss. Check the spelling or search again.';
+      return;
+    }
+    logAct.matches = results.map(p => ({
+      id: p.id,
+      name: [p.firstName, p.lastName].filter(Boolean).join(' ') || p.name || 'Unknown',
+      email: (p.emails && p.emails[0] && p.emails[0].value) || '',
+      phone: (p.phones && p.phones[0] && p.phones[0].value) || '',
+      stage: p.stage || ''
+    }));
+    if (logAct.matches.length === 1) {
+      logAct.selected = logAct.matches[0];
+      logAct.phase = 'confirm';
+    } else {
+      logAct.phase = 'select';
+    }
+  } catch(e) {
+    logAct.phase = 'error';
+    logAct.error = 'FUB search failed: ' + e.message;
+  }
+}
+
+async function logActSubmit() {
+  if (!logAct.selected) return;
+  logAct.submitting = true;
+  logAct.phase = 'executing';
+  logAct.results = {};
+  const pid = logAct.selected.id;
+  const errors = [];
+
+  // Add note
+  if (logAct.note) {
+    try {
+      await fubAddNote(pid, logAct.note);
+      logAct.results.noteAdded = true;
+    } catch(e) { errors.push('Note: ' + e.message); }
+  }
+
+  // Update birthday
+  if (logAct.birthday) {
+    try {
+      await fubUpdatePerson(pid, { birthday: logAct.birthday });
+      logAct.results.birthdayUpdated = true;
+    } catch(e) { errors.push('Birthday: ' + e.message); }
+  }
+
+  // Update stage
+  if (logAct.stage) {
+    try {
+      await fubUpdatePerson(pid, { stage: logAct.stage });
+      logAct.results.stageUpdated = true;
+    } catch(e) { errors.push('Stage: ' + e.message); }
+  }
+
+  // Create task
+  if (logAct.taskText) {
+    try {
+      const dueDate = logAct.taskDue ? parseRelativeDate(logAct.taskDue) : null;
+      const fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
+      const agentName = localStorage.getItem('fos_agent') || '';
+      const match = fubUsers.find(u => u.name && u.name.toLowerCase().includes(agentName.toLowerCase()));
+      await fubCreateTask(pid, logAct.taskText, dueDate, match ? match.id : null);
+      logAct.results.taskAdded = true;
+      logAct.results.taskDue = dueDate;
+    } catch(e) { errors.push('Task: ' + e.message); }
+  }
+
+  logAct.submitting = false;
+  if (errors.length > 0 && !logAct.results.noteAdded && !logAct.results.taskAdded && !logAct.results.birthdayUpdated) {
+    logAct.phase = 'error';
+    logAct.error = errors.join(' · ');
+  } else {
+    logAct.phase = 'done';
+    showToast('Activity logged to Follow Up Boss!', 4000);
+  }
+}
+
+function logActMicToggle() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('Speech recognition not supported in this browser.', 3000);
+    return;
+  }
+  if (logAct.micListening) {
+    if (_logActMic) _logActMic.stop();
+    logAct.micListening = false;
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  _logActMic = new SR();
+  _logActMic.lang = 'en-US';
+  _logActMic.interimResults = true;
+  _logActMic.continuous = false;
+  logAct.micListening = true;
+  _logActMic.onresult = e => {
+    let t = '';
+    for (let i = 0; i < e.results.length; i++) t += e.results[i][0].transcript;
+    logAct.command = t;
+  };
+  _logActMic.onend = () => { logAct.micListening = false; };
+  _logActMic.onerror = () => { logAct.micListening = false; };
+  _logActMic.start();
+}
+// ── End Log Activity handlers ──────────────────────────────────────────
+
 // ── End Voice Assistant System ───────────────────────────────────────────
 
     function byrSubfolderFiles(key) {
@@ -14925,7 +15311,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       revVoiceRecording, revSubmitting, revActiveStatus, revLatestNumber,
       canRequestRevision, revVoiceStart, revVoiceStop, submitRevisionRequest,
       fetchRevisionRequests,
-      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx,
+      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
