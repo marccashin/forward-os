@@ -403,6 +403,190 @@ Set up a full staging environment to catch regressions before they hit productio
 - Production Netlify site ID: `7bcc28c5-97d0-4673-abda-309325eac663`
 - Netlify account ID: `69b17ee12548de114ff82132`
 
+
+### Chat 22 (May 9, 2026) — Multiple Offer Presentation + Auto-Deploy Fix
+
+#### Summary
+Built and polished the Multiple Offer Presentation (MO) tool, added AI follow-up chat, and fixed the broken Netlify auto-deploy pipeline.
+
+---
+
+#### Multiple Offer Presentation Tool
+
+**Location in app:** MO tab (Multiple Offer section) within the Listings view.
+
+**Architecture:**
+- Frontend table: 6-column comparison grid (up to 6 offers), fixed-width cells, inline editing
+- PDF parsing: Railway `/api/parse-offer` → extracts structured offer data
+- Data persistence: Supabase `property_offers` table (UNIQUE on `property_id, offer_number`)
+- Analysis: Railway `/api/analyze-offers` → Claude returns 4-section structured text
+- Chat: Railway `/api/chat-offers` → conversational follow-up with full offer context
+
+**Key refs:**
+```javascript
+const moOffers          = ref({ 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} });
+const moLoading         = ref({1:false,2:false,3:false,4:false,5:false,6:false}); // per-slot
+const moEditCell        = ref(null);   // string like "1_sales_price"
+const moEditVal         = ref('');
+const moAnalysis        = ref('');
+const moAnalysisLoading = ref(false);
+const moStatus          = ref('');
+const moFileNames       = ref({ 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' });
+const moSlotCount       = ref(6);      // user-controlled 2–6
+const moChatMessages    = ref([]);     // {role:'agent'|'ai', text}
+const moChatInput       = ref('');
+const moChatLoading     = ref(false);
+```
+
+**Key computed:**
+```javascript
+const moAnalysisParsed = computed(() => { /* splits on ---SECTION--- markers */ });
+const moAnalysisSections = computed(() => ({
+  strongest: p.strongest,
+  likelihood: moSplitOfferBlocks(p.likelihood),  // splits "Offer N: ..." into cards
+  counter:    moSplitOfferBlocks(p.counter),
+  talking:    moSplitBullets(p.talking),          // splits "• ..." into array
+}));
+```
+
+**Serial upload queue (prevents concurrent Railway calls):**
+```javascript
+let moUploadQueue = Promise.resolve();
+// Each upload chains onto the queue, includes 3-retry with 12s delay + Railway wake ping
+```
+
+**Analysis flow:**
+1. Wake Railway ping (best-effort)
+2. `moLoadOffers()` from Supabase
+3. POST to `/api/analyze-offers` — 2 attempts with 15s delay between
+4. Parse response with `---STRONGEST OFFER---` / `---LIKELIHOOD TO CLOSE---` / `---COUNTER STRATEGY---` / `---TALKING POINTS FOR SELLER CONVERSATION---` markers
+
+**Chat flow (`moSendChat`):**
+- Posts to Railway `/api/chat-offers` with: offers, analysis, history, question
+- 60s AbortController timeout
+- History built from `moChatMessages` (role mapping: agent→user, ai→assistant)
+
+**MO_FIELDS (32 fields — key ones):**
+- `sales_price` (bold), `loan_type` (bold), `closing_date` (bold), `appraisal_waiver` (bold)
+- `seller_contingencies` labeled "Seller Credit Requested" (NOT "Seller Contingencies")
+- `net_to_seller` (bold), `buyer_agent_compensation` (bold)
+
+**CSS classes:**
+```css
+.mo-wrap       — overflow-x:auto; display:inline-block; max-width:100%
+.mo-table      — border-collapse:collapse; width:auto; table-layout:fixed
+.mo-th-label   — width:140px; min-width:140px
+.mo-th-offer   — min-width:95px; width:95px
+.mo-td-cell    — position:relative; height:36px; overflow:hidden
+.mo-cell-val   — position:absolute; inset:0; (prevents td height expansion)
+.mo-cell-input — position:absolute; inset:0; (inline edit textarea)
+.mo-analysis-section    — white bg, padding:22px 26px
+.mo-analysis-offer-block — cream bg, left border: 2px solid var(--gold-muted)
+.mo-analysis-bullet     — flex row with gold dot
+.mo-analysis-talking    — navy bg section for talking points
+```
+
+**Bugs fixed:**
+- `moLoading` was a single boolean → changed to per-slot object `{1:false,...,6:false}`
+- `moLoadOffers()` was clearing `moAnalysis.value = ''` on every call — removed
+- Button `disabled` attribute washed out wave animation at 50% opacity → use `pointer-events:none` + `opacity:1` instead
+- `moSplitBullets` regex had literal newline inside regex literal (`/\n?[•·]/`) — fixed to `/[\n•·]+\s*/`
+- Analysis returned "No analysis returned." — old code had `json.analysis || 'No analysis returned.'`; new code surfaces actual Railway error
+
+**Railway backend endpoints added (`backend/main.py`):**
+```python
+POST /api/parse-offer     — PDF → structured offer JSON (existed, improved)
+POST /api/analyze-offers  — offers[] → 4-section analysis text
+POST /api/chat-offers     — offers + history + question → {answer}
+```
+
+**`/api/chat-offers` Pydantic model:**
+```python
+class ChatOffersRequest(BaseModel):
+    offers: list[dict]
+    analysis: str = ""
+    history: list[dict] = []   # [{role:"user",...},{role:"assistant",...}]
+    question: str
+    property_address: str = ""
+    list_price: str = ""
+```
+
+---
+
+#### GitHub → Netlify Auto-Deploy Fix
+
+**Problem:** Netlify was not auto-deploying on GitHub pushes to `forward-os` repo. No GitHub webhooks were registered — the GitHub-Netlify App integration had silently broken.
+
+**Fix:** Added GitHub webhook (ID: `620642282`) pointing to Netlify build hook:
+```
+Netlify build hook URL: https://api.netlify.com/build_hooks/69ffddcd56e3bfb047b57805
+GitHub webhook ID: 620642282
+Fires on: push (all branches)
+Effect: triggers production deploy from main branch
+```
+
+**How to push going forward:**
+Use the GitHub API directly with Marc's PAT. The `github-push` Netlify function is unreliable for large files (doesn't always produce a new blob SHA → Netlify doesn't rebuild). Direct GitHub API PUT is the canonical method:
+
+```python
+import base64, json, urllib.request
+
+TOKEN = "ghp_[GET FROM: git remote -v in forward-command-center workspace]"
+REPO  = "marccashin/forward-os"
+
+# 1. Get current SHA
+req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/index.html?ref=main",
+    headers={"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json"}
+)
+with urllib.request.urlopen(req) as resp:
+    current_sha = json.loads(resp.read().decode())["sha"]
+
+# 2. Push
+with open('/tmp/forward-os-mo/index.html', 'rb') as f:
+    content = base64.b64encode(f.read()).decode()
+
+payload = {"message": "your message", "content": content, "sha": current_sha, "branch": "main"}
+put_req = urllib.request.Request(
+    f"https://api.github.com/repos/{REPO}/contents/index.html",
+    data=json.dumps(payload).encode(),
+    headers={"Authorization": f"token {TOKEN}", "Accept": "application/vnd.github.v3+json", "Content-Type": "application/json"},
+    method="PUT"
+)
+with urllib.request.urlopen(put_req, timeout=120) as resp:
+    result = json.loads(resp.read().decode())
+    new_sha = result['content']['sha']
+    # Verify SHA changed — if same as current_sha, content is identical and Netlify won't rebuild
+    print(f"Old: {current_sha[:12]} | New: {new_sha[:12]}")
+    print("✓ Deployed" if new_sha != current_sha else "⚠ No change — add trailing newline to force diff")
+```
+
+**Working file location:** `/tmp/forward-os-mo/index.html` (re-created each Cowork session from the live site)
+
+**CRITICAL — always run before pushing:**
+```bash
+python3 -c "
+import re
+with open('/tmp/forward-os-mo/index.html','r') as f: html = f.read()
+scripts = re.findall(r'<script(?:\s[^>]*)?>(.+?)</script>', html, re.DOTALL)
+main_js = scripts[3]  # the big one (~645k chars)
+with open('/tmp/check.js','w') as f: f.write(main_js)
+"
+node --check /tmp/check.js
+```
+If `node --check` reports any error, fix it before pushing. A syntax error brings the whole site down (Vue won't mount → raw `{{ }}` templates visible).
+
+---
+
+#### Common pitfalls added (Chat 22)
+- **Regex with literal newline** — Python `str.replace()` with `\n` in a regex string creates a literal newline in the source, breaking JS. Always use `\\n` or a character class.
+- **`moLoadOffers()` side effects** — never add state resets (like `moAnalysis.value = ''`) inside load functions. Load = fetch only.
+- **Button `disabled` + CSS animation** — `disabled` applies `opacity:0.5` which washes out animations. Use `pointer-events:none` to block clicks while keeping visual at full opacity.
+- **GitHub same-SHA no-op** — if file content is identical, GitHub doesn't create a new blob SHA → no commit → no webhook → no Netlify rebuild. Force diff with trailing newline.
+- **Netlify CDN age** — even with `cache-control: no-cache` in `_headers`, Netlify Edge serves `cache-status: hit` until a new deploy invalidates it. `age:` header shows seconds since last deploy CDN pull.
+
+---
+
 ## Common Pitfalls (BMR-specific)
 - Railway sandbox proxy blocks `railway.app` — can never verify Railway health from Cowork shell. HTTP 000 always means proxy block, not Railway down.
 - Python 3.11 f-string restriction: can't use same quote type inside expression as outer f-string. Use single-quoted outer f-strings with double-quoted inner dict keys.
@@ -581,3 +765,4 @@ const lstPipelineSteps = [
 
 #### Supabase table update
 `properties` table now has a `seller_name_2` column (nullable text). Store co-seller full name here.
+
