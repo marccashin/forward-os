@@ -4713,10 +4713,32 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
                   <span v-if="campGenerating" style="display:flex;align-items:center;justify-content:center;gap:8px;"><span class="spinner"></span>Generating Campaign…</span><span v-else>🎨 Generate Campaign In-App</span>
                 </button>
-                <div v-if="campGenerating" style="margin-top:12px;background:var(--navy);border-radius:2px;padding:14px 16px;">
-                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;"><span class="spinner" style="border-color:rgba(201,168,76,0.25);border-top-color:var(--gold);width:14px;height:14px;flex-shrink:0;"></span><span style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);">Campaign Generating</span></div>
-                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:rgba(255,255,255,0.8);line-height:1.4;">{{ campCurrentSection }}</div>
-                  <div style="margin-top:10px;font-family:'Montserrat',sans-serif;font-size:7.5px;color:rgba(255,255,255,0.4);letter-spacing:0.08em;">Stay on this page · ~60 seconds</div>
+                <div v-if="campGenerating" style="margin-top:12px;background:var(--navy);border-radius:2px;padding:18px 20px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                    <span class="spinner" style="border-color:rgba(201,168,76,0.2);border-top-color:var(--gold);width:12px;height:12px;flex-shrink:0;"></span>
+                    <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);">Campaign In Progress</span>
+                  </div>
+                  <div v-for="(step, si) in lstPipelineSteps" :key="si" style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+                    <!-- Status icon -->
+                    <div style="flex-shrink:0;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px;"
+                         :style="si < campPipelineStep ? 'background:var(--gold);' : si === campPipelineStep ? 'background:rgba(200,169,110,0.2);border:1.5px solid var(--gold);' : 'background:transparent;border:1.5px solid rgba(255,255,255,0.15);'">
+                      <!-- Completed: checkmark -->
+                      <svg v-if="si < campPipelineStep" width="9" height="9" viewBox="0 0 12 12" fill="none">
+                        <polyline points="2,6 5,9 10,3" stroke="#0A2342" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                      <!-- Active: pulsing dot -->
+                      <div v-else-if="si === campPipelineStep" style="width:6px;height:6px;border-radius:50%;background:var(--gold);animation:pulse 1.2s ease-in-out infinite;"></div>
+                    </div>
+                    <!-- Step text -->
+                    <div>
+                      <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;line-height:1.4;"
+                           :style="si < campPipelineStep ? 'color:var(--gold);' : si === campPipelineStep ? 'color:#fff;' : 'color:rgba(255,255,255,0.3);'">
+                        {{ step.name }}
+                      </div>
+                      <div v-if="si === campPipelineStep" style="font-family:'Cormorant Garamond',serif;font-size:12px;color:rgba(255,255,255,0.65);line-height:1.4;margin-top:1px;">{{ step.desc }}</div>
+                    </div>
+                  </div>
+                  <div style="margin-top:6px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-family:'Montserrat',sans-serif;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:0.1em;">Stay on this page · ~60 seconds</div>
                 </div>
                 <div v-if="campRawResult" style="margin-top:12px;">
                   <button @click="campShowPreview=true" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
@@ -4724,17 +4746,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
             </div>
 
-            <!-- Submit to Pipeline -->
-            <div style="margin-top:20px;">
-              <button class="submit-pipeline-btn" :class="{running: lstActiveProp.status==='running'||lstActiveProp.status==='submitted'}"
-                :disabled="!lstCanSubmit || lstActiveProp.status==='running' || lstActiveProp.status==='submitted' || lstActiveProp.status==='complete'"
-                @click="lstShowSubmitConfirm=true">
-                {{ lstActiveProp.status==='running'||lstActiveProp.status==='submitted' ? 'Campaign Running...' : lstActiveProp.status==='complete' ? 'Campaign Complete' : 'Submit to FORWARD Marketing OS' }}
-              </button>
-              <div v-if="!lstCanSubmit && lstActiveProp.status==='draft'" style="font-size:12px;color:#9ca3af;text-align:center;margin-top:8px;">
-                Upload at least one file to MLS Data AND add a Listing Description to enable submission.
-              </div>
-            </div>
+
 
             <!-- Campaign Revision System -->
             <div v-if="lstActiveProp.status==='complete' || lstRevisionRequests.length > 0">
@@ -7792,6 +7804,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campOpenSection = ref(0);
     const campRevOpen = ref(false);
     const campGenerating = ref(false);
+    const campPipelineStep  = ref(0);
+    let _campPipeTimer = null;
     const campCurrentSection = ref('');
     const campShowSettings = ref(true);
     const lstUploading = reactive({ listing_photos:false, cma:false, seller_net_sheet:false, listing_remarks:false, mls_data:false });
@@ -8106,7 +8120,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     return;
   }
   campGenerating.value = true;
-  campCurrentSection.value = 'Brand Strategist — analyzing property and buyer profiles…';
+  campPipelineStep.value = 0;
+  if (_campPipeTimer) clearInterval(_campPipeTimer);
+  _campPipeTimer = setInterval(() => {
+    if (campPipelineStep.value < 4) campPipelineStep.value++;
+    else { clearInterval(_campPipeTimer); _campPipeTimer = null; }
+  }, 12000);
   const special = campSpecialInstructions.value.trim();
   const secs = campSections;
 
@@ -8122,11 +8141,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
-    campCurrentSection.value = 'Copywriter — drafting campaign sections…';
     const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out after 3 minutes — please try again')),180000));
-    campCurrentSection.value = 'Brand Auditor — reviewing voice and tone…';
     const raw = await Promise.race([claude(prompt), _timeout]);
-    campCurrentSection.value = 'Campaign Director — organizing deliverables…';
     campRawResult.value = raw;
     let parsed = [];
     let parts = [];
@@ -8155,8 +8171,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     showToast('Generation failed: ' + (e.message || 'Check your API key in Settings.'), 6000);
     console.error('campGenerate error:', e);
   } finally {
+    if (_campPipeTimer) { clearInterval(_campPipeTimer); _campPipeTimer = null; }
+    campPipelineStep.value = 0;
     campGenerating.value = false;
-    campCurrentSection.value = '';
   }
 }
 
@@ -15504,7 +15521,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campCurrentSection, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
