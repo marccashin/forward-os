@@ -816,3 +816,217 @@ const lstPipelineSteps = [
 #### Supabase table update
 `properties` table now has a `seller_name_2` column (nullable text). Store co-seller full name here.
 
+
+---
+
+### Chat 23 (May 9–10, 2026) — FUB Log Activity, Global Railway Routing, Deal Partners
+
+#### Summary
+Built FUB Log Activity (voice-to-CRM), fixed a 400 error affecting all non-admin agents by routing every write through Railway service_role, enforced correct admin vs. agent data scoping, and added Deal Partners so two agents can share full access to a listing or buyer package.
+
+---
+
+#### 1. Social Posts Font Fix
+`.card input, .card select, .card textarea` was listed inside the Montserrat CSS exception block, which gave it higher specificity than the global Cormorant rule. Removed those selectors from the exception block. Form elements inside cards now correctly inherit Cormorant Garamond.
+Commit: `f9f4fce`
+
+---
+
+#### 2. FUB Log Activity
+
+**What it does:** Add a note, update a birthday, and/or create a task on an *existing* FUB contact — all in one command, via voice or text.
+
+**Location in app:** FUB Dashboard panel → 4th option "Log Activity"
+
+**`logAct` reactive state:**
+```js
+const logAct = reactive({
+  show: false,
+  phase: 'input', // input | parsing | parsed | searching | select | confirm | executing | done | error
+  command: '', contactQuery: '', note: '', birthday: '', taskText: '', taskDue: '', stage: '',
+  matches: [], selected: null, submitting: false, error: '', results: {}, micListening: false
+});
+```
+
+**Phase flow:**
+1. `input` — agent types or speaks a command
+2. `parsing` — Claude extracts intent via `LOG_ACTIVITY_SYSTEM` prompt
+3. `parsed` — agent reviews/edits extracted contact name **before** search fires (fixes speech-garbling)
+4. `searching` — FUB people search
+5. `select` — multiple matches shown, agent picks one
+6. `confirm` — shows what will be written, agent approves
+7. `executing` → `done` or `error`
+
+**Key functions:**
+- `logActParse()` — calls Claude, stops at `phase='parsed'`
+- `logActSearch()` — calls `fubSearchPerson()`, 1 result → confirm, multiple → select
+- `logActSubmit()` — chains `fubAddNote()` + `fubUpdatePerson()` for birthday + `fubCreateTask()`
+
+**`fubUpdatePerson(personId, fields)`** added after `fubCreateTask()`:
+```js
+async function fubUpdatePerson(personId, fields) {
+  const body = {};
+  if (fields.birthday) {
+    body.birthdate = fields.birthday.length === 5
+      ? '1900-' + fields.birthday
+      : fields.birthday;
+  }
+  if (fields.stage) body.stage = fields.stage;
+  if (Object.keys(body).length === 0) return null;
+  return fubFetch('/people/' + personId, 'PATCH', body);
+}
+```
+
+**VOICE_INTENT_SYSTEM updated** — added `log-activity` as a detected tool. Distinguishes from `add-contact` (new person signals) vs `log-activity` (existing person signals like "add a note to", "update", "remind me about").
+
+Commits: `669f424` (build), `4344f4c` (verify step)
+
+---
+
+#### 3. Global Railway Routing — Zero Direct Supabase Writes
+
+**Problem:** `supaRest.insert()` uses the anon key which is subject to RLS. Agents without an active Supabase auth session got 400 errors (e.g. Cesar Rivera creating a property).
+
+**Fix:** Every write goes through Railway (service_role key — bypasses RLS entirely). Reads stay on Supabase anon key.
+
+**`supaRest.insert()` error capture improved:**
+```js
+if (!res.ok) {
+  let detail = `Supabase insert error: ${res.status}`;
+  try { const e = await res.json(); detail = e.message || e.hint || e.details || detail; } catch {}
+  throw new Error(detail);
+}
+```
+
+**Functions rerouted to Railway:**
+
+| Function | Endpoint |
+|---|---|
+| `lstCreateProperty()` | POST `/create-property` |
+| `lstFetchProperties()` | GET `/properties` (or `?agent_name=X`) |
+| `lstDeleteProperty()` | DELETE `/properties/{id}` |
+| All property status updates | PATCH `/properties/{id}` |
+| `byrCreateBuyer()` | POST `/create-buyer` |
+| `byrFetchBuyers()` | GET `/buyers` (or `?agent_name=X`) |
+| `byrDoDelete()` | DELETE `/buyers/{id}` |
+
+**Railway PATCH pattern (replaces all `supaRest.update('properties', ...)`):**
+```js
+fetch(RAILWAY_URL + '/properties/' + id, {
+  method: 'PATCH',
+  headers: {'Content-Type': 'application/json'},
+  body: JSON.stringify({ fields: { status: 'running' } })
+})
+```
+
+Commits: `cd0790a`, `c7f61b7`
+
+---
+
+#### 4. Admin vs. Agent Data Scoping
+
+**Rule:** Admins (Marc, Ash, Operations, Concierge) see ALL data. Agents see only their own.
+
+```js
+const ADMIN_AGENTS = ['Marc Cashin', 'Ash McGowan', 'Ashling McGowan', 'Operations', 'Concierge'];
+const isAdmin = computed(() => ADMIN_AGENTS.includes(agentName.value));
+```
+
+**Railway fetch scoping:**
+```js
+const _propUrl = isAdmin.value
+  ? RAILWAY_URL + '/properties'
+  : RAILWAY_URL + '/properties?agent_name=' + encodeURIComponent(agentName.value);
+```
+
+Same pattern for `/buyers`. Railway Python also filters: non-admin sees own primary records + records where they're a co-agent.
+
+Commit: `3d4b815`
+
+---
+
+#### 5. Deal Partners
+
+**What it does:** Admin or primary agent can add another agent to a deal. Both agents see the full listing/buyer package and all internal tools.
+
+**`partnerModal` reactive state:**
+```js
+const partnerModal = reactive({ show:false, dealId:'', dealType:'', coAgents:[], adding:false, error:'' });
+```
+
+**Storage:** Co-agents stored as `_co_agents` array inside the existing `subfolder_drive_ids` JSONB column — **zero schema migration required.**
+```python
+# Backend helpers
+def _get_co_agents(record): return (record.get("subfolder_drive_ids") or {}).get("_co_agents", [])
+def _set_co_agents(record, co_agents):
+    sdi = dict(record.get("subfolder_drive_ids") or {})
+    sdi["_co_agents"] = co_agents
+    return sdi
+```
+
+**Railway endpoints added:**
+- `POST /properties/{id}/add-partner` — adds agent name to `_co_agents`
+- `POST /properties/{id}/remove-partner` — removes agent name
+- `POST /buyers/{id}/add-partner`
+- `POST /buyers/{id}/remove-partner`
+
+**Frontend — where Partner UI appears:**
+- **Listing detail:** meta line (agent · market · date) → co-agent name chips + `+ Partner` button
+- **Buyer detail:** below email/phone line → same chips + button
+- Button visible only to `isAdmin` or the primary agent on that deal
+
+**Co-agent scoping in Railway fetch:**
+```python
+return [p for p in all_props if
+        p.get("agent_name") == agent_name or
+        agent_name in (p.get("subfolder_drive_ids") or {}).get("_co_agents", [])]
+```
+
+Commit: `51e68bb`
+
+---
+
+#### 6. Claude API Key Auto-Recovery
+
+**Problem:** If localStorage is cleared (cache wipe, new browser, fresh deploy glitch), `apiKeySet` initializes as `false` and the API Key Needed banner appears even though the key exists in Supabase.
+
+**Fix:** Added to `onMounted()` — if logged in but key missing, silently re-fetches from `agent_config` and restores:
+```js
+if (!apiKeySet.value && agentName.value) {
+  try {
+    const rows = await supaRest.select('agent_config',
+      `select=claude_api_key&agent_name=eq.${encodeURIComponent(agentName.value)}`);
+    const remoteKey = rows && rows[0] && rows[0].claude_api_key;
+    if (remoteKey) {
+      localStorage.setItem(agentKeyFor('fos_key', agentName.value), remoteKey);
+      _fosApiKey = remoteKey;
+      apiKeySet.value = true;
+    }
+  } catch(e) { /* silent */ }
+}
+```
+
+**Key architecture note:** Supabase `agent_config` is the source of truth. localStorage is a fast local cache. The key is always fetched from Supabase on login — this works on any device automatically. An agent sets their key once in Settings and it follows them everywhere.
+
+Commit: `a1e5f65`
+
+---
+
+#### Git Workflow Fix (fuse mount lock files)
+
+The Cowork sandbox mounts the workspace folder via `virtiofs` fuse. Git lock files created in prior sessions can't be removed inside the sandbox (`Operation not permitted`). 
+
+**Workaround (use every session for forward-os pushes):**
+```bash
+cd /tmp && git clone https://github.com/marccashin/forward-os.git fcc-push
+# make edits to /tmp/fcc-push/index.html
+cd /tmp/fcc-push
+git config user.email "marc@marccashin.com" && git config user.name "Marc Cashin"
+git remote set-url origin https://marccashin:ghp_[GET FROM: git remote -v in forward-command-center workspace]@github.com/marccashin/forward-os.git
+git add index.html && git commit -m "message" && git push origin main
+```
+
+If lock files exist on the Mac workspace, user runs: `rm ~/forward-command-center/.git/*.lock`
+
+#### Current HEAD (forward-os main): `a1e5f65`
+
