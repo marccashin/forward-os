@@ -126,12 +126,12 @@ body { min-height: 100%; background: var(--cream); font-family: 'Montserrat', sa
 /* ── FORMS / INPUTS ── */
 input[type="text"], input[type="email"], input[type="number"], input[type="tel"],
 input[type="search"], input[type="password"], select, textarea {
-  font-family: 'Montserrat', sans-serif; font-size: 12px; color: var(--navy);
+  font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--navy);
   background: var(--white); border: 1px solid var(--cream-dark); border-radius: 1px;
   padding: 9px 12px; outline: none; transition: border-color 0.14s;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--gold-muted); }
-input::placeholder, textarea::placeholder { color: #bbb; }
+input::placeholder, textarea::placeholder { color: #bbb; font-family: 'Cormorant Garamond', serif; font-style: italic; }
 label { font-size: 8.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold-muted); display: block; margin-bottom: 6px; }
 
 /* ── TABLES ── */
@@ -2226,7 +2226,38 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
             </div>
           </div>
-        </template>
+        
+          <!-- Delete confirm modal -->
+          <div v-if="byrDeleteTarget" class="modal-bg" @click.self="byrDeleteTarget=null">
+            <div class="modal-box" style="max-width:400px;text-align:center;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:16px;">Delete Buyer</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:8px;">{{ byrDeleteTarget.buyer_name }}</div>
+              <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin:0 0 24px;line-height:1.5;">This will permanently remove the buyer file and all associated data. This cannot be undone.</p>
+              <div style="display:flex;gap:10px;">
+                <button @click="byrDeleteTarget=null" style="flex:1;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);padding:11px;cursor:pointer;">Cancel</button>
+                <button @click="byrDoDelete" :disabled="byrDeleting" style="flex:1;background:#b91c1c;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#fff;padding:11px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:byrDeleting?'0.5':'1'}">
+                  <span v-if="byrDeleting" class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:#fff;"></span>{{ byrDeleting ? '' : 'Delete Buyer' }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- New buyer modal -->
+          <div v-if="byrShowNewModal" class="modal-bg" @click.self="byrShowNewModal=false">
+            <div class="modal-box" style="max-width:460px;">
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:22px;font-weight:500;color:var(--navy);">Add New Buyer</h3>
+              <div class="form-row"><label>Buyer Name *</label><input v-model="byrNewName" type="text" placeholder="e.g. Sarah & James Miller" @keyup.enter="byrCreateBuyer" autofocus></div>
+              <div class="form-row"><label>Email</label><input v-model="byrNewEmail" type="email" placeholder="buyer@email.com"></div>
+              <div class="form-row"><label>Phone</label><input v-model="byrNewPhone" type="tel" placeholder="(202) 555-0100"></div>
+              <div style="display:flex;gap:10px;margin-top:18px;">
+                <button class="btn-outline-navy" @click="byrShowNewModal=false" style="flex:1;">Cancel</button>
+                <button class="btn-gold" @click="byrCreateBuyer" :disabled="byrCreating" style="flex:1;">
+                  <span class="spinner" v-if="byrCreating"></span>{{ byrCreating ? '' : 'Create Buyer' }}
+                </button>
+              </div>
+            </div>
+          </div>
+</template>
 
         <!-- ============ BUYER DETAIL (tools inside) ============ -->
         <template v-else-if="view==='buyer-detail'">
