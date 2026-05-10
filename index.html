@@ -7131,12 +7131,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const inputMethod = revInputTab.value === 'voice' ? 'voice' : 'text';
       revSubmitting.value = true;
       try {
-        await supaRest.insert('revision_requests', {
+        await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
           property_id: propData.id, revision_number: nextRevNum,
           requested_by_email: currentEmail, requested_by_name: agentName.value,
           revision_notes: revNotes.value, input_method: inputMethod, status: 'pending'
-        });
-        await supaRest.update('properties', 'id', propData.id, { status: 'running' });
+        }) })
+        await fetch(RAILWAY_URL + '/properties/' + propData.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'running' }})}).catch(e=>console.warn('Property update:',e));
         if (PIPELINE_TRIGGER_URL) {
           try {
             await fetch(PIPELINE_TRIGGER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -7918,7 +7918,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     async function lstSaveSellerName(name) {
       if (!lstActiveProp.value) return;
-      await supaRest.update('properties', 'id', lstActiveProp.value.id, { seller_name: name });
+      await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ seller_name: name }})}).catch(e=>console.warn('Property update:',e));
       lstActiveProp.value.seller_name = name;
     }
     async function lstSaveNote(subfolder) {
@@ -8314,7 +8314,7 @@ async function lstSubmitToPipeline() {
       if (!lstActiveProp.value) return;
       lstSubmitting.value = true;
       try {
-        await supaRest.update('properties', 'id', lstActiveProp.value.id, { status: 'submitted' });
+        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'submitted' }})}).catch(e=>console.warn('Property update:',e));
         lstActiveProp.value.status = 'submitted';
         const webhookBody = {
           property_id: lstActiveProp.value.id,
@@ -8331,7 +8331,7 @@ async function lstSubmitToPipeline() {
           body: JSON.stringify(webhookBody)
         });
         lstActiveProp.value.status = 'running';
-        await supaRest.update('properties', 'id', lstActiveProp.value.id, { status: 'running' });
+        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'running' }})}).catch(e=>console.warn('Property update:',e));
         lstShowSubmitConfirm.value = false;
         window.scrollTo({ top: 0, behavior: 'smooth' });
         lstStartPolling(lstActiveProp.value.id);
@@ -8340,7 +8340,7 @@ async function lstSubmitToPipeline() {
         console.error('Submit failed:', e);
         showToast('Submission failed: ' + e.message, 5000);
         lstActiveProp.value.status = 'draft';
-        await supaRest.update('properties', 'id', lstActiveProp.value.id, { status: 'draft' }).catch(()=>{});
+        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'draft' }})}).catch(e=>console.warn('Property update:',e)).catch(()=>{});
       }
       lstSubmitting.value = false;
     }
@@ -8490,9 +8490,7 @@ async function lstSubmitToPipeline() {
       if (!lstDeleteTarget.value) return;
       lstDeleting.value = true;
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/properties?id=eq.${lstDeleteTarget.value.id}`, {
-          method: 'DELETE', headers: supaRest.headers()
-        });
+        await fetch(RAILWAY_URL + '/properties/' + lstDeleteTarget.value.id, { method: 'DELETE' });
         lstProperties.value = lstProperties.value.filter(p => p.id !== lstDeleteTarget.value.id);
         lstDeleteTarget.value = null;
         showToast('Property deleted.');
@@ -8507,7 +8505,7 @@ async function lstSubmitToPipeline() {
       const newAddr = lstNormalizeAddress(lstEditAddressVal.value);
       if (!newAddr || !lstActiveProp.value) { lstEditingAddress.value = false; return; }
       try {
-        await supaRest.update('properties', 'id', lstActiveProp.value.id, { address: newAddr });
+        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ address: newAddr }})}).catch(e=>console.warn('Property update:',e));
         lstActiveProp.value = { ...lstActiveProp.value, address: newAddr };
         // Update in list too
         const idx = lstProperties.value.findIndex(p => p.id === lstActiveProp.value.id);
@@ -8583,12 +8581,12 @@ async function lstSubmitToPipeline() {
       const inputMethod = lstRevInputTab.value === 'voice' ? 'voice' : 'text';
       lstRevSubmitting.value = true;
       try {
-        await supaRest.insert('revision_requests', {
+        await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
           property_id: prop.id, revision_number: nextRevNum,
           requested_by_email: currentEmail, requested_by_name: agentName.value,
           revision_notes: lstRevNotes.value, input_method: inputMethod, status: 'pending'
-        });
-        await supaRest.update('properties', 'id', prop.id, { status: 'running' });
+        }) })
+        await fetch(RAILWAY_URL + '/properties/' + prop.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'running' }})}).catch(e=>console.warn('Property update:',e));
         lstActiveProp.value = { ...prop, status: 'running' };
         if (PIPELINE_TRIGGER_URL) {
           try {
@@ -8835,7 +8833,8 @@ async function lstSubmitToPipeline() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
       try {
-        await supaRest.insert('properties', { agent_name: agentName.value, address: addr, seller_name: newPropSellerName.value.trim(), drive_folder_id: '', subfolder_drive_ids: {} });
+        const _pfRes = await fetch(RAILWAY_URL + '/create-property', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address: addr, agent_name: agentName.value, agent_email: sessionEmail.value, seller_name: newPropSellerName.value.trim(), market: 'DC', status: 'draft' }) });
+        if (!_pfRes.ok) { const _e = await _pfRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server error'); }
         newPropAddress.value = ''; newPropSellerName.value = '';
         await refreshPropFiles();
         showToast('✅ Property file created!');
@@ -12319,7 +12318,7 @@ No markdown. No preamble. Valid JSON only.`;
         }
         if (Object.keys(patch).length === 0) { showToast('No fields extracted from notes.', 3000); bnaApplying.value = false; return; }
         // Batch-update Supabase
-        await supaRest.update('buyers', 'id', byrActiveBuyer.value.id, patch);
+        await fetch(RAILWAY_URL + '/buyers/' + byrActiveBuyer.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:patch})});
         // Update local reactive object
         Object.assign(byrActiveBuyer.value, patch);
         bnaApplied.value = true;
@@ -12703,7 +12702,8 @@ No markdown. Valid JSON only.`;
       if (!SUPABASE_URL) return;
       byrLoading.value = true;
       try {
-        const data = await supaRest.select('buyers', `agent_name=eq.${encodeURIComponent(agentName.value)}&status=eq.active&order=created_at.desc`);
+        const _bRes = await fetch(RAILWAY_URL + '/buyers');
+        const data = _bRes.ok ? await _bRes.json() : [];
         byrBuyers.value = data || [];
       } catch(e) { showToast('Could not load buyers.', 3000); }
       byrLoading.value = false;
@@ -12713,31 +12713,9 @@ No markdown. Valid JSON only.`;
       if (!byrNewName.value.trim()) { showToast('Enter a buyer name.', 3000); return; }
       byrCreating.value = true;
       try {
-        const inserted = await supaRest.insert('buyers', {
-          buyer_name: byrNewName.value.trim(),
-          email: byrNewEmail.value.trim() || null,
-          phone: byrNewPhone.value.trim() || null,
-          agent_name: agentName.value,
-          agent_email: AGENT_EMAILS[agentName.value] || '',
-          status: 'active'
-        });
-        const buyer = inserted[0];
-        try {
-          const res = await fetch(RAILWAY_URL + '/create-buyer-structure', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ buyer_id: buyer.id, buyer_name: buyer.buyer_name, agent_name: agentName.value })
-          });
-          if (res.ok) {
-            const { buyer_folder_id, subfolder_ids } = await res.json();
-            await supaRest.update('buyers', 'id', buyer.id, {
-              drive_folder_id: buyer_folder_id,
-              subfolder_drive_ids: subfolder_ids
-            });
-            buyer.drive_folder_id = buyer_folder_id;
-            buyer.subfolder_drive_ids = subfolder_ids;
-          }
-        } catch(e) { console.warn('Drive folder creation failed:', e); }
+        const _bCrRes = await fetch(RAILWAY_URL + '/create-buyer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ buyer_name: byrNewName.value.trim(), agent_name: agentName.value, agent_email: AGENT_EMAILS[agentName.value]||'', email: byrNewEmail.value.trim()||'', phone: byrNewPhone.value.trim()||'', status:'active' }) });
+        if (!_bCrRes.ok) { const _e = await _bCrRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server error creating buyer'); }
+        const buyer = await _bCrRes.json();
         // Auto-create a linked client file folder for this buyer
         refreshPropFiles();
         byrBuyers.value.unshift(buyer);
@@ -12763,10 +12741,7 @@ No markdown. Valid JSON only.`;
     async function byrDoDelete() {
       if (!byrDeleteTarget.value) return;
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/buyers?id=eq.${byrDeleteTarget.value.id}`, {
-          method: 'DELETE',
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }
-        });
+        await fetch(RAILWAY_URL + '/buyers/' + byrDeleteTarget.value.id, { method: 'DELETE' });
         byrBuyers.value = byrBuyers.value.filter(b => b.id !== byrDeleteTarget.value.id);
         if (byrActiveBuyer.value && byrActiveBuyer.value.id === byrDeleteTarget.value.id) {
           byrActiveBuyer.value = null;
@@ -12997,7 +12972,7 @@ No markdown. Valid JSON only.`;
     async function byrUpdateProfile(field, value) {
       if (!byrActiveBuyer.value) return;
       try {
-        await supaRest.update('buyers', 'id', byrActiveBuyer.value.id, { [field]: value });
+        await fetch(RAILWAY_URL + '/buyers/' + byrActiveBuyer.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ [field]: value }})}).catch(e=>console.warn('Buyer update:',e));
         byrActiveBuyer.value[field] = value;
       } catch(e) { console.warn('Profile update failed:', e); }
     }
