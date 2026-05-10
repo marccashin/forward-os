@@ -2304,6 +2304,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="flex:1;min-width:0;">
                   <div style="font-size:20px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.3;">{{ byrActiveBuyer.buyer_name }}</div>
                   <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-top:4px;">{{ byrActiveBuyer.email || 'No email' }} · {{ byrActiveBuyer.phone || 'No phone' }}</div>
+                  <!-- Co-agent chips + Partner button -->
+                  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:6px;">
+                    <span v-for="ca in ((byrActiveBuyer.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
+                      {{ ca.split(' ')[0] }}
+                    </span>
+                    <button v-if="isAdmin || byrActiveBuyer.agent_name === agentName" @click="partnerOpen('buyers', byrActiveBuyer)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
+                      + Partner
+                    </button>
+                  </div>
                 </div>
                 <span :class="'status-badge status-'+(byrActiveBuyer.status||'active')">{{ byrActiveBuyer.status || 'active' }}</span>
               </div>
@@ -3898,7 +3907,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <span :class="'status-badge status-'+(lstActiveProp.status||'draft')">{{ lstActiveProp.status || 'draft' }}</span>
             </div>
             <!-- Meta -->
-            <div class="prop-detail-meta">{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }} · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+            <div class="prop-detail-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <span>{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }} · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
+              <!-- Co-agent chips -->
+              <span v-for="ca in ((lstActiveProp.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
+                {{ ca.split(' ')[0] }}
+              </span>
+              <button v-if="isAdmin || lstActiveProp.agent_name === agentName" @click="partnerOpen('properties', lstActiveProp)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
+                + Partner
+              </button>
+            </div>
             <!-- Completion bar -->
             <div class="prop-completion-row">
               <span class="prop-completion-label">Asset Completion</span>
@@ -5433,6 +5451,56 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     </template>
   </div>
 </div>
+
+    <!-- ── Deal Partners Modal ── -->
+    <div v-if="partnerModal.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9200;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="partnerModal.show=false">
+      <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:420px;">
+        <!-- Header -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--cream-mid);">
+          <div>
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:4px;">Deal Partners</div>
+            <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);">Manage Co-Agents</div>
+          </div>
+          <button @click="partnerModal.show=false" style="width:28px;height:28px;border-radius:50%;background:var(--cream);border:1px solid var(--cream-dark);cursor:pointer;font-size:14px;color:var(--navy-mid);display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+        <div style="padding:24px;">
+          <p style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;margin:0 0 18px;line-height:1.6;">Add an agent as a partner on this deal. They will see it in their own listings or buyers view and have full access to all tools.</p>
+
+          <!-- Current partners -->
+          <div v-if="partnerModal.coAgents.length" style="margin-bottom:16px;">
+            <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:8px;">Current Partners</div>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div v-for="ca in partnerModal.coAgents" :key="ca" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--cream);border:1px solid var(--cream-dark);border-radius:2px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:30px;height:30px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:12px;font-weight:600;color:var(--gold);">{{ ca.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:500;color:var(--navy);">{{ ca }}</span>
+                </div>
+                <button @click="partnerRemove(ca)" style="background:none;border:none;color:#dc2626;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;padding:4px 8px;border-radius:2px;" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='none'">Remove</button>
+              </div>
+            </div>
+          </div>
+          <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin-bottom:16px;">No partners on this deal yet.</div>
+
+          <!-- Add partner -->
+          <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:8px;">Add a Partner</div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            <button v-for="agent in ['Marc Cashin','Ash McGowan','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey']" :key="agent"
+              v-if="!partnerModal.coAgents.includes(agent) && agent !== (partnerModal.dealType==='properties' ? (lstActiveProp && lstActiveProp.agent_name) : (byrActiveBuyer && byrActiveBuyer.agent_name))"
+              @click="partnerAdd(agent)"
+              :disabled="partnerModal.adding"
+              style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1.5px solid var(--cream-dark);border-radius:2px;background:var(--white);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);cursor:pointer;transition:border-color 0.13s,background 0.13s;" onmouseover="this.style.borderColor='var(--navy)';this.style.background='var(--cream)'" onmouseout="this.style.borderColor='var(--cream-dark)';this.style.background='var(--white)'">
+              <div style="width:22px;height:22px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-family:'Cormorant Garamond',serif;font-weight:600;">{{ agent.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
+              {{ agent.split(' ')[0] }}
+            </button>
+          </div>
+
+          <div v-if="partnerModal.error" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;margin-bottom:10px;">{{ partnerModal.error }}</div>
+          <div v-if="partnerModal.adding" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;text-align:center;">Adding partner…</div>
+
+          <button class="btn-navy" @click="partnerModal.show=false" style="width:100%;min-height:44px;margin-top:4px;">Done</button>
+        </div>
+      </div>
+    </div>
 
     <!-- ── Log Activity Modal ── -->
     <div v-if="logAct.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.72);z-index:9100;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="logAct.show=false">
@@ -12733,6 +12801,77 @@ No markdown. Valid JSON only.`;
       byrCreating.value = false;
     }
 
+    // ── Deal Partners ─────────────────────────────────────────────
+    const partnerModal = reactive({ show:false, dealId:'', dealType:'', coAgents:[], adding:false, error:'' });
+
+    function partnerGetCoAgents(record) {
+      return ((record.subfolder_drive_ids || {})._co_agents) || [];
+    }
+
+    function partnerOpen(dealType, record) {
+      partnerModal.dealId   = record.id;
+      partnerModal.dealType = dealType; // 'properties' or 'buyers'
+      partnerModal.coAgents = [...partnerGetCoAgents(record)];
+      partnerModal.error    = '';
+      partnerModal.show     = true;
+    }
+
+    async function partnerAdd(agentName) {
+      if (!agentName || partnerModal.coAgents.includes(agentName)) return;
+      partnerModal.adding = true;
+      partnerModal.error = '';
+      try {
+        const res = await fetch(`${RAILWAY_URL}/${partnerModal.dealType}/${partnerModal.dealId}/add-partner`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ agent_name: agentName })
+        });
+        if (!res.ok) throw new Error('Failed to add partner');
+        const data = await res.json();
+        partnerModal.coAgents = data.co_agents || [];
+        // Update local record
+        if (partnerModal.dealType === 'properties') {
+          const p = lstProperties.value.find(x => x.id === partnerModal.dealId);
+          if (p) { if (!p.subfolder_drive_ids) p.subfolder_drive_ids = {}; p.subfolder_drive_ids._co_agents = partnerModal.coAgents; }
+          if (lstActiveProp.value && lstActiveProp.value.id === partnerModal.dealId) {
+            if (!lstActiveProp.value.subfolder_drive_ids) lstActiveProp.value.subfolder_drive_ids = {};
+            lstActiveProp.value.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+          }
+        } else {
+          const b = byrBuyers.value.find(x => x.id === partnerModal.dealId);
+          if (b) { if (!b.subfolder_drive_ids) b.subfolder_drive_ids = {}; b.subfolder_drive_ids._co_agents = partnerModal.coAgents; }
+          if (byrActiveBuyer.value && byrActiveBuyer.value.id === partnerModal.dealId) {
+            if (!byrActiveBuyer.value.subfolder_drive_ids) byrActiveBuyer.value.subfolder_drive_ids = {};
+            byrActiveBuyer.value.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+          }
+        }
+      } catch(e) { partnerModal.error = e.message; }
+      partnerModal.adding = false;
+    }
+
+    async function partnerRemove(agentName) {
+      partnerModal.error = '';
+      try {
+        const res = await fetch(`${RAILWAY_URL}/${partnerModal.dealType}/${partnerModal.dealId}/remove-partner`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ agent_name: agentName })
+        });
+        if (!res.ok) throw new Error('Failed to remove partner');
+        const data = await res.json();
+        partnerModal.coAgents = data.co_agents || [];
+        // Update local record
+        if (partnerModal.dealType === 'properties') {
+          const p = lstProperties.value.find(x => x.id === partnerModal.dealId);
+          if (p && p.subfolder_drive_ids) p.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+          if (lstActiveProp.value && lstActiveProp.value.id === partnerModal.dealId && lstActiveProp.value.subfolder_drive_ids) lstActiveProp.value.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+        } else {
+          const b = byrBuyers.value.find(x => x.id === partnerModal.dealId);
+          if (b && b.subfolder_drive_ids) b.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+          if (byrActiveBuyer.value && byrActiveBuyer.value.id === partnerModal.dealId && byrActiveBuyer.value.subfolder_drive_ids) byrActiveBuyer.value.subfolder_drive_ids._co_agents = partnerModal.coAgents;
+        }
+      } catch(e) { partnerModal.error = e.message; }
+    }
+    // ── End Deal Partners ──────────────────────────────────────
+
     function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
       loadByrFiles(buyer);
@@ -15324,7 +15463,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       revVoiceRecording, revSubmitting, revActiveStatus, revLatestNumber,
       canRequestRevision, revVoiceStart, revVoiceStop, submitRevisionRequest,
       fetchRevisionRequests,
-      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle,
+      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle, partnerModal, partnerOpen, partnerAdd, partnerRemove, partnerGetCoAgents,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
