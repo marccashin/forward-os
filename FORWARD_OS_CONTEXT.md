@@ -1030,3 +1030,9 @@ If lock files exist on the Mac workspace, user runs: `rm ~/forward-command-cente
 
 #### Current HEAD (forward-os main): `a1e5f65`
 
+
+
+## CRITICAL WORKFLOW UPDATE
+**ALL changes must go to `staging` branch first, never directly to `main`.**
+Staging site: https://forward-os-staging.netlify.app
+Merge PR: https://github.com/marccashin/forward-os/compare/main...staging
