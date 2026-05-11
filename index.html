@@ -8002,7 +8002,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstToolOpen.value = lstToolOpen.value === 'mlsdata' ? null : 'mlsdata';
         return;
       }
-      const hasMlsFile = lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data');
+      const hasMlsFile = (lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data')) || !!lstNotes.mls_data;
       if (!hasMlsFile) {
         mlsGate.value = true;
         lstToolOpen.value = 'mlsdata'; // redirect to MLS tool
