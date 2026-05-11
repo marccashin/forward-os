@@ -6003,8 +6003,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         <!-- Seller name(s) -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;">
           <div class="form-row">
-            <label>Seller Name</label>
-            <input v-model="lstNewSeller" placeholder="First Last" style="width:100%;box-sizing:border-box;" @keyup.enter="lstCreateProperty">
+            <label>Seller Name <span style="color:#dc2626;">*</span></label>
+            <input v-model="lstNewSeller" placeholder="First Last" style="width:100%;box-sizing:border-box;" :style="{borderColor:!lstNewSeller.trim()?'#fca5a5':''}" @keyup.enter="lstCreateProperty">
           </div>
           <div class="form-row">
             <label>Co-Seller <span style="font-weight:400;opacity:0.5;font-size:9px;">(optional)</span></label>
@@ -6013,7 +6013,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         </div>
 
         <div v-if="lstCreateError" style="font-family:'Montserrat',sans-serif;font-size:8.5px;color:#dc2626;margin-bottom:12px;letter-spacing:0.04em;">{{ lstCreateError }}</div>
-        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewStreet.trim()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewStreet.trim())?'0.45':'1'}">
+        <button @click="lstCreateProperty" :disabled="lstCreating||!lstNewStreet.trim()||!lstNewSeller.trim()" style="display:flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;transition:opacity 0.13s;" :style="{opacity:(lstCreating||!lstNewStreet.trim()||!lstNewSeller.trim())?'0.45':'1'}">
           <span v-if="lstCreating" style="display:inline-flex;gap:4px;align-items:center;">
             <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out infinite;"></span>
             <span style="width:6px;height:6px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDot 1.2s ease-in-out 0.2s infinite;"></span>
@@ -7981,6 +7981,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     function lstOpenTool(key) {
+      // Auto-fill net sheet address from active property when opening the tool
+      if (key === 'netsheet' && lstActiveProp.value && !ns.address) {
+        ns.address = lstActiveProp.value.address || '';
+      }
       // MLS always accessible; others require at least one saved MLS file
       if (key === 'mlsdata') {
         lstToolOpen.value = lstToolOpen.value === 'mlsdata' ? null : 'mlsdata';
@@ -8005,6 +8009,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstNewAddress.value = parts.join(', ');
       }
       if (!lstNewAddress.value.trim()) return;
+      if (!lstNewSeller.value.trim()) { lstCreateError.value = 'Seller name is required.'; return; }
       lstCreating.value = true; lstCreateError.value = '';
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
@@ -8235,7 +8240,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
   if (lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
 
-  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
+  const sellerNameLine = prop.seller_name ? '\nSELLER: ' + prop.seller_name + ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) ? ' & ' + prop.subfolder_drive_ids._co_seller : '') : '';
+  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + sellerNameLine + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
     const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out after 3 minutes — please try again')),180000));
@@ -8893,6 +8899,15 @@ async function lstSubmitToPipeline() {
 
     async function _doSaveToPropertyDrive(prop, subfolder, toolName, label, data, pdfData) {
       try {
+        // Always persist text to property_notes for in-app recall & campaign
+        if (typeof data === 'string' && data.trim()) {
+          try {
+            await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + prop.id + '&subfolder=eq.' + subfolder, { method: 'DELETE', headers: supaRest.headers() });
+            await supaRest.insert('property_notes', { property_id: prop.id, subfolder, content: data, created_by: sessionEmail.value });
+            if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
+          } catch {}
+        }
+
         let fileName, fileBytes, mimeType;
         if (pdfData) {
           const base64Content = pdfData.split(',')[1] || pdfData;
@@ -8900,13 +8915,10 @@ async function lstSubmitToPipeline() {
           fileBytes = Uint8Array.from(atob(base64Content), c => c.charCodeAt(0));
           mimeType = 'application/pdf';
         } else if (typeof data === 'string') {
-          // Build a branded PDF instead of .txt
           const pdfBlob = buildTextPDF(toolName, label, data);
           fileName = (label || toolName).replace(/[^a-zA-Z0-9 \-]/g,'').trim() + '.pdf';
           fileBytes = new Uint8Array(await pdfBlob.arrayBuffer());
           mimeType = 'application/pdf';
-          // Also write raw text to property_notes for in-app recall
-          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder, content: data, created_by: sessionEmail.value }); } catch {}
         } else {
           fileName = (label || 'file') + '.json';
           fileBytes = new TextEncoder().encode(JSON.stringify(data));
@@ -8915,6 +8927,12 @@ async function lstSubmitToPipeline() {
 
         const subfolderDriveIds = prop.subfolder_drive_ids || {};
         const folderId = subfolderDriveIds[subfolder] || '';
+
+        // Skip Drive upload if no folder configured — text is already saved above
+        if (!folderId) {
+          showGoldToast(toolName + ' saved to ' + prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder));
+          return;
+        }
 
         const blob = new Blob([fileBytes], { type: mimeType });
         const formData = new FormData();
@@ -8927,7 +8945,7 @@ async function lstSubmitToPipeline() {
         const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
         if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
 
-        showGoldToast(`${toolName} saved to ${prop.address} / ${SUBFOLDER_LABELS[subfolder] || subfolder}`);
+        showGoldToast(toolName + ' saved to ' + prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder));
       } catch (e) { showToast('Save failed: ' + e.message, 4000); }
     }
 
@@ -10531,9 +10549,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       try {
         const textSummary = ns.breakdown.map(b => b.label + ': ' + nsFmt(b.amount)).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
         const pdfData = nsGetPDFBase64();
-        await saveToPropertyFromTool('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummary, pdfData);
-        nsSaved.value = true;
-        setTimeout(() => { nsSaved.value = false; }, 8000);
+        const saved = await saveToPropertyFromTool('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummary, pdfData);
+        if (saved) {
+          nsSaved.value = true;
+          setTimeout(() => { nsSaved.value = false; }, 8000);
+        }
       } finally { nsSaving.value = false; }
     }
 
