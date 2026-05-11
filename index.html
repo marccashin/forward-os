@@ -8923,8 +8923,8 @@ async function lstSubmitToPipeline() {
         // Always persist text to property_notes for in-app recall & campaign
         if (typeof data === 'string' && data.trim()) {
           try {
-            await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + prop.id + '&subfolder=eq.' + subfolder, { method: 'DELETE', headers: supaRest.headers() });
-            await supaRest.insert('property_notes', { property_id: prop.id, subfolder, content: data });
+            const _nr = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: prop.id, subfolder, content: data }) });
+            if (!_nr.ok) throw new Error(await _nr.text());
             if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
           } catch(e) { console.error('property_notes save failed (' + subfolder + '):', e.message); }
         }
@@ -9297,9 +9297,8 @@ async function lstSubmitToPipeline() {
             method:'DELETE', headers: supaRest.headers()
           });
         } catch {}
-        await supaRest.insert('property_notes', {
-          property_id: targetProp.id, subfolder: 'cma', content
-        });
+        const _cmaR = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: targetProp.id, subfolder: 'cma', content }) });
+        if (!_cmaR.ok) throw new Error(await _cmaR.text());
         // Update local notes cache so it shows immediately in the panel
         lstNotes.cma = content;  // set immediately so header badge appears
         cmaSaved.value = true;
@@ -9947,8 +9946,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           // Persist to property_notes (non-critical)
           if (lstActiveProp.value) {
             try {
-              await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + lstActiveProp.value.id + '&subfolder=eq.seller_prep', { method: 'DELETE', headers: supaRest.headers() });
-              await supaRest.insert('property_notes', { property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary });
+              const _spr = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary }) });
+              if (!_spr.ok) throw new Error(await _spr.text());
             } catch(e) { console.error('seller_prep save failed:', e.message); }
           }
         }
