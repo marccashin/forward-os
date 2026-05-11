@@ -4516,17 +4516,26 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                               <span class="mo-offer-num">Offer {{ n }}</span>
                               <!-- loading spinner -->
                               <div v-if="moLoading[n]" class="mo-loading-cell" style="padding:10px 4px;flex-direction:column;gap:8px;">
-                                <div style="display:flex;align-items:flex-end;justify-content:center;gap:2px;height:22px;">
-                                  <span class="wave-bar" style="height:8px;"></span>
-                                  <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
-                                  <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
-                                  <span class="wave-bar" style="height:22px;animation-delay:0.3s;"></span>
-                                  <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
-                                  <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
-                                  <span class="wave-bar" style="height:8px;"></span>
-                                </div>
-                                <span style="font-family:'Montserrat',sans-serif;font-size:6.5px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">Reading PDF…</span>
-                                <span style="font-family:'Cormorant Garamond',serif;font-size:8px;color:rgba(200,169,110,0.5);">{{ typeof moLoading[n] === 'string' ? moLoading[n] : '' }}</span>
+                                <!-- Queued state: dimmed clock icon -->
+                                <template v-if="typeof moLoading[n] === 'string' && moLoading[n].startsWith('Queued')">
+                                  <span style="font-size:22px;opacity:0.4;">⏳</span>
+                                  <span style="font-family:'Montserrat',sans-serif;font-size:6.5px;letter-spacing:0.1em;color:rgba(200,169,110,0.6);text-transform:uppercase;">In Queue</span>
+                                  <span style="font-family:'Cormorant Garamond',serif;font-size:8px;color:rgba(200,169,110,0.4);">Will start automatically</span>
+                                </template>
+                                <!-- Actively parsing: wave bars -->
+                                <template v-else>
+                                  <div style="display:flex;align-items:flex-end;justify-content:center;gap:2px;height:22px;">
+                                    <span class="wave-bar" style="height:8px;"></span>
+                                    <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
+                                    <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
+                                    <span class="wave-bar" style="height:22px;animation-delay:0.3s;"></span>
+                                    <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
+                                    <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
+                                    <span class="wave-bar" style="height:8px;"></span>
+                                  </div>
+                                  <span style="font-family:'Montserrat',sans-serif;font-size:6.5px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">Reading PDF…</span>
+                                  <span v-if="typeof moLoading[n] === 'string'" style="font-family:'Cormorant Garamond',serif;font-size:8px;color:rgba(200,169,110,0.5);">{{ moLoading[n] }}</span>
+                                </template>
                               </div>
                               <template v-else>
                                 <label :for="'mo-file-'+n" class="mo-upload-lbl">{{ Object.keys(moOffers[n]||{}).length ? '↺ Re-upload' : '+ Upload PDF' }}</label>
@@ -7619,39 +7628,25 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moUploadQueue = moUploadQueue.then(async () => {
         moLoading.value[n] = true;
         try {
-          // Wait for Railway to be healthy before starting — polls /health up to 90s
-          moLoading.value[n] = 'Waiting for server…';
-          const _serverReady = await (async () => {
-            for (let hc = 0; hc < 18; hc++) {
-              try {
-                const _hc = new AbortController();
-                setTimeout(() => _hc.abort(), 5000);
-                const hr = await fetch(`${RAILWAY_URL}/health`, { signal: _hc.signal });
-                if (hr.ok) return true;
-              } catch {}
-              await new Promise(r => setTimeout(r, 5000));
-            }
-            return false;
-          })();
-          if (!_serverReady) throw new Error('Server did not respond after 90 seconds — please try again.');
-          await new Promise(r => setTimeout(r, 1000));
-          // Retry up to 5 times — rebuild FormData fresh each attempt (consumed after first fetch)
+          // Short settle so server isn't hit mid-recovery from previous parse
+          await new Promise(r => setTimeout(r, 3000));
+          // Retry up to 4 times with 10s gaps — rebuild FormData fresh each attempt
           let res, lastErr;
-          for (let attempt = 1; attempt <= 5; attempt++) {
-            moLoading.value[n] = `Parsing… (attempt ${attempt}/5)`;
+          for (let attempt = 1; attempt <= 4; attempt++) {
+            moLoading.value[n] = attempt === 1 ? true : `Retrying… (${attempt}/4)`;
             try {
               const fd = new FormData();
               fd.append('file', new File([fileBuffer], fileName, { type: fileType }));
               const ctrl  = new AbortController();
-              const timer = setTimeout(() => ctrl.abort(), 90000);
+              const timer = setTimeout(() => ctrl.abort(), 120000);
               try { res = await fetch(`${RAILWAY_URL}/api/parse-offer`, { method: 'POST', body: fd, signal: ctrl.signal }); }
               finally { clearTimeout(timer); }
               if (res.ok) { lastErr = null; break; }
               lastErr = new Error(`Server error ${res.status}`);
-              if (attempt < 5) await new Promise(r => setTimeout(r, 15000));
+              if (attempt < 4) await new Promise(r => setTimeout(r, 10000));
             } catch(fetchErr) {
               lastErr = fetchErr;
-              if (attempt < 5) await new Promise(r => setTimeout(r, 15000));
+              if (attempt < 4) await new Promise(r => setTimeout(r, 10000));
             }
           }
           if (lastErr) throw lastErr;
