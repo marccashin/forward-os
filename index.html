@@ -7619,11 +7619,23 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moUploadQueue = moUploadQueue.then(async () => {
         moLoading.value[n] = true;
         try {
-          // Give Railway a moment to settle after previous parse job, then wake ping
-          await new Promise(r => setTimeout(r, 2000));
-          fetch(`${RAILWAY_URL}/health`).catch(()=>{});
+          // Wait for Railway to be healthy before starting — polls /health up to 90s
+          moLoading.value[n] = 'Waiting for server…';
+          const _serverReady = await (async () => {
+            for (let hc = 0; hc < 18; hc++) {
+              try {
+                const _hc = new AbortController();
+                setTimeout(() => _hc.abort(), 5000);
+                const hr = await fetch(`${RAILWAY_URL}/health`, { signal: _hc.signal });
+                if (hr.ok) return true;
+              } catch {}
+              await new Promise(r => setTimeout(r, 5000));
+            }
+            return false;
+          })();
+          if (!_serverReady) throw new Error('Server did not respond after 90 seconds — please try again.');
           await new Promise(r => setTimeout(r, 1000));
-          // Retry up to 3 times — rebuild FormData fresh each attempt (consumed after first fetch)
+          // Retry up to 5 times — rebuild FormData fresh each attempt (consumed after first fetch)
           let res, lastErr;
           for (let attempt = 1; attempt <= 5; attempt++) {
             moLoading.value[n] = `Parsing… (attempt ${attempt}/5)`;
