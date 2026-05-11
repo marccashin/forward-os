@@ -7628,9 +7628,25 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moUploadQueue = moUploadQueue.then(async () => {
         moLoading.value[n] = true;
         try {
-          // Short settle so server isn't hit mid-recovery from previous parse
-          await new Promise(r => setTimeout(r, 3000));
-          // Retry up to 4 times with 10s gaps — rebuild FormData fresh each attempt
+          // After previous parse completes, wait for server to confirm healthy
+          // before sending next PDF (prevents hitting Railway mid-OOM-restart).
+          // Poll /health every 3s for up to 60s, then proceed regardless.
+          moLoading.value[n] = 'Waiting for server…';
+          let serverOk = false;
+          for (let hc = 0; hc < 20 && !serverOk; hc++) {
+            try {
+              const _hca = new AbortController();
+              const _hct = setTimeout(() => _hca.abort(), 4000);
+              const _hr  = await fetch(`${RAILWAY_URL}/health`, { signal: _hca.signal });
+              clearTimeout(_hct);
+              if (_hr.ok) serverOk = true;
+            } catch {}
+            if (!serverOk) await new Promise(r => setTimeout(r, 3000));
+          }
+          // Small buffer after health check passes (let server fully settle)
+          await new Promise(r => setTimeout(r, 1000));
+
+          // Retry the parse up to 4 times with 12s gaps
           let res, lastErr;
           for (let attempt = 1; attempt <= 4; attempt++) {
             moLoading.value[n] = attempt === 1 ? true : `Retrying… (${attempt}/4)`;
@@ -7643,10 +7659,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
               finally { clearTimeout(timer); }
               if (res.ok) { lastErr = null; break; }
               lastErr = new Error(`Server error ${res.status}`);
-              if (attempt < 4) await new Promise(r => setTimeout(r, 10000));
+              if (attempt < 4) await new Promise(r => setTimeout(r, 12000));
             } catch(fetchErr) {
               lastErr = fetchErr;
-              if (attempt < 4) await new Promise(r => setTimeout(r, 10000));
+              if (attempt < 4) await new Promise(r => setTimeout(r, 12000));
             }
           }
           if (lastErr) throw lastErr;
