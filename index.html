@@ -8178,6 +8178,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       ldOutput.value = ''; ldMessages.value = []; ldStarted.value = false;
       jlOutput.value = null;
       Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
+      // Reset Multiple Offers — must clear between properties or data bleeds across
+      moOffers.value    = { 1:{}, 2:{}, 3:{}, 4:{}, 5:{}, 6:{} };
+      moFileNames.value = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'' };
+      moLoading.value   = { 1:false, 2:false, 3:false, 4:false, 5:false, 6:false };
+      moSlotCount.value = 2;
+      moAnalysis.value = ''; moAnalysisLoading.value = false; moStatus.value = '';
     }
 
     async function lstSaveSellerName(name) {
