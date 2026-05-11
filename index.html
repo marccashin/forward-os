@@ -9309,9 +9309,9 @@ async function lstSubmitToPipeline() {
           created_by: sessionEmail.value
         });
         // Update local notes cache so it shows immediately in the panel
-        lstNotes.cma = content;
-        _doSaveToPropertyDrive(targetProp, 'cma', 'CMA Builder', 'CMA Report', content, null).catch(()=>{});
+        lstNotes.cma = content;  // set immediately so header badge appears
         cmaSaved.value = true;
+        _doSaveToPropertyDrive(targetProp, 'cma', 'CMA Builder', 'CMA Report', content, null).catch(()=>{});
         setTimeout(() => { cmaSaved.value = false; }, 8000);
         cmaLogAddress.value = '';
       } catch(e) { showToast('Save failed: ' + (e.message || 'Unknown error'), 4000); }
@@ -10683,6 +10683,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const pdfData = nsGetPDFBase64();
         const saved = await saveToPropertyFromTool('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummary, pdfData);
         if (saved) {
+          lstNotes.seller_net_sheet = textSummary;
           nsSaved.value = true;
           setTimeout(() => { nsSaved.value = false; }, 8000);
         }
