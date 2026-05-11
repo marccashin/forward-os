@@ -7999,34 +7999,49 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     });
 
     async function lstFetchProperties() {
-      if (!RAILWAY_URL) return;
+      if (!SUPABASE_URL) return;
       lstLoading.value = true;
       try {
-        // Admins see all; agents see only their own
-        const _propUrl = isAdmin.value
-          ? RAILWAY_URL + '/properties'
-          : RAILWAY_URL + '/properties?agent_name=' + encodeURIComponent(agentName.value);
-        const [props, allAssets] = await Promise.all([
-          fetch(_propUrl).then(r => r.ok ? r.json() : null).catch(() => null),
+        // Read directly from Supabase — Railway is for AI only.
+        // A Railway restart must NEVER clear or hide the listings UI.
+        let fetchUrl;
+        if (isAdmin.value) {
+          fetchUrl = 'select=*&order=created_at.desc';
+        } else {
+          // Primary agent + co-agent: two targeted queries, no full table scan
+          fetchUrl = 'select=*&order=created_at.desc&agent_name=eq.' + encodeURIComponent(agentName.value);
+        }
+
+        const [primaryProps, allAssets] = await Promise.all([
+          supaRest.select('properties', fetchUrl).catch(() => null),
           supaRest.select('property_assets', 'select=property_id,subfolder').catch(() => [])
         ]);
-        // Only update the list if we got real data — never wipe on Railway restart/deploy
-        if (props && props.length > 0) {
-          const assetsByProp = {};
-          (allAssets || []).forEach(a => {
-            if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
-            assetsByProp[a.property_id][a.subfolder] = true;
-          });
-          props.forEach(p => {
-            p._assetMap = assetsByProp[p.id] || {};
-            p._assetCount = Object.keys(p._assetMap).length;
-          });
-          lstProperties.value = props;
-        } else if (props !== null && props.length === 0) {
-          // Genuinely empty (agent has no properties) — only clear if we had none before
-          if (lstProperties.value.length === 0) lstProperties.value = [];
+
+        if (primaryProps === null) { lstLoading.value = false; return; } // keep existing list on error
+
+        // For non-admins, fetch co-agent properties separately (JSONB cs filter)
+        let allProps = primaryProps;
+        if (!isAdmin.value) {
+          const coProps = await supaRest.select('properties',
+            'select=*&order=created_at.desc&subfolder_drive_ids=cs.' +
+            encodeURIComponent('{"_co_agents":["' + agentName.value + '"]}')
+          ).catch(() => []);
+          if (coProps && coProps.length) {
+            const seen = new Set(primaryProps.map(p => p.id));
+            coProps.forEach(p => { if (!seen.has(p.id)) allProps.push(p); });
+          }
         }
-        // If props === null (network error / Railway down) — keep existing list visible
+
+        const assetsByProp = {};
+        (allAssets || []).forEach(a => {
+          if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
+          assetsByProp[a.property_id][a.subfolder] = true;
+        });
+        allProps.forEach(p => {
+          p._assetMap = assetsByProp[p.id] || {};
+          p._assetCount = Object.keys(p._assetMap).length;
+        });
+        lstProperties.value = allProps;
       } catch (e) { console.warn('Fetch properties failed:', e); }
       lstLoading.value = false;
     }
