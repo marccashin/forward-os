@@ -4788,13 +4788,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div v-if="!lstNotes.listing_remarks" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
                 ⚠️ No listing description saved yet — add one in the Listing Description tool above first.
               </div>
-              <div v-if="lstNotes.listing_remarks && (lstNotes.cma || lstNotes.seller_net_sheet || lstNotes.seller_prep || lstNotes.mls_data)" style="padding:8px 16px;background:#f0fdf4;font-size:11px;color:#166534;border-bottom:1px solid #bbf7d0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-                <span style="font-weight:700;">✓ Campaign will include:</span>
-                <span v-if="lstNotes.listing_remarks" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Listing Description</span>
-                <span v-if="lstNotes.cma" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">CMA</span>
-                <span v-if="lstNotes.seller_net_sheet" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Net Sheet</span>
-                <span v-if="lstNotes.seller_prep" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Seller Prep Guide</span>
-                <span v-if="lstNotes.mls_data" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">MLS Data</span>
+              <div v-if="lstNotes.listing_remarks || lstNotes.cma || lstNotes.seller_net_sheet || lstNotes.seller_prep || lstNotes.mls_data" style="padding:10px 16px;background:#f0fdf4;font-size:11px;color:#166534;border-bottom:1px solid #bbf7d0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:700;white-space:nowrap;">Campaign will include:</span>
+                <template v-if="lstNotes.listing_remarks">
+                  <button @click="campIncludes.listing_remarks=!campIncludes.listing_remarks" :style="{background:campIncludes.listing_remarks?'#bbf7d0':'#e5e7eb',color:campIncludes.listing_remarks?'#166534':'#6b7280',border:'none',borderRadius:'4px',padding:'3px 10px',fontFamily:'Montserrat,sans-serif',fontSize:'10px',fontWeight:'700',cursor:'pointer',textDecoration:campIncludes.listing_remarks?'none':'line-through'}">{{ campIncludes.listing_remarks ? '✓' : '✕' }} Listing Description</button>
+                </template>
+                <template v-if="lstNotes.cma">
+                  <button @click="campIncludes.cma=!campIncludes.cma" :style="{background:campIncludes.cma?'#bbf7d0':'#e5e7eb',color:campIncludes.cma?'#166534':'#6b7280',border:'none',borderRadius:'4px',padding:'3px 10px',fontFamily:'Montserrat,sans-serif',fontSize:'10px',fontWeight:'700',cursor:'pointer',textDecoration:campIncludes.cma?'none':'line-through'}">{{ campIncludes.cma ? '✓' : '✕' }} CMA</button>
+                </template>
+                <template v-if="lstNotes.seller_net_sheet">
+                  <button @click="campIncludes.seller_net_sheet=!campIncludes.seller_net_sheet" :style="{background:campIncludes.seller_net_sheet?'#bbf7d0':'#e5e7eb',color:campIncludes.seller_net_sheet?'#166534':'#6b7280',border:'none',borderRadius:'4px',padding:'3px 10px',fontFamily:'Montserrat,sans-serif',fontSize:'10px',fontWeight:'700',cursor:'pointer',textDecoration:campIncludes.seller_net_sheet?'none':'line-through'}">{{ campIncludes.seller_net_sheet ? '✓' : '✕' }} Net Sheet</button>
+                </template>
+                <template v-if="lstNotes.seller_prep">
+                  <button @click="campIncludes.seller_prep=!campIncludes.seller_prep" :style="{background:campIncludes.seller_prep?'#bbf7d0':'#e5e7eb',color:campIncludes.seller_prep?'#166534':'#6b7280',border:'none',borderRadius:'4px',padding:'3px 10px',fontFamily:'Montserrat,sans-serif',fontSize:'10px',fontWeight:'700',cursor:'pointer',textDecoration:campIncludes.seller_prep?'none':'line-through'}">{{ campIncludes.seller_prep ? '✓' : '✕' }} Seller Prep Guide</button>
+                </template>
+                <template v-if="lstNotes.mls_data">
+                  <button @click="campIncludes.mls_data=!campIncludes.mls_data" :style="{background:campIncludes.mls_data?'#bbf7d0':'#e5e7eb',color:campIncludes.mls_data?'#166534':'#6b7280',border:'none',borderRadius:'4px',padding:'3px 10px',fontFamily:'Montserrat,sans-serif',fontSize:'10px',fontWeight:'700',cursor:'pointer',textDecoration:campIncludes.mls_data?'none':'line-through'}">{{ campIncludes.mls_data ? '✓' : '✕' }} MLS Data</button>
+                </template>
+                <span style="font-size:10px;color:#6b7280;margin-left:4px;">· click to toggle</span>
               </div>
               <div style="padding:16px 18px;">
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
@@ -7900,6 +7911,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campOpenSection = ref(0);
     const campRevOpen = ref(false);
     const campGenerating = ref(false);
+    const campIncludes = reactive({ listing_remarks: true, cma: true, seller_net_sheet: true, seller_prep: true, mls_data: true });
     const campPipelineStep  = ref(0);
     let _campPipeTimer = null;
     const campCurrentSection = ref('');
@@ -8253,10 +8265,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
   // Build supplemental context from all saved tool outputs
   let supplementalCtx = '';
-  if (lstNotes.cma && lstNotes.cma.trim()) supplementalCtx += '\n\nCOMPARATIVE MARKET ANALYSIS (saved):\n' + lstNotes.cma.trim();
-  if (lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) supplementalCtx += '\n\nSELLER NET SHEET (saved):\n' + lstNotes.seller_net_sheet.trim();
-  if (lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
-  if (lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
+  if (campIncludes.cma && lstNotes.cma && lstNotes.cma.trim()) supplementalCtx += '\n\nCOMPARATIVE MARKET ANALYSIS (saved):\n' + lstNotes.cma.trim();
+  if (campIncludes.seller_net_sheet && lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) supplementalCtx += '\n\nSELLER NET SHEET (saved):\n' + lstNotes.seller_net_sheet.trim();
+  if (campIncludes.seller_prep && lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
+  if (campIncludes.mls_data && lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
 
   const sellerNameLine = prop.seller_name ? '\nSELLER: ' + prop.seller_name + ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) ? ' & ' + prop.subfolder_drive_ids._co_seller : '') : '';
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + sellerNameLine + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
@@ -8286,13 +8298,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       parsed.push({ title: 'Generated Campaign Content', content: raw.trim(), included: true });
     }
     parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} // Append saved tool outputs as literal campaign sections so they appear in the PDF
-    if (lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) {
+    if (campIncludes.seller_net_sheet && lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) {
       parsed.push({ title: 'Seller Net Sheet', content: lstNotes.seller_net_sheet.trim(), included: true });
     }
-    if (lstNotes.seller_prep && lstNotes.seller_prep.trim()) {
+    if (campIncludes.seller_prep && lstNotes.seller_prep && lstNotes.seller_prep.trim()) {
       parsed.push({ title: 'Seller Prep Guide', content: lstNotes.seller_prep.trim(), included: true });
     }
-    if (lstNotes.cma && lstNotes.cma.trim()) {
+    if (campIncludes.cma && lstNotes.cma && lstNotes.cma.trim()) {
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
     campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
@@ -15846,7 +15858,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
