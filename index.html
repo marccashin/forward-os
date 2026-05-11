@@ -10307,7 +10307,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     }
     function calcNetSheet() {
       const price = Number(ns.salePrice) || 0;
-      if (!price) return;
+      if (!price) { showToast('Please enter a Sale Price to calculate.', 3000); return; }
       const items = [];
       const j = ns.jurisdiction;
 
