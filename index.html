@@ -8018,7 +8018,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             agent_name:   agentName.value,
             agent_email:  sessionEmail.value,
             seller_name:  lstNewSeller.value.trim(),
-            seller_name_2: lstNewSeller2.value.trim() || '',
             market:       lstNewMarket.value,
             status:       'draft'
           })
@@ -8030,6 +8029,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
         const prop = await createRes.json();
         if (!prop || !prop.id) throw new Error('Failed to create property record.');
+
+        // If co-seller provided, store in subfolder_drive_ids JSONB (no dedicated column)
+        const coSeller = lstNewSeller2.value.trim();
+        if (coSeller) {
+          const driveIds = Object.assign({}, prop.subfolder_drive_ids || {}, { _co_seller: coSeller });
+          await fetch(SUPABASE_URL + '/rest/v1/properties?id=eq.' + prop.id, {
+            method: 'PATCH',
+            headers: Object.assign({}, supaRest.headers(), { 'Prefer': 'return=minimal' }),
+            body: JSON.stringify({ subfolder_drive_ids: driveIds })
+          }).catch(() => {});
+          prop.subfolder_drive_ids = driveIds;
+        }
 
         // Auto-create a linked client file folder for this listing/seller
         refreshPropFiles();
@@ -8415,7 +8426,7 @@ function campExportPDF() {
   doc.setTextColor(30, 30, 30);
 
   // Build greeting — skip entirely if no seller name on file
-  const sellerName2 = clean(prop.seller_name_2 || '');
+  const sellerName2 = clean(prop.seller_name_2 || (prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '');
   const firstName2 = sellerName2 ? sellerName2.split(' ')[0] : '';
   let greeting = '';
   if (firstName && firstName2) {
