@@ -4328,6 +4328,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         <span v-if="nsSaving" class="spinner spinner-dark"></span>{{ nsSaving ? '' : '📁 Save to Property' }}
                       </button>
                       <span v-if="nsSaved" style="font-size:12px;color:#16a34a;font-weight:700;">✓ Saved!</span>
+                      <span v-else-if="lstNotes.seller_net_sheet" style="font-size:11px;color:#16a34a;opacity:0.75;">✓ Previously saved</span>
                     </div>
                   </div>
                   <div class="form-row" style="position:relative;">
@@ -4337,10 +4338,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="padding:8px 12px;font-size:12px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
                     </div>
                   </div>
-                  <div style="display:grid;grid-template-columns:1fr 120px;gap:10px;">
+                  <div style="display:grid;grid-template-columns:1fr;gap:10px;">
                     <div class="form-row"><label>Sale Price</label><input :value="ns.salePrice" type="text" inputmode="numeric" placeholder="Enter Sales Price" @input="nsCurrencyInput($event,'salePrice')" @blur="nsCurrencyBlur($event,'salePrice')" @focus="nsCurrencyFocus($event,'salePrice')"/></div>
-                    <div class="form-row"><label>Unit #</label><input v-model="ns.unit" type="text" placeholder="Optional"/></div>
                   </div>
+                  <div v-if="ns.unit!==undefined" class="form-row" style="margin-top:8px;max-width:160px;"><label>Unit # <span style="font-weight:400;opacity:0.55;font-size:9px;">(optional)</span></label><input v-model="ns.unit" type="text" placeholder="e.g. 7E"/></div>
                   <div class="form-row"><label>Closing Date</label><input v-model="ns.closingDate" type="date"/></div>
                   <div class="form-row"><label>Jurisdiction</label>
                     <select v-model="ns.jurisdiction"><option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option></select>
@@ -4373,6 +4374,17 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
                   <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:14px;">Calculate</button>
+                  <!-- Bottom result banner — mirrors the one at top so agents don't miss it -->
+                  <div v-if="ns.result!==null" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-top:14px;text-align:center;">
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
+                    <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;align-items:center;">
+                      <button class="btn-gold" @click="nsDownloadPDF" style="font-size:12px;padding:8px 20px;">⬇ Download PDF</button>
+                      <button class="btn-navy" @click="nsSaveToProperty" :disabled="nsSaving" style="font-size:12px;padding:8px 20px;min-width:130px;">
+                        <span v-if="nsSaving" class="spinner spinner-dark"></span>{{ nsSaving ? '' : '📁 Save to Property' }}
+                      </button>
+                      <span v-if="nsSaved" style="font-size:12px;color:#16a34a;font-weight:700;">✓ Saved!</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -8267,7 +8279,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     if (parsed.length === 0 && raw.trim()) {
       parsed.push({ title: 'Generated Campaign Content', content: raw.trim(), included: true });
     }
-    parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
+    parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} // Append saved tool outputs as literal campaign sections so they appear in the PDF
+    if (lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) {
+      parsed.push({ title: 'Seller Net Sheet', content: lstNotes.seller_net_sheet.trim(), included: true });
+    }
+    if (lstNotes.seller_prep && lstNotes.seller_prep.trim()) {
+      parsed.push({ title: 'Seller Prep Guide', content: lstNotes.seller_prep.trim(), included: true });
+    }
+    if (lstNotes.cma && lstNotes.cma.trim()) {
+      parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
+    }
+    campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
     campShowPreview.value = true;
           setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
   } catch(e) {
