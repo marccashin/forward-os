@@ -4186,8 +4186,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📊</span>
                     <span class="subfolder-tool-name">CMA Snapshot</span>
-                    <span v-if="lstNotes.cma" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
-                    <span v-else style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
+                    <span style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
+                    <span v-if="lstNotes.cma" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='cma' ? '▼' : '▶' }}</span>
                 </div>
@@ -4229,8 +4229,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">✍️</span>
                     <span class="subfolder-tool-name">Listing Description</span>
-                    <span v-if="ldSavedToProperty" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
-                    <span v-else class="subfolder-tool-desc">AI-powered MLS copy</span>
+                    <span class="subfolder-tool-desc">AI-powered MLS copy</span>
+                    <span v-if="ldSavedToProperty || lstNotes.listing_remarks" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='listingdesc' ? '▼' : '▶' }}</span>
                 </div>
@@ -4266,8 +4266,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">🏠</span>
                     <span class="subfolder-tool-name">Seller Prep Guide</span>
-                    <span v-if="lstNotes.seller_prep" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
-                    <span v-else style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
+                    <span style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
+                    <span v-if="lstNotes.seller_prep" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
                 </div>
@@ -4310,8 +4310,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">💰</span>
                     <span class="subfolder-tool-name">Seller Net Sheet</span>
-                    <span v-if="lstNotes.seller_net_sheet" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
-                    <span v-else class="subfolder-tool-desc">Estimate seller proceeds</span>
+                    <span class="subfolder-tool-desc">Estimate seller proceeds</span>
+                    <span v-if="lstNotes.seller_net_sheet" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='netsheet' ? '▼' : '▶' }}</span>
                 </div>
