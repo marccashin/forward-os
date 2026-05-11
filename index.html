@@ -8934,16 +8934,19 @@ async function lstSubmitToPipeline() {
           return;
         }
 
-        const blob = new Blob([fileBytes], { type: mimeType });
-        const formData = new FormData();
-        formData.append('file', blob, fileName);
-        formData.append('folder_id', folderId);
-        formData.append('subfolder', subfolder);
-        formData.append('property_id', prop.id);
-        formData.append('uploaded_by', agentName.value);
+        // Attempt Drive upload — failure is non-fatal if text was already saved
+        try {
+          const blob = new Blob([fileBytes], { type: mimeType });
+          const formData = new FormData();
+          formData.append('file', blob, fileName);
+          formData.append('folder_id', folderId);
+          formData.append('subfolder', subfolder);
+          formData.append('property_id', prop.id);
+          formData.append('uploaded_by', agentName.value);
 
-        const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
-        if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
+          const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
+          if (!uploadRes.ok) { console.warn('/upload-file error:', await uploadRes.text()); }
+        } catch (uploadErr) { console.warn('Drive upload skipped:', uploadErr.message); }
 
         showGoldToast(toolName + ' saved to ' + prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder));
       } catch (e) { showToast('Save failed: ' + e.message, 4000); }
