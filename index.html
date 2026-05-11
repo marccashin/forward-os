@@ -8007,20 +8007,26 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           ? RAILWAY_URL + '/properties'
           : RAILWAY_URL + '/properties?agent_name=' + encodeURIComponent(agentName.value);
         const [props, allAssets] = await Promise.all([
-          fetch(_propUrl).then(r => r.ok ? r.json() : []),
+          fetch(_propUrl).then(r => r.ok ? r.json() : null).catch(() => null),
           supaRest.select('property_assets', 'select=property_id,subfolder').catch(() => [])
         ]);
-        // Build a map of property_id → {subfolder: true}
-        const assetsByProp = {};
-        (allAssets || []).forEach(a => {
-          if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
-          assetsByProp[a.property_id][a.subfolder] = true;
-        });
-        props.forEach(p => {
-          p._assetMap = assetsByProp[p.id] || {};
-          p._assetCount = Object.keys(p._assetMap).length;
-        });
-        lstProperties.value = props;
+        // Only update the list if we got real data — never wipe on Railway restart/deploy
+        if (props && props.length > 0) {
+          const assetsByProp = {};
+          (allAssets || []).forEach(a => {
+            if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
+            assetsByProp[a.property_id][a.subfolder] = true;
+          });
+          props.forEach(p => {
+            p._assetMap = assetsByProp[p.id] || {};
+            p._assetCount = Object.keys(p._assetMap).length;
+          });
+          lstProperties.value = props;
+        } else if (props !== null && props.length === 0) {
+          // Genuinely empty (agent has no properties) — only clear if we had none before
+          if (lstProperties.value.length === 0) lstProperties.value = [];
+        }
+        // If props === null (network error / Railway down) — keep existing list visible
       } catch (e) { console.warn('Fetch properties failed:', e); }
       lstLoading.value = false;
     }
