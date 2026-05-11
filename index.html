@@ -8025,25 +8025,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
 
-        // Create property via Railway backend (service_role key — bypasses RLS for all agents)
-        const createRes = await fetch(RAILWAY_URL + '/create-property', {
+        // Create property directly via Supabase REST (Railway deployment is stale)
+        const _insertBody = {
+          address:     lstNormalizeAddress(lstNewAddress.value),
+          agent_name:  agentName.value,
+          agent_email: sessionEmail.value,
+          seller_name: lstNewSeller.value.trim(),
+          market:      lstNewMarket.value,
+          status:      'draft'
+        };
+        const createRes = await fetch(SUPABASE_URL + '/rest/v1/properties', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            address:      lstNormalizeAddress(lstNewAddress.value),
-            agent_name:   agentName.value,
-            agent_email:  sessionEmail.value,
-            seller_name:  lstNewSeller.value.trim(),
-            market:       lstNewMarket.value,
-            status:       'draft'
-          })
+          headers: Object.assign({}, supaRest.headers(), { 'Prefer': 'return=representation' }),
+          body: JSON.stringify(_insertBody)
         });
         if (!createRes.ok) {
-          let errMsg = `Server error ${createRes.status}`;
-          try { const e = await createRes.json(); errMsg = e.detail || errMsg; } catch {}
+          let errMsg = `Error ${createRes.status}`;
+          try { const e = await createRes.json(); errMsg = e.message || e.hint || errMsg; } catch {}
           throw new Error(errMsg);
         }
-        const prop = await createRes.json();
+        const _propArr = await createRes.json();
+        const prop = Array.isArray(_propArr) ? _propArr[0] : _propArr;
         if (!prop || !prop.id) throw new Error('Failed to create property record.');
 
         // If co-seller provided, store in subfolder_drive_ids JSONB (no dedicated column)
