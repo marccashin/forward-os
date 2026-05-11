@@ -4147,7 +4147,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
 
               <!-- PRE-LISTING category -->
-              <div class="tool-category-header"><span class="tool-category-label">Pre-Listing</span><div class="tool-category-line"></div></div>
+              <div class="tool-category-header" style="justify-content:space-between;">
+                <span class="tool-category-label">Pre-Listing</span>
+                <div class="tool-category-line" style="flex:1;margin:0 12px;"></div>
+                <button v-if="lstNotes.listing_remarks||lstNotes.cma||lstNotes.seller_net_sheet||lstNotes.seller_prep" @click="lstExportPreListingPDF()" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);background:none;border:1px solid var(--navy);border-radius:2px;padding:4px 10px;cursor:pointer;white-space:nowrap;">⬇ Export Package PDF</button>
+              </div>
 
               <!-- Tool: Listing Presentation -->
               <div class="subfolder-panel">
@@ -4182,7 +4186,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">📊</span>
                     <span class="subfolder-tool-name">CMA Snapshot</span>
-                    <span style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
+                    <span v-if="lstNotes.cma" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
+                    <span v-else style="font-size:11px;color:#9ca3af;">Pull comps for this listing</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='cma' ? '▼' : '▶' }}</span>
                 </div>
@@ -4218,50 +4223,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
 
               
-<!-- Tool: Seller Prep Guide -->
-              <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstOpenTool('sellerprep')">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:16px;line-height:1;">🏠</span>
-                    <span class="subfolder-tool-name">Seller Prep Guide</span>
-                    <span style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
-                  </div>
-                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
-                </div>
-                <div v-if="lstToolOpen==='sellerprep'" class="subfolder-body">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
-                    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
-                      <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
-                      <button @click="sellerPrepType='condo'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:sellerPrepType==='condo'?'var(--navy)':'#fff',color:sellerPrepType==='condo'?'#fff':'var(--navy)',transition:'all .2s'}">Condo / Co-op</button>
-                    </div>
-                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                      <button class="btn-gold" @click="sellerPrepOpenDeliverable()" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
-                      <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 14px;min-width:80px;">
-                        <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save' }}
-                      </button>
-                      <span v-if="sellerPrepSaved" style="font-size:11px;color:#16a34a;font-weight:700;">✓ Saved!</span>
-                    </div>
-                  </div>
-                  <div v-if="sellerPrepRemovedCount > 0" style="display:flex;align-items:center;justify-content:space-between;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
-                    <span style="font-size:12px;color:#92400e;">{{ sellerPrepRemovedCount }} removed</span>
-                    <button @click="sellerPrepRestore" style="font-size:11px;font-weight:700;color:#92400e;background:none;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;cursor:pointer;">↩ Restore</button>
-                  </div>
-                  <div v-for="(section,si) in sellerPrepSections" :key="si" style="margin-bottom:16px;">
-                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--gold);">
-                      <span style="font-size:14px;">{{ section.icon }}</span>
-                      <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;">{{ section.title }}</span>
-                    </div>
-                    <div v-for="(item,ii) in section.items.filter(i=>!i.removed)" :key="ii" style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
-                      <span style="font-size:12px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
-                      <button @click="item.removed=true" title="Remove" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-<!-- ACTIVE LISTING category -->
-              <div class="tool-category-header"><span class="tool-category-label">Active Listing</span><div class="tool-category-line"></div></div>
-
               <!-- Tool: Listing Description -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstOpenTool('listingdesc')">
@@ -4299,13 +4260,58 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
 
-              <!-- Tool: Seller Net Sheet -->
+<!-- Tool: Seller Prep Guide -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="lstOpenTool('sellerprep')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:16px;line-height:1;">🏠</span>
+                    <span class="subfolder-tool-name">Seller Prep Guide</span>
+                    <span v-if="lstNotes.seller_prep" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
+                    <span v-else style="font-size:11px;color:#9ca3af;">Pre-listing checklist</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='sellerprep'" class="subfolder-body">
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+                    <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
+                      <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
+                      <button @click="sellerPrepType='condo'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:sellerPrepType==='condo'?'var(--navy)':'#fff',color:sellerPrepType==='condo'?'#fff':'var(--navy)',transition:'all .2s'}">Condo / Co-op</button>
+                    </div>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                      <button class="btn-gold" @click="sellerPrepOpenDeliverable()" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
+                      <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 14px;min-width:80px;">
+                        <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save' }}
+                      </button>
+                      <span v-if="sellerPrepSaved" style="font-size:11px;color:#16a34a;font-weight:700;">✓ Saved!</span>
+                    </div>
+                  </div>
+                  <div v-if="sellerPrepRemovedCount > 0" style="display:flex;align-items:center;justify-content:space-between;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+                    <span style="font-size:12px;color:#92400e;">{{ sellerPrepRemovedCount }} removed</span>
+                    <button @click="sellerPrepRestore" style="font-size:11px;font-weight:700;color:#92400e;background:none;border:1px solid #fde68a;border-radius:6px;padding:3px 8px;cursor:pointer;">↩ Restore</button>
+                  </div>
+                  <div v-for="(section,si) in sellerPrepSections" :key="si" style="margin-bottom:16px;">
+                    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--gold);">
+                      <span style="font-size:14px;">{{ section.icon }}</span>
+                      <span style="font-size:11px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.6px;">{{ section.title }}</span>
+                    </div>
+                    <div v-for="(item,ii) in section.items.filter(i=>!i.removed)" :key="ii" style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid #f3f4f6;">
+                      <span style="font-size:12px;color:#1f2937;line-height:1.5;flex:1;">{{ item.label }}</span>
+                      <button @click="item.removed=true" title="Remove" style="background:none;border:none;cursor:pointer;color:#d1d5db;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#d1d5db'">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+<!-- ACTIVE LISTING category -->
+              <div class="tool-category-header"><span class="tool-category-label">Active Listing</span><div class="tool-category-line"></div></div>
+
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstOpenTool('netsheet')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <span style="font-size:16px;line-height:1;">💰</span>
                     <span class="subfolder-tool-name">Seller Net Sheet</span>
-                    <span class="subfolder-tool-desc">Estimate seller proceeds</span>
+                    <span v-if="lstNotes.seller_net_sheet" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;">✓ Saved</span>
+                    <span v-else class="subfolder-tool-desc">Estimate seller proceeds</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='netsheet' ? '▼' : '▶' }}</span>
                 </div>
@@ -9809,7 +9815,107 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const sellerPrepRecipientEmail = ref('');
     const sellerPrepRecipientPhone = ref('');
 
-    // Open prep guide PDF in new tab for sharing
+    // ── Export Pre-Listing Package PDF ─────────────────────────────────────────
+    function lstExportPreListingPDF() {
+      const prop = lstActiveProp.value;
+      if (!prop) return;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+      const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
+      let y = 0, pageNum = 1;
+
+      function addPage() { doc.addPage(); pageNum++; y = 60; }
+      function checkY(needed) { if (y + needed > H - 60) addPage(); }
+
+      function clean(text) {
+        return (text || '').replace(/\*\*([^*]+)\*\*/g,'$1').replace(/\*([^*]+)\*/g,'$1')
+          .replace(/^#{1,6}\s+/gm,'').replace(/^[+\-\*]\s+/gm,'• ')
+          .replace(/\u2014/g,',').replace(/\u2013/g,'-').replace(/[^\x00-\x7E]/g,' ');
+      }
+
+      function addHeader(title) {
+        const navy = [10,22,40], gold = [201,168,76];
+        doc.setFillColor(...navy); doc.rect(0,0,W,62,'F');
+        if (FORWARD_LOGO_B64) { doc.addImage(FORWARD_LOGO_B64,'PNG',38,10,4.85*40,40); }
+        else { doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(255,255,255); doc.text('FORWARD',38,40); }
+        doc.setFillColor(...gold); doc.rect(0,62,W,3,'F');
+        y = 90;
+        doc.setFont('helvetica','bold'); doc.setFontSize(15); doc.setTextColor(...navy);
+        doc.text(title, ML, y); y += 12;
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,130,145);
+        doc.text(prop.address + (prop.seller_name ? '  ·  ' + prop.seller_name : ''), ML, y);
+        doc.text(new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'}), W-MR, y, {align:'right'});
+        y += 24;
+        doc.setDrawColor(...gold); doc.setLineWidth(1); doc.line(ML, y, W-MR, y); y += 16;
+      }
+
+      function addFooter() {
+        const navy=[10,22,40],gold=[201,168,76];
+        doc.setFillColor(...navy); doc.rect(0,H-36,W,36,'F');
+        doc.setFillColor(...gold); doc.rect(0,H-36,W,2,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.setTextColor(...gold);
+        doc.text('FORWARD Real Estate | Corcoran McEnearney', ML, H-16);
+        doc.setFont('helvetica','normal'); doc.setTextColor(180,185,200);
+        doc.text('Page ' + pageNum, W-MR, H-16, {align:'right'});
+      }
+
+      function addSectionBlock(title, bodyText) {
+        checkY(50);
+        // Section header bar
+        doc.setFillColor(10,22,40); doc.roundedRect(ML-8, y-12, TW+16, 26, 3,3,'F');
+        doc.setFont('helvetica','bold'); doc.setFontSize(9); doc.setTextColor(201,168,76);
+        doc.text(title.toUpperCase(), ML, y+2); y += 22;
+
+        const lines = doc.splitTextToSize(clean(bodyText), TW);
+        doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(50,60,75);
+        let alt = false;
+        for (const line of lines) {
+          checkY(13);
+          if (alt) { doc.setFillColor(248,250,252); doc.rect(ML-4,y-10,TW+8,13,'F'); }
+          doc.text(line, ML, y); y += 13; alt = !alt;
+        }
+        y += 14;
+      }
+
+      // Cover page
+      addHeader('Pre-Listing Package');
+
+      const sections = [];
+      if (lstNotes.listing_remarks) sections.push({ title: 'Listing Description', content: lstNotes.listing_remarks });
+      if (lstNotes.cma)             sections.push({ title: 'CMA Summary', content: lstNotes.cma });
+      if (lstNotes.seller_net_sheet) sections.push({ title: 'Seller Net Sheet', content: lstNotes.seller_net_sheet });
+      if (lstNotes.seller_prep)     sections.push({ title: 'Seller Prep Guide', content: lstNotes.seller_prep });
+
+      if (sections.length === 0) {
+        doc.setFont('helvetica','italic'); doc.setFontSize(12); doc.setTextColor(150,150,150);
+        doc.text('No saved outputs yet. Save at least one tool to generate this package.', W/2, H/2, {align:'center'});
+      } else {
+        // TOC
+        doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(10,22,40);
+        doc.text('Contents', ML, y); y += 16;
+        sections.forEach((s,i) => {
+          checkY(16);
+          doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(60,70,80);
+          doc.text((i+1) + '.  ' + s.title, ML+8, y); y += 14;
+        });
+        y += 14;
+
+        // Each section
+        sections.forEach(s => {
+          addPage();
+          addHeader('Pre-Listing Package');
+          addSectionBlock(s.title, s.content);
+          addFooter();
+        });
+      }
+
+      addFooter();
+      const fileName = (prop.address || 'Pre-Listing').replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-') + '_Pre-Listing-Package.pdf';
+      doc.save(fileName);
+      showGoldToast('Pre-Listing Package downloaded!');
+    }
+
+        // Open prep guide PDF in new tab for sharing
     function sellerPrepOpenDeliverable() {
       const blob = sellerPrepBuildPDFBlob();
       openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
@@ -15658,7 +15764,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepPDF,
-      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable,
+      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
       ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, nsDetectJurisdiction, nsTaxPeriods, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
