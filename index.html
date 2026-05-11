@@ -1734,7 +1734,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                 <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Playfair Display',serif;">Preparing Your Property for Market</h3>
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                  <button class="btn-gold" @click="sellerPrepSendModal=true" style="font-size:11px;padding:6px 18px;">📤 Send to Seller</button>
+                  <button class="btn-gold" @click="sellerPrepOpenDeliverable()" style="font-size:11px;padding:6px 18px;">📤 Send to Seller</button>
                   <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 18px;min-width:110px;">
                     <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save to Property' }}
                   </button>
@@ -4235,7 +4235,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <button @click="sellerPrepType='condo'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',borderLeft:'1.5px solid var(--navy)',background:sellerPrepType==='condo'?'var(--navy)':'#fff',color:sellerPrepType==='condo'?'#fff':'var(--navy)',transition:'all .2s'}">Condo / Co-op</button>
                     </div>
                     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-                      <button class="btn-gold" @click="sellerPrepSendModal=true" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
+                      <button class="btn-gold" @click="sellerPrepOpenDeliverable()" style="font-size:11px;padding:6px 14px;">📤 Send to Seller</button>
                       <button class="btn-navy" @click="sellerPrepSaveToProperty" :disabled="sellerPrepSaving" style="font-size:11px;padding:6px 14px;min-width:80px;">
                         <span v-if="sellerPrepSaving" class="spinner spinner-dark"></span>{{ sellerPrepSaving ? '' : '📁 Save' }}
                       </button>
@@ -4769,6 +4769,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div v-if="!lstNotes.listing_remarks" style="padding:10px 16px;background:#fef9c3;font-size:12px;color:#854d0e;border-bottom:1px solid #fde68a;">
                 ⚠️ No listing description saved yet — add one in the Listing Description tool above first.
+              </div>
+              <div v-if="lstNotes.listing_remarks && (lstNotes.cma || lstNotes.seller_net_sheet || lstNotes.seller_prep || lstNotes.mls_data)" style="padding:8px 16px;background:#f0fdf4;font-size:11px;color:#166534;border-bottom:1px solid #bbf7d0;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-weight:700;">✓ Campaign will include:</span>
+                <span v-if="lstNotes.listing_remarks" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Listing Description</span>
+                <span v-if="lstNotes.cma" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">CMA</span>
+                <span v-if="lstNotes.seller_net_sheet" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Net Sheet</span>
+                <span v-if="lstNotes.seller_prep" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">Seller Prep Guide</span>
+                <span v-if="lstNotes.mls_data" style="background:#bbf7d0;border-radius:4px;padding:2px 8px;">MLS Data</span>
               </div>
               <div style="padding:16px 18px;">
                 <button @click="lstGenerateCampaignInApp()" :disabled="campGenerating || !lstNotes.listing_remarks" class="camp-generate-btn" :style="{opacity: campGenerating || !lstNotes.listing_remarks ? 0.55 : 1}">
@@ -6211,14 +6219,14 @@ const TOOL_SUBFOLDER_MAP = {
   'MLS Data Entry':          'mls_data',
   'Photo Brief':             'listing_photos',
   'Seller Net Sheet':        'seller_net_sheet',
-  'Seller Prep Guide':       'cma',
+  'Seller Prep Guide':       'seller_prep',
   'Cash to Close Estimate':  'seller_net_sheet',
   'Buyer Consultation Kit':  'listing_remarks',
   'Property Tour Summary':   'cma',
 };
 const SUBFOLDER_LABELS = {
   'cma': 'CMA', 'listing_remarks': 'Listing Remarks', 'mls_data': 'MLS Data',
-  'listing_photos': 'Listing Photos', 'seller_net_sheet': 'Seller Net Sheet',
+  'listing_photos': 'Listing Photos', 'seller_net_sheet': 'Seller Net Sheet', 'seller_prep': 'Seller Prep Guide',
 };
 
 const TOOL_LABELS = { 'listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post','bio-writer':'Agent Bio' };
@@ -7862,7 +7870,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstCreateError = ref('');
     const lstActiveProp = ref(null);
     const lstActiveFiles = ref([]);
-    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'' });
+    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'' });
     const campBrokersOpenDays = ref(10);
     const campPhotoDays = ref(7);
     const campVideoDays = ref(7);
@@ -8208,7 +8216,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (secs.campaignPlan) sectionList.push('---SECTION: 30-DAY CAMPAIGN PLAN---\nPre-Market: Custom branding 2 weeks before, Broker Open ' + campBrokersOpenDays.value + ' days before, Photography ' + campPhotoDays.value + ' days before, Video ' + campVideoDays.value + ' days before. Weeks 1-2: list 5 activities. Weeks 3-4: list 5 targeting activities. Ongoing: list 5 sustained activities.');
 
   const formatRules = '\n\nFORMATTING RULES (strictly follow):\n- Never use em dashes. Use a comma or period instead.\n- Never bold text with ** markers. Use plain text.\n- Never escape hashtags. Write #Example not \\#Example.\n- Never include the agent name as a hashtag.\n- Never wrap text in code blocks or use monospace formatting.\n- Write all text as plain paragraphs.';
-  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
+
+  // Build supplemental context from all saved tool outputs
+  let supplementalCtx = '';
+  if (lstNotes.cma && lstNotes.cma.trim()) supplementalCtx += '\n\nCOMPARATIVE MARKET ANALYSIS (saved):\n' + lstNotes.cma.trim();
+  if (lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) supplementalCtx += '\n\nSELLER NET SHEET (saved):\n' + lstNotes.seller_net_sheet.trim();
+  if (lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
+  if (lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
+
+  const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
     const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out after 3 minutes — please try again')),180000));
@@ -8804,20 +8820,21 @@ async function lstSubmitToPipeline() {
     async function saveToPropertyFromTool(toolName, label, data, pdfData) {
       // Determine subfolder from tool name
       const subfolder = TOOL_SUBFOLDER_MAP[toolName];
-      if (!subfolder) { openSaveToPropModal(toolName, label, data, pdfData, toolName); return; }
+      if (!subfolder) { openSaveToPropModal(toolName, label, data, pdfData, toolName); return false; }
 
       // Fetch properties if not loaded
       if (lstProperties.value.length === 0) await lstFetchProperties();
       if (byrBuyers.value.length === 0) byrFetchBuyers();
 
-      // If session has a selected property in listing-detail, use it
+      // If session has a selected property in listing-detail, save directly
       if (lstActiveProp.value && view.value === 'listing-detail') {
         await _doSaveToPropertyDrive(lstActiveProp.value, subfolder, toolName, label, data, pdfData);
-        return;
+        return true; // actual save completed
       }
 
-      // Otherwise show property picker
+      // Otherwise show property picker (save happens asynchronously after user picks)
       openSaveToPropModal(toolName, label, data, pdfData, toolName);
+      return false; // save not yet completed — modal open
     }
 
     // Build a simple branded PDF from plain text content (used when no pdfData blob is provided)
@@ -9738,6 +9755,28 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const sellerPrepRecipientEmail = ref('');
     const sellerPrepRecipientPhone = ref('');
 
+    // Open prep guide PDF in new tab for sharing
+    function sellerPrepOpenDeliverable() {
+      const blob = sellerPrepBuildPDFBlob();
+      openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
+      showGoldToast('ℹ️ PDF opened in new tab — download or print to share via email or text');
+    }
+
+    // Build plain-text summary of visible checklist items (for campaign integration)
+    function sellerPrepBuildTextSummary() {
+      const isCondo = sellerPrepType.value === 'condo';
+      let text = 'SELLER PREP GUIDE (' + (isCondo ? 'Condo/Co-op' : 'Single Family/Townhome') + ')\n\n';
+      sellerPrepSections.value.forEach(section => {
+        const visible = section.items.filter(i => !i.removed);
+        if (visible.length) {
+          text += section.title + ':\n';
+          visible.forEach(item => { text += '• ' + item.label + '\n'; });
+          text += '\n';
+        }
+      });
+      return text.trim();
+    }
+
     // Save prep guide as branded PDF to property folder
     const sellerPrepSaved = ref(false);
     const sellerPrepSaving = ref(false);
@@ -9746,10 +9785,20 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       try {
         const pdfBase64 = await sellerPrepGetPDFBase64();
         const label = (sellerPrepType.value === 'condo' ? 'Condo' : 'SFH') + ' Seller Prep Guide';
-        await saveToPropertyFromTool('Seller Prep Guide', label, null, pdfBase64);
-        sellerPrepSaved.value = true;
-        showToast('✅ Saved to property files.');
-        setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
+        const saved = await saveToPropertyFromTool('Seller Prep Guide', label, null, pdfBase64);
+        if (saved) {
+          // Also save text summary to property_notes for campaign integration
+          const textSummary = sellerPrepBuildTextSummary();
+          if (lstActiveProp.value) {
+            try {
+              await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + lstActiveProp.value.id + '&subfolder=eq.seller_prep', { method: 'DELETE', headers: supaRest.headers() });
+              await supaRest.insert('property_notes', { property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary, created_by: sessionEmail.value });
+              lstNotes.seller_prep = textSummary;
+            } catch(e) { /* non-critical */ }
+          }
+          sellerPrepSaved.value = true;
+          setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
+        }
       } finally { sellerPrepSaving.value = false; }
     }
 
@@ -15553,7 +15602,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepPDF,
-      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving,
+      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable,
       ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, nsDetectJurisdiction, nsTaxPeriods, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
