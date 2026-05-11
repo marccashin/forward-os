@@ -4515,9 +4515,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                             <div class="mo-th-inner">
                               <span class="mo-offer-num">Offer {{ n }}</span>
                               <!-- loading spinner -->
-                              <div v-if="moLoading[n]" class="mo-loading-cell" style="padding:4px 0;">
-                                <div class="mo-spinner"></div>
-                                <span style="font-family:'Montserrat',sans-serif;font-size:7px;color:var(--gold);">Parsing…</span>
+                              <div v-if="moLoading[n]" class="mo-loading-cell" style="padding:10px 4px;flex-direction:column;gap:8px;">
+                                <div style="display:flex;align-items:flex-end;justify-content:center;gap:2px;height:22px;">
+                                  <span class="wave-bar" style="height:8px;"></span>
+                                  <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
+                                  <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
+                                  <span class="wave-bar" style="height:22px;animation-delay:0.3s;"></span>
+                                  <span class="wave-bar" style="height:18px;animation-delay:0.2s;"></span>
+                                  <span class="wave-bar" style="height:14px;animation-delay:0.1s;"></span>
+                                  <span class="wave-bar" style="height:8px;"></span>
+                                </div>
+                                <span style="font-family:'Montserrat',sans-serif;font-size:6.5px;letter-spacing:0.1em;color:var(--gold);text-transform:uppercase;">Reading PDF…</span>
+                                <span style="font-family:'Cormorant Garamond',serif;font-size:8px;color:rgba(200,169,110,0.5);">{{ typeof moLoading[n] === 'string' ? moLoading[n] : '' }}</span>
                               </div>
                               <template v-else>
                                 <label :for="'mo-file-'+n" class="mo-upload-lbl">{{ Object.keys(moOffers[n]||{}).length ? '↺ Re-upload' : '+ Upload PDF' }}</label>
@@ -7638,7 +7647,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           moOffers.value[n] = { ...moOffers.value[n], ...json };
           await moSaveOffer(n);
         } catch(e) {
-          const msg = e.message.includes('aborted') ? 'Timed out — Railway may be starting. Please re-upload.' : e.message;
+          let msg = e.message;
+          if (e.message.includes('aborted') || e.message.includes('timed out')) {
+            msg = 'Timed out — the server may be warming up. Please wait 30 seconds and re-upload.';
+          } else if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError') || e.message.includes('fetch')) {
+            msg = 'Could not reach the server — it may be restarting. Please wait 30 seconds and try again.';
+          }
           alert(`Offer ${n}: ${msg}`);
         } finally {
           moLoading.value[n] = false;
