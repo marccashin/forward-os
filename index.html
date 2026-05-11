@@ -839,6 +839,23 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>
 </head>
 <body>
+  <!-- STAGING ENVIRONMENT BANNER — auto-hides on production -->
+  <div id="staging-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#b45309;color:#fff;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;text-align:center;padding:7px 16px;box-shadow:0 2px 8px rgba(0,0,0,0.25);">
+    ⚠ &nbsp; TEST SITE — DO NOT USE FOR LIVE WORK &nbsp; ⚠
+  </div>
+  <script>
+    (function() {
+      var h = window.location.hostname;
+      if (h.indexOf('staging') !== -1 || h.indexOf('localhost') !== -1) {
+        document.getElementById('staging-banner').style.display = 'block';
+        // Push content down so banner doesn't overlap nav
+        document.addEventListener('DOMContentLoaded', function() {
+          var app = document.getElementById('app');
+          if (app) app.style.paddingTop = '34px';
+        });
+      }
+    })();
+  </script>
 <div id="app">
 
   <!-- ========== LOGIN ========== -->
