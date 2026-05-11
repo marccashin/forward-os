@@ -9362,23 +9362,14 @@ async function lstSubmitToPipeline() {
         const text = ldOutput.value;
         const prop = lstActiveProp.value;
         if (prop) {
-          // Save as branded PDF to listing_remarks subfolder via Railway
-          const subfolderDriveIds = prop.subfolder_drive_ids || {};
-          const folderId = subfolderDriveIds['listing_remarks'] || '';
-          const fileName = 'Listing-Description-' + prop.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') + '.pdf';
-          const blob = buildTextPDF('Listing Description', 'Listing Description — ' + prop.address, text);
-          // Also store in property_notes for in-app recall
-          try { await supaRest.insert('property_notes', { property_id: prop.id, subfolder: 'listing_remarks', content: text }); } catch {}
-          const formData = new FormData();
-          formData.append('file', blob, fileName);
-          formData.append('folder_id', folderId);
-          formData.append('subfolder', 'listing_remarks');
-          formData.append('property_id', prop.id);
-          formData.append('uploaded_by', agentName.value);
-          const res = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
-          if (!res.ok) throw new Error(await res.text());
-          // Refresh file list
-          try { lstActiveFiles.value = await supaRest.select('property_assets', `select=*&property_id=eq.${prop.id}&order=created_at.desc`); } catch {}
+          // Save listing description as a property note via Railway service-role endpoint
+          const _ldr = await fetch(RAILWAY_URL + '/save-property-note', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ property_id: prop.id, subfolder: 'listing_remarks', content: text })
+          });
+          if (!_ldr.ok) throw new Error(await _ldr.text());
+          lstNotes.listing_remarks = text;
           showGoldToast('Listing Description saved to ' + prop.address);
           // Auto-navigate back to the property folder after successful save
           setTimeout(() => { view.value = 'listing-detail'; window.scrollTo(0, 0); }, 700);
@@ -9530,26 +9521,14 @@ async function lstSubmitToPipeline() {
 
       mlsSaving.value = true;
       try {
-        const subfolderDriveIds = prop.subfolder_drive_ids || {};
-        const folderId = subfolderDriveIds['mls_data'] || '';
-        const safeName = addr.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-');
-        const fileName = `MLS-Data-${safeName}.txt`;
-        const blob = new Blob([text], { type: 'text/plain' });
-        const formData = new FormData();
-        formData.append('file', blob, fileName);
-        formData.append('folder_id', folderId);
-        formData.append('subfolder', 'mls_data');
-        formData.append('property_id', prop.id);
-        formData.append('uploaded_by', agentName.value);
-        const res = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
+        // Save MLS data as a property note (text) via Railway service-role endpoint
+        const res = await fetch(RAILWAY_URL + '/save-property-note', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ property_id: prop.id, subfolder: 'mls_data', content: text })
+        });
         if (!res.ok) throw new Error(await res.text());
-        // Refresh file list
-        try {
-          lstActiveFiles.value = await supaRest.select(
-            'property_assets',
-            `select=*&property_id=eq.${prop.id}&order=created_at.desc`
-          );
-        } catch (_) {}
+        lstNotes.mls_data = text;
         showGoldToast('MLS Data saved.');
       } catch (e) {
         showToast('Save failed: ' + e.message, 4000);
