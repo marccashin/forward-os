@@ -7619,13 +7619,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moUploadQueue = moUploadQueue.then(async () => {
         moLoading.value[n] = true;
         try {
-          // Wake Railway if cold — best-effort ping
+          // Give Railway a moment to settle after previous parse job, then wake ping
+          await new Promise(r => setTimeout(r, 2000));
           fetch(`${RAILWAY_URL}/health`).catch(()=>{});
-          await new Promise(r => setTimeout(r, 300));
+          await new Promise(r => setTimeout(r, 1000));
           // Retry up to 3 times — rebuild FormData fresh each attempt (consumed after first fetch)
           let res, lastErr;
-          for (let attempt = 1; attempt <= 3; attempt++) {
-            moLoading.value[n] = `Parsing… (attempt ${attempt}/3)`;
+          for (let attempt = 1; attempt <= 5; attempt++) {
+            moLoading.value[n] = `Parsing… (attempt ${attempt}/5)`;
             try {
               const fd = new FormData();
               fd.append('file', new File([fileBuffer], fileName, { type: fileType }));
@@ -7635,10 +7636,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
               finally { clearTimeout(timer); }
               if (res.ok) { lastErr = null; break; }
               lastErr = new Error(`Server error ${res.status}`);
-              if (attempt < 3) await new Promise(r => setTimeout(r, 8000));
+              if (attempt < 5) await new Promise(r => setTimeout(r, 15000));
             } catch(fetchErr) {
               lastErr = fetchErr;
-              if (attempt < 3) await new Promise(r => setTimeout(r, 8000));
+              if (attempt < 5) await new Promise(r => setTimeout(r, 15000));
             }
           }
           if (lastErr) throw lastErr;
