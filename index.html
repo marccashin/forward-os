@@ -9090,8 +9090,25 @@ async function lstSubmitToPipeline() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
       try {
-        const _pfRes = await fetch(RAILWAY_URL + '/create-property', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ address: addr, agent_name: agentName.value, agent_email: sessionEmail.value, seller_name: newPropSellerName.value.trim(), market: 'DC', status: 'draft' }) });
-        if (!_pfRes.ok) { const _e = await _pfRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server error'); }
+        // Use Supabase directly (Railway deployment may be stale)
+        const _body = {
+          address:     addr,
+          agent_name:  agentName.value,
+          agent_email: sessionEmail.value,
+          seller_name: newPropSellerName.value.trim(),
+          market:      'DC',
+          status:      'draft'
+        };
+        const _pfRes = await fetch(SUPABASE_URL + '/rest/v1/properties', {
+          method: 'POST',
+          headers: Object.assign({}, supaRest.headers(), { 'Prefer': 'return=minimal' }),
+          body: JSON.stringify(_body)
+        });
+        if (!_pfRes.ok) {
+          let _em = 'Server error';
+          try { const _e = await _pfRes.json(); _em = _e.message || _e.hint || _em; } catch {}
+          throw new Error(_em);
+        }
         newPropAddress.value = ''; newPropSellerName.value = '';
         await refreshPropFiles();
         showToast('✅ Property file created!');
