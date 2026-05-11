@@ -1637,20 +1637,42 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-else-if="lpActivePanel==='marketreport'" style="max-width:640px;margin:0 auto;">
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card">
-              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 18px;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
-              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:16px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
-              <div style="display:flex;flex-direction:column;gap:10px;">
-                <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:20px;">📈</span>
-                    <div>
-                      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ region.label }}</div>
-                      <div style="font-size:11px;color:#9ca3af;">PDF + Instagram graphic</div>
-                    </div>
-                  </div>
-                  <span style="font-size:12px;color:var(--gold);font-weight:600;">View &rarr;</span>
-                </a>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
+                <button v-if="isAdmin && !mktEditMode" @click="mktStartEdit()" style="background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:4px 12px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Update Links</button>
               </div>
+
+              <!-- Edit mode (admin only) -->
+              <div v-if="mktEditMode" style="margin-bottom:20px;">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:14px;">Paste the new Google Drive share link for each region. Leave blank to hide.</div>
+                <div v-for="r in MARKET_REGION_DEFAULTS" :key="r.key" style="margin-bottom:10px;">
+                  <label style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);display:block;margin-bottom:4px;">{{ r.label }}</label>
+                  <input type="url" v-model="mktEditLinks[r.key]" placeholder="https://drive.google.com/file/d/..." style="width:100%;font-family:'Cormorant Garamond',serif;font-size:13px;padding:8px 10px;border:1px solid var(--cream-dark);border-radius:2px;outline:none;box-sizing:border-box;">
+                </div>
+                <div style="display:flex;gap:8px;margin-top:14px;">
+                  <button @click="mktEditMode=false" style="flex:1;padding:10px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Cancel</button>
+                  <button @click="mktSaveLinks()" :disabled="mktSaving" style="flex:2;padding:10px;background:var(--navy);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);cursor:pointer;">
+                    <span v-if="mktSaving">Saving…</span><span v-else>Save All Links</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- View mode -->
+              <template v-else>
+                <div v-if="!Object.keys(marketReportLinks).length" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;padding:16px 0;">No report links set yet. Click "Update Links" to add them.</div>
+                <div style="display:flex;flex-direction:column;gap:10px;">
+                  <a v-for="region in marketRegions.filter(r=>r.folder)" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
+                    <div style="display:flex;align-items:center;gap:10px;">
+                      <span style="font-size:20px;">📈</span>
+                      <div>
+                        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ region.label }}</div>
+                        <div style="font-size:11px;color:#9ca3af;">PDF + Instagram graphic</div>
+                      </div>
+                    </div>
+                    <span style="font-size:12px;color:var(--gold);font-weight:600;">View &rarr;</span>
+                  </a>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -4390,16 +4412,38 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='marketreport' ? '▼' : '▶' }}</span>
                 </div>
                 <div v-if="lstToolOpen==='marketreport'" class="subfolder-body">
-                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">Latest reports from your scheduled Cowork task. Select a region to view.</div>
-                  <div style="display:flex;flex-direction:column;gap:8px;">
-                    <a v-for="region in marketRegions" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row" style="text-decoration:none;">
-                      <div style="display:flex;align-items:center;gap:8px;">
-                        <span style="font-size:16px;">📈</span>
-                        <div><div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
-                      </div>
-                      <span style="font-size:11px;color:var(--gold);font-weight:600;">View →</span>
-                    </a>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <span style="font-size:12px;color:#6b7280;">Monthly reports by region</span>
+                    <button v-if="isAdmin && !mktEditMode" @click="mktStartEdit()" style="background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:3px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Update Links</button>
                   </div>
+
+                  <!-- Edit mode -->
+                  <div v-if="mktEditMode" style="margin-bottom:12px;">
+                    <div v-for="r in MARKET_REGION_DEFAULTS" :key="r.key" style="margin-bottom:8px;">
+                      <label style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);display:block;margin-bottom:3px;">{{ r.label }}</label>
+                      <input type="url" v-model="mktEditLinks[r.key]" placeholder="https://drive.google.com/file/d/..." style="width:100%;font-size:12px;padding:6px 8px;border:1px solid var(--cream-dark);border-radius:2px;outline:none;box-sizing:border-box;">
+                    </div>
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                      <button @click="mktEditMode=false" style="flex:1;padding:8px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Cancel</button>
+                      <button @click="mktSaveLinks()" :disabled="mktSaving" style="flex:2;padding:8px;background:var(--navy);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);cursor:pointer;">
+                        <span v-if="mktSaving">Saving…</span><span v-else>Save All Links</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- View mode -->
+                  <template v-else>
+                    <div v-if="!marketRegions.filter(r=>r.folder).length" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;">No links set yet.</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;">
+                      <a v-for="region in marketRegions.filter(r=>r.folder)" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row" style="text-decoration:none;">
+                        <div style="display:flex;align-items:center;gap:8px;">
+                          <span style="font-size:16px;">📈</span>
+                          <div><div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:600;color:var(--navy);">{{ region.label }}</div><div style="font-size:10px;color:#9ca3af;">PDF + Instagram graphic</div></div>
+                        </div>
+                        <span style="font-size:11px;color:var(--gold);font-weight:600;">View →</span>
+                      </a>
+                    </div>
+                  </template>
                 </div>
               </div>
 
@@ -8840,6 +8884,7 @@ async function lstSubmitToPipeline() {
         byrFetchBuyers();
         loadPropFiles();
         loadTaskFeed();
+        mktLoadLinks();
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
         if (!apiKeySet.value && agentName.value) {
@@ -13235,14 +13280,55 @@ No markdown. Valid JSON only.`;
       e.target.value = '';
     }
 
-    // -- Market Report regions
-    const marketRegions = [
-      { key:'dc', label:'Washington, DC', folder:'https://drive.google.com/file/d/13qqybFqiviFTzTIXHLGgBdE5aiw8uVLQ/view?usp=drivesdk' },
-      { key:'nova', label:'Northern Virginia', folder:'https://drive.google.com/file/d/1-trj-WYGc09hCTtXT32Imm3kC0jFt5rW/view?usp=drivesdk' },
-      { key:'montgomery', label:'Montgomery County', folder:'https://drive.google.com/file/d/1TjA5gNeyniVgsBfE8hDU9Gu_-4y0XIR8/view?usp=drivesdk' },
-      { key:'loudoun', label:'Loudoun County', folder:'https://drive.google.com/file/d/1GOCv2W_gAGtXoxp3FbvXAdxDZmu9uHYc/view?usp=drivesdk' },
-      { key:'countryside', label:'Virginia Countryside', folder:'https://drive.google.com/file/d/1I2s9UIW4lWPLNCMBxvJher4GBGCfuRnI/view?usp=drivesdk' },
+    // -- Market Report regions (loaded from Supabase, editable by admin)
+    const MARKET_REGION_DEFAULTS = [
+      { key:'dc',          label:'Washington, DC' },
+      { key:'nova',        label:'Northern Virginia' },
+      { key:'montgomery',  label:'Montgomery County' },
+      { key:'loudoun',     label:'Loudoun County' },
+      { key:'countryside', label:'Virginia Countryside' },
     ];
+    const marketReportLinks = ref({}); // key -> Drive URL
+    const marketRegions = computed(() =>
+      MARKET_REGION_DEFAULTS.map(r => ({ ...r, folder: marketReportLinks.value[r.key] || '' }))
+    );
+    const mktEditMode   = ref(false);
+    const mktEditLinks  = ref({});
+    const mktSaving     = ref(false);
+
+    async function mktLoadLinks() {
+      try {
+        const rows = await supaRest.select('property_notes',
+          `select=content&property_id=eq.__market_reports__&subfolder=eq.links&order=updated_at.desc&limit=1`);
+        if (rows && rows[0] && rows[0].content) {
+          marketReportLinks.value = JSON.parse(rows[0].content);
+        }
+      } catch(e) { console.warn('mktLoadLinks:', e); }
+    }
+
+    async function mktSaveLinks() {
+      mktSaving.value = true;
+      try {
+        const payload = JSON.stringify(mktEditLinks.value);
+        // Delete existing then insert fresh
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.__market_reports__&subfolder=eq.links`, {
+          method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' }
+        });
+        await supaRest.insert('property_notes', {
+          property_id: '__market_reports__', subfolder: 'links',
+          content: payload, updated_by: agentName.value
+        });
+        marketReportLinks.value = { ...mktEditLinks.value };
+        mktEditMode.value = false;
+        showGoldToast('Market report links updated');
+      } catch(e) { showToast('Save failed: ' + e.message, 5000); }
+      finally { mktSaving.value = false; }
+    }
+
+    function mktStartEdit() {
+      mktEditLinks.value = { ...marketReportLinks.value };
+      mktEditMode.value = true;
+    }
 
     // -- Price Reduction Planner
     const pr = reactive({ listDate:'', price:'' });
@@ -15525,6 +15611,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
+      marketRegions, marketReportLinks, MARKET_REGION_DEFAULTS, mktEditMode, mktEditLinks, mktSaving, mktStartEdit, mktSaveLinks, mktLoadLinks,
       // MLS Data Form
       mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
