@@ -9947,17 +9947,18 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const label = (sellerPrepType.value === 'condo' ? 'Condo' : 'SFH') + ' Seller Prep Guide';
         const saved = await saveToPropertyFromTool('Seller Prep Guide', label, null, pdfBase64);
         if (saved) {
-          // Also save text summary to property_notes for campaign integration
+          // Set in memory immediately so header badge appears
           const textSummary = sellerPrepBuildTextSummary();
+          lstNotes.seller_prep = textSummary;
+          sellerPrepSaved.value = true;
+          setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
+          // Persist to property_notes (non-critical)
           if (lstActiveProp.value) {
             try {
               await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + lstActiveProp.value.id + '&subfolder=eq.seller_prep', { method: 'DELETE', headers: supaRest.headers() });
               await supaRest.insert('property_notes', { property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary, created_by: sessionEmail.value });
-              lstNotes.seller_prep = textSummary;
             } catch(e) { /* non-critical */ }
           }
-          sellerPrepSaved.value = true;
-          setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
         }
       } finally { sellerPrepSaving.value = false; }
     }
