@@ -8942,9 +8942,9 @@ async function lstSubmitToPipeline() {
         if (typeof data === 'string' && data.trim()) {
           try {
             await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + prop.id + '&subfolder=eq.' + subfolder, { method: 'DELETE', headers: supaRest.headers() });
-            await supaRest.insert('property_notes', { property_id: prop.id, subfolder, content: data, created_by: sessionEmail.value });
+            await supaRest.insert('property_notes', { property_id: prop.id, subfolder, content: data });
             if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
-          } catch {}
+          } catch(e) { console.error('property_notes save failed (' + subfolder + '):', e.message); }
         }
 
         let fileName, fileBytes, mimeType;
@@ -9316,8 +9316,7 @@ async function lstSubmitToPipeline() {
           });
         } catch {}
         await supaRest.insert('property_notes', {
-          property_id: targetProp.id, subfolder: 'cma', content,
-          created_by: sessionEmail.value
+          property_id: targetProp.id, subfolder: 'cma', content
         });
         // Update local notes cache so it shows immediately in the panel
         lstNotes.cma = content;  // set immediately so header badge appears
@@ -9967,8 +9966,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           if (lstActiveProp.value) {
             try {
               await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + lstActiveProp.value.id + '&subfolder=eq.seller_prep', { method: 'DELETE', headers: supaRest.headers() });
-              await supaRest.insert('property_notes', { property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary, created_by: sessionEmail.value });
-            } catch(e) { /* non-critical */ }
+              await supaRest.insert('property_notes', { property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary });
+            } catch(e) { console.error('seller_prep save failed:', e.message); }
           }
         }
       } finally { sellerPrepSaving.value = false; }
