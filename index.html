@@ -2358,10 +2358,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
 
               </div>
-              <!-- BNA quick-access — prominent card above Buyer Information -->
+              <!-- BNA quick-access — Step 1 prominent card above Buyer Information -->
               <div @click="go('buyer-needs')" :class="{'lp-card-done': !!bnaResult}" style="border:1.5px solid var(--gold);border-radius:8px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06) 0%,rgba(200,169,110,0.02) 100%);transition:border-color 0.15s,background 0.15s;" onmouseover="this.style.borderColor='var(--navy)';this.style.background='rgba(200,169,110,0.1)'" onmouseout="this.style.borderColor='var(--gold)';this.style.background='linear-gradient(135deg,rgba(200,169,110,0.06) 0%,rgba(200,169,110,0.02) 100%)'">
                 <div style="display:flex;align-items:center;gap:14px;">
-                  <span style="font-size:26px;flex-shrink:0;">🎯</span>
+                  <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--navy);line-height:1;">1</span>
+                  </div>
                   <div>
                     <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Buyer Needs Analysis</div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);line-height:1.4;">Start here — record consultation &amp; auto-fill all tools</div>
@@ -2370,8 +2372,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <span v-if="bnaResult" style="font-size:22px;flex-shrink:0;">✅</span>
                 <svg v-else style="flex-shrink:0;color:var(--gold);" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 2 10 7 5 12"/></svg>
               </div>
-              <div style="border-top:1px solid rgba(255,255,255,0.12);padding-top:10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-top:10px;" @click="byrProfileOpen=!byrProfileOpen">
-                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);">Buyer Information</div>
+              <div style="border-top:1px solid var(--cream-mid);padding-top:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;margin-top:4px;" @click="byrProfileOpen=!byrProfileOpen">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:22px;height:22px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;color:var(--gold);line-height:1;">2</span>
+                  </div>
+                  <div>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--navy);">Buyer Information</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6b7280;margin-top:1px;">Confirm details are correct, then save to file</div>
+                  </div>
+                </div>
                 <svg :style="{transform:byrProfileOpen?'rotate(180deg)':'rotate(0deg)',transition:'transform 0.2s'}" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="2 4 6 8 10 4"/></svg>
               </div>
               <div v-if="byrProfileOpen" style="padding-top:14px;">
@@ -2831,7 +2841,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:liveRecDot 1s ease-in-out infinite;flex-shrink:0;"></div>
                 Listening… speak about your buyer's needs, budget, timeline, and preferences.
               </div>
-              <textarea ref="bnaTextareaRef" v-model="bnaTranscript" rows="14" :placeholder="bnaMode==='live' ? 'Transcript will appear here as you speak...' : 'Type your notes: budget, neighborhoods, must-haves, deal-breakers, timeline, family situation, lifestyle...'" style="resize:vertical;min-height:260px;margin-bottom:12px;"></textarea>
+              <textarea ref="bnaTextareaRef" v-model="bnaTranscript" rows="14" :placeholder="bnaMode==='live' ? 'Transcript will appear here as you speak...' : 'Type your notes: budget, neighborhoods, must-haves, deal-breakers, timeline, family situation, lifestyle...'" style="width:100%;box-sizing:border-box;resize:vertical;min-height:320px;margin-bottom:12px;overflow-y:auto;"></textarea>
               <button class="btn-gold" @click="bnaGenerate" :disabled="bnaLoading||!bnaTranscript.trim()" style="width:100%;padding:12px 20px;font-size:14px;">
                 <span class="spinner" v-if="bnaLoading"></span>
                 {{ bnaLoading ? 'Analyzing...' : 'Generate Analysis' }}
