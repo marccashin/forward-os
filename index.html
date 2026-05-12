@@ -13186,6 +13186,7 @@ No markdown. Valid JSON only.`;
     const byrActiveBuyer = ref(null);
     const byrLoading = ref(false);
     const byrCreating = ref(false);
+    const byrDeleting = ref(false);
     const byrShowNewModal = ref(false);
     const byrProfileOpen = ref(false);
     const byrNewName = ref('');
@@ -13315,16 +13316,20 @@ No markdown. Valid JSON only.`;
 
     async function byrDoDelete() {
       if (!byrDeleteTarget.value) return;
+      byrDeleting.value = true;
+      const targetId = byrDeleteTarget.value.id;
       try {
-        await fetch(RAILWAY_URL + '/buyers/' + byrDeleteTarget.value.id, { method: 'DELETE' });
-        byrBuyers.value = byrBuyers.value.filter(b => b.id !== byrDeleteTarget.value.id);
-        if (byrActiveBuyer.value && byrActiveBuyer.value.id === byrDeleteTarget.value.id) {
+        const res = await fetch(RAILWAY_URL + '/buyers/' + targetId, { method: 'DELETE' });
+        if (!res.ok) { const e = await res.text().catch(()=>res.statusText); throw new Error(e || 'Server returned '+res.status); }
+        byrBuyers.value = byrBuyers.value.filter(b => b.id !== targetId);
+        if (byrActiveBuyer.value && byrActiveBuyer.value.id === targetId) {
           byrActiveBuyer.value = null;
           go('buyer-package');
         }
         byrDeleteTarget.value = null;
         showGoldToast('Buyer removed.');
-      } catch(e) { showToast('Could not delete buyer.', 3000); }
+      } catch(e) { showToast('Could not delete buyer: ' + e.message, 3000); }
+      byrDeleting.value = false;
     }
 
     const byrPackageLoading = ref(false);
@@ -15903,7 +15908,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
       // Buyer System
-      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
+      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrUpdateProfile,
       byrPackageLoading, byrPackageError, byrGeneratePackage,
       byrCreating,
