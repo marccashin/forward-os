@@ -154,6 +154,7 @@ h1, h2, h3 { font-family: 'Cormorant Garamond', serif; color: var(--navy); font-
 .tool-card [style*="text-transform:uppercase"], .tool-card [style*="letter-spacing"] { font-family: 'Montserrat', sans-serif; }
 
 /* ── tab-pill: Cormorant styled pills ── */
+.output-box { background: var(--white); border: 1px solid var(--cream-mid); border-radius: 2px; padding: 22px 24px; }
 .tab-pill { display: inline-flex; align-items: center; padding: 6px 16px; border: 1px solid var(--cream-dark); border-radius: 2px; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--navy); cursor: pointer; transition: border-color 0.13s, background 0.13s, color 0.13s; background: var(--white); }
 .tab-pill.active { background: var(--navy); color: var(--gold); border-color: var(--navy); }
 .tab-pill:hover:not(.active) { border-color: var(--navy); }
@@ -2600,18 +2601,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
               </div>
               <div v-if="!isMobile" style="display:grid;grid-template-columns:repeat(2,1fr);gap:18px;">
+                <div class="lp-card" @click="go('buyer-needs')" :class="{'lp-card-done': !!bnaResult}" style="grid-column:span 2;"><div style="display:flex;align-items:flex-start;justify-content:space-between;"><div><div class="lp-icon">🎯</div><div class="lp-label">Buyer Needs Analysis</div><div class="lp-sub" style="margin-top:4px;">Start here — record your consultation, capture requirements, and auto-fill all buyer tools</div></div><span v-if="bnaResult" style="font-size:18px;margin-left:12px;flex-shrink:0;">✅</span></div></div>
                 <div class="lp-card" @click="go('cash-to-close')"><div class="lp-icon">💰</div><div class="lp-label">Cash to Close</div><div class="lp-sub">Closing cost estimate</div></div>
                 <div class="lp-card" @click="go('buyer-consult')"><div class="lp-icon">📋</div><div class="lp-label">Consultation Kit</div><div class="lp-sub">Branded buyer guide PDF</div></div>
                 <div class="lp-card" @click="go('tour-tracker')"><div class="lp-icon">🏘️</div><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div>
-                <div class="lp-card" @click="go('buyer-needs')"><div class="lp-icon">📋</div><div class="lp-label">Buyer Needs Analysis</div><div class="lp-sub">Capture buyer requirements</div></div>
                 <div class="lp-card" @click="go('offer-strategy')"><div class="lp-icon">⚖️</div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div>
                 <div class="lp-card" @click="go('buyer-market-report')"><div class="lp-icon">📊</div><div class="lp-label">Buyer Market Report</div><div class="lp-sub">Upload MLS · Review comps · Deploy report</div></div>
               </div>
               <div v-else style="background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);overflow:hidden;">
+                <div class="lp-card-mobile" @click="go('buyer-needs')"><span class="lp-icon">🎯</span><div><div class="lp-label">Buyer Needs Analysis <span v-if="bnaResult" style="color:#16a34a;">✅</span></div><div class="lp-sub">Start here — capture requirements & auto-fill all tools</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('cash-to-close')"><span class="lp-icon">💰</span><div><div class="lp-label">Cash to Close</div><div class="lp-sub">Closing cost estimate</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('buyer-consult')"><span class="lp-icon">📋</span><div><div class="lp-label">Consultation Kit</div><div class="lp-sub">Branded buyer guide PDF</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('tour-tracker')"><span class="lp-icon">🏘️</span><div><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div><span class="lp-arrow">›</span></div>
-                <div class="lp-card-mobile" @click="go('buyer-needs')"><span class="lp-icon">📋</span><div><div class="lp-label">Buyer Needs Analysis</div><div class="lp-sub">Capture buyer requirements</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('offer-strategy')"><span class="lp-icon">⚖️</span><div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('buyer-market-report')"><span class="lp-icon">📊</span><div><div class="lp-label">Buyer Market Report</div><div class="lp-sub">Upload MLS · Review comps · Deploy report</div></div><span class="lp-arrow">›</span></div>
               </div>
@@ -2823,8 +2824,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div class="tab-pill" :class="{active:bnaTab==='agent'}" @click="bnaTab='agent'">Agent Brief</div>
                 <div class="tab-pill" :class="{active:bnaTab==='buyer'}" @click="bnaTab='buyer'">Buyer Summary</div>
               </div>
-              <div v-if="bnaTab==='agent'" class="output-box" style="margin-bottom:16px;white-space:pre-wrap;">{{ bnaResult.agentBrief }}</div>
-              <div v-if="bnaTab==='buyer'" class="output-box" style="margin-bottom:16px;white-space:pre-wrap;">{{ bnaResult.buyerSummary }}</div>
+              <div v-if="bnaTab==='agent'" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.agentBrief)"></div>
+              <div v-if="bnaTab==='buyer'" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.buyerSummary)"></div>
               <!-- Apply to Profile banner -->
               <div v-if="bnaResult.structuredFields && byrActiveBuyer && !bnaApplied" style="background:linear-gradient(135deg,#0a1628 0%,#1a2f4e 100%);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:180px;">
@@ -12538,6 +12539,23 @@ Keep the tone professional but conversational. Be specific and reference actual 
     const bnaMode = ref('recap');        // 'live' or 'recap'
     const bnaTranscript = ref('');
     const bnaTextareaRef = ref(null);
+    function bnaFormatBlock(text) {
+      if (!text) return '';
+      function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      const lines = text.split('\n');
+      let html = '';
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) { html += '<div style="height:10px"></div>'; continue; }
+        const isHeader = t.length < 50 && !t.includes('.') && !/^\d/.test(t) && !/^[-•]/.test(t);
+        if (isHeader) {
+          html += '<div style="font-family:\'Montserrat\',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin:18px 0 5px 0;">' + esc(t) + '</div>';
+        } else {
+          html += '<div style="font-family:\'Cormorant Garamond\',serif;font-size:15px;line-height:1.75;color:var(--navy);margin-bottom:3px;">' + esc(t) + '</div>';
+        }
+      }
+      return html;
+    }
     watch(bnaTranscript, () => {
       Vue.nextTick(() => {
         if (bnaTextareaRef.value) {
@@ -15865,6 +15883,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttAnalyze, ttGeneratePDF, ttGenerateAndSavePDF, ttPdfGenerating, ttSaveToFolder, ttSaving, ttSaveTours, ttFmtPrice,
       ttSendModal, ttSendEmail, ttSendPhone, ttOpenSendModal, ttDoSend,
       // Buyer Needs Analysis
+      bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
