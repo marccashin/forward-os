@@ -2859,12 +2859,20 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- RESULT PANEL -->
             <div v-if="bnaView==='result' && bnaResult">
               <!-- Sub-tabs: Agent Brief / Buyer Summary -->
-              <div style="display:flex;gap:8px;margin-bottom:16px;">
-                <div class="tab-pill" :class="{active:bnaTab==='agent'}" @click="bnaTab='agent'">Agent Brief</div>
-                <div class="tab-pill" :class="{active:bnaTab==='buyer'}" @click="bnaTab='buyer'">Buyer Summary</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+                <div class="tab-pill" :class="{active:bnaTab==='agent'}" @click="bnaTab='agent';bnaEditing=false">Agent Brief</div>
+                <div class="tab-pill" :class="{active:bnaTab==='buyer'}" @click="bnaTab='buyer';bnaEditing=false">Buyer Summary</div>
+                <div style="flex:1;"></div>
+                <button @click="bnaEditing=!bnaEditing" style="background:none;border:1px solid var(--gold-muted);border-radius:2px;padding:4px 12px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">{{ bnaEditing ? '✓ Done' : '✎ Edit' }}</button>
               </div>
-              <div v-if="bnaTab==='agent'" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.agentBrief)"></div>
-              <div v-if="bnaTab==='buyer'" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.buyerSummary)"></div>
+              <template v-if="bnaTab==='agent'">
+                <div v-if="!bnaEditing" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.agentBrief)"></div>
+                <textarea v-else v-model="bnaResult.agentBrief" rows="18" style="width:100%;box-sizing:border-box;min-height:320px;resize:vertical;padding:18px 20px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.75;color:var(--navy);border:1.5px solid var(--gold);border-radius:4px;outline:none;margin-bottom:16px;background:var(--white);"></textarea>
+              </template>
+              <template v-if="bnaTab==='buyer'">
+                <div v-if="!bnaEditing" class="output-box" style="margin-bottom:16px;" v-html="bnaFormatBlock(bnaResult.buyerSummary)"></div>
+                <textarea v-else v-model="bnaResult.buyerSummary" rows="18" style="width:100%;box-sizing:border-box;min-height:320px;resize:vertical;padding:18px 20px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.75;color:var(--navy);border:1.5px solid var(--gold);border-radius:4px;outline:none;margin-bottom:16px;background:var(--white);"></textarea>
+              </template>
               <!-- Apply to Profile banner -->
               <div v-if="bnaResult.structuredFields && byrActiveBuyer && !bnaApplied" style="background:linear-gradient(135deg,#0a1628 0%,#1a2f4e 100%);border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
                 <div style="flex:1;min-width:180px;">
@@ -2878,9 +2886,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div v-if="bnaApplied" style="font-family:'Cormorant Garamond',serif;background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;font-weight:600;">✓ Profile updated — all extracted fields saved to buyer record.</div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <button class="btn-navy" @click="bnaDownloadPDF" style="font-size:13px;padding:10px 18px;">Download PDF</button>
-                <button class="btn-gold" @click="bnaSavePDF" :disabled="bnaSaving" style="font-size:13px;padding:10px 18px;">
-                  <span class="spinner" v-if="bnaSaving"></span>{{ bnaSaving ? '' : 'Save to Buyer Folder' }}
+                <button class="btn-navy" @click="bnaDownloadAgentPDF" style="font-size:13px;padding:10px 18px;">Download Agent Brief</button>
+                <button class="btn-gold" @click="bnaDownloadBuyerPDF" style="font-size:13px;padding:10px 18px;">Download Buyer Summary</button>
+                <button class="btn-outline" @click="bnaSavePDF" :disabled="bnaSaving" style="font-size:13px;padding:10px 18px;">
+                  <span class="spinner" v-if="bnaSaving" style="width:10px;height:10px;border-width:2px;"></span>{{ bnaSaving ? '' : 'Save to Buyer Folder' }}
                 </button>
                 <button class="btn-outline" @click="bnaReset" style="font-size:13px;padding:10px 18px;">Start Over</button>
               </div>
@@ -12612,6 +12621,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
     const bnaView = ref('input');        // 'input' or 'result' (main panel)
     const bnaSaving = ref(false);
     const bnaSaved = ref(false);
+    const bnaEditing = ref(false);    // toggle raw-text edit mode in result panel
     let _bnaVoiceRec = null;
 
     function bnaVoiceToggle() {
@@ -12714,7 +12724,29 @@ No markdown. No preamble. Valid JSON only.`;
       bnaLoading.value = false;
     }
 
-    function _bnaBuildPDF() {
+    // Shared PDF header builder (returns y position after header)
+    function _bnaAddHeader(doc, W, navy, gold, white, isFirst, agent, brokerage) {
+      doc.setFillColor(...navy); doc.rect(0, 0, W, isFirst ? 72 : 52, 'F');
+      if (typeof FORWARD_LOGO_B64 !== 'undefined' && FORWARD_LOGO_B64) {
+        const lH = isFirst ? 44 : 32, lW = lH * 4.85;
+        doc.addImage(FORWARD_LOGO_B64, 'PNG', 40, isFirst ? 15 : 10, lW, lH);
+      } else {
+        doc.setFont('helvetica','bold'); doc.setFontSize(isFirst ? 22 : 16); doc.setTextColor(...white);
+        doc.text('FORWARD', 50, isFirst ? 35 : 28);
+        doc.setFontSize(9); doc.setTextColor(...gold);
+        doc.text('REAL ESTATE GROUP', isFirst ? 50 : 130, isFirst ? 50 : 28);
+      }
+      if (isFirst && agent) {
+        doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...white);
+        doc.text(agent, W-50, 35, {align:'right'});
+        doc.setTextColor(...gold); doc.text(brokerage, W-50, 48, {align:'right'});
+      }
+      doc.setFillColor(...gold); doc.rect(0, isFirst ? 74 : 54, W, 3, 'F');
+      return isFirst ? 104 : 76;
+    }
+
+    // Agent Brief PDF — includes title, buyer name, date, body
+    function _bnaAgentPDF() {
       if (!bnaResult.value) return null;
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit:'pt', format:'letter' });
@@ -12722,76 +12754,77 @@ No markdown. No preamble. Valid JSON only.`;
       const agent = agentName.value || '';
       const brokerage = localStorage.getItem('fos_brokerage') || 'Corcoran McEnearney';
       const buyerName = byrActiveBuyer.value ? byrActiveBuyer.value.buyer_name : '';
+      const addHeader = (isFirst) => _bnaAddHeader(doc, W, navy, gold, white, isFirst, agent, brokerage);
 
-      function addHeader(isFirst, title) {
-        doc.setFillColor(...navy); doc.rect(0, 0, W, isFirst ? 72 : 52, 'F');
-        if (typeof FORWARD_LOGO_B64 !== 'undefined' && FORWARD_LOGO_B64) {
-          const lH = isFirst ? 44 : 32, lW = lH * 4.85;
-          doc.addImage(FORWARD_LOGO_B64, 'PNG', 40, isFirst ? 15 : 10, lW, lH);
-        } else {
-          doc.setFont('helvetica','bold'); doc.setFontSize(isFirst ? 22 : 16); doc.setTextColor(...white);
-          doc.text('FORWARD', 50, isFirst ? 35 : 28);
-          doc.setFontSize(9); doc.setTextColor(...gold);
-          doc.text('REAL ESTATE GROUP', isFirst ? 50 : 130, isFirst ? 50 : 28);
-        }
-        if (isFirst && agent) {
-          doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...white);
-          doc.text(agent, W-50, 35, {align:'right'});
-          doc.setTextColor(...gold); doc.text(brokerage, W-50, 48, {align:'right'});
-        }
-        doc.setFillColor(...gold); doc.rect(0, isFirst ? 74 : 54, W, 3, 'F');
-        return isFirst ? 104 : 76;
+      let y = addHeader(true);
+      doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(...navy);
+      doc.text('Agent Brief', 50, y); y += 18;
+      if (buyerName) { doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(...gray); doc.text('Buyer: ' + buyerName, 50, y); y += 14; }
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...gray);
+      doc.text(new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}), 50, y); y += 20;
+      doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(50, y, W-50, y); y += 18;
+      doc.setFontSize(11); doc.setTextColor(30,30,30);
+      const lines = doc.splitTextToSize(bnaResult.value.agentBrief, W - 100);
+      for (const line of lines) {
+        if (y > H - 60) { doc.addPage(); y = addHeader(false); }
+        doc.text(line, 50, y); y += 16;
       }
-
-      function renderSection(title, text, startY) {
-        let y = startY;
-        doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(...navy);
-        doc.text(title, 50, y); y += 18;
-        if (buyerName) { doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(...gray); doc.text('Buyer: ' + buyerName, 50, y); y += 14; }
-        doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...gray);
-        doc.text(new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}), 50, y); y += 20;
-        doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(50, y, W-50, y); y += 18;
-        doc.setFontSize(11); doc.setTextColor(30,30,30);
-        const lines = doc.splitTextToSize(text, W - 100);
-        for (const line of lines) {
-          if (y > H - 60) { doc.addPage(); y = addHeader(false, title); }
-          doc.text(line, 50, y); y += 16;
-        }
-        return y;
-      }
-
-      // Page 1: Agent Brief
-      let y = addHeader(true, 'Agent Brief');
-      renderSection('Agent Brief', bnaResult.value.agentBrief, y);
-
-      // Page 2: Buyer Summary
-      doc.addPage();
-      y = addHeader(true, 'Buyer Summary');
-      renderSection('Buyer Summary', bnaResult.value.buyerSummary, y);
-
       return doc;
     }
 
-    function bnaDownloadPDF() {
-      const doc = _bnaBuildPDF();
+    // Buyer Summary PDF — clean layout: FORWARD header, date only, then letter body
+    function _bnaBuyerPDF() {
+      if (!bnaResult.value) return null;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:'pt', format:'letter' });
+      const W = 612, H = 792, navy = [26,39,68], gold = [201,168,76], white = [255,255,255], gray = [107,114,128];
+      const agent = agentName.value || '';
+      const brokerage = localStorage.getItem('fos_brokerage') || 'Corcoran McEnearney';
+      const addHeader = (isFirst) => _bnaAddHeader(doc, W, navy, gold, white, isFirst, agent, brokerage);
+
+      let y = addHeader(true);
+      // Date only — no title, no buyer name
+      doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...gray);
+      doc.text(new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}), 50, y); y += 20;
+      doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(50, y, W-50, y); y += 18;
+      doc.setFontSize(11); doc.setTextColor(30,30,30);
+      const lines = doc.splitTextToSize(bnaResult.value.buyerSummary, W - 100);
+      for (const line of lines) {
+        if (y > H - 60) { doc.addPage(); y = addHeader(false); }
+        doc.text(line, 50, y); y += 16;
+      }
+      return doc;
+    }
+
+    function bnaDownloadAgentPDF() {
+      const doc = _bnaAgentPDF();
       if (!doc) { showToast('Generate the analysis first.', 3000); return; }
-      openPDFBlob(doc.output('blob'), 'Buyer_Needs_Analysis.pdf');
-      showToast('PDF ready — tap ⬇ Save to download.');
+      const name = byrActiveBuyer.value ? '_' + byrActiveBuyer.value.buyer_name.replace(/[^a-zA-Z0-9]/g,'_') : '';
+      openPDFBlob(doc.output('blob'), 'Agent_Brief' + name + '.pdf');
+    }
+
+    function bnaDownloadBuyerPDF() {
+      const doc = _bnaBuyerPDF();
+      if (!doc) { showToast('Generate the analysis first.', 3000); return; }
+      const name = byrActiveBuyer.value ? '_' + byrActiveBuyer.value.buyer_name.replace(/[^a-zA-Z0-9]/g,'_') : '';
+      openPDFBlob(doc.output('blob'), 'Buyer_Summary' + name + '.pdf');
     }
 
     async function bnaSavePDF() {
       if (!bnaResult.value) return;
       bnaSaving.value = true;
       try {
-        const doc = _bnaBuildPDF();
+        // Save buyer summary only to the folder
+        const doc = _bnaBuyerPDF();
         if (!doc) throw new Error('Could not build PDF');
         const pdfBlob = doc.output('blob');
-        const fileName = 'BNA_' + (byrActiveBuyer.value ? byrActiveBuyer.value.buyer_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Analysis') + '.pdf';
+        const buyerSlug = byrActiveBuyer.value ? byrActiveBuyer.value.buyer_name.replace(/[^a-zA-Z0-9]/g, '_') : 'Analysis';
+        const fileName = 'Buyer_Summary_' + buyerSlug + '.pdf';
 
         if (byrActiveBuyer.value) {
           const folderId = (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.buyer_intake) || byrActiveBuyer.value.drive_folder_id || '';
           if (!folderId) {
-            openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF saved — link a Drive folder to auto-file.');
+            openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF ready — link a Drive folder to auto-file.');
           } else {
             const formData = new FormData();
             formData.append('file', pdfBlob, fileName);
@@ -12802,14 +12835,14 @@ No markdown. No preamble. Valid JSON only.`;
             formData.append('table', 'buyer_assets');
             const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
             if (res.ok) {
-              showGoldToast('✅ Buyer brief saved to folder.');
+              showGoldToast('✅ Buyer summary saved to folder.');
             } else {
               openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF downloaded — Drive sync pending.');
             }
           }
         } else {
           const pdfData = doc.output('datauristring');
-          saveToPropertyFromTool('Buyer Needs Analysis', 'BNA - ' + new Date().toLocaleDateString(), bnaResult.value.agentBrief.substring(0, 200) + '...', pdfData);
+          saveToPropertyFromTool('Buyer Needs Analysis', 'BNA - ' + new Date().toLocaleDateString(), bnaResult.value.buyerSummary.substring(0, 200) + '...', pdfData);
         }
         bnaSaved.value = true;
       } catch(e) { showToast('Save failed: ' + e.message, 4000); console.warn(e); }
@@ -12819,7 +12852,7 @@ No markdown. No preamble. Valid JSON only.`;
     function bnaReset() {
       bnaTranscript.value = ''; bnaResult.value = null; bnaError.value = '';
       bnaView.value = 'input'; bnaTab.value = 'agent'; bnaSaved.value = false;
-      bnaApplied.value = false;
+      bnaApplied.value = false; bnaEditing.value = false;
     }
 
     async function bnaApplyToProfile() {
@@ -15929,14 +15962,14 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttSendModal, ttSendEmail, ttSendPhone, ttOpenSendModal, ttDoSend,
       // Buyer Needs Analysis
       bnaFormatBlock,
-      bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
+      bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrUpdateProfile,
       byrPackageLoading, byrPackageError, byrGeneratePackage,
       byrCreating,
       atEntries, atNewSection, atNewTitle, atNewDesc, atAddEntry, atDeleteEntry, atHandleFile,
-      bnaVoiceToggle, bnaGenerate, bnaDownloadPDF, bnaSavePDF, bnaReset, bnaApplyToProfile,
+      bnaVoiceToggle, bnaGenerate, bnaDownloadAgentPDF, bnaDownloadBuyerPDF, bnaSavePDF, bnaReset, bnaApplyToProfile,
       fmtComma, fmtDollar,
       // Offer Strategy Generator
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
