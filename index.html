@@ -2240,18 +2240,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <div v-if="agentGroup._open !== false" class="prop-grid">
                   <div v-for="buyer in agentGroup.buyers" :key="buyer.id" class="listing-card-wrap">
-                    <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                      <span>delete</span>
-                    </div>
-                    <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
                     <div class="listing-card" @click="byrOpenBuyer(buyer)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
                         <span class="market-badge">{{ buyer.budget_max ? '$'+Number(buyer.budget_max).toLocaleString() : 'Buyer' }}</span>
-                        <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
                       </div>
                       <div class="listing-address">{{ buyer.buyer_name }}</div>
                       <div class="listing-date">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                      <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--cream-mid);">
+                        <button class="listing-card-trash" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2261,18 +2261,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Non-admin: flat grid -->
             <div v-else class="prop-grid">
               <div v-for="buyer in byrBuyers" :key="buyer.id" class="listing-card-wrap">
-                <div class="listing-card-delete" @click.stop="byrConfirmDelete(buyer)">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
-                  <span>delete</span>
-                </div>
-                <button class="listing-card-desktop-del" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">✕</button>
                 <div class="listing-card" @click="byrOpenBuyer(buyer)">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
                     <span class="market-badge">{{ buyer.budget_max ? '$'+Number(buyer.budget_max).toLocaleString() : 'Buyer' }}</span>
-                    <span :class="'status-badge status-'+(buyer.status||'active')">{{ buyer.status || 'active' }}</span>
                   </div>
                   <div class="listing-address">{{ buyer.buyer_name }}</div>
                   <div class="listing-date">{{ buyer.email || 'No email' }} · {{ new Date(buyer.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</div>
+                  <div style="display:flex;align-items:center;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--cream-mid);">
+                    <button class="listing-card-trash" @click.stop="byrConfirmDelete(buyer)" title="Delete buyer">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                  Delete
+                </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -3901,7 +3901,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
                         <span class="market-badge">{{ prop.market || 'DC' }}</span>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-                          <span :class="'status-badge status-'+(prop.status||'draft')">{{ prop.status || 'draft' }}</span>
+
                           <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
                         </div>
                       </div>
@@ -3940,7 +3940,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
                     <span class="market-badge">{{ prop.market || 'DC' }}</span>
                     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
-                      <span :class="'status-badge status-'+(prop.status||'draft')">{{ prop.status || 'draft' }}</span>
+
                       <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
                     </div>
                   </div>
