@@ -2801,7 +2801,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b;animation:liveRecDot 1s ease-in-out infinite;flex-shrink:0;"></div>
                 Listening… speak about your buyer's needs, budget, timeline, and preferences.
               </div>
-              <textarea v-model="bnaTranscript" rows="8" :placeholder="bnaMode==='live' ? 'Transcript will appear here as you speak...' : 'Type your notes: budget, neighborhoods, must-haves, deal-breakers, timeline, family situation, lifestyle...'" style="resize:vertical;min-height:140px;margin-bottom:12px;"></textarea>
+              <textarea ref="bnaTextareaRef" v-model="bnaTranscript" rows="14" :placeholder="bnaMode==='live' ? 'Transcript will appear here as you speak...' : 'Type your notes: budget, neighborhoods, must-haves, deal-breakers, timeline, family situation, lifestyle...'" style="resize:vertical;min-height:260px;margin-bottom:12px;"></textarea>
               <button class="btn-gold" @click="bnaGenerate" :disabled="bnaLoading||!bnaTranscript.trim()" style="width:100%;padding:12px 20px;font-size:14px;">
                 <span class="spinner" v-if="bnaLoading"></span>
                 {{ bnaLoading ? 'Analyzing...' : 'Generate Analysis' }}
@@ -12537,6 +12537,14 @@ Keep the tone professional but conversational. Be specific and reference actual 
     // ── Buyer Needs Analysis ───────────────────────────────────────────────
     const bnaMode = ref('recap');        // 'live' or 'recap'
     const bnaTranscript = ref('');
+    const bnaTextareaRef = ref(null);
+    watch(bnaTranscript, () => {
+      Vue.nextTick(() => {
+        if (bnaTextareaRef.value) {
+          bnaTextareaRef.value.scrollTop = bnaTextareaRef.value.scrollHeight;
+        }
+      });
+    });
     const bnaListening = ref(false);
     const bnaLoading = ref(false);
     const bnaError = ref('');
@@ -15857,7 +15865,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttAnalyze, ttGeneratePDF, ttGenerateAndSavePDF, ttPdfGenerating, ttSaveToFolder, ttSaving, ttSaveTours, ttFmtPrice,
       ttSendModal, ttSendEmail, ttSendPhone, ttOpenSendModal, ttDoSend,
       // Buyer Needs Analysis
-      bnaMode, bnaView, bnaTranscript, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
+      bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied,
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrUpdateProfile,
