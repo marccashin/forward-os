@@ -65,9 +65,9 @@
     .field input[readonly] { background: #f0f4ff; color: var(--muted); }
 
     /* ── COMPS TABLE ── */
-    .comps-wrapper { overflow-x: auto; }
-    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 1300px; }
-    .comps-table th { background: var(--navy); color: white; padding: 9px 8px; text-align: left; font-size: 10.5px; font-weight: 600; letter-spacing: .4px; white-space: nowrap; }
+    .comps-wrapper { overflow-x: hidden; }
+    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
+    .comps-table th { background: var(--navy); color: white; padding: 7px 5px; text-align: left; font-size: 9.5px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .comps-table th.gold { background: var(--gold); color: var(--navy); }
     .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .comps-table tr:nth-child(even) td { background: #f9fafc; }
@@ -468,23 +468,21 @@
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="min-width:180px;">Address</th>
-            <th style="min-width:100px;">Sold Date</th>
-            <th style="min-width:110px;">Sale Price</th>
-            <th style="min-width:80px;">GLA</th>
-            <th style="min-width:55px;">Beds</th>
-            <th style="min-width:65px;">Full Ba</th>
-            <th style="min-width:65px;">Half Ba</th>
-            <th style="min-width:65px;">Bel Gr</th>
-            <th style="min-width:65px;">Garage</th>
-            <th style="min-width:100px;">Condition</th>
-            <th style="min-width:80px;">HOA/Mo</th>
-            <th style="min-width:100px;">Concessions</th>
-            <th style="min-width:90px;">Proximity</th>
-            <th style="min-width:60px;">DOM</th>
-            <th class="gold" style="min-width:80px;">$/SqFt</th>
-            <th class="gold" style="min-width:100px;">Net Adj</th>
-            <th class="gold" style="min-width:100px;">Adj Price</th>
+            <th style="width:140px;">Address</th>
+            <th style="width:76px;">Sold Date</th>
+            <th style="width:84px;">Sale Price</th>
+            <th style="width:56px;">GLA</th>
+            <th style="width:100px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:50px;">Bel Gr</th>
+            <th style="width:50px;">Garage</th>
+            <th style="width:80px;">Condition</th>
+            <th style="width:58px;">HOA/Mo</th>
+            <th style="width:72px;">Concessions</th>
+            <th style="width:66px;">Proximity</th>
+            <th style="width:44px;">DOM</th>
+            <th class="gold" style="width:58px;">$/SqFt</th>
+            <th class="gold" style="width:76px;">Net Adj</th>
+            <th class="gold" style="width:76px;">Adj Price</th>
           </tr>
         </thead>
         <tbody id="compsBody">
@@ -725,9 +723,7 @@ function buildCompRow(i) {
     <td><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
     <td><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.beds||''}" placeholder="3" min="0" oninput="compChange(${i},'beds',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.fullBaths||''}" placeholder="2" min="0" step="0.5" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.halfBaths||''}" placeholder="1" min="0" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></td>
+    <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
     <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select></td>
@@ -1067,6 +1063,7 @@ function _fillPDFDoc(doc) {
   const subZip  = getVal('s_zip');
   const fullAddr = subAddr + (subCity ? ', ' + subCity : '') + (subState ? ', ' + subState : '') + (subZip ? ' ' + subZip : '');
   const agentName = getVal('s_agentName');
+  const clientName = getVal('s_clientName');
 
   const validComps = comps.filter(c => parseFloat(c.salePrice) > 0);
   const adjPrices  = validComps.map(c => c._adj ? c._adj.adjusted : 0).filter(v => v > 0);
@@ -1168,7 +1165,7 @@ function _fillPDFDoc(doc) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
   doc.setTextColor(...GOLD);
-  doc.text('PREPARED FOR: SELLER CONSULTATION', W/2, cy, { align: 'center' });
+  doc.text('PREPARED FOR: ' + (clientName ? clientName.toUpperCase() : 'SELLER CONSULTATION'), W/2, cy, { align: 'center' });
   cy += 36;
 
   doc.setFont('times', 'normal');
@@ -1211,16 +1208,17 @@ function _fillPDFDoc(doc) {
   doc.setLineWidth(0.3);
   doc.line(ML, 728, W - MR, 728);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
+  doc.setFontSize(7.5);
   doc.setTextColor(...NAVY);
-  doc.text('FORWARD Real Estate | Corcoran McEnearney', ML, 742);
+  doc.text('FORWARD Real Estate | Corcoran McEnearney', ML, 739);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6.5);
   doc.setTextColor(...GRAY);
   const disclaimer1 = 'This CMA is based on recently sold comparable properties and adjustment methodology. Market conditions may affect actual sale price. Confidential \u2014 prepared for client use only.';
-  const d1Lines = doc.splitTextToSize(disclaimer1, CW - 160);
-  doc.text(d1Lines, ML + 160, 742);
+  const d1Lines = doc.splitTextToSize(disclaimer1, CW);
+  doc.text(d1Lines, ML, 749);
   doc.setFontSize(6);
-  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, 756);
+  doc.text('\u00a9 BRIGHT, All Rights Reserved  |  Information Deemed Reliable But Not Guaranteed', ML, 762);
 
   // ════════════════════════════════════════
   // PAGE 2 — SUBJECT PROPERTY
@@ -1228,7 +1226,7 @@ function _fillPDFDoc(doc) {
   doc.addPage();
   pageHeader('Subject Property');
 
-  let y = 95;
+  let y = 110;
 
   // Large address
   doc.setFont('times', 'normal');
@@ -1288,7 +1286,7 @@ function _fillPDFDoc(doc) {
   y += 18;
 
   const ovCols = ['#', 'ADDRESS', 'SOLD DATE', 'SALE PRICE', 'GLA', '$/SQFT', 'BEDS/BATHS', 'COND', 'PROXIMITY'];
-  const ovWidths = [18, 120, 65, 70, 55, 50, 68, 35, 80];
+  const ovWidths = [15, 110, 58, 63, 48, 46, 62, 32, 70];
 
   // Table header
   doc.setFillColor(...NAVY);
@@ -1698,7 +1696,7 @@ async function pullFromMLS() {
     set('s_lotSize',      p.lotSize);
     status.textContent = '✔ Populated from MLS' + (p.mlsNumber ? ' (' + p.mlsNumber + ')' : '');
     status.style.color = '#1a7a4a';
-    recalc();
+    recalcAll();
   } catch (err) {
     status.textContent = 'Error: ' + err.message;
     status.style.color = '#c0392b';
@@ -1750,7 +1748,7 @@ async function findComps() {
       });
     });
     buildCompsTable();
-    recalc();
+    recalcAll();
     status.textContent = '✔ ' + incoming.length + ' comp' + (incoming.length > 1 ? 's' : '') + ' loaded from MLS';
     status.style.color = '#1a7a4a';
   } catch (err) {
