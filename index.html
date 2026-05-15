@@ -7451,6 +7451,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function quickSwitchAgent(name) {
       agentName.value = name;
       localStorage.setItem('fos_agent', name);
+      // Load the new agent's API key immediately from local cache
+      const _switchedKey = localStorage.getItem(agentKeyFor('fos_key', name)) || '';
+      settKey.value = _switchedKey;
+      _fosApiKey = _switchedKey;
+      apiKeySet.value = !!_switchedKey;
+      ldMockMode.value = !_switchedKey;
+      // Background Supabase fetch — overrides local if a cloud key exists
+      if (SUPABASE_URL) {
+        supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(name)}`)
+          .then(rows => {
+            const rk = rows && rows[0] && rows[0].claude_api_key;
+            if (rk) {
+              localStorage.setItem(agentKeyFor('fos_key', name), rk);
+              _fosApiKey = rk;
+              settKey.value = rk;
+              apiKeySet.value = true;
+              ldMockMode.value = false;
+            }
+          })
+          .catch(() => {});
+      }
       refreshPropFiles();
       go('dashboard');
     }
@@ -9118,6 +9139,7 @@ async function lstSubmitToPipeline() {
               localStorage.setItem(agentKeyFor('fos_key', agentName.value), remoteKey);
               _fosApiKey = remoteKey;
               apiKeySet.value = true;
+              settKey.value = remoteKey; // keep settings display in sync
             }
           } catch(e) { /* silent — user can re-enter manually in Settings */ }
         }
@@ -15436,7 +15458,9 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldStep.value = 0;
       ldDistances.value = null;
       ldDistanceFetched.value = false;
-      ldMockMode.value = !settKey.value; // use reactive ref — set by doLogin() from Supabase
+      // Use the same key-resolution logic as claudeChat so mock mode is never out of sync
+      const _ldKey = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
+      ldMockMode.value = !_ldKey;
       await nextTick();
       const chatEl = document.getElementById('ld-chat-scroll');
       if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
