@@ -65,14 +65,14 @@
     .field input[readonly] { background: #f0f4ff; color: var(--muted); }
 
     /* ── COMPS TABLE ── */
-    .comps-wrapper { overflow-x: hidden; }
-    table.comps-table { width: 100%; border-collapse: collapse; font-size: 12px; table-layout: fixed; }
-    .comps-table th { background: var(--navy); color: white; padding: 7px 5px; text-align: left; font-size: 9.5px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .comps-wrapper { overflow-x: auto; }
+    table.comps-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
+    .comps-table th { background: var(--navy); color: white; padding: 6px 6px; text-align: left; font-size: 9px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .comps-table th.gold { background: var(--gold); color: var(--navy); }
     .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     .comps-table tr:nth-child(even) td { background: #f9fafc; }
     .comps-table tr:hover td { background: #f0f4ff; }
-    .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 4px 6px; font-size: 12px; width: 100%; background: white; }
+    .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 3px 5px; font-size: 11px; width: 100%; background: white; }
     .comps-table td input:focus, .comps-table td select:focus { outline: none; border-color: var(--gold); }
     .comps-table td.calc { background: #f0f4ff; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
     .comps-table td.adj-val { color: var(--green); font-weight: 600; text-align: right; }
@@ -468,21 +468,21 @@
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="width:140px;">Address</th>
-            <th style="width:76px;">Sold Date</th>
-            <th style="width:84px;">Sale Price</th>
-            <th style="width:56px;">GLA</th>
-            <th style="width:100px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:50px;">Bel Gr</th>
-            <th style="width:50px;">Garage</th>
-            <th style="width:80px;">Condition</th>
-            <th style="width:58px;">HOA/Mo</th>
-            <th style="width:72px;">Concessions</th>
-            <th style="width:66px;">Proximity</th>
-            <th style="width:44px;">DOM</th>
-            <th class="gold" style="width:58px;">$/SqFt</th>
-            <th class="gold" style="width:76px;">Net Adj</th>
-            <th class="gold" style="width:76px;">Adj Price</th>
+            <th style="width:135px;">Address</th>
+            <th style="width:70px;">Sold Date</th>
+            <th style="width:86px;">Sale Price</th>
+            <th style="width:60px;">Sq Ft</th>
+            <th style="width:92px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:42px;">Bel Gr</th>
+            <th style="width:42px;">Garage</th>
+            <th style="width:68px;">Condition</th>
+            <th style="width:62px;">HOA/Mo</th>
+            <th style="width:60px;">Concess.</th>
+            <th style="width:92px;">Proximity</th>
+            <th style="width:50px;">DOM</th>
+            <th class="gold" style="width:52px;">$/SqFt</th>
+            <th class="gold" style="width:70px;">Net Adj</th>
+            <th class="gold" style="width:78px;">Adj Price</th>
           </tr>
         </thead>
         <tbody id="compsBody">
