@@ -1353,7 +1353,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="card" style="display:flex;flex-direction:column;height:calc(100vh - 180px);min-height:500px;">
               <!-- Chat header -->
               <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
-                <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
+                  <h3 style="margin:0;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
+                  <button v-if="ldStarted" @click="ldMessages=[];ldOutput='';ldStarted=false;ldInput='';ld.address='';ldConvPropId=null;" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
+                </div>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span>{{ ldSaving ? '' : '📁 Save to Property' }}
                 </button>
@@ -7478,6 +7481,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // ── Listings System (Feature 1) ──────────────────────────────────────
     watch(agentName, (v, old) => { if(v && v !== old){ lstFetchProperties(); byrFetchBuyers(); } });
+
+    // When the active listing property changes, reset the LD conversation so old content
+    // never bleeds into a fresh property session.
+    watch(lstActiveProp, (newProp) => {
+      const newId = newProp?.id || newProp?.address || null;
+      if (ldStarted.value && ldConvPropId.value && newId && newId !== ldConvPropId.value) {
+        ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
+        ldInput.value = ''; ld.address = ''; ldDistances.value = null;
+        ldDistanceFetched.value = false; ldConvPropId.value = null;
+      }
+    });
     const lstProperties = ref([]);
     const lstLoading = ref(false);
     const lstToolOpen = ref(null); // which listing tool panel is expanded in property folder
@@ -9481,6 +9495,7 @@ async function lstSubmitToPipeline() {
     const ldLoading  = ref(false);
     const ldOutput   = ref('');
     const ldStarted  = ref(false);
+    const ldConvPropId = ref(null); // tracks which property owns the active conversation
     const ldSaving   = ref(false);
     const ldVoiceListening = ref(false);
     const ldDistances       = ref(null);
@@ -15227,7 +15242,7 @@ function logActMicToggle() {
       switch(type) {
         case 'listing-desc':
           ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
-          ldInput.value = ''; ld.address = ''; ldDistances.value = null; ldDistanceFetched.value = false;
+          ldInput.value = ''; ld.address = ''; ldDistances.value = null; ldDistanceFetched.value = false; ldConvPropId.value = null;
           localStorage.removeItem(agentKey('voice_ld_context'));
           break;
         case 'net-sheet':
@@ -15458,6 +15473,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldStep.value = 0;
       ldDistances.value = null;
       ldDistanceFetched.value = false;
+      ldConvPropId.value = null; // will be re-stamped after auto-send
       // Use the same key-resolution logic as claudeChat so mock mode is never out of sync
       const _ldKey = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
       ldMockMode.value = !_ldKey;
@@ -15493,8 +15509,12 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           if (_mf.parking)   _parts.push('parking: ' + _mf.parking);
           const _features = (_mf.features || []).filter(f => f && f.trim());
           if (_features.length) _parts.push('key features: ' + _features.join(', '));
+          // Stamp this property so we can detect stale sessions later
+          ldConvPropId.value = lstActiveProp.value.id || lstActiveProp.value.address || null;
           // Build single combined message so Claude receives everything at once
-          let _autoMsg = 'Property address: ' + lstActiveProp.value.address + '. Please also research whether this address is a notable, named, or luxury building (e.g. a branded residence, historic landmark, or recognizable development) and mention it prominently if so.';
+          // NOTE: We send address and details but do NOT pre-instruct Claude to research
+          // building branding — that should come from what the agent tells us, not assumptions.
+          let _autoMsg = 'The property address is: ' + lstActiveProp.value.address + '.';
           if (_parts.length >= 3) {
             _autoMsg += ' I also have the following property details already: ' + _parts.join(', ') + '. Please skip any questions you already have the answers to and continue from where you still need information.';
           }
@@ -16035,7 +16055,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
       // Listing Desc (Chat)
-      ld, ldMessages, ldInput, ldLoading, ldOutput, ldStarted, ldSaving, ldMockMode, ldBegin, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
+      ld, ldMessages, ldInput, ldLoading, ldOutput, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
