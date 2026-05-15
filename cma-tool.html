@@ -1263,7 +1263,6 @@ function _fillPDFDoc(doc) {
     ['Garage', garageStr],
     ['Condition', getVal('s_condition')||'—'],
     ['HOA', hoaTotal > 0 ? '$' + hoaTotal.toLocaleString('en-US') + '/mo' : 'None'],
-    ['Notes / Pool', getVal('s_notes') ? doc.splitTextToSize(getVal('s_notes'), bW - 20)[0] : '—'],
   ];
 
   boxes.forEach((b, idx) => {
@@ -1273,7 +1272,29 @@ function _fillPDFDoc(doc) {
     const by = y + row * (bH + 8);
     drawBox(bx, by, bW, bH, b[0], b[1]);
   });
-  y += Math.ceil(boxes.length / 3) * (bH + 8) + 16;
+  y += Math.ceil(boxes.length / 3) * (bH + 8) + 8;
+
+  // Notes / Pool / Features — full-width box so text never clips
+  const notesText = getVal('s_notes');
+  if (notesText) {
+    const notesLines = doc.splitTextToSize(notesText, CW - 20);
+    const notesH = Math.max(40, notesLines.length * 10 + 22);
+    doc.setFillColor(248, 248, 250);
+    doc.setDrawColor(220, 220, 225);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(ML, y, CW, notesH, 3, 3, 'FD');
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(...GRAY);
+    doc.text('NOTES / POOL / FEATURES', ML + 10, y + 13);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(...NAVY);
+    doc.text(notesLines, ML + 10, y + 24);
+    y += notesH + 10;
+  } else {
+    y += 8;
+  }
 
   // Comp overview table
   doc.setFont('helvetica', 'bold');
