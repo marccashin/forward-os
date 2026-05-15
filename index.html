@@ -7522,16 +7522,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // ── Listings System (Feature 1) ──────────────────────────────────────
     watch(agentName, (v, old) => { if(v && v !== old){ lstFetchProperties(); byrFetchBuyers(); } });
 
-    // When the active listing property changes, reset the LD conversation so old content
-    // never bleeds into a fresh property session.
-    watch(lstActiveProp, (newProp) => {
-      const newId = newProp?.id || newProp?.address || null;
-      if (ldStarted.value && ldConvPropId.value && newId && newId !== ldConvPropId.value) {
-        ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
-        ldInput.value = ''; ld.address = ''; ldDistances.value = null;
-        ldDistanceFetched.value = false; ldConvPropId.value = null;
-      }
-    });
     const lstProperties = ref([]);
     const lstLoading = ref(false);
     const lstToolOpen = ref(null); // which listing tool panel is expanded in property folder
@@ -8047,6 +8037,16 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstCreating = ref(false);
     const lstCreateError = ref('');
     const lstActiveProp = ref(null);
+    // When the active listing property changes, reset the LD conversation so old content
+    // never bleeds into a fresh property session.
+    watch(lstActiveProp, (newProp) => {
+      const newId = newProp?.id || newProp?.address || null;
+      if (ldStarted.value && ldConvPropId.value && newId && newId !== ldConvPropId.value) {
+        ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
+        ldInput.value = ''; ld.address = ''; ldDistances.value = null;
+        ldDistanceFetched.value = false; ldConvPropId.value = null;
+      }
+    });
     const lstActiveFiles = ref([]);
     const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'' });
     const campBrokersOpenDays = ref(10);
