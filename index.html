@@ -6211,6 +6211,46 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEff
 // without depending solely on localStorage reads in individual API calls.
 let _fosApiKey = '';
 
+// ── Campaign PDF font cache (module-level, survives across PDF generations) ──
+let _campFontCache = null;
+async function _loadCampaignFonts(doc) {
+  if (!_campFontCache) {
+    const _fetchTTF = async (url) => {
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error('Font fetch failed: ' + url);
+      const buf = await resp.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      let b64 = '', chunk = 8192;
+      for (let i = 0; i < bytes.length; i += chunk) {
+        b64 += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(i + chunk, bytes.length)));
+      }
+      return btoa(b64);
+    };
+    const BASE_CG = 'https://raw.githubusercontent.com/CatharsisFonts/Cormorant/master/fonts/ttf/CormorantGaramond-';
+    const BASE_MS = 'https://raw.githubusercontent.com/JulietaUla/Montserrat/master/fonts/ttf/Montserrat-';
+    const [cgReg, cgBold, cgItalic, msReg, msBold] = await Promise.all([
+      _fetchTTF(BASE_CG + 'Regular.ttf'),
+      _fetchTTF(BASE_CG + 'Bold.ttf'),
+      _fetchTTF(BASE_CG + 'Italic.ttf'),
+      _fetchTTF(BASE_MS + 'Regular.ttf'),
+      _fetchTTF(BASE_MS + 'Bold.ttf'),
+    ]);
+    _campFontCache = { cgReg, cgBold, cgItalic, msReg, msBold };
+  }
+  const { cgReg, cgBold, cgItalic, msReg, msBold } = _campFontCache;
+  doc.addFileToVFS('CormorantGaramond-Regular.ttf', cgReg);
+  doc.addFont('CormorantGaramond-Regular.ttf', 'CormorantGaramond', 'normal');
+  doc.addFileToVFS('CormorantGaramond-Bold.ttf', cgBold);
+  doc.addFont('CormorantGaramond-Bold.ttf', 'CormorantGaramond', 'bold');
+  doc.addFileToVFS('CormorantGaramond-Italic.ttf', cgItalic);
+  doc.addFont('CormorantGaramond-Italic.ttf', 'CormorantGaramond', 'italic');
+  doc.addFileToVFS('Montserrat-Regular.ttf', msReg);
+  doc.addFont('Montserrat-Regular.ttf', 'Montserrat', 'normal');
+  doc.addFileToVFS('Montserrat-Bold.ttf', msBold);
+  doc.addFont('Montserrat-Bold.ttf', 'Montserrat', 'bold');
+}
+
+
 // ── Constants ──────────────────────────────────────────────
 const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations','Concierge'];
 const LISTING_PRESENTATIONS = {
@@ -8461,10 +8501,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 async function campApproveAndSend() {
   campShowPreview.value = false;
   await new Promise(r => setTimeout(r, 200));
-  campExportPDF();
+  await campExportPDF();
 }
 
-function campExportPDF() {
+async function campExportPDF() {
   const sections = campParsed.value;
   if (!sections || !sections.length) { showToast('No campaign content to export. Use the Campaign Generator first.', 5000); return; }
   const prop = lstActiveProp.value;
@@ -8472,6 +8512,7 @@ function campExportPDF() {
 
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+  await _loadCampaignFonts(doc);
   const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
   let y = 0;
   let pageNum = 1;
@@ -8521,7 +8562,7 @@ function campExportPDF() {
       }
       // Detect bold-only lines (e.g. "1. Name: ..." or section subheads)
       const isBold = /^\d+\.\s+[A-Z]/.test(line.trim()) || /^(Name:|PRE-MARKET|WEEKS?\s*\d|ONGOING)/.test(line.trim());
-      doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+      doc.setFont('CormorantGaramond', isBold ? 'bold' : 'normal');
       doc.setFontSize(10);
       doc.setTextColor(30, 30, 30);
       const wrapped = doc.splitTextToSize(line, blockW);
@@ -8530,7 +8571,7 @@ function campExportPDF() {
         doc.text(wl, x, y);
         y += 14;
       });
-      doc.setFont('helvetica', 'normal');
+      doc.setFont('CormorantGaramond', 'normal');
     });
   }
 
@@ -8541,11 +8582,11 @@ function campExportPDF() {
     doc.rect(0, y - 18, W, 28, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
+    doc.setFont('Montserrat', 'bold');
     doc.text(title.toUpperCase(), ML, y);
     y += 56;
     doc.setTextColor(30, 30, 30);
-    doc.setFont('helvetica', 'normal');
+    doc.setFont('CormorantGaramond', 'normal');
   }
 
   // ── Variables ──────────────────────────────────────────────────
@@ -8565,12 +8606,12 @@ function campExportPDF() {
   // Wordmark
   doc.setTextColor(200, 169, 110);
   doc.setFontSize(8);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Montserrat', 'bold');
   doc.text('FORWARD  |  CORCORAN MCENEARNEY', ML, 62);
   // Title
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(42);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Montserrat', 'bold');
   doc.text('CAMPAIGN', ML, 224);
   doc.text('PACKAGE', ML, 274);
   // Gold rule under title
@@ -8579,7 +8620,7 @@ function campExportPDF() {
   // Property address
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(16);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('CormorantGaramond', 'normal');
   var addrLines = doc.splitTextToSize(addr, TW);
   var coverBodyY = 322;
   addrLines.forEach(function(al, i) { doc.text(al, ML, coverBodyY + i * 22); });
@@ -8587,25 +8628,25 @@ function campExportPDF() {
   // Agent name
   doc.setFontSize(10);
   doc.setTextColor(200, 169, 110);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Montserrat', 'bold');
   doc.text(agentDisplay.toUpperCase(), ML, coverY2);
   // Date
   doc.setFontSize(10);
   doc.setTextColor(170, 170, 170);
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('CormorantGaramond', 'normal');
   doc.text(dateStr, ML, coverY2 + 18);
   // Bottom rule + label
   doc.setFillColor(200, 169, 110);
   doc.rect(ML, H - 72, TW, 1.5, 'F');
   doc.setTextColor(200, 169, 110);
   doc.setFontSize(7);
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Montserrat', 'bold');
   doc.text('PREPARED EXCLUSIVELY FOR SELLER USE', ML, H - 52);
 
   // ── Page 2: Letter to Seller ─────────────────────────────────
   addPage();
   sectionHeader('Letter to Seller');
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('CormorantGaramond', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(30, 30, 30);
 
@@ -8639,9 +8680,9 @@ function campExportPDF() {
 
   y += 8;
   doc.text('Warm regards,', ML, y); y += 22;
-  doc.setFont('helvetica', 'bold');
+  doc.setFont('Montserrat', 'bold');
   doc.text(agentDisplay, ML, y); y += 18;
-  doc.setFont('helvetica', 'normal');
+  doc.setFont('CormorantGaramond', 'normal');
   doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 30;
 
   // ── 2. LISTING DESCRIPTION ───────────────────────────────────
