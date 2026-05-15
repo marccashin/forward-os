@@ -4295,8 +4295,13 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <!-- Saved listing description recall -->
                   <div v-if="lstNotes.listing_remarks || lstSubfolderFiles('listing_remarks').length > 0" style="background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:14px;margin-bottom:14px;">
                     <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:10px;">Saved Listing Description</div>
-                    <!-- Text content if loaded -->
-                    <div v-if="lstNotes.listing_remarks" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;">{{ lstNotes.listing_remarks }}</div>
+                    <!-- Text content if loaded — read or edit mode -->
+                    <template v-if="lstNotes.listing_remarks">
+                      <!-- Read mode -->
+                      <div v-if="!lstDescEditing" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;">{{ lstNotes.listing_remarks }}</div>
+                      <!-- Edit mode -->
+                      <textarea v-if="lstDescEditing" v-model="lstDescEditVal" style="width:100%;min-height:260px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1.5px solid var(--gold);border-radius:2px;padding:12px;line-height:1.65;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px;"></textarea>
+                    </template>
                     <!-- File links -->
                     <div v-for="file in lstSubfolderFiles('listing_remarks')" :key="file.id" style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;margin-bottom:4px;">
                       <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ file.file_name }}</span>
@@ -4305,9 +4310,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </div>
                     <!-- If file saved but text not in memory, show note -->
                     <div v-if="!lstNotes.listing_remarks && lstSubfolderFiles('listing_remarks').length > 0" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">Description saved as file above. Open the Writer to generate a new version.</div>
+                    <!-- Action buttons -->
                     <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
-                      <button v-if="lstNotes.listing_remarks" class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
-                      <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">{{ lstNotes.listing_remarks ? 'Edit in Writer' : 'Open Writer' }}</button>
+                      <!-- Read mode buttons -->
+                      <template v-if="!lstDescEditing">
+                        <button v-if="lstNotes.listing_remarks" class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
+                        <button v-if="lstNotes.listing_remarks" class="btn-sm" style="background:var(--white);border:1px solid var(--gold);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescEditVal=lstNotes.listing_remarks;lstDescEditing=true">✏️ Edit</button>
+                        <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">{{ lstNotes.listing_remarks ? 'Open Writer' : 'Open Writer' }}</button>
+                      </template>
+                      <!-- Edit mode buttons -->
+                      <template v-if="lstDescEditing">
+                        <button class="btn-sm" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescSave()">Save</button>
+                        <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescEditing=false">Cancel</button>
+                      </template>
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
@@ -9550,6 +9565,16 @@ async function lstSubmitToPipeline() {
     const ldStarted  = ref(false);
     const ldConvPropId = ref(null); // tracks which property owns the active conversation
     const ldSaving   = ref(false);
+    const lstDescEditing = ref(false);
+    const lstDescEditVal = ref('');
+    async function lstDescSave() {
+      const trimmed = lstDescEditVal.value.trim();
+      if (!trimmed || !lstActiveProp.value) return;
+      lstNotes.listing_remarks = trimmed;
+      lstDescEditing.value = false;
+      await lstSaveNote('listing_remarks');
+      showToast('Listing description saved.', 2500);
+    }
     const ldVoiceListening = ref(false);
     const ldDistances       = ref(null);
     const ldDistanceFetched  = ref(false);
@@ -16194,7 +16219,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
