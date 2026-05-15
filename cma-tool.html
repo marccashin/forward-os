@@ -73,6 +73,11 @@
     .comps-table tr:nth-child(even) td { background: #f9fafc; }
     .comps-table tr:hover td { background: #f0f4ff; }
     .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 3px 5px; font-size: 11px; width: 100%; background: white; }
+
+    /* Remove number input spinners in comp table */
+    .comps-table td input[type=number]::-webkit-inner-spin-button,
+    .comps-table td input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .comps-table td input[type=number] { -moz-appearance: textfield; }
     .comps-table td input:focus, .comps-table td select:focus { outline: none; border-color: var(--gold); }
     .comps-table td.calc { background: #f0f4ff; font-weight: 600; color: var(--navy); text-align: right; white-space: nowrap; }
     .comps-table td.adj-val { color: var(--green); font-weight: 600; text-align: right; }
@@ -469,21 +474,21 @@
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="width:155px;">Address</th>
-            <th style="width:80px;">Sold Date</th>
+            <th style="width:162px;">Address</th>
+            <th style="width:90px;">Sold Date</th>
             <th style="width:96px;">Sale Price</th>
-            <th style="width:68px;">Sq Ft</th>
-            <th style="width:96px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:52px;">Bel Gr</th>
-            <th style="width:52px;">Garage</th>
-            <th style="width:76px;">Condition</th>
-            <th style="width:68px;">HOA/Mo</th>
-            <th style="width:68px;">Concess.</th>
-            <th style="width:102px;">Proximity</th>
-            <th style="width:56px;">DOM</th>
-            <th class="gold" style="width:60px;">$/SqFt</th>
-            <th class="gold" style="width:82px;">Net Adj</th>
-            <th class="gold" style="width:90px;">Adj Price</th>
+            <th style="width:72px;">Sq Ft</th>
+            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:54px;">Bel Gr</th>
+            <th style="width:54px;">Garage</th>
+            <th style="width:80px;">Condition</th>
+            <th style="width:78px;">HOA/Mo</th>
+            <th style="width:70px;">Concess.</th>
+            <th style="width:112px;">Proximity</th>
+            <th style="width:60px;">DOM</th>
+            <th class="gold" style="width:64px;">$/SqFt</th>
+            <th class="gold" style="width:86px;">Net Adj</th>
+            <th class="gold" style="width:94px;">Adj Price</th>
           </tr>
         </thead>
         <tbody id="compsBody">
@@ -632,6 +637,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (row && (row.draft_data || row.prefill_data) && !_mismatch) {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
+    _fixUnitInCity();
     showToast('☁️ Resumed from cloud');
   } else {
     loadPrefill();
@@ -689,11 +695,36 @@ function _applyPrefill(d) {
   }
 }
 
+function _fixUnitInCity() {
+  // If city field starts with a unit designator (due to bad address parse or cached data),
+  // extract it and append it to the address field.
+  const cityEl = document.getElementById('s_city');
+  const addrEl = document.getElementById('s_address');
+  if (!cityEl || !addrEl) return;
+  const cv = cityEl.value.trim();
+  if (/^(unit[\s#]|apt[\s#]|#\d|suite[\s#]|ste[\s#])/i.test(cv)) {
+    // city value looks like "Unit #1403, Washington" — split at first comma
+    const comma = cv.indexOf(',');
+    if (comma > -1) {
+      const unitPart = cv.slice(0, comma).trim();
+      const realCity = cv.slice(comma + 1).trim();
+      addrEl.value = (addrEl.value.replace(/,\s*$/, '') + ', ' + unitPart).trim();
+      cityEl.value = realCity;
+    }
+    // If no comma, entire value is a unit with no city — just move it
+    else {
+      addrEl.value = (addrEl.value.replace(/,\s*$/, '') + ', ' + cv).trim();
+      cityEl.value = '';
+    }
+  }
+}
+
 function loadPrefill() {
   try {
     const raw = localStorage.getItem('cma_voice_prefill');
     if (!raw) return;
     _applyPrefill(JSON.parse(raw));
+    _fixUnitInCity();
     recalcAll();
   } catch(e) { console.warn('prefill load error', e); }
 }
@@ -724,7 +755,7 @@ function buildCompRow(i) {
     <td><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
     <td><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
-    <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:28px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
+    <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
     <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select></td>
