@@ -9676,11 +9676,18 @@ async function lstSubmitToPipeline() {
       const _parseBaths = (s) => { const n = parseFloat(s || 0); const full = Math.floor(n); const half = (n - full) >= 0.4 ? 1 : 0; return { full: String(full), half: String(half) }; };
 
       // Parse address into street / city / state / zip
+      // Handles "601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004"
       const addrParts = addr.split(',').map(s => s.trim());
       let street = addrParts[0] || '';
       let city = '', state = '', zip = '';
       if (addrParts.length >= 2) {
-        const csz = addrParts.slice(1).join(', ');
+        let remaining = addrParts.slice(1);
+        // Detect unit/apt segment (e.g. "Unit #1403", "Apt 4B") and append to street
+        if (remaining.length > 0 && /^(unit|apt|#|suite|ste|floor|fl\s)/i.test(remaining[0])) {
+          street = street + ', ' + remaining[0];
+          remaining = remaining.slice(1);
+        }
+        const csz = remaining.join(', ');
         const m = csz.match(/^(.*?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)\s*$/);
         if (m) { city = m[1].trim(); state = m[2]; zip = m[3]; } else { city = csz; }
       }
