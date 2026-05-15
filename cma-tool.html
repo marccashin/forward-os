@@ -74,6 +74,12 @@
     .comps-table tr:hover td { background: #f0f4ff; }
     .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 3px 5px; font-size: 11px; width: 100%; background: white; }
 
+
+    /* Condition adjustment badge in comp table */
+    .cond-adj-badge { font-size:9px; font-weight:700; text-align:center; margin-top:2px; letter-spacing:.2px; }
+    .cond-adj-badge.pos  { color: #16a34a; }
+    .cond-adj-badge.neg  { color: #dc2626; }
+    .cond-adj-badge.zero { color: #9ca3af; }
     /* Remove number input spinners in comp table */
     .comps-table td input[type=number]::-webkit-inner-spin-button,
     .comps-table td input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
@@ -232,7 +238,7 @@
         <input type="number" id="s_yearBuilt" placeholder="2002" />
       </div>
       <div class="field">
-        <label>Condition</label>
+        <label title="Set the subject's actual condition. Each comp's condition should reflect what that property was like when it sold. The system adjusts each comp up or down based on the difference between its condition and the subject's.">Condition ⓘ</label>
         <select id="s_condition" onchange="recalcAll()">
           <option value="A+">A+ — Like New / Exceptional</option>
           <option value="A">A — Excellent</option>
@@ -481,7 +487,7 @@
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
             <th style="width:54px;">Garage</th>
-            <th style="width:80px;">Condition</th>
+            <th style="width:80px;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:70px;">Concess.</th>
             <th style="width:112px;">Proximity</th>
@@ -758,7 +764,7 @@ function buildCompRow(i) {
     <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
-    <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select></td>
+    <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
     <td><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
     <td><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
     <td><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="compChange(${i},'proximity',this.value)" /></td>
@@ -879,6 +885,18 @@ function recalcAll() {
       netEl.className = 'calc ' + (netAdj > 0 ? 'adj-val' : netAdj < 0 ? 'adj-neg' : '');
     }
     if (adjEl) { adjEl.textContent = fmtDollar(adjPrice); adjEl.className = 'calc'; }
+
+    // Condition badge
+    const badgeEl = document.getElementById('c'+i+'_condBadge');
+    if (badgeEl) {
+      if (condAdj === 0) {
+        badgeEl.textContent = 'same cond';
+        badgeEl.className = 'cond-adj-badge zero';
+      } else {
+        badgeEl.textContent = (condAdj > 0 ? '+' : '') + fmtDollar(condAdj);
+        badgeEl.className = 'cond-adj-badge ' + (condAdj > 0 ? 'pos' : 'neg');
+      }
+    }
   });
 
   updateValueSummary(adjPrices);
