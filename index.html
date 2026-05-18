@@ -841,6 +841,133 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
     .bmr-pill-over { display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#dcfce7;color:#166534; }
     .bmr-pill-at   { display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fef9c3;color:#92400e; }
     .bmr-pill-under{ display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;background:#fee2e2;color:#991b1b; }
+
+/* ── Meeting Prep Brief Output ──────────────────────────────────────── */
+.brief-card {
+  background: #fff;
+  border: 1px solid var(--cream-mid);
+  border-radius: 2px;
+  padding: 18px 20px;
+  margin-bottom: 10px;
+}
+.brief-section-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.brief-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 9px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  color: #374151;
+  line-height: 1.55;
+}
+.brief-row-icon {
+  flex-shrink: 0;
+  width: 18px;
+  font-size: 13px;
+  padding-top: 1px;
+}
+.brief-do  { color: #16a34a; font-weight: 700; font-size: 14px; }
+.brief-dont { color: #dc2626; font-weight: 700; font-size: 14px; }
+.disc-badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--navy);
+  border-radius: 2px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+}
+.disc-letter {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--gold);
+  line-height: 1;
+}
+.disc-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--cream);
+  line-height: 1.2;
+}
+.disc-sub {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(200,169,110,0.7);
+  margin-top: 3px;
+}
+/* ── Research Confirmation Panel ──────────────────────────────────── */
+.mp-confirm-panel {
+  background: var(--cream);
+  border: 1px solid var(--cream-mid);
+  border-radius: 2px;
+  padding: 18px 20px;
+  margin-top: 12px;
+}
+.mp-confirm-panel .confirm-header {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+}
+.mp-confirm-panel .confirm-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+.mp-confirm-panel .confirm-role {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+.mp-confirm-panel .confirm-bio {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.65;
+  margin-bottom: 10px;
+}
+.mp-confirm-panel .confirm-sources {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 7.5px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 14px;
+}
+.mp-confirm-panel .confirm-question {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 8.5px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy);
+  margin-bottom: 10px;
+}
+.mp-confirm-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 </style>
 </head>
 <body>
@@ -1932,12 +2059,28 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <template v-if="mp.selectedPerson && !mp.brief">
                 <div class="form-row">
                   <label>Additional Context (optional)</label>
-                  <textarea v-model="mp.extraContext" rows="3" placeholder="e.g. She's a corporate attorney, very data-driven. We met at a networking event last week. She's thinking about buying in Georgetown within 6 months." style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-m'}" @click="inlineMicToggle('mp-context-m',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. She's a corporate attorney, very data-driven. We met at a networking event last week. She's thinking about buying in Georgetown within 6 months." style="resize:vertical;min-height:130px;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-m'}" @click="inlineMicToggle('mp-context-m',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 </div>
-                <button class="btn-gold" @click="mpGenerate" :disabled="mp.loading" style="width:100%;min-height:48px;font-size:15px;margin-top:4px;">
-                  <span class="spinner spinner-dark" v-if="mp.loading"></span>
+                <button class="btn-gold" @click="mpStart" :disabled="mp.loading" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
+                  <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
+                    <span class="wave-bar" style="height:8px; background:rgba(10,35,66,0.45);"></span>
+                    <span class="wave-bar" style="height:14px;background:rgba(10,35,66,0.45);animation-delay:0.12s;"></span>
+                    <span class="wave-bar" style="height:20px;background:rgba(10,35,66,0.55);animation-delay:0.24s;"></span>
+                    <span class="wave-bar" style="height:24px;background:rgba(10,35,66,0.65);animation-delay:0.36s;"></span>
+                    <span class="wave-bar" style="height:20px;background:rgba(10,35,66,0.55);animation-delay:0.48s;"></span>
+                    <span class="wave-bar" style="height:14px;background:rgba(10,35,66,0.45);animation-delay:0.6s;"></span>
+                    <span class="wave-bar" style="height:8px; background:rgba(10,35,66,0.45);animation-delay:0.72s;"></span>
+                  </div>
                   <span v-else>✦ Generate My Brief</span>
                 </button>
+                <div v-if="mp.loading && mp.researchStatus" style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 16px;background:var(--cream);border:1px solid var(--cream-mid);border-radius:8px;">
+                  <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
+                    <span class="wave-bar" style="height:10px;"></span>
+                    <span class="wave-bar" style="height:16px;animation-delay:0.2s;"></span>
+                    <span class="wave-bar" style="height:10px;animation-delay:0.4s;"></span>
+                  </div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);letter-spacing:0.01em;">{{ mp.researchStatus }}</div>
+                </div>
                 <div v-if="mp.error" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;margin-top:8px;">{{ mp.error }}</div>
               </template>
 
@@ -1945,22 +2088,73 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <template v-if="!mp.selectedPerson && !mp.brief && !fubKeySet">
                 <div class="form-row" style="margin-top:12px;">
                   <label>Describe the person you're meeting</label>
-                  <textarea v-model="mp.extraContext" rows="4" placeholder="e.g. Jane Doe, corporate attorney at a DC law firm. Very analytical. We met at a Corcoran event. Interested in buying in Capitol Hill. Has two kids, husband works in finance." style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-d'}" @click="inlineMicToggle('mp-context-d',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. Jane Doe, corporate attorney at a DC law firm. Very analytical. We met at a Corcoran event. Interested in buying in Capitol Hill. Has two kids, husband works in finance." style="resize:vertical;min-height:130px;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-d'}" @click="inlineMicToggle('mp-context-d',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 </div>
-                <button class="btn-gold" @click="mpSelectedPersonFallback(); mpGenerate();" :disabled="mp.loading||!mp.extraContext.trim()" style="width:100%;min-height:48px;font-size:15px;margin-top:4px;">
-                  <span class="spinner spinner-dark" v-if="mp.loading"></span>
+                <button class="btn-gold" @click="mpSelectedPersonFallback(); mpStart();" :disabled="mp.loading||!mp.extraContext.trim()" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
+                  <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
+                    <span class="wave-bar" style="height:8px; background:rgba(10,35,66,0.45);"></span>
+                    <span class="wave-bar" style="height:14px;background:rgba(10,35,66,0.45);animation-delay:0.12s;"></span>
+                    <span class="wave-bar" style="height:20px;background:rgba(10,35,66,0.55);animation-delay:0.24s;"></span>
+                    <span class="wave-bar" style="height:24px;background:rgba(10,35,66,0.65);animation-delay:0.36s;"></span>
+                    <span class="wave-bar" style="height:20px;background:rgba(10,35,66,0.55);animation-delay:0.48s;"></span>
+                    <span class="wave-bar" style="height:14px;background:rgba(10,35,66,0.45);animation-delay:0.6s;"></span>
+                    <span class="wave-bar" style="height:8px; background:rgba(10,35,66,0.45);animation-delay:0.72s;"></span>
+                  </div>
                   <span v-else>✦ Generate My Brief</span>
                 </button>
+                <div v-if="mp.loading && mp.researchStatus" style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:12px 16px;background:var(--cream);border:1px solid var(--cream-mid);border-radius:8px;">
+                  <div style="display:flex;align-items:center;gap:3px;flex-shrink:0;">
+                    <span class="wave-bar" style="height:10px;"></span>
+                    <span class="wave-bar" style="height:16px;animation-delay:0.2s;"></span>
+                    <span class="wave-bar" style="height:10px;animation-delay:0.4s;"></span>
+                  </div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);letter-spacing:0.01em;">{{ mp.researchStatus }}</div>
+                </div>
               </template>
             </div>
 
             <!-- Brief output -->
+
+            <!-- ── Web Research Confirmation Panel ────────────────────────── -->
+            <div v-if="mp.confirming && mp.researchPreview" class="mp-confirm-panel">
+              <div class="confirm-header">🔍 Web Research Found</div>
+              <div class="confirm-name">{{ mp.researchPreview.name || (mp.selectedPerson?.name || mp.query) }}</div>
+              <div v-if="mp.researchPreview.title || mp.researchPreview.company" class="confirm-role">
+                <span v-if="mp.researchPreview.title">{{ mp.researchPreview.title }}</span>
+                <span v-if="mp.researchPreview.title && mp.researchPreview.company"> · </span>
+                <span v-if="mp.researchPreview.company">{{ mp.researchPreview.company }}</span>
+              </div>
+              <div v-if="mp.researchPreview.background" class="confirm-bio">{{ mp.researchPreview.background }}</div>
+              <div v-if="mp.researchPreview.sources && mp.researchPreview.sources.length" class="confirm-sources">
+                Sources: {{ mp.researchPreview.sources.join(' · ') }}
+              </div>
+              <div class="confirm-question">Is this the right person?</div>
+              <div class="mp-confirm-actions">
+                <button class="btn-gold" @click="mpConfirmResearch" style="font-size:12px;padding:8px 18px;min-height:38px;">✓ Yes, that's them</button>
+                <button class="btn-navy" @click="mpResearchAgain" :disabled="mp.loading" style="font-size:12px;padding:8px 16px;min-height:38px;">
+                  <span v-if="mp.loading" style="display:flex;align-items:center;gap:4px;">
+                    <span class="wave-bar" style="height:8px;background:rgba(200,169,110,0.7);"></span>
+                    <span class="wave-bar" style="height:12px;background:rgba(200,169,110,0.7);animation-delay:0.15s;"></span>
+                    <span class="wave-bar" style="height:8px;background:rgba(200,169,110,0.7);animation-delay:0.3s;"></span>
+                  </span>
+                  <span v-else>🔄 Search Again</span>
+                </button>
+                <button class="btn-outline" @click="mpSkipResearch" style="font-size:12px;padding:8px 14px;min-height:38px;">Skip web data</button>
+              </div>
+            </div>
+
             <template v-if="mp.brief">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
                 <button class="btn-outline" @click="mpReset" style="font-size:12px;padding:6px 14px;">New Search</button>
               </div>
 
+              <!-- Web research badge -->
+              <div v-if="mp.webResearch" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:7px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+                <span style="font-size:13px;">🔍</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#16a34a;">Web research used</span>
+                <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#6b7280;margin-left:4px;">· {{ mp.webResearch.sources.join(' · ') }}</span>
+              </div>
               <!-- DISC Badge -->
               <div class="brief-card">
                 <div class="brief-section-title">Behavioral Profile</div>
@@ -7072,7 +7266,9 @@ createApp({
     const mp = reactive({
       query: '', loading: false, searching: false,
       searchResults: [], selectedPerson: null,
-      extraContext: '', brief: null, error: ''
+      extraContext: '', brief: null, error: '',
+      webResearch: null, researchStatus: '',
+      confirming: false, contactContext: '', researchPreview: null
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -7137,17 +7333,22 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mp.selectedPerson = person; mp.searchResults = []; mp.brief = null;
     }
 
-    async function mpGenerate() {
+    // Phase 1: fetch FUB data + web research → show confirmation if found
+    async function mpStart() {
       if (!mp.selectedPerson && !mp.extraContext.trim()) return;
       mp.loading = true; mp.brief = null; mp.error = '';
+      mp.webResearch = null; mp.researchStatus = '';
+      mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
       if (isMockMode) {
         await new Promise(r => setTimeout(r, 2000));
         mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
       }
       try {
+        // Step 1 — FUB data
         let contactContext = '';
         if (mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999) {
+          mp.researchStatus = 'Loading CRM data…';
           const detail = await fubGetPersonDetail(mp.selectedPerson.id);
           const p = detail.person;
           contactContext = [
@@ -7162,10 +7363,93 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         } else if (mp.selectedPerson) {
           contactContext = 'Name: ' + mp.selectedPerson.name;
         }
+        mp.contactContext = contactContext;
+
+        // Step 2 — Web research
+        const personName = (mp.selectedPerson?.name || mp.query || '').trim();
+        if (personName && personName !== 'Contact') {
+          mp.researchStatus = 'Researching ' + personName.split(' ')[0] + ' online…';
+          try {
+            const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ name: personName, agent_context: mp.extraContext.trim() }),
+              signal: AbortSignal.timeout(30000)
+            });
+            if (researchResp.ok) {
+              const research = await researchResp.json();
+              if (research.found) {
+                // Show confirmation panel — do NOT auto-generate
+                mp.researchPreview = research;
+                mp.loading = false;
+                mp.researchStatus = '';
+                mp.confirming = true;
+                return;
+              }
+            }
+          } catch(e) { console.warn('Web research skipped:', e.message); }
+        }
+
+        // No web research found — go straight to brief generation
+        mp.loading = false;
+        await mpGenerate();
+      } catch(e) {
+        mp.error = e.message || 'Generation failed. Check your API key in Settings.';
+        console.error('Meeting Prep mpStart error:', e);
+        mp.loading = false; mp.researchStatus = '';
+      }
+    }
+
+    // Phase 2: generate brief from confirmed context + web research
+    async function mpGenerate() {
+      if (!mp.selectedPerson && !mp.extraContext.trim()) return;
+      mp.loading = true; mp.brief = null; mp.error = '';
+      mp.confirming = false; mp.researchStatus = 'Generating your brief…';
+      const isMockMode = !localStorage.getItem(agentKey('fos_key'));
+      if (isMockMode) {
+        await new Promise(r => setTimeout(r, 2000));
+        mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
+      }
+      try {
+        // Use pre-cached CRM context if available; otherwise re-fetch
+        let contactContext = mp.contactContext;
+        if (!contactContext) {
+          if (mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999) {
+            mp.researchStatus = 'Loading CRM data…';
+            const detail = await fubGetPersonDetail(mp.selectedPerson.id);
+            const p = detail.person;
+            contactContext = [
+              'Name: ' + (p.name || '—'),
+              p.stage ? 'Stage: ' + p.stage : null,
+              p.email ? 'Email: ' + p.email : null,
+              p.phone ? 'Phone: ' + p.phone : null,
+              p.source ? 'Source: ' + p.source : null,
+              p.backgroundInformation ? 'Background: ' + p.backgroundInformation : null,
+              detail.notes ? 'CRM Notes: ' + detail.notes : null
+            ].filter(Boolean).join('\n');
+          } else if (mp.selectedPerson) {
+            contactContext = 'Name: ' + mp.selectedPerson.name;
+          }
+          mp.contactContext = contactContext;
+        }
+
+        mp.researchStatus = 'Generating your brief…';
+        let webCtx = '';
+        if (mp.webResearch) {
+          webCtx = 'WEB RESEARCH:\n' + [
+            mp.webResearch.background         ? 'Background: '           + mp.webResearch.background         : null,
+            mp.webResearch.title              ? 'Role: '                 + mp.webResearch.title              : null,
+            mp.webResearch.company            ? 'Company: '              + mp.webResearch.company            : null,
+            mp.webResearch.personalitySignals ? 'Personality signals: '  + mp.webResearch.personalitySignals : null,
+            mp.webResearch.discHints          ? 'DISC behavioral hints: '+ mp.webResearch.discHints          : null
+          ].filter(Boolean).join('\n');
+        }
+        const personName = (mp.selectedPerson?.name || mp.query || '').trim();
         const prompt = [
           contactContext ? 'CRM DATA:\n' + contactContext : '',
+          webCtx,
           mp.extraContext.trim() ? 'ADDITIONAL CONTEXT FROM AGENT:\n' + mp.extraContext.trim() : ''
-        ].filter(Boolean).join('\n\n') || ('Contact: ' + mp.query);
+        ].filter(Boolean).join('\n\n') || ('Contact: ' + (personName || mp.query));
 
         const raw = await claude(prompt, DISC_SYSTEM);
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -7175,10 +7459,51 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         mp.error = e.message || 'Generation failed. Check your API key in Settings.';
         console.error('Meeting Prep error:', e);
       }
-      mp.loading = false;
+      mp.loading = false; mp.researchStatus = '';
     }
 
-    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; }
+    // Confirmation handlers
+    function mpConfirmResearch() {
+      mp.webResearch = mp.researchPreview;
+      mp.researchPreview = null;
+      mpGenerate();
+    }
+    async function mpResearchAgain() {
+      mp.researchPreview = null;
+      mp.confirming = false;
+      const personName = (mp.selectedPerson?.name || mp.query || '').trim();
+      mp.loading = true;
+      mp.researchStatus = 'Searching again…';
+      try {
+        const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: personName, agent_context: mp.extraContext.trim() }),
+          signal: AbortSignal.timeout(30000)
+        });
+        if (researchResp.ok) {
+          const research = await researchResp.json();
+          if (research.found) {
+            mp.researchPreview = research;
+            mp.loading = false;
+            mp.researchStatus = '';
+            mp.confirming = true;
+            return;
+          }
+        }
+      } catch(e) { console.warn('Re-search skipped:', e.message); }
+      mp.loading = false;
+      mp.researchStatus = '';
+      mpGenerate();
+    }
+    function mpSkipResearch() {
+      mp.webResearch = null;
+      mp.researchPreview = null;
+      mp.confirming = false;
+      mpGenerate();
+    }
+
+    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; }
     function mpSelectedPersonFallback() { mp.selectedPerson = { id: null, name: mp.query || 'Contact' }; }
 
     async function saveFubKey() {
@@ -14787,7 +15112,7 @@ async function voiceApplyFields() {
         // If voice provided any context, auto-generate directly
         if (f.additionalContext || f.contactName) {
           mpSelectedPersonFallback();
-          nextTick(() => mpGenerate());
+          nextTick(() => mpStart());
         }
       });
       voiceClose();
@@ -16023,7 +16348,7 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
           if (f.additionalContext) mp.extraContext = f.additionalContext;
           if (f.additionalContext || f.contactName) {
             mpSelectedPersonFallback();
-            nextTick(() => mpGenerate());
+            nextTick(() => mpStart());
           }
         });
       }
@@ -16130,7 +16455,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       saveKey, clearKey, saveModel, saveBranding,
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
       fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, saveFubKey, clearFubKey, fubSyncUsers,
-      goPrep, mp, mpSearch, mpSelectPerson, mpGenerate, mpReset, mpSelectedPersonFallback,
+      goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
