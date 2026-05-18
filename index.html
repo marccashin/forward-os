@@ -1938,6 +1938,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="spinner spinner-dark" v-if="mp.loading"></span>
                   <span v-else>✦ Generate My Brief</span>
                 </button>
+                <div v-if="mp.loading && mp.researchStatus" style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:12px;color:#9ca3af;margin-top:8px;letter-spacing:0.02em;">{{ mp.researchStatus }}</div>
                 <div v-if="mp.error" style="font-family:'Cormorant Garamond',serif;color:#dc2626;font-size:13px;margin-top:8px;">{{ mp.error }}</div>
               </template>
 
@@ -1951,6 +1952,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <span class="spinner spinner-dark" v-if="mp.loading"></span>
                   <span v-else>✦ Generate My Brief</span>
                 </button>
+                <div v-if="mp.loading && mp.researchStatus" style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:12px;color:#9ca3af;margin-top:8px;letter-spacing:0.02em;">{{ mp.researchStatus }}</div>
               </template>
             </div>
 
@@ -1961,6 +1963,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <button class="btn-outline" @click="mpReset" style="font-size:12px;padding:6px 14px;">New Search</button>
               </div>
 
+              <!-- Web research badge -->
+              <div v-if="mp.webResearch" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:7px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
+                <span style="font-size:13px;">🔍</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#16a34a;">Web research used</span>
+                <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#6b7280;margin-left:4px;">· {{ mp.webResearch.sources.join(' · ') }}</span>
+              </div>
               <!-- DISC Badge -->
               <div class="brief-card">
                 <div class="brief-section-title">Behavioral Profile</div>
@@ -7072,7 +7080,8 @@ createApp({
     const mp = reactive({
       query: '', loading: false, searching: false,
       searchResults: [], selectedPerson: null,
-      extraContext: '', brief: null, error: ''
+      extraContext: '', brief: null, error: '',
+      webResearch: null, researchStatus: ''
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -7139,15 +7148,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     async function mpGenerate() {
       if (!mp.selectedPerson && !mp.extraContext.trim()) return;
-      mp.loading = true; mp.brief = null; mp.error = '';
+      mp.loading = true; mp.brief = null; mp.error = ''; mp.webResearch = null; mp.researchStatus = '';
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
       if (isMockMode) {
         await new Promise(r => setTimeout(r, 2000));
         mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
       }
       try {
+        // Step 1 — FUB data
         let contactContext = '';
         if (mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999) {
+          mp.researchStatus = 'Loading CRM data…';
           const detail = await fubGetPersonDetail(mp.selectedPerson.id);
           const p = detail.person;
           contactContext = [
@@ -7162,10 +7173,42 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         } else if (mp.selectedPerson) {
           contactContext = 'Name: ' + mp.selectedPerson.name;
         }
+
+        // Step 2 — Web research
+        const personName = (mp.selectedPerson?.name || mp.query || '').trim();
+        if (personName && personName !== 'Contact') {
+          mp.researchStatus = 'Researching ' + personName.split(' ')[0] + ' online…';
+          try {
+            const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
+              method: 'POST',
+              headers: {'Content-Type': 'application/json'},
+              body: JSON.stringify({ name: personName, agent_context: mp.extraContext.trim() }),
+              signal: AbortSignal.timeout(30000)
+            });
+            if (researchResp.ok) {
+              const research = await researchResp.json();
+              if (research.found) mp.webResearch = research;
+            }
+          } catch(e) { console.warn('Web research skipped:', e.message); }
+        }
+
+        // Step 3 — Generate brief
+        mp.researchStatus = 'Generating your brief…';
+        let webCtx = '';
+        if (mp.webResearch) {
+          webCtx = 'WEB RESEARCH:\n' + [
+            mp.webResearch.background       ? 'Background: '          + mp.webResearch.background       : null,
+            mp.webResearch.title            ? 'Role: '                + mp.webResearch.title            : null,
+            mp.webResearch.company          ? 'Company: '             + mp.webResearch.company          : null,
+            mp.webResearch.personalitySignals ? 'Personality signals: ' + mp.webResearch.personalitySignals : null,
+            mp.webResearch.discHints        ? 'DISC behavioral hints: '+ mp.webResearch.discHints        : null
+          ].filter(Boolean).join('\n');
+        }
         const prompt = [
           contactContext ? 'CRM DATA:\n' + contactContext : '',
+          webCtx,
           mp.extraContext.trim() ? 'ADDITIONAL CONTEXT FROM AGENT:\n' + mp.extraContext.trim() : ''
-        ].filter(Boolean).join('\n\n') || ('Contact: ' + mp.query);
+        ].filter(Boolean).join('\n\n') || ('Contact: ' + (personName || mp.query));
 
         const raw = await claude(prompt, DISC_SYSTEM);
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -7175,10 +7218,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         mp.error = e.message || 'Generation failed. Check your API key in Settings.';
         console.error('Meeting Prep error:', e);
       }
-      mp.loading = false;
+      mp.loading = false; mp.researchStatus = '';
     }
 
-    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; }
+    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; }
     function mpSelectedPersonFallback() { mp.selectedPerson = { id: null, name: mp.query || 'Contact' }; }
 
     async function saveFubKey() {
