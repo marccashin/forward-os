@@ -203,7 +203,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── FORM ROW ── */
-.form-row { margin-bottom: 14px; }
+.form-row { margin-bottom: 14px; position: relative; }
 .form-row label { margin-bottom: 5px; }
 
 /* ── AI DISCLAIMER ── */
@@ -2059,7 +2059,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <template v-if="mp.selectedPerson && !mp.brief">
                 <div class="form-row">
                   <label>Additional Context (optional)</label>
-                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. She's a corporate attorney, very data-driven. We met at a networking event last week. She's thinking about buying in Georgetown within 6 months." style="resize:vertical;min-height:130px;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-m'}" @click="inlineMicToggle('mp-context-m',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. She's a corporate attorney, very data-driven. We met at a networking event last week. She's thinking about buying in Georgetown within 6 months." style="resize:vertical;min-height:130px;width:100%;box-sizing:border-box;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-m'}" @click="inlineMicToggle('mp-context-m',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 </div>
                 <button class="btn-gold" @click="mpStart" :disabled="mp.loading" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
                   <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
@@ -2088,7 +2088,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <template v-if="!mp.selectedPerson && !mp.brief && !fubKeySet">
                 <div class="form-row" style="margin-top:12px;">
                   <label>Describe the person you're meeting</label>
-                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. Jane Doe, corporate attorney at a DC law firm. Very analytical. We met at a Corcoran event. Interested in buying in Capitol Hill. Has two kids, husband works in finance." style="resize:vertical;min-height:130px;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-d'}" @click="inlineMicToggle('mp-context-d',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                  <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. Jane Doe, corporate attorney at a DC law firm. Very analytical. We met at a Corcoran event. Interested in buying in Capitol Hill. Has two kids, husband works in finance." style="resize:vertical;min-height:130px;width:100%;box-sizing:border-box;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-d'}" @click="inlineMicToggle('mp-context-d',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 </div>
                 <button class="btn-gold" @click="mpSelectedPersonFallback(); mpStart();" :disabled="mp.loading||!mp.extraContext.trim()" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
                   <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
@@ -2116,22 +2116,18 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <!-- Brief output -->
 
             <!-- ── Web Research Confirmation Panel ────────────────────────── -->
-            <div v-if="mp.confirming && mp.researchPreview" class="mp-confirm-panel">
-              <div class="confirm-header">🔍 Web Research Found</div>
-              <div class="confirm-name">{{ mp.researchPreview.name || (mp.selectedPerson?.name || mp.query) }}</div>
-              <div v-if="mp.researchPreview.title || mp.researchPreview.company" class="confirm-role">
-                <span v-if="mp.researchPreview.title">{{ mp.researchPreview.title }}</span>
-                <span v-if="mp.researchPreview.title && mp.researchPreview.company"> · </span>
-                <span v-if="mp.researchPreview.company">{{ mp.researchPreview.company }}</span>
+            <div v-if="mp.confirming && mp.researchPreview" style="background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:20px 22px;margin-top:12px;">
+              <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">🔍 Web Research Found</div>
+              <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:700;color:var(--navy);line-height:1.2;margin-bottom:3px;">{{ mp.researchPreview.name || (mp.selectedPerson?.name || mp.query) }}</div>
+              <div v-if="mp.researchPreview.title || mp.researchPreview.company" style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);opacity:0.55;margin-bottom:12px;">
+                <span v-if="mp.researchPreview.title">{{ mp.researchPreview.title }}</span><span v-if="mp.researchPreview.title && mp.researchPreview.company"> · </span><span v-if="mp.researchPreview.company">{{ mp.researchPreview.company }}</span>
               </div>
-              <div v-if="mp.researchPreview.background" class="confirm-bio">{{ mp.researchPreview.background }}</div>
-              <div v-if="mp.researchPreview.sources && mp.researchPreview.sources.length" class="confirm-sources">
-                Sources: {{ mp.researchPreview.sources.join(' · ') }}
-              </div>
-              <div class="confirm-question">Is this the right person?</div>
-              <div class="mp-confirm-actions">
-                <button class="btn-gold" @click="mpConfirmResearch" style="font-size:12px;padding:8px 18px;min-height:38px;">✓ Yes, that's them</button>
-                <button class="btn-navy" @click="mpResearchAgain" :disabled="mp.loading" style="font-size:12px;padding:8px 16px;min-height:38px;">
+              <div v-if="mp.researchPreview.background" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.7;margin-bottom:12px;">{{ mp.researchPreview.background }}</div>
+              <div v-if="mp.researchPreview.sources && mp.researchPreview.sources.length" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:500;letter-spacing:0.05em;color:#9ca3af;border-top:1px solid var(--cream-mid);padding-top:10px;margin-bottom:16px;line-height:1.6;">{{ mp.researchPreview.sources.join(' · ') }}</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);margin-bottom:10px;">Is this the right person?</div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn-gold" @click="mpConfirmResearch" style="font-size:11px;padding:8px 18px;min-height:38px;">✓ Yes, that's them</button>
+                <button class="btn-navy" @click="mpResearchAgain" :disabled="mp.loading" style="font-size:11px;padding:8px 16px;min-height:38px;">
                   <span v-if="mp.loading" style="display:flex;align-items:center;gap:4px;">
                     <span class="wave-bar" style="height:8px;background:rgba(200,169,110,0.7);"></span>
                     <span class="wave-bar" style="height:12px;background:rgba(200,169,110,0.7);animation-delay:0.15s;"></span>
@@ -2139,7 +2135,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   </span>
                   <span v-else>🔄 Search Again</span>
                 </button>
-                <button class="btn-outline" @click="mpSkipResearch" style="font-size:12px;padding:8px 14px;min-height:38px;">Skip web data</button>
+                <button class="btn-outline" @click="mpSkipResearch" style="font-size:11px;padding:8px 14px;min-height:38px;">Skip web data</button>
               </div>
             </div>
 
@@ -2150,59 +2146,60 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
 
               <!-- Web research badge -->
-              <div v-if="mp.webResearch" style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding:7px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;">
-                <span style="font-size:13px;">🔍</span>
-                <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#16a34a;">Web research used</span>
-                <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#6b7280;margin-left:4px;">· {{ mp.webResearch.sources.join(' · ') }}</span>
+              <div v-if="mp.webResearch" style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 14px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:2px;">
+                <span style="font-size:12px;">🔍</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#16a34a;">Web research used</span>
+                <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Montserrat',sans-serif;font-size:7px;color:#6b7280;letter-spacing:0.04em;margin-left:2px;">{{ mp.webResearch.sources.join(' · ') }}</span>
               </div>
+
               <!-- DISC Badge -->
-              <div class="brief-card">
-                <div class="brief-section-title">Behavioral Profile</div>
-                <div class="disc-badge">
-                  <div class="disc-letter">{{ mp.brief.disc.type }}</div>
+              <div style="background:#fff;border:1px solid var(--cream-mid);border-radius:2px;padding:18px 20px;margin-bottom:10px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Behavioral Profile</div>
+                <div style="display:flex;align-items:center;gap:16px;background:var(--navy);border-radius:2px;padding:14px 18px;margin-bottom:14px;">
+                  <div style="font-family:'Montserrat',sans-serif;font-size:38px;font-weight:900;color:var(--gold);line-height:1;flex-shrink:0;">{{ mp.brief.disc.type }}</div>
                   <div>
-                    <div class="disc-label">{{ mp.brief.disc.label }}</div>
-                    <div class="disc-sub">{{ mp.brief.disc.confidence }} confidence</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--cream);line-height:1.2;">{{ mp.brief.disc.label }}</div>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:rgba(200,169,110,0.7);margin-top:3px;">{{ mp.brief.disc.confidence }} confidence</div>
                   </div>
                 </div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;margin-bottom:8px;">{{ mp.brief.disc.description }}</div>
-                <div style="font-size:12px;color:#9ca3af;font-style:italic;">Why: {{ mp.brief.disc.signals }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.65;margin-bottom:10px;">{{ mp.brief.disc.description }}</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;font-style:italic;line-height:1.6;border-left:2px solid var(--cream-mid);padding-left:12px;">{{ mp.brief.disc.signals }}</div>
               </div>
 
               <!-- Summary -->
-              <div class="brief-card">
-                <div class="brief-section-title">Who They Are</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.65;">{{ mp.brief.summary }}</div>
+              <div style="background:#fff;border:1px solid var(--cream-mid);border-radius:2px;padding:18px 20px;margin-bottom:10px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Who They Are</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.7;">{{ mp.brief.summary }}</div>
               </div>
 
               <!-- Talking points -->
-              <div class="brief-card">
-                <div class="brief-section-title">Conversation Topics</div>
-                <div v-for="(pt, i) in mp.brief.talkingPoints" :key="i" class="brief-row">
-                  <span class="brief-row-icon">💬</span>
-                  <span>{{ pt }}</span>
+              <div style="background:#fff;border:1px solid var(--cream-mid);border-radius:2px;padding:18px 20px;margin-bottom:10px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Conversation Topics</div>
+                <div v-for="(pt, i) in mp.brief.talkingPoints" :key="i" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+                  <span style="flex-shrink:0;font-size:13px;padding-top:1px;">💬</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.6;">{{ pt }}</span>
                 </div>
               </div>
 
               <!-- Do's and Don'ts -->
-              <div class="brief-card">
-                <div class="brief-section-title">Communication Style</div>
-                <div v-for="(d, i) in mp.brief.dos" :key="'do'+i" class="brief-row">
-                  <span class="brief-row-icon brief-do">✓</span>
-                  <span>{{ d }}</span>
+              <div style="background:#fff;border:1px solid var(--cream-mid);border-radius:2px;padding:18px 20px;margin-bottom:10px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:12px;">Communication Style</div>
+                <div v-for="(d, i) in mp.brief.dos" :key="'do'+i" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;">
+                  <span style="flex-shrink:0;width:18px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#16a34a;padding-top:1px;">✓</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.6;">{{ d }}</span>
                 </div>
-                <div v-for="(d, i) in mp.brief.donts" :key="'dont'+i" class="brief-row">
-                  <span class="brief-row-icon brief-dont">✗</span>
-                  <span>{{ d }}</span>
+                <div v-for="(d, i) in mp.brief.donts" :key="'dont'+i" style="display:flex;align-items:flex-start;gap:10px;margin-bottom:9px;">
+                  <span style="flex-shrink:0;width:18px;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:#dc2626;padding-top:1px;">✗</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.6;">{{ d }}</span>
                 </div>
               </div>
 
               <!-- Opener + Goal -->
-              <div class="brief-card">
-                <div class="brief-section-title">Opening Line</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);font-style:italic;line-height:1.6;margin-bottom:14px;">"{{ mp.brief.opener }}"</div>
-                <div class="brief-section-title">Your Goal for This Meeting</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;">{{ mp.brief.goal }}</div>
+              <div style="background:#fff;border:1px solid var(--cream-mid);border-radius:2px;padding:18px 20px;margin-bottom:10px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Opening Line</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--navy);font-style:italic;line-height:1.65;margin-bottom:18px;padding:14px 18px;background:var(--cream);border-left:3px solid var(--gold);border-radius:1px;">"{{ mp.brief.opener }}"</div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Your Goal for This Meeting</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.65;">{{ mp.brief.goal }}</div>
               </div>
 
             </template>
