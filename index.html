@@ -13843,12 +13843,28 @@ No markdown. Valid JSON only.`;
 
     async function atSaveEntries() {
       localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
+      // Save to agent_config for app-level loading
       try {
         await supaRest.upsert('agent_config', {
           agent_name: '__global__',
           training_docs: JSON.stringify(atEntries.value)
         }, 'agent_name');
       } catch(e) { console.warn('Could not sync training docs to Supabase:', e); }
+      // Sync full library to knowledge_docs so voice assistant can search it
+      // file_name (title) is the unique key — re-uploading same title replaces old version
+      try {
+        await fetch(RAILWAY_URL + '/knowledge-docs/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            entries: atEntries.value.map(e => ({
+              file_name: e.title,
+              content:   e.desc,
+              category:  e.section || ''
+            }))
+          })
+        });
+      } catch(e) { console.warn('Could not sync training docs to knowledge_docs:', e); }
     }
     async function atAddEntry() {
       if (!atNewTitle.value.trim() || !atNewDesc.value.trim()) return;
@@ -13865,8 +13881,16 @@ No markdown. Valid JSON only.`;
       showGoldToast('Entry added to Training Library!');
     }
     async function atDeleteEntry(id) {
+      const entry = atEntries.value.find(e => e.id === id);
       atEntries.value = atEntries.value.filter(e => e.id !== id);
       await atSaveEntries();
+      // Also remove directly from knowledge_docs (atSaveEntries syncs remaining, but
+      // explicitly delete to handle edge cases where sync is partial)
+      if (entry && entry.title) {
+        try {
+          await fetch(RAILWAY_URL + '/knowledge-docs?' + new URLSearchParams({ file_name: entry.title }), { method: 'DELETE' });
+        } catch(e) { /* non-critical */ }
+      }
       showToast('Entry removed.', 2000);
     }
 
@@ -14410,13 +14434,50 @@ function voiceClose() {
 
 
 // ── Knowledge Base Search ─────────────────────────────────────────────────
+// Extract the most relevant excerpt from a document for a given query
+function kbExcerpt(content, query, maxLen) {
+  maxLen = maxLen || 2500;
+  if (!content) return '';
+  if (content.length <= maxLen) return content;
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const lower = content.toLowerCase();
+  const positions = words.map(w => lower.indexOf(w)).filter(i => i >= 0);
+  if (!positions.length) return content.slice(0, maxLen);
+  // Find the earliest keyword match, back up 400 chars for context
+  const center = Math.min.apply(null, positions);
+  const start = Math.max(0, center - 400);
+  return (start > 0 ? '…' : '') + content.slice(start, start + maxLen);
+}
+
 async function kbSearch(query) {
   try {
+    // Use up to 4 meaningful keywords
     const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 3).slice(0, 4);
     if (!words.length) return [];
-    const keyword = encodeURIComponent(words[0]);
-    const results = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category&content=ilike.*' + keyword + '*&limit=5');
-    return Array.isArray(results) ? results : [];
+    // Search each keyword separately and merge results
+    const searches = await Promise.all(
+      words.map(w =>
+        supaRest.select('knowledge_docs',
+          'select=id,file_name,content,category&content=ilike.*' + encodeURIComponent(w) + '*&limit=5')
+        .catch(() => [])
+      )
+    );
+    // Deduplicate by id, score by how many keywords appear in content
+    const seen = new Set();
+    const all = [];
+    for (const batch of searches) {
+      if (!Array.isArray(batch)) continue;
+      for (const doc of batch) {
+        if (!doc || seen.has(doc.id)) continue;
+        seen.add(doc.id);
+        const lower = (doc.content || '').toLowerCase();
+        doc._score = words.filter(w => lower.includes(w)).length;
+        all.push(doc);
+      }
+    }
+    // Return top 3 by relevance score
+    all.sort((a, b) => b._score - a._score);
+    return all.slice(0, 3);
   } catch(e) { return []; }
 }
 
@@ -16071,7 +16132,7 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
         const _kbDocs = await kbSearch(question);
         const _hasKb = _kbDocs.length > 0;
         const _kbContext = _hasKb
-          ? '\n\n━━ UPLOADED TRAINING MATERIALS ━━\n' + _kbDocs.map(d => '[' + d.file_name + ']\n' + (d.content||'').slice(0,800)).join('\n\n---\n\n')
+          ? '\n\n━━ UPLOADED TRAINING MATERIALS ━━\n' + _kbDocs.map(d => '[' + d.file_name + ']\n' + kbExcerpt(d.content||'', question)).join('\n\n---\n\n')
           : '';
         // ─────────────────────────────────────────────────────────────────
 
