@@ -7018,8 +7018,21 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
       try {
         mp.searchResults = await fubSearchPerson(mp.query);
-        if (mp.searchResults.length === 0) mp.error = 'No contacts found in Follow Up Boss. Try a different name or email.';
-      } catch(e) { mp.error = 'FUB search failed: ' + e.message; }
+        if (mp.searchResults.length === 0) {
+          // Not in FUB — run web research on the typed name anyway
+          mp.searching = false;
+          mpSelectedPersonFallback();
+          await mpStart();
+          return;
+        }
+      } catch(e) {
+        // FUB unreachable — still proceed with web research
+        mp.searchResults = [];
+        mp.searching = false;
+        mpSelectedPersonFallback();
+        await mpStart();
+        return;
+      }
       mp.searching = false;
     }
 
@@ -7029,7 +7042,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // Phase 1: fetch FUB data + web research → show confirmation if found
     async function mpStart() {
-      if (!mp.selectedPerson && !mp.extraContext.trim()) return;
+      if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
       mp.loading = true; mp.brief = null; mp.error = '';
       mp.webResearch = null; mp.researchStatus = '';
       mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
@@ -7096,7 +7109,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // Phase 2: generate brief from confirmed context + web research
     async function mpGenerate() {
-      if (!mp.selectedPerson && !mp.extraContext.trim()) return;
+      if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
       mp.loading = true; mp.brief = null; mp.error = '';
       mp.confirming = false; mp.researchStatus = 'Generating your brief…';
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
