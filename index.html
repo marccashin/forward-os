@@ -1325,7 +1325,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <!-- Admin Tools Row -->
           <div v-if="isAdmin || agentName === 'Marc Cashin'" class="admin-row">
 
-            <div class="admin-tile" @click="go('admin-training')" v-if="agentName === 'Marc Cashin' || agentName === 'Operations'">
+            <div class="admin-tile" @click="go('admin-training')" v-if="agentName === 'Marc Cashin'">
               <div class="admin-tile-icon">📚</div>
               <div>
                 <div class="admin-tile-label">Training Library</div>
@@ -5211,33 +5211,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">This context is included in every AI prompt to keep outputs on-brand.</p>
               <div class="form-row"><label>Brokerage Name</label><input v-model="settBrokerage"/></div>
               <div class="form-row"><label>Markets</label><input v-model="settMarkets" placeholder="Washington DC, Maryland, Virginia"/></div>
-              <div class="form-row"><label>Brand Voice Notes (optional)</label><textarea v-model="settVoice" rows="6" placeholder="E.g. Professional but approachable. No clichés. Always reference the DMV luxury market…" style="resize:vertical;min-height:140px;width:100%;box-sizing:border-box;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='sett-voice'}" @click="inlineMicToggle('sett-voice',()=>settVoice.value,v=>settVoice.value=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
+              <div class="form-row"><label>Brand Voice Notes (optional)</label><textarea v-model="settVoice" rows="3" placeholder="E.g. Professional but approachable. No clichés. Always reference the DMV luxury market…" style="resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='sett-voice'}" @click="inlineMicToggle('sett-voice',()=>settVoice.value,v=>settVoice.value=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
               <button class="btn-navy" @click="saveBranding">Save Branding</button>
             </div>
-
-            <!-- Brand PDFs -->
-            <div class="card">
-              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">📄 Brand Reference PDFs</h3>
-              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Upload brand-specific PDFs (style guides, pitch books, positioning docs) that the AI will reference when generating assets.</p>
-              <!-- Upload button -->
-              <label style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--navy);color:var(--cream);border-radius:2px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">
-                ✦ Upload PDF
-                <input type="file" accept=".pdf" @change="bpHandleUpload" style="display:none;" />
-              </label>
-              <!-- PDF list -->
-              <div v-if="settBrandPdfs.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:8px 0;">No brand PDFs uploaded yet.</div>
-              <div v-for="pdf in settBrandPdfs" :key="pdf.id" style="display:flex;align-items:center;justify-content:space-between;gap:10px;border:1.5px solid #e5e7eb;border-radius:8px;padding:10px 14px;margin-bottom:8px;">
-                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-                  <span style="font-size:18px;flex-shrink:0;">📄</span>
-                  <div style="min-width:0;">
-                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ pdf.name }}</div>
-                    <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ Math.round(pdf.content.length / 5) }} words extracted</div>
-                  </div>
-                </div>
-                <button @click="bpRemove(pdf.id)" style="background:#fff0f0;border:1.5px solid #fecaca;color:#dc2626;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;">Remove</button>
-              </div>
-            </div>
-
             <!-- Access codes -->
             <div class="card">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Access Codes</h3>
@@ -5264,7 +5240,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
             </div>
             <!-- Training Admin (Marc only) -->
-            <div class="card" v-if="agentName === 'Marc Cashin' || agentName === 'Operations'" style="border:1.5px solid var(--gold);background:linear-gradient(135deg,#fffbeb,#fff);">
+            <div class="card" v-if="agentName === 'Marc Cashin'" style="border:1.5px solid var(--gold);background:linear-gradient(135deg,#fffbeb,#fff);">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:14px;font-weight:600;color:var(--navy);">📚 Training Library Admin</h3>
               <p style="font-family:'Cormorant Garamond',serif;margin:0 0 12px;font-size:13px;color:#6b7280;">Add or remove custom entries that appear in the voice assistant and Training Center.</p>
               <button class="btn-gold" @click="go('admin-training')" style="width:100%;">Open Admin Panel</button>
@@ -7435,7 +7411,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const settBrokerage = ref(localStorage.getItem('fos_brokerage')||'FORWARD Real Estate | Corcoran McEnearney');
     const settMarkets   = ref(localStorage.getItem('fos_markets')||'Washington DC, Maryland, Virginia (DMV metro area)');
     const settVoice     = ref(localStorage.getItem('fos_voice')||'');
-    const settBrandPdfs = ref((()=>{ try { return JSON.parse(localStorage.getItem('fos_brand_pdfs')||'[]'); } catch { return []; } })());
 
     // Library
     const lib       = ref([]);
@@ -14213,7 +14188,6 @@ No markdown. Valid JSON only.`;
       if (isPDF) {
         try {
           showToast('Reading PDF…', 1500);
-          // Configure PDF.js worker
           const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
           if (!pdfjsLib) { showToast('PDF reader not loaded.', 3000); e.target.value = ''; return; }
           if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
@@ -14228,14 +14202,23 @@ No markdown. Valid JSON only.`;
             const pageText = content.items.map(item => item.str).join(' ');
             fullText += pageText + '\n';
           }
-          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + fullText.trim();
-          showToast('✅ PDF loaded (' + pdfDoc.numPages + ' page' + (pdfDoc.numPages===1?'':'s') + ') — review and click Add');
+          const extracted = fullText.trim();
+          if (!extracted) {
+            showToast('⚠️ This PDF appears to be scanned — no text could be extracted. Please paste content manually, then click Add.', 5000);
+            e.target.value = '';
+            return;
+          }
+          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + extracted;
+          e.target.value = '';
+          await atAddEntry();
         } catch(err) { console.error(err); showToast('Could not extract PDF text: ' + err.message, 4000); }
       } else {
         try {
           const text = await file.text();
+          if (!text.trim()) { showToast('File appears empty.', 3000); e.target.value = ''; return; }
           atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + text.trim();
-          showToast('✅ File loaded — review and click Add');
+          e.target.value = '';
+          await atAddEntry();
         } catch { showToast('Could not read file', 3000); }
       }
       e.target.value = '';
@@ -15599,15 +15582,7 @@ function logActMicToggle() {
       return [p.hook, p.body, p.cta].filter(Boolean).join('\n\n').trim();
     }
     function brandCtx() {
-      const base = `Brokerage: ${localStorage.getItem('fos_brokerage')||'FORWARD Real Estate | Corcoran McEnearney'}. Markets: ${localStorage.getItem('fos_markets')||'Washington DC, Maryland, Virginia (DMV)'}. ${localStorage.getItem('fos_voice')||''}`;
-      try {
-        const pdfs = JSON.parse(localStorage.getItem('fos_brand_pdfs')||'[]');
-        if (pdfs.length > 0) {
-          const pdfCtx = pdfs.map(p => `--- Brand Document: ${p.name} ---\n${p.content}`).join('\n\n');
-          return base + '\n\nBrand Reference Documents:\n' + pdfCtx;
-        }
-      } catch {}
-      return base;
+      return `Brokerage: ${localStorage.getItem('fos_brokerage')||'FORWARD Real Estate | Corcoran McEnearney'}. Markets: ${localStorage.getItem('fos_markets')||'Washington DC, Maryland, Virginia (DMV)'}. ${localStorage.getItem('fos_voice')||''}`;
     }
     function spPlatformLabel(idx) {
       if (sp.platform==='all') return ['Instagram','LinkedIn','Facebook','Twitter/X'][idx]||`Version ${idx+1}`;
@@ -15662,7 +15637,7 @@ function logActMicToggle() {
       // Load all shared global settings from Supabase (__global__ row)
       try {
         const globalRows = await supaRest.select('agent_config',
-          `select=fub_api_key,brokerage,markets,voice_tone,training_docs,brand_pdfs&agent_name=eq.__global__`
+          `select=fub_api_key,brokerage,markets,voice_tone,training_docs&agent_name=eq.__global__`
         );
         const g = globalRows && globalRows[0];
         if (g) {
@@ -15692,16 +15667,6 @@ function logActMicToggle() {
               if (remoteDocs.length > 0) {
                 localStorage.setItem(AT_KEY, g.training_docs);
                 atEntries.value = remoteDocs;
-              }
-            } catch {}
-          }
-          // Brand PDFs
-          if (g.brand_pdfs) {
-            try {
-              const remotePdfs = JSON.parse(g.brand_pdfs);
-              if (remotePdfs.length > 0) {
-                localStorage.setItem('fos_brand_pdfs', g.brand_pdfs);
-                settBrandPdfs.value = remotePdfs;
               }
             } catch {}
           }
@@ -15853,46 +15818,6 @@ function logActMicToggle() {
         }, 'agent_name');
       } catch(e) { console.warn('Could not save branding to Supabase:', e); }
       showToast('✅ Branding saved!');
-    }
-
-    // ── Brand PDFs ─────────────────────────────────────────────────────────
-    async function saveBrandPdfs() {
-      const json = JSON.stringify(settBrandPdfs.value);
-      localStorage.setItem('fos_brand_pdfs', json);
-      try {
-        await supaRest.upsert('agent_config', { agent_name: '__global__', brand_pdfs: json }, 'agent_name');
-      } catch(e) { console.warn('Could not save brand PDFs to Supabase:', e); }
-    }
-    async function bpHandleUpload(e) {
-      const file = e.target.files[0]; if (!file) return;
-      const isPDF = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
-      if (!isPDF) { showToast('Please upload a PDF file.', 3000); e.target.value = ''; return; }
-      try {
-        showToast('Reading PDF…', 1500);
-        const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
-        if (!pdfjsLib) { showToast('PDF reader not loaded.', 3000); e.target.value = ''; return; }
-        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-          pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        let fullText = '';
-        for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-          const page = await pdfDoc.getPage(pageNum);
-          const content = await page.getTextContent();
-          fullText += content.items.map(item => item.str).join(' ') + '\n';
-        }
-        const entry = { id: Date.now(), name: file.name, content: fullText.trim() };
-        settBrandPdfs.value.push(entry);
-        await saveBrandPdfs();
-        showToast('✅ Brand PDF added (' + pdfDoc.numPages + ' page' + (pdfDoc.numPages === 1 ? '' : 's') + ')');
-      } catch(err) { console.error(err); showToast('Could not read PDF: ' + err.message, 4000); }
-      e.target.value = '';
-    }
-    async function bpRemove(id) {
-      settBrandPdfs.value = settBrandPdfs.value.filter(p => p.id !== id);
-      await saveBrandPdfs();
-      showToast('Brand PDF removed.');
     }
 
     // ── AI: Listing Description (Chat-based) ────────────────
@@ -16558,8 +16483,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       view, sidebarOpen, showSwitcher, isMobile, toast, expandItem,
       TOOLS,
       // Settings
-      apiKeySet, settKey, showKey, settModel, settBrokerage, settMarkets, settVoice, settBrandPdfs,
-      saveKey, clearKey, saveModel, saveBranding, bpHandleUpload, bpRemove,
+      apiKeySet, settKey, showKey, settModel, settBrokerage, settMarkets, settVoice,
+      saveKey, clearKey, saveModel, saveBranding,
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
       fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, saveFubKey, clearFubKey, fubSyncUsers,
       goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback,
