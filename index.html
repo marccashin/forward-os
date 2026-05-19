@@ -5431,7 +5431,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <span style="font-size:11px;color:#9ca3af;">Upload a .txt, .md, or .pdf file to auto-fill content</span>
                   </div>
                 </div>
-                <button class="btn-gold" @click="atAddEntry" :disabled="!atNewTitle.trim()||!atNewDesc.trim()" style="width:100%;padding:11px;">✦ Add to Training Library</button>
+                <button class="btn-gold" @click="atAddEntry" :disabled="!atNewTitle.trim()" style="width:100%;padding:11px;">✦ Add to Training Library</button>
               </div>
 
               <!-- Custom entries list -->
@@ -14179,7 +14179,7 @@ No markdown. Valid JSON only.`;
       } catch(e) { console.warn('Could not sync training docs to knowledge_docs:', e); }
     }
     async function atAddEntry() {
-      if (!atNewTitle.value.trim() || !atNewDesc.value.trim()) return;
+      if (!atNewTitle.value.trim()) return;
       atEntries.value.unshift({
         id: Date.now().toString(36),
         section: atNewSection.value,
@@ -14228,17 +14228,18 @@ No markdown. Valid JSON only.`;
             fullText += pageText + '\n';
           }
           const extracted = fullText.trim();
-          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + (extracted || '[No text extracted — PDF may be image-based. Add description manually.]');
-          e.target.value = '';
-          await atAddEntry();
-        } catch(err) { console.error(err); showToast('Could not extract PDF text: ' + err.message, 4000); }
+          if (extracted) {
+            atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + extracted;
+            showToast('✅ PDF text extracted — review and click Add');
+          } else {
+            showToast('⚠️ No text extracted (scanned PDF). Paste content manually, then click Add.', 4000);
+          }
+        } catch(err) { console.error(err); showToast('Could not read PDF: ' + err.message, 4000); }
       } else {
         try {
           const text = await file.text();
-          if (!text.trim()) { showToast('File appears empty.', 3000); e.target.value = ''; return; }
-          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + text.trim();
-          e.target.value = '';
-          await atAddEntry();
+          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + (text.trim() || '');
+          showToast('✅ File loaded — review and click Add');
         } catch { showToast('Could not read file', 3000); }
       }
       e.target.value = '';
