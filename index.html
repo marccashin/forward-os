@@ -7528,14 +7528,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
 
         const blob = new Blob([fileBytes], { type: mimeType });
-        const formData = new FormData();
-        formData.append('file', blob, fileName);
-        formData.append('folder_id', driveFolderId || '');
-        formData.append('subfolder', subfolder);
-        formData.append('property_id', targetProp.id);
-        formData.append('uploaded_by', agentName.value);
-
-        const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
+        const { driveFileId: _sp1id, driveLink: _sp1dl } = await fosUploadToDrive(blob, fileName, mimeType, driveFolderId || '');
+        const _sp1fd = new FormData();
+        _sp1fd.append('drive_file_id', _sp1id); _sp1fd.append('drive_link', _sp1dl);
+        _sp1fd.append('file_name', fileName); _sp1fd.append('subfolder', subfolder);
+        _sp1fd.append('property_id', targetProp.id); _sp1fd.append('uploaded_by', agentName.value);
+        const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: _sp1fd });
         if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
 
         if (isTextContent && typeof data.data === 'string') {
@@ -8545,45 +8543,72 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       } catch (e) { console.warn('Save note failed:', e); }
     }
 
+    // ── Google Drive direct upload helpers ─────────────────────────────────
+    async function fosGetDriveToken() {
+      const r = await fetch('/.netlify/functions/get-drive-token', { method: 'POST' });
+      if (!r.ok) throw new Error('Drive auth failed (' + r.status + ')');
+      const { access_token, error } = await r.json();
+      if (!access_token) throw new Error(error || 'No Drive token returned');
+      return access_token;
+    }
+
+    async function fosUploadToDrive(fileOrBlob, fileName, mimeType, folderId) {
+      const token = await fosGetDriveToken();
+      const mime  = mimeType || fileOrBlob.type || 'application/octet-stream';
+      const bnd   = 'fos_' + Math.random().toString(36).slice(2, 14);
+      const meta  = folderId
+        ? JSON.stringify({ name: fileName, parents: [folderId] })
+        : JSON.stringify({ name: fileName });
+      const enc   = new TextEncoder();
+      const mPart = enc.encode('--' + bnd + '\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n' + meta + '\r\n');
+      const fPart = enc.encode('--' + bnd + '\r\nContent-Type: ' + mime + '\r\n\r\n');
+      const close = enc.encode('\r\n--' + bnd + '--');
+      const fc    = await fileOrBlob.arrayBuffer();
+      const body  = new Uint8Array(mPart.length + fPart.length + fc.byteLength + close.length);
+      let off = 0;
+      body.set(mPart, off); off += mPart.length;
+      body.set(fPart, off); off += fPart.length;
+      body.set(new Uint8Array(fc), off); off += fc.byteLength;
+      body.set(close, off);
+      const up = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink',
+        { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'multipart/related; boundary=' + bnd }, body }
+      );
+      if (!up.ok) throw new Error('Drive upload failed (' + up.status + '): ' + (await up.text()).substring(0, 200));
+      const u = await up.json();
+      return { driveFileId: u.id, driveLink: u.webViewLink || 'https://drive.google.com/file/d/' + u.id + '/view' };
+    }
+
+    async function fosDriveDeleteFile(driveFileId) {
+      if (!driveFileId) return;
+      try {
+        const token = await fosGetDriveToken();
+        await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?supportsAllDrives=true',
+          { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
+      } catch(e) { console.warn('Drive delete failed:', e.message); }
+    }
+    // ── End Drive helpers ──────────────────────────────────────────────────
+
     async function lstUploadFile(file, subfolder) {
       if (!lstActiveProp.value) return;
       lstUploading[subfolder] = true;
       try {
         const subfolderDriveIds = lstActiveProp.value.subfolder_drive_ids || {};
         const folderId = subfolderDriveIds[subfolder] || '';
-
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder_id', folderId);
-        formData.append('subfolder', subfolder);
-        formData.append('property_id', lstActiveProp.value.id);
-        formData.append('uploaded_by', agentName.value);
-
-        const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
-        if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
+        const { driveFileId, driveLink } = await fosUploadToDrive(file, file.name, file.type, folderId);
+        const fd = new FormData();
+        fd.append('drive_file_id', driveFileId); fd.append('drive_link', driveLink);
+        fd.append('file_name', file.name); fd.append('subfolder', subfolder);
+        fd.append('property_id', lstActiveProp.value.id); fd.append('uploaded_by', agentName.value);
+        const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: fd });
+        if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Record failed'); }
         const uploadData = await uploadRes.json();
-
-        // Railway wrote the Supabase record; add to local UI
-        const newFile = {
+        lstActiveFiles.value.unshift({
           id: uploadData.asset_id || Date.now().toString(),
-          property_id: lstActiveProp.value.id,
-          subfolder,
-          file_name: file.name,
-          drive_file_id: (() => {
-            let fid = uploadData.file_id || null;
-            const dl = uploadData.drive_link || null;
-            if (!fid && dl) {
-              const idM = dl.match(/\/d\/([a-zA-Z0-9_-]+)/) || dl.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-              if (idM) fid = idM[1];
-            }
-            return fid;
-          })(),
-          drive_link: uploadData.drive_link || null,
-          file_type: file.type,
-          uploaded_by: agentName.value,
-          created_at: new Date().toISOString()
-        };
-        lstActiveFiles.value.unshift(newFile);
+          property_id: lstActiveProp.value.id, subfolder, file_name: file.name,
+          drive_file_id: driveFileId, drive_link: driveLink,
+          file_type: file.type, uploaded_by: agentName.value, created_at: new Date().toISOString()
+        });
         showGoldToast(`${file.name} uploaded to ${SUBFOLDER_LABELS[subfolder] || subfolder}`);
       } catch (e) {
         showToast('Upload failed: ' + e.message, 4000);
@@ -8606,9 +8631,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     async function lstDeleteFile(file) {
       if (!confirm('Delete ' + file.file_name + '?')) return;
       try {
+        await fosDriveDeleteFile(file.drive_file_id);
         const res = await fetch(RAILWAY_URL + '/delete-file', {
           method:'DELETE', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ file_id: file.drive_file_id || '', asset_id: file.id || '' })
+          body: JSON.stringify({ asset_id: file.id || '' })
         });
         if (!res.ok) { const err = await res.text(); throw new Error(err || 'Delete failed'); }
         lstActiveFiles.value = lstActiveFiles.value.filter(f => f.id !== file.id);
@@ -9401,14 +9427,12 @@ async function lstSubmitToPipeline() {
         // Attempt Drive upload — failure is non-fatal if text was already saved
         try {
           const blob = new Blob([fileBytes], { type: mimeType });
-          const formData = new FormData();
-          formData.append('file', blob, fileName);
-          formData.append('folder_id', folderId);
-          formData.append('subfolder', subfolder);
-          formData.append('property_id', prop.id);
-          formData.append('uploaded_by', agentName.value);
-
-          const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
+          const { driveFileId: _sp2id, driveLink: _sp2dl } = await fosUploadToDrive(blob, fileName, mimeType, folderId);
+          const _sp2fd = new FormData();
+          _sp2fd.append('drive_file_id', _sp2id); _sp2fd.append('drive_link', _sp2dl);
+          _sp2fd.append('file_name', fileName); _sp2fd.append('subfolder', subfolder);
+          _sp2fd.append('property_id', prop.id); _sp2fd.append('uploaded_by', agentName.value);
+          const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: _sp2fd });
           if (!uploadRes.ok) { console.warn('/upload-file error:', await uploadRes.text()); }
         } catch (uploadErr) { console.warn('Drive upload skipped:', uploadErr.message); }
 
@@ -12205,19 +12229,20 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             bckSaved.value = true;
             setTimeout(() => { bckSaved.value = false; }, 8000);
           } else {
-            const formData = new FormData();
-            formData.append('file', blob, fileName);
-            formData.append('folder_id', folderId);
-            formData.append('subfolder', 'buyer_kit');
-            formData.append('uploaded_by', agentName.value);
-            formData.append('buyer_id', buyerRecord.id);
-            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: formData });
-            if (!res.ok) {
-              openPDFBlob(blob, fileName);
-              showGoldToast('✅ PDF downloaded — Drive sync pending.');
-            } else {
-              showGoldToast('✅ Saved to ' + buyerName + '\'s buyer file!');
-            }
+            try {
+              const { driveFileId: _bk1id, driveLink: _bk1dl } = await fosUploadToDrive(blob, fileName, 'application/pdf', folderId);
+              const _bk1fd = new FormData();
+              _bk1fd.append('drive_file_id', _bk1id); _bk1fd.append('drive_link', _bk1dl);
+              _bk1fd.append('file_name', fileName); _bk1fd.append('subfolder', 'buyer_kit');
+              _bk1fd.append('buyer_id', buyerRecord.id); _bk1fd.append('uploaded_by', agentName.value);
+              const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: _bk1fd });
+              if (!res.ok) {
+                openPDFBlob(blob, fileName);
+                showGoldToast('✅ PDF downloaded — Drive sync pending.');
+              } else {
+                showGoldToast('✅ Saved to ' + buyerName + '\'s buyer file!');
+              }
+            } catch(_bk1Err) { openPDFBlob(blob, fileName); showGoldToast('✅ PDF downloaded — Drive sync pending.'); }
             bckSaved.value = true;
             setTimeout(() => { bckSaved.value = false; }, 8000);
           }
@@ -12260,16 +12285,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           const fileBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
           const blob = new Blob([fileBytes], { type: 'application/pdf' });
           const fileName = label.replace(/[^a-zA-Z0-9\s\-]/g,'').replace(/\s+/g,'-').substring(0,80) + '.pdf';
-          const formData = new FormData();
-          formData.append('file', blob, fileName);
-          formData.append('folder_id', folderId);
-          formData.append('subfolder', 'buyer_kit');
-          formData.append('uploaded_by', agentName.value);
-          formData.append('buyer_id', buyerRecord.id);
-          const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
-          showGoldToast(res.ok
-            ? '📁 Saved to ' + buyerName + "'s Drive folder!"
-            : '✅ PDF downloaded — Drive sync pending.');
+          try {
+            const { driveFileId: _bck2id, driveLink: _bck2dl } = await fosUploadToDrive(blob, fileName, 'application/pdf', folderId);
+            const _bck2fd = new FormData();
+            _bck2fd.append('drive_file_id', _bck2id); _bck2fd.append('drive_link', _bck2dl);
+            _bck2fd.append('file_name', fileName); _bck2fd.append('subfolder', 'buyer_kit');
+            _bck2fd.append('buyer_id', buyerRecord.id); _bck2fd.append('uploaded_by', agentName.value);
+            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _bck2fd });
+            showGoldToast(res.ok
+              ? '📁 Saved to ' + buyerName + "'s Drive folder!"
+              : '✅ PDF downloaded — Drive sync pending.');
+          } catch(_bck2Err) { showGoldToast('✅ PDF downloaded — Drive sync pending.'); }
           bckFolderSaved.value = true;
           setTimeout(() => { bckFolderSaved.value = false; }, 6000);
         } else {
@@ -12323,16 +12349,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           const folderId = (record.subfolder_drive_ids && record.subfolder_drive_ids.buyer_kit)
             || record.drive_folder_id || '';
           if (folderId) {
-            const formData = new FormData();
-            formData.append('file', blob, fileName);
-            formData.append('folder_id', folderId);
-            formData.append('subfolder', 'buyer_kit');
-            formData.append('uploaded_by', agentName.value);
-            formData.append('buyer_id', record.id);
-            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
-            showGoldToast(res.ok
-              ? '📁 Saved to ' + record.buyer_name + "'s Drive folder!"
-              : '✅ PDF saved — Drive sync pending.');
+            try {
+              const { driveFileId: _cf1id, driveLink: _cf1dl } = await fosUploadToDrive(blob, fileName, 'application/pdf', folderId);
+              const _cf1fd = new FormData();
+              _cf1fd.append('drive_file_id', _cf1id); _cf1fd.append('drive_link', _cf1dl);
+              _cf1fd.append('file_name', fileName); _cf1fd.append('subfolder', 'buyer_kit');
+              _cf1fd.append('buyer_id', record.id); _cf1fd.append('uploaded_by', agentName.value);
+              const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _cf1fd });
+              showGoldToast(res.ok
+                ? '📁 Saved to ' + record.buyer_name + "'s Drive folder!"
+                : '✅ PDF saved — Drive sync pending.');
+            } catch(_cf1Err) { showGoldToast('✅ PDF saved — Drive sync pending.'); }
           } else {
             // No Drive folder yet — fall back to opening PDF
             openPDFBlob(blob, fileName);
@@ -12342,16 +12369,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           const folderId = (record.subfolder_drive_ids && record.subfolder_drive_ids.marketing)
             || record.drive_folder_id || '';
           if (folderId) {
-            const formData = new FormData();
-            formData.append('file', blob, fileName);
-            formData.append('property_id', record.id);
-            formData.append('folder_id', folderId);
-            formData.append('subfolder', 'marketing');
-            formData.append('uploaded_by', agentName.value);
-            const res = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: formData });
-            showGoldToast(res.ok
-              ? '📁 Saved to ' + record.address + "'s Drive folder!"
-              : '✅ PDF saved — Drive sync pending.');
+            try {
+              const { driveFileId: _cf2id, driveLink: _cf2dl } = await fosUploadToDrive(blob, fileName, 'application/pdf', folderId);
+              const _cf2fd = new FormData();
+              _cf2fd.append('drive_file_id', _cf2id); _cf2fd.append('drive_link', _cf2dl);
+              _cf2fd.append('file_name', fileName); _cf2fd.append('subfolder', 'marketing');
+              _cf2fd.append('property_id', record.id); _cf2fd.append('uploaded_by', agentName.value);
+              const res = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: _cf2fd });
+              showGoldToast(res.ok
+                ? '📁 Saved to ' + record.address + "'s Drive folder!"
+                : '✅ PDF saved — Drive sync pending.');
+            } catch(_cf2Err) { showGoldToast('✅ PDF saved — Drive sync pending.'); }
           } else {
             openPDFBlob(blob, fileName);
             showGoldToast('✅ PDF opened — no Drive folder linked yet.');
@@ -12426,14 +12454,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const b64 = bck._lastPDF.split(',')[1] || bck._lastPDF;
       const fileBytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       const blob = new Blob([fileBytes], { type:'application/pdf' });
-      const formData = new FormData();
-      formData.append('file', blob, fileName);
-      formData.append('folder_id', folderId);
-      formData.append('subfolder', 'buyer_kit');
-      formData.append('uploaded_by', agentName.value);
-      formData.append('buyer_id', buyerRecord.id);
       try {
-        const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: formData });
+        const { driveFileId: _bk2id, driveLink: _bk2dl } = await fosUploadToDrive(blob, fileName, 'application/pdf', folderId);
+        const _bk2fd = new FormData();
+        _bk2fd.append('drive_file_id', _bk2id); _bk2fd.append('drive_link', _bk2dl);
+        _bk2fd.append('file_name', fileName); _bk2fd.append('subfolder', 'buyer_kit');
+        _bk2fd.append('buyer_id', buyerRecord.id); _bk2fd.append('uploaded_by', agentName.value);
+        const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: _bk2fd });
         if (!res.ok) throw new Error(await res.text());
         showGoldToast('✅ Buyer Kit saved for ' + buyerName);
       } catch(e) { showToast('Save failed: ' + e.message, 4000); }
@@ -12659,15 +12686,14 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             const ia = new Uint8Array(ab);
             for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
             const pdfBlob = new Blob([ab], { type: 'application/pdf' });
-            const fileName = 'Tour_Summary_' + tt.activeTour.name.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
-            const formData = new FormData();
-            formData.append('file', pdfBlob, fileName);
-            formData.append('folder_id', (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.property_comparisons) || '');
-            formData.append('subfolder', 'property_comparisons');
-            formData.append('buyer_id', byrActiveBuyer.value.id);
-            formData.append('uploaded_by', agentName.value);
-            formData.append('table', 'buyer_assets');
-            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
+            const _ttfn = 'Tour_Summary_' + tt.activeTour.name.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+            const _ttFolId = (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.property_comparisons) || '';
+            const { driveFileId: _tt1id, driveLink: _tt1dl } = await fosUploadToDrive(pdfBlob, _ttfn, 'application/pdf', _ttFolId);
+            const _tt1fd = new FormData();
+            _tt1fd.append('drive_file_id', _tt1id); _tt1fd.append('drive_link', _tt1dl);
+            _tt1fd.append('file_name', _ttfn); _tt1fd.append('subfolder', 'property_comparisons');
+            _tt1fd.append('buyer_id', byrActiveBuyer.value.id); _tt1fd.append('uploaded_by', agentName.value);
+            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _tt1fd });
             if (res.ok) { showGoldToast('Tour PDF saved to buyer folder.'); }
             else { showGoldToast('PDF downloaded.'); }
           } catch(e) { console.warn('Buyer folder save failed:', e); showGoldToast('PDF downloaded.'); }
@@ -12981,14 +13007,13 @@ Keep the tone professional but conversational. Be specific and reference actual 
 
       const b64 = tt._lastPDF.split(',')[1] || tt._lastPDF;
       const pdfBlob = new Blob([Uint8Array.from(atob(b64), c => c.charCodeAt(0))], { type:'application/pdf' });
-      const formData = new FormData();
-      formData.append('file', pdfBlob, fileName);
-      formData.append('folder_id', folderId);
-      formData.append('subfolder', 'property_comparisons');
-      formData.append('buyer_id', buyerRecord.id);
-      formData.append('uploaded_by', agentName.value);
       try {
-        const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: formData });
+        const { driveFileId: _ts1id, driveLink: _ts1dl } = await fosUploadToDrive(pdfBlob, fileName, 'application/pdf', folderId);
+        const _ts1fd = new FormData();
+        _ts1fd.append('drive_file_id', _ts1id); _ts1fd.append('drive_link', _ts1dl);
+        _ts1fd.append('file_name', fileName); _ts1fd.append('subfolder', 'property_comparisons');
+        _ts1fd.append('buyer_id', buyerRecord.id); _ts1fd.append('uploaded_by', agentName.value);
+        const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method:'POST', body: _ts1fd });
         if (!res.ok) throw new Error(await res.text());
         showGoldToast('✅ Tour summary saved to ' + buyerName + '\'s folder!');
       } catch(e) { showToast('Save failed: ' + e.message, 4000); }
@@ -13239,19 +13264,19 @@ No markdown. No preamble. Valid JSON only.`;
           if (!folderId) {
             openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF ready — link a Drive folder to auto-file.');
           } else {
-            const formData = new FormData();
-            formData.append('file', pdfBlob, fileName);
-            formData.append('folder_id', folderId);
-            formData.append('subfolder', 'buyer_intake');
-            formData.append('buyer_id', byrActiveBuyer.value.id);
-            formData.append('uploaded_by', agentName.value);
-            formData.append('table', 'buyer_assets');
-            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
-            if (res.ok) {
-              showGoldToast('✅ Buyer summary saved to folder.');
-            } else {
-              openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF downloaded — Drive sync pending.');
-            }
+            try {
+              const { driveFileId: _bna1id, driveLink: _bna1dl } = await fosUploadToDrive(pdfBlob, fileName, 'application/pdf', folderId);
+              const _bna1fd = new FormData();
+              _bna1fd.append('drive_file_id', _bna1id); _bna1fd.append('drive_link', _bna1dl);
+              _bna1fd.append('file_name', fileName); _bna1fd.append('subfolder', 'buyer_intake');
+              _bna1fd.append('buyer_id', byrActiveBuyer.value.id); _bna1fd.append('uploaded_by', agentName.value);
+              const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _bna1fd });
+              if (res.ok) {
+                showGoldToast('✅ Buyer summary saved to folder.');
+              } else {
+                openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF downloaded — Drive sync pending.');
+              }
+            } catch(_bna1Err) { openPDFBlob(pdfBlob, fileName); showGoldToast('✅ PDF downloaded — Drive sync pending.'); }
           }
         } else {
           const pdfData = doc.output('datauristring');
@@ -13523,16 +13548,17 @@ No markdown. Valid JSON only.`;
         const pdfBlob = doc.output('blob');
         const fileName = 'Offer_Strategy_' + osgAddress.value.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
         if (byrActiveBuyer.value) {
-          const formData = new FormData();
-          formData.append('file', pdfBlob, fileName);
-          formData.append('folder_id', (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.offer_documents) || '');
-          formData.append('subfolder', 'offer_documents');
-          formData.append('buyer_id', byrActiveBuyer.value.id);
-          formData.append('uploaded_by', agentName.value);
-          formData.append('table', 'buyer_assets');
-          const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: formData });
-          if (res.ok) { showGoldToast('Offer strategy saved to buyer folder.'); osgSaved.value = true; }
-          else { openPDFBlob(pdfBlob, fileName); showGoldToast('Downloaded locally — folder sync pending.'); osgSaved.value = true; }
+          try {
+            const _osgFolId = (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.offer_documents) || '';
+            const { driveFileId: _osg1id, driveLink: _osg1dl } = await fosUploadToDrive(pdfBlob, fileName, 'application/pdf', _osgFolId);
+            const _osg1fd = new FormData();
+            _osg1fd.append('drive_file_id', _osg1id); _osg1fd.append('drive_link', _osg1dl);
+            _osg1fd.append('file_name', fileName); _osg1fd.append('subfolder', 'offer_documents');
+            _osg1fd.append('buyer_id', byrActiveBuyer.value.id); _osg1fd.append('uploaded_by', agentName.value);
+            const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _osg1fd });
+            if (res.ok) { showGoldToast('Offer strategy saved to buyer folder.'); osgSaved.value = true; }
+            else { openPDFBlob(pdfBlob, fileName); showGoldToast('Downloaded locally — folder sync pending.'); osgSaved.value = true; }
+          } catch(_osgErr) { openPDFBlob(pdfBlob, fileName); showGoldToast('Downloaded locally — folder sync pending.'); osgSaved.value = true; }
         } else {
           openPDFBlob(pdfBlob, fileName); showGoldToast('PDF downloaded.'); osgSaved.value = true;
         }
@@ -15420,17 +15446,15 @@ function logActMicToggle() {
         const buyer = byrActiveBuyer.value;
         const sdi = buyer.subfolder_drive_ids||{};
         const folderId = sdi[subfolder]||buyer.drive_folder_id||'';
+        const { driveFileId, driveLink } = await fosUploadToDrive(file, file.name, file.type, folderId);
         const fd = new FormData();
-        fd.append('file', file); fd.append('folder_id', folderId);
-        fd.append('subfolder', subfolder); fd.append('uploaded_by', agentName.value);
-        fd.append('buyer_id', buyer.id);
+        fd.append('drive_file_id', driveFileId); fd.append('drive_link', driveLink);
+        fd.append('file_name', file.name); fd.append('subfolder', subfolder);
+        fd.append('buyer_id', buyer.id); fd.append('uploaded_by', agentName.value);
         const res = await fetch(RAILWAY_URL+'/upload-buyer-file',{method:'POST',body:fd});
-        if (!res.ok) throw new Error(await res.text()||'Upload failed');
+        if (!res.ok) throw new Error(await res.text()||'Record failed');
         const data = await res.json();
-        const dl2 = data.drive_link||'';
-        const mm2 = dl2.match(/[/]d[/]([a-zA-Z0-9_-]+)/) || dl2.match(/[?]id=([a-zA-Z0-9_-]+)/);
-        const fid = data.file_id || (mm2?mm2[1]:null);
-        byrActiveFiles.value=[...byrActiveFiles.value,{id:data.asset_id||String(Date.now()),buyer_id:buyer.id,subfolder,file_name:file.name,drive_file_id:fid,drive_link:data.drive_link}];
+        byrActiveFiles.value=[...byrActiveFiles.value,{id:data.asset_id||String(Date.now()),buyer_id:buyer.id,subfolder,file_name:file.name,drive_file_id:driveFileId,drive_link:driveLink}];
         showGoldToast('File uploaded!');
       } catch(e) { showToast('Upload failed: '+e.message); }
       finally { byrUploading.value=Object.assign({},byrUploading.value,{[subfolder]:false}); }
@@ -15438,7 +15462,8 @@ function logActMicToggle() {
     async function byrDeleteFile(file) {
       if (!confirm('Delete '+file.file_name+'?')) return;
       try {
-        const body = JSON.stringify({file_id:file.drive_file_id,asset_id:file.id,asset_type:'buyer'});
+        await fosDriveDeleteFile(file.drive_file_id);
+        const body = JSON.stringify({asset_id:file.id,asset_type:'buyer'});
         const res = await fetch(RAILWAY_URL+'/delete-file',{method:'DELETE',headers:{'Content-Type':'application/json'},body});
         if (!res.ok) throw new Error(await res.text());
         byrActiveFiles.value=byrActiveFiles.value.filter(f=>f.id!==file.id);
