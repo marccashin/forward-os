@@ -5677,10 +5677,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
     <!-- Phase: answer -->
     <template v-else-if="voiceModal.phase==='answer'">
-      <div style="font-size:12px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Question</div>
+      <div style="font-size:12px;font-weight:700;color:rgba(247,244,239,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Question</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);font-style:italic;margin-bottom:12px;padding:10px 12px;background:#f9fafb;border-radius:10px;line-height:1.5;">"{{ voiceModal.answerQuestion }}"</div>
       <div style="overflow-y:auto;max-height:340px;padding-right:4px;margin-bottom:12px;">
-        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#1f2937;line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.split('📚')[0] }}</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.split('📚')[0] }}</div>
         <div v-if="voiceModal.answerText.includes('📚')" style="font-size:11px;color:#9ca3af;background:#f9fafb;border-radius:8px;padding:7px 10px;margin-top:10px;">📚{{ voiceModal.answerText.split('📚')[1] }}</div>
       </div>
       <div style="display:flex;gap:10px;">
