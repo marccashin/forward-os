@@ -1321,14 +1321,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
               <div class="admin-tile-arrow">→</div>
             </div>
-            <div class="admin-tile" @click="syncKnowledgeBase" v-if="agentName === 'Marc Cashin'">
-              <div class="admin-tile-icon">📂</div>
-              <div>
-                <div class="admin-tile-label">Sync Knowledge Base</div>
-                <div class="admin-tile-sub">{{ kbSyncing ? 'Syncing…' : (kbSyncMsg || 'Sync from Drive') }}</div>
-              </div>
-              <div class="admin-tile-arrow">{{ kbSyncing ? '⏳' : '↓' }}</div>
-            </div>
+
           </div>
 
           <!-- Overdue Tasks Blocking Modal -->
@@ -14079,25 +14072,7 @@ No markdown. Valid JSON only.`;
     }
 
     // ── Knowledge Base ─────────────────────────────────────────────────────
-    const kbSyncing = ref(false);
-    const kbSyncMsg = ref('');
 
-    async function syncKnowledgeBase() {
-      kbSyncing.value = true;
-      kbSyncMsg.value = '';
-      try {
-        const res = await fetch(RAILWAY_URL + '/sync-knowledge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ folder_id: '1miL-1DSGwFjVqXZuhG3D50ToCswtN5KA' })
-        });
-        const data = await res.json();
-        kbSyncMsg.value = data.message || ('Synced ' + (data.synced || 0) + ' documents.');
-      } catch(e) {
-        kbSyncMsg.value = 'Sync failed: ' + (e.message || 'unknown error');
-      }
-      kbSyncing.value = false;
-    }
 
     // ── Voice Assistant System ──────────────────────────────────────────────
 const voiceModal = reactive({
@@ -16302,7 +16277,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
-      kbSyncing, kbSyncMsg, syncKnowledgeBase,
+
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
       lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
