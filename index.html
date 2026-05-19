@@ -14228,12 +14228,7 @@ No markdown. Valid JSON only.`;
             fullText += pageText + '\n';
           }
           const extracted = fullText.trim();
-          if (!extracted) {
-            showToast('⚠️ This PDF appears to be scanned — no text could be extracted. Please paste content manually, then click Add.', 5000);
-            e.target.value = '';
-            return;
-          }
-          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + extracted;
+          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + (extracted || '[No text extracted — PDF may be image-based. Add description manually.]');
           e.target.value = '';
           await atAddEntry();
         } catch(err) { console.error(err); showToast('Could not extract PDF text: ' + err.message, 4000); }
