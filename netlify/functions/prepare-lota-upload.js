@@ -2,31 +2,28 @@
 /**
  * prepare-lota-upload.js — Netlify Function
  *
- * Authenticates with Google Drive using a service account (credentials stored
- * as Netlify environment variables), then:
- *   1. Finds or creates the current month folder inside the LOTA parent folder
- *   2. Finds or creates the "Self-Shot" subfolder inside the month folder
- *   3. Finds or creates a topic folder inside Self-Shot
- *   4. Initialises a Google Drive resumable upload session for each video file
- *   5. Uploads the edit-notes.txt directly (small file, no resumable session needed)
+ * Authenticates with Google Drive using OAuth2, then:
+ *   1. Finds or creates an Agent Name folder inside the LOTA parent folder
+ *   2. Finds or creates a Topic folder inside the Agent folder
+ *   3. Initialises a Google Drive resumable upload session for each video file
+ *   4. Uploads edit-notes.txt directly (small file)
+ *   5. Sends an email notification to Operations via Resend
  *   6. Returns the pre-authenticated upload URLs to the browser
  *
- * The browser then PUTs each video file directly to Google Drive using those
- * URLs — no additional auth required, full quality preserved, no size limit.
+ * Folder structure: LOTA Parent → [Agent Name] → [Topic]
  *
  * Required Netlify env vars:
  *   GOOGLE_CLIENT_ID      — OAuth2 client ID
  *   GOOGLE_CLIENT_SECRET  — OAuth2 client secret
  *   GOOGLE_REFRESH_TOKEN  — long-lived refresh token for marc@marccashin.com
- *
- * One-time Drive setup:
- *   Ensure marc@marccashin.com has Editor access to the LOTA parent folder
- *   (129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e).
+ *   RESEND_API_KEY        — Resend API key for email notifications
  */
 
 const https = require('https');
 
 const LOTA_FOLDER_ID = '129RwYEDPK0aC7hGJDTA8_QDX0XFDqD5e';
+const OPS_EMAIL      = 'operations@fwrdrealestate.com';
+const FROM_EMAIL     = 'FORWARD OS <digest@marccashin.com>';
 
 // ─── Low-level HTTPS helper ───────────────────────────────────────────────────
 function httpsReq(options, body) {
@@ -113,7 +110,6 @@ async function findOrCreateFolder(token, parentId, name) {
 }
 
 // ─── Initialise a resumable upload session ────────────────────────────────────
-// Returns a pre-authenticated upload URL the browser can PUT the file to directly.
 async function initResumableUpload(token, folderId, fileName, mimeType, fileSize) {
   const metadata    = JSON.stringify({ name: fileName, parents: [folderId] });
   const metaBuf     = Buffer.from(metadata, 'utf8');
@@ -173,22 +169,76 @@ async function uploadTextFile(token, folderId, fileName, content) {
   return JSON.parse(resp.body);
 }
 
-// ─── Month folder name ────────────────────────────────────────────────────────
-function getMonthFolder() {
-  const now    = new Date();
-  const MONTHS = ['January','February','March','April','May','June',
-                  'July','August','September','October','November','December'];
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')} ${MONTHS[now.getMonth()]}`;
+// ─── Send Resend email to Operations ─────────────────────────────────────────
+async function notifyOperations(agent, topic, files, editNotes, refUrl, folderUrl) {
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) { console.warn('[lota-upload] RESEND_API_KEY not set — skipping email'); return; }
+
+  const fileLines = files.map(f => `• ${f.name} (${fmtBytes(f.size)})`).join('\n');
+  const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
+
+  const html = `
+    <div style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;max-width:560px;margin:0 auto;color:#1a2744;">
+      <div style="background:#1a2744;padding:20px 28px;border-radius:6px 6px 0 0;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:3px;color:rgba(255,255,255,0.4);margin-bottom:4px;">FORWARD OS</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;">📹 New Video Submission</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:24px 28px;border-radius:0 0 6px 6px;">
+        <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;width:110px;">Agent</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1a2744;font-weight:600;">${agent}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;">Topic</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1a2744;font-weight:600;">${topic}</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;">Files</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1a2744;">${files.length} file${files.length !== 1 ? 's' : ''} · ${fmtBytes(totalSize)} total</td></tr>
+          <tr><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;">Submitted</td><td style="padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px;color:#1a2744;">${new Date().toLocaleString('en-US',{month:'long',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'})}</td></tr>
+        </table>
+        ${editNotes ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:6px;">Edit Direction</div><div style="background:#f8fafc;border-left:3px solid #c9a84c;padding:12px 16px;border-radius:0 4px 4px 0;font-size:13px;line-height:1.6;color:#374151;">${editNotes.replace(/\n/g,'<br>')}</div></div>` : ''}
+        ${refUrl ? `<div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:6px;">Reference Video</div><div style="font-size:13px;"><a href="${refUrl}" style="color:#2563eb;">${refUrl}</a></div></div>` : ''}
+        <div style="margin-bottom:20px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#6b7280;margin-bottom:8px;">Files Uploaded</div><div style="background:#f8fafc;border-radius:4px;padding:12px 16px;font-size:13px;color:#374151;line-height:1.8;">${files.map(f=>`${f.name} <span style="color:#9ca3af;">(${fmtBytes(f.size)})</span>`).join('<br>')}</div></div>
+        <a href="${folderUrl}" style="display:inline-block;background:#1a2744;color:#fff;text-decoration:none;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:700;">📂 Open in Google Drive</a>
+      </div>
+    </div>`;
+
+  const emailPayload = JSON.stringify({
+    from:    FROM_EMAIL,
+    to:      [OPS_EMAIL],
+    subject: `📹 New Video — ${agent}: ${topic}`,
+    html,
+  });
+
+  try {
+    const resp = await httpsReq(
+      {
+        hostname: 'api.resend.com',
+        path:     '/emails',
+        method:   'POST',
+        headers:  {
+          Authorization:  'Bearer ' + resendKey,
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(emailPayload),
+        },
+      },
+      emailPayload
+    );
+    if (resp.status >= 300) console.warn('[lota-upload] Resend responded', resp.status, resp.body.substring(0, 200));
+    else console.log('[lota-upload] Ops email sent OK');
+  } catch(e) {
+    console.warn('[lota-upload] Email send failed (non-fatal):', e.message);
+  }
+}
+
+function fmtBytes(b) {
+  if (!b) return '?';
+  if (b < 1048576)    return (b / 1024).toFixed(1) + ' KB';
+  if (b < 1073741824) return (b / 1048576).toFixed(1) + ' MB';
+  return (b / 1073741824).toFixed(2) + ' GB';
 }
 
 // ─── Build edit-notes.txt content ────────────────────────────────────────────
-function buildEditNotes(topic, month, agent, notes, refUrl) {
-  const sep  = '-'.repeat(32);
+function buildEditNotes(topic, agent, notes, refUrl) {
+  const sep   = '-'.repeat(32);
   const lines = [
     'VIDEO SUBMISSION — FORWARD OS',
     '='.repeat(32),
     `Topic:  ${topic}`,
-    `Month:  ${month}`,
     `Agent:  ${agent}`,
     `Date:   ${new Date().toDateString()}`,
     '',
@@ -198,7 +248,7 @@ function buildEditNotes(topic, month, agent, notes, refUrl) {
   return lines.join('\n');
 }
 
-// ─── CORS headers (same Netlify site = same origin, but added for safety) ────
+// ─── CORS headers ─────────────────────────────────────────────────────────────
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
   'Access-Control-Allow-Headers': 'Content-Type',
@@ -216,14 +266,14 @@ exports.handler = async (event) => {
     if (!topic || !files || !files.length)
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: 'topic and files are required' }) };
 
-    // Authenticate with Google
-    const token      = await getAccessToken();
-    const monthFolder = getMonthFolder();
+    const agent = agentName || 'Agent';
 
-    // Build folder hierarchy: LOTA Parent → Month → Self-Shot → Topic
-    const monthId    = await findOrCreateFolder(token, LOTA_FOLDER_ID, monthFolder);
-    const selfShotId = await findOrCreateFolder(token, monthId,         'Self-Shot');
-    const topicId    = await findOrCreateFolder(token, selfShotId,       topic);
+    // Authenticate with Google
+    const token = await getAccessToken();
+
+    // Folder structure: LOTA Parent → Agent Name → Topic
+    const agentFolderId = await findOrCreateFolder(token, LOTA_FOLDER_ID, agent);
+    const topicId       = await findOrCreateFolder(token, agentFolderId,   topic);
 
     // Initialise one resumable upload session per video file (run in parallel)
     const uploads = await Promise.all(
@@ -232,18 +282,23 @@ exports.handler = async (event) => {
 
     // Upload edit-notes.txt if the agent provided any direction
     if (editNotes || refUrl) {
-      const noteContent = buildEditNotes(topic, monthFolder, agentName || 'Agent', editNotes || '', refUrl || '');
+      const noteContent = buildEditNotes(topic, agent, editNotes || '', refUrl || '');
       await uploadTextFile(token, topicId, 'edit-notes.txt', noteContent);
     }
+
+    // Notify Operations via email (non-blocking — failure won't break the upload)
+    const folderUrl = `https://drive.google.com/drive/folders/${topicId}`;
+    notifyOperations(agent, topic, files, editNotes || '', refUrl || '', folderUrl).catch(e =>
+      console.warn('[lota-upload] notifyOperations error (non-fatal):', e.message)
+    );
 
     return {
       statusCode: 200,
       headers:    CORS,
       body: JSON.stringify({
         topicFolderId: topicId,
-        folderUrl:     `https://drive.google.com/drive/folders/${topicId}`,
-        monthFolder,
-        uploads,   // array of pre-authenticated upload URLs, one per file
+        folderUrl,
+        uploads,
       }),
     };
 
