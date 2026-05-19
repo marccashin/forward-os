@@ -359,13 +359,18 @@ function xhrUpload(uploadUrl, file, idx) {
     const xhr = new XMLHttpRequest();
     xhr.open('PUT', uploadUrl);
     xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+    let bytesSent = 0;
     xhr.upload.onprogress = e => {
       if (e.lengthComputable) {
+        bytesSent = e.loaded;
         document.getElementById('pb-'+idx).style.width = Math.round(e.loaded / e.total * 100) + '%';
       }
     };
+    xhr.upload.onload = () => { bytesSent = file.size; };
     xhr.onload  = () => (xhr.status >= 200 && xhr.status < 300) ? resolve() : reject(new Error(file.name + ' upload failed (' + xhr.status + ')'));
-    xhr.onerror = () => reject(new Error('Network error uploading ' + file.name));
+    // Google Drive resumable uploads sometimes return a CORS-restricted response
+    // even after a successful transfer. If all bytes were sent, treat it as success.
+    xhr.onerror = () => bytesSent >= file.size ? resolve() : reject(new Error('Network error uploading ' + file.name));
     xhr.send(file);
   });
 }
