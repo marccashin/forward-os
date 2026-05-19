@@ -172,7 +172,7 @@ async function uploadTextFile(token, folderId, fileName, content) {
 // ─── Send Resend email to Operations ─────────────────────────────────────────
 async function notifyOperations(agent, topic, files, editNotes, refUrl, folderUrl) {
   const resendKey = process.env.RESEND_API_KEY;
-  if (!resendKey) { console.warn('[lota-upload] RESEND_API_KEY not set — skipping email'); return; }
+  if (!resendKey) throw new Error('RESEND_API_KEY not configured — cannot notify Operations');
 
   const fileLines = files.map(f => `• ${f.name} (${fmtBytes(f.size)})`).join('\n');
   const totalSize = files.reduce((sum, f) => sum + (f.size || 0), 0);
@@ -204,25 +204,21 @@ async function notifyOperations(agent, topic, files, editNotes, refUrl, folderUr
     html,
   });
 
-  try {
-    const resp = await httpsReq(
-      {
-        hostname: 'api.resend.com',
-        path:     '/emails',
-        method:   'POST',
-        headers:  {
-          Authorization:  'Bearer ' + resendKey,
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(emailPayload),
-        },
+  const resp = await httpsReq(
+    {
+      hostname: 'api.resend.com',
+      path:     '/emails',
+      method:   'POST',
+      headers:  {
+        Authorization:  'Bearer ' + resendKey,
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(emailPayload),
       },
-      emailPayload
-    );
-    if (resp.status >= 300) console.warn('[lota-upload] Resend responded', resp.status, resp.body.substring(0, 200));
-    else console.log('[lota-upload] Ops email sent OK');
-  } catch(e) {
-    console.warn('[lota-upload] Email send failed (non-fatal):', e.message);
-  }
+    },
+    emailPayload
+  );
+  if (resp.status >= 300) throw new Error('Operations email failed (' + resp.status + '): ' + resp.body.substring(0, 200));
+  console.log('[lota-upload] Ops email sent OK');
 }
 
 function fmtBytes(b) {
@@ -286,11 +282,9 @@ exports.handler = async (event) => {
       await uploadTextFile(token, topicId, 'edit-notes.txt', noteContent);
     }
 
-    // Notify Operations via email (non-blocking — failure won't break the upload)
+    // Notify Operations via email — required before returning success
     const folderUrl = `https://drive.google.com/drive/folders/${topicId}`;
-    notifyOperations(agent, topic, files, editNotes || '', refUrl || '', folderUrl).catch(e =>
-      console.warn('[lota-upload] notifyOperations error (non-fatal):', e.message)
-    );
+    await notifyOperations(agent, topic, files, editNotes || '', refUrl || '', folderUrl);
 
     return {
       statusCode: 200,
