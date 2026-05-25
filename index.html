@@ -9608,12 +9608,8 @@ async function lstSubmitToPipeline() {
         console.error('loadTaskFeed:', e);
       }
       taskFeedLoading.value = false;
-      // FUB task auto-trigger removed);
-      } catch(e) {
-        console.warn('Task sync request failed — will still reload cache:', e);
-      }
-      await loadTaskFeed();
     }
+    async function syncAndRefreshTaskFeed() { await loadTaskFeed(); }
     async function createPropFile() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
