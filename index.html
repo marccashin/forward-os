@@ -6997,7 +6997,15 @@ async function pushLib(item) {
     lib.value = await getLib(); return;
   } catch(e) { console.warn('[FOS] lib save:',e); }
   try { const l=await getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); } catch {}
-}function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify(getLib().filter(i=>i.id!==id))); }
+}async function dropLib(id) {
+  // Remove from Supabase saved_library
+  try {
+    const an = localStorage.getItem('fos_agent')||'__default__';
+    await supaRest.delete('saved_library', 'id', id);
+  } catch(e) { console.warn('[FOS] lib delete Supabase:', e); }
+  // Also clean localStorage cache
+  try { const l = await getLib(); localStorage.setItem(agentKey('fos_lib'), JSON.stringify(l.filter(i=>i.id!==id))); } catch {}
+}
 
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
@@ -11823,7 +11831,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (!id) return [];
       return byrOfferMap.value[id] || [];
     }
-    function byrAddOffer() {
+    async function byrAddOffer() {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id || !byrNewOffer.address) return;
       const offers = [...(byrOfferMap.value[id]||[])];
@@ -11831,20 +11839,23 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
       byrNewOffer.address=''; byrNewOffer.price=''; byrNewOffer.notes=''; byrNewOffer.showForm=false;
+      await _byrSaveOffers(id, offers);
     }
-    function byrUpdateOfferStatus(offerId, status) {
+    async function byrUpdateOfferStatus(offerId, status) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id) return;
       const offers = (byrOfferMap.value[id]||[]).map(o => o.id===offerId ? Object.assign({},o,{status}) : o);
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      await _byrSaveOffers(id, offers);
     }
-    function byrRemoveOffer(offerId) {
+    async function byrRemoveOffer(offerId) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id || !confirm('Remove this offer?')) return;
       const offers = (byrOfferMap.value[id]||[]).filter(o => o.id !== offerId);
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      await _byrSaveOffers(id, offers);
     }
 
 
@@ -13882,11 +13893,36 @@ No markdown. Valid JSON only.`;
     }
     // ── End Deal Partners ──────────────────────────────────────
 
-    function byrOpenBuyer(buyer) {
+    // Save buyer offers to Supabase (property_notes, subfolder buyer_offers, keyed by buyer id)
+    async function _byrSaveOffers(buyerId, offers) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${buyerId}&subfolder=eq.buyer_offers`, {
+          method: 'DELETE', headers: supaRest.headers()
+        });
+        if (offers && offers.length) {
+          await supaRest.insert('property_notes', {
+            property_id: buyerId,
+            subfolder: 'buyer_offers',
+            content: JSON.stringify(offers)
+          });
+        }
+      } catch(e) { console.warn('byrSaveOffers Supabase failed:', e); }
+    }
+
+    async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
+      // Load offers from Supabase (source of truth)
+      try {
+        const rows = await supaRest.select('property_notes',
+          `select=content&property_id=eq.${buyer.id}&subfolder=eq.buyer_offers&limit=1`);
+        if (rows && rows[0] && rows[0].content) {
+          const loaded = JSON.parse(rows[0].content);
+          byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyer.id]: loaded});
+        }
+      } catch(e) { console.warn('byrLoadOffers failed:', e); }
     }
 
     function byrConfirmDelete(buyer) {
