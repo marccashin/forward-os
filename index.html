@@ -1156,9 +1156,8 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </div>
           </div>
 
-          <!-- Overdue Tasks Folder Card -->
+          <!-- FUB Reminder Card -->
           <div
-            v-if="taskFeed.length || taskFeedLoading"
             @click="taskModalShow=true"
             style="cursor:pointer;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;transition:border-color 0.15s;"
             @mouseenter="$event.currentTarget.style.borderColor='var(--gold-muted)'"
@@ -1166,14 +1165,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           >
             <div>
               <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--navy);opacity:0.42;margin-bottom:5px;">Follow Up Boss</div>
-              <div style="font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">{{ agentName === 'Operations' ? 'Team Overdue Tasks' : 'Overdue Tasks' }}</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">Deal Cards &amp; SOP Tasks</div>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div v-if="taskFeedLoading" style="font-family:'Montserrat',sans-serif;font-size:7px;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);opacity:0.4;">Syncing…</div>
-              <div v-else-if="overdueTasks.length > 0" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:#c0392b;color:#fff;padding:3px 10px;border-radius:2px;">{{ overdueTasks.length }} overdue</div>
-              <div v-else style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;background:rgba(10,35,66,0.07);color:var(--navy);padding:3px 10px;border-radius:2px;">All clear</div>
-              <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:var(--navy);opacity:0.35;">→</div>
-            </div>
+            <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:var(--navy);opacity:0.35;">→</div>
           </div>
 
           <!-- Stat Grid -->
@@ -1354,28 +1348,16 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 
           </div>
 
-          <!-- Overdue Tasks Blocking Modal -->
-          <div v-if="taskModalShow" style="position:fixed;inset:0;background:rgba(10,35,66,0.9);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;">
-            <div style="background:var(--cream);border-radius:2px;width:100%;max-width:540px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;">
-              <div style="background:var(--navy);padding:26px 28px 22px;flex-shrink:0;">
-                <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;">Action Required · Follow Up Boss</div>
-                <div style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cream);margin-bottom:8px;">Overdue Tasks</div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);opacity:0.65;line-height:1.5;">{{ overdueTasks.length }} task{{ overdueTasks.length === 1 ? '' : 's' }} past due. Complete these in Follow Up Boss — they will clear on next sync.</div>
+          <!-- FUB Reminder Modal -->
+          <div v-if="taskModalShow" style="position:fixed;inset:0;background:rgba(10,35,66,0.9);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="taskModalShow=false">
+            <div style="background:var(--cream);border-radius:2px;width:100%;max-width:480px;overflow:hidden;">
+              <div style="background:var(--navy);padding:26px 28px 22px;">
+                <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:7px;">Follow Up Boss</div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cream);margin-bottom:10px;">Stay Current</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--cream);opacity:0.8;line-height:1.6;">Ensure your Follow Up Boss Deal Cards and SOP tasks are up to date.</div>
               </div>
-              <div style="overflow-y:auto;flex:1;padding:4px 0;">
-                <div v-for="(task, idx) in overdueTasks" :key="idx" style="padding:16px 28px;border-bottom:1px solid var(--cream-mid);">
-                  <div v-if="agentName === 'Operations'" style="font-family:'Montserrat',sans-serif;font-size:6.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;">{{ task.agent_name }}</div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-                    <div style="font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);">{{ task.client_name }}</div>
-                    <div style="font-family:'Montserrat',sans-serif;font-size:6.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border-radius:2px;flex-shrink:0;" :style="task.pipeline==='buyer'?'background:rgba(200,169,110,0.2);color:#9e7a3a;':'background:rgba(10,35,66,0.08);color:var(--navy);'">{{ task.pipeline }}</div>
-                  </div>
-                  <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:var(--navy);opacity:0.5;font-style:italic;margin-bottom:6px;">{{ task.stage }}</div>
-                  <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:var(--navy);line-height:1.45;margin-bottom:7px;">{{ task.task_name }}</div>
-                  <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#c0392b;">{{ daysOverdue(task.due_date) }} day{{ daysOverdue(task.due_date)===1?'':'s' }} overdue</div>
-                </div>
-              </div>
-              <div style="padding:20px 28px;background:var(--cream);border-top:1px solid var(--cream-mid);flex-shrink:0;">
-                <button @click="taskModalShow=false" style="width:100%;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;background:var(--navy);color:var(--cream);border:none;padding:15px;border-radius:2px;cursor:pointer;">Go to My Dashboard →</button>
+              <div style="padding:20px 28px;">
+                <button @click="fubReminderDismiss()" style="width:100%;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;background:var(--navy);color:var(--cream);border:none;padding:15px;border-radius:2px;cursor:pointer;">Got It</button>
               </div>
             </div>
           </div>
@@ -6997,7 +6979,15 @@ async function pushLib(item) {
     lib.value = await getLib(); return;
   } catch(e) { console.warn('[FOS] lib save:',e); }
   try { const l=await getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); } catch {}
-}function dropLib(id)   { localStorage.setItem(agentKey('fos_lib'),JSON.stringify(getLib().filter(i=>i.id!==id))); }
+}async function dropLib(id) {
+  // Remove from Supabase saved_library
+  try {
+    const an = localStorage.getItem('fos_agent')||'__default__';
+    await supaRest.delete('saved_library', 'id', id);
+  } catch(e) { console.warn('[FOS] lib delete Supabase:', e); }
+  // Also clean localStorage cache
+  try { const l = await getLib(); localStorage.setItem(agentKey('fos_lib'), JSON.stringify(l.filter(i=>i.id!==id))); } catch {}
+}
 
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
@@ -7072,6 +7062,15 @@ createApp({
     const taskFeedSyncedAt = ref(null); // ISO timestamp of last cache write
     const taskFeedLoading  = ref(false);
     const taskModalShow    = ref(false);  // blocking overdue-tasks modal
+    function fubReminderKey() { return 'fos_fub_reminder_' + (agentName.value || '__default__'); }
+    function fubReminderDismiss() {
+      localStorage.setItem(fubReminderKey(), new Date().toDateString());
+      taskModalShow.value = false;
+    }
+    function fubReminderCheckAndShow() {
+      const last = localStorage.getItem(fubReminderKey());
+      if (last !== new Date().toDateString()) taskModalShow.value = true;
+    }
     const overdueTasks = computed(() => {
       const today = new Date().toISOString().slice(0, 10);
       return taskFeed.value.filter(t => t.due_date && t.due_date < today);
@@ -8401,14 +8400,28 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           }
         }
 
+        // Build asset map from Drive file uploads (property_assets)
+        const TRACKED_SF = ['listing_photos','cma','seller_net_sheet','listing_remarks','mls_data'];
         const assetsByProp = {};
         (allAssets || []).forEach(a => {
           if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
           assetsByProp[a.property_id][a.subfolder] = true;
         });
+        // Also count saved property_notes — a filled note counts the same as an uploaded file
+        try {
+          const allNotes = await supaRest.select('property_notes', 'select=property_id,subfolder,content').catch(() => []);
+          (allNotes || []).forEach(n => {
+            if (TRACKED_SF.includes(n.subfolder) && n.content && n.content.trim()) {
+              if (!assetsByProp[n.property_id]) assetsByProp[n.property_id] = {};
+              assetsByProp[n.property_id][n.subfolder] = true;
+            }
+          });
+        } catch(e) { console.warn('property_notes dot merge failed:', e); }
         allProps.forEach(p => {
-          p._assetMap = assetsByProp[p.id] || {};
-          p._assetCount = Object.keys(p._assetMap).length;
+          const map = assetsByProp[p.id] || {};
+          // Only count the 5 tracked subfolders toward the dot score
+          p._assetMap = map;
+          p._assetCount = TRACKED_SF.filter(sf => map[sf]).length;
         });
         lstProperties.value = allProps;
       } catch (e) { console.warn('Fetch properties failed:', e); }
@@ -8449,6 +8462,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstNewAddress.value = parts.join(', ');
       }
       if (!lstNewAddress.value.trim()) return;
+      if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       if (!lstNewSeller.value.trim()) { lstCreateError.value = 'Seller name is required.'; return; }
       lstCreating.value = true; lstCreateError.value = '';
       try {
@@ -8524,6 +8538,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         // Reset
         Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
         notes.forEach(n => { if (n.subfolder && lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || ''; });
+        // Restore campaign sections for this property
+        const campNote = notes.find(n => n.subfolder === 'campaign_sections');
+        if (campNote && campNote.content) {
+          try {
+            campParsed.value = JSON.parse(campNote.content);
+            campRawResult.value = 'cached';
+          } catch(e) { campParsed.value = []; campRawResult.value = ''; }
+        } else {
+          campParsed.value = [];
+          campRawResult.value = '';
+        }
       } catch {}
       // Load revision requests
       lstRevisionRequests.value = []; lstRevSelectedVersion.value = 'original';
@@ -8753,7 +8778,22 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     if (campIncludes.cma && lstNotes.cma && lstNotes.cma.trim()) {
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
-    campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
+    campParsed.value = parsed;
+    try { localStorage.setItem('fos_campSections', JSON.stringify(parsed)); } catch(e) {}
+    // Persist to Supabase so campaign survives device/browser changes
+    if (lstActiveProp.value && lstActiveProp.value.id) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
+          method: 'DELETE', headers: supaRest.headers()
+        });
+        await supaRest.insert('property_notes', {
+          property_id: lstActiveProp.value.id,
+          subfolder: 'campaign_sections',
+          content: JSON.stringify(parsed),
+          created_by: sessionEmail.value
+        });
+      } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
+    }
     campShowPreview.value = true;
           setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
   } catch(e) {
@@ -8768,6 +8808,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
 async function campApproveAndSend() {
   campShowPreview.value = false;
+  // Re-save campaign sections to Supabase (captures any edits made in review panel)
+  if (lstActiveProp.value && lstActiveProp.value.id && campParsed.value && campParsed.value.length) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
+        method: 'DELETE', headers: supaRest.headers()
+      });
+      await supaRest.insert('property_notes', {
+        property_id: lstActiveProp.value.id,
+        subfolder: 'campaign_sections',
+        content: JSON.stringify(campParsed.value),
+        created_by: sessionEmail.value
+      });
+    } catch(e) { console.warn('campaign_sections re-save failed:', e); }
+  }
   await new Promise(r => setTimeout(r, 200));
   await campExportPDF();
 }
@@ -9483,6 +9537,7 @@ async function lstSubmitToPipeline() {
         loadPropFiles();
         loadTaskFeed();
         mktLoadLinks();
+        fubReminderCheckAndShow();
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
         if (!apiKeySet.value && agentName.value) {
@@ -9563,29 +9618,8 @@ async function lstSubmitToPipeline() {
         console.error('loadTaskFeed:', e);
       }
       taskFeedLoading.value = false;
-      if (agentName.value && agentName.value !== 'Operations' && agentName.value !== 'Concierge' && overdueTasks.value.length > 0) {
-        taskModalShow.value = true;
-      }
     }
-
-    async function syncAndRefreshTaskFeed() {
-      // Triggers a fresh FUB pull (via CC Railway) then re-reads Supabase.
-      // Used by the manual Refresh button so agents can see cleared tasks immediately.
-      taskFeedLoading.value = true;
-      try {
-        const body = agentName.value !== 'Operations'
-          ? JSON.stringify({ agent_name: agentName.value })
-          : '{}';
-        await fetch(CC_RAILWAY_URL + '/sync-agent-tasks', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body
-        });
-      } catch(e) {
-        console.warn('Task sync request failed — will still reload cache:', e);
-      }
-      await loadTaskFeed();
-    }
+    async function syncAndRefreshTaskFeed() { await loadTaskFeed(); }
     async function createPropFile() {
       const addr = newPropAddress.value.trim();
       if (!addr) return;
@@ -11782,7 +11816,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (!id) return [];
       return byrOfferMap.value[id] || [];
     }
-    function byrAddOffer() {
+    async function byrAddOffer() {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id || !byrNewOffer.address) return;
       const offers = [...(byrOfferMap.value[id]||[])];
@@ -11790,20 +11824,23 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
       byrNewOffer.address=''; byrNewOffer.price=''; byrNewOffer.notes=''; byrNewOffer.showForm=false;
+      await _byrSaveOffers(id, offers);
     }
-    function byrUpdateOfferStatus(offerId, status) {
+    async function byrUpdateOfferStatus(offerId, status) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id) return;
       const offers = (byrOfferMap.value[id]||[]).map(o => o.id===offerId ? Object.assign({},o,{status}) : o);
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      await _byrSaveOffers(id, offers);
     }
-    function byrRemoveOffer(offerId) {
+    async function byrRemoveOffer(offerId) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id || !confirm('Remove this offer?')) return;
       const offers = (byrOfferMap.value[id]||[]).filter(o => o.id !== offerId);
       byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
       localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      await _byrSaveOffers(id, offers);
     }
 
 
@@ -13752,6 +13789,7 @@ No markdown. Valid JSON only.`;
 
     async function byrCreateBuyer() {
       if (!byrNewName.value.trim()) { showToast('Enter a buyer name.', 3000); return; }
+      if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       byrCreating.value = true;
       try {
         const _bCrRes = await fetch(RAILWAY_URL + '/create-buyer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ buyer_name: byrNewName.value.trim(), agent_name: agentName.value, agent_email: AGENT_EMAILS[agentName.value]||'', email: byrNewEmail.value.trim()||'', phone: byrNewPhone.value.trim()||'', status:'active' }) });
@@ -13840,11 +13878,36 @@ No markdown. Valid JSON only.`;
     }
     // ── End Deal Partners ──────────────────────────────────────
 
-    function byrOpenBuyer(buyer) {
+    // Save buyer offers to Supabase (property_notes, subfolder buyer_offers, keyed by buyer id)
+    async function _byrSaveOffers(buyerId, offers) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${buyerId}&subfolder=eq.buyer_offers`, {
+          method: 'DELETE', headers: supaRest.headers()
+        });
+        if (offers && offers.length) {
+          await supaRest.insert('property_notes', {
+            property_id: buyerId,
+            subfolder: 'buyer_offers',
+            content: JSON.stringify(offers)
+          });
+        }
+      } catch(e) { console.warn('byrSaveOffers Supabase failed:', e); }
+    }
+
+    async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
+      // Load offers from Supabase (source of truth)
+      try {
+        const rows = await supaRest.select('property_notes',
+          `select=content&property_id=eq.${buyer.id}&subfolder=eq.buyer_offers&limit=1`);
+        if (rows && rows[0] && rows[0].content) {
+          const loaded = JSON.parse(rows[0].content);
+          byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyer.id]: loaded});
+        }
+      } catch(e) { console.warn('byrLoadOffers failed:', e); }
     }
 
     function byrConfirmDelete(buyer) {
@@ -15721,6 +15784,8 @@ function logActMicToggle() {
           }
         }
       } catch(e) { console.warn('Could not fetch global config from Supabase:', e); }
+      // Auto-show FUB reminder once per day
+      fubReminderCheckAndShow();
     }
     // ── Form reset helpers ─────────────────────────────────────────────────
     // Called after a tool is saved/exported, or on logout.
@@ -16686,7 +16751,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Agent Task Feed
       taskFeed, taskFeedSyncedAt, taskFeedLoading, loadTaskFeed, syncAndRefreshTaskFeed,
       archSearchQ, archProps, archBuyers, archLoading, archRestoring, archFiltered, archFetchAll, archRestore,
-      taskModalShow, overdueTasks, daysOverdue,
+      taskModalShow, overdueTasks, daysOverdue, fubReminderDismiss,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
