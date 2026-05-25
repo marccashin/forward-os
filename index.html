@@ -8525,6 +8525,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         // Reset
         Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
         notes.forEach(n => { if (n.subfolder && lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || ''; });
+        // Restore campaign sections for this property
+        const campNote = notes.find(n => n.subfolder === 'campaign_sections');
+        if (campNote && campNote.content) {
+          try {
+            campParsed.value = JSON.parse(campNote.content);
+            campRawResult.value = 'cached';
+          } catch(e) { campParsed.value = []; campRawResult.value = ''; }
+        } else {
+          campParsed.value = [];
+          campRawResult.value = '';
+        }
       } catch {}
       // Load revision requests
       lstRevisionRequests.value = []; lstRevSelectedVersion.value = 'original';
@@ -8754,7 +8765,22 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     if (campIncludes.cma && lstNotes.cma && lstNotes.cma.trim()) {
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
-    campParsed.value = parsed; try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){} try{localStorage.setItem('fos_campSections',JSON.stringify(parsed));}catch(e){}
+    campParsed.value = parsed;
+    try { localStorage.setItem('fos_campSections', JSON.stringify(parsed)); } catch(e) {}
+    // Persist to Supabase so campaign survives device/browser changes
+    if (lstActiveProp.value && lstActiveProp.value.id) {
+      try {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
+          method: 'DELETE', headers: supaRest.headers()
+        });
+        await supaRest.insert('property_notes', {
+          property_id: lstActiveProp.value.id,
+          subfolder: 'campaign_sections',
+          content: JSON.stringify(parsed),
+          created_by: sessionEmail.value
+        });
+      } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
+    }
     campShowPreview.value = true;
           setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
   } catch(e) {
@@ -8769,6 +8795,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
 async function campApproveAndSend() {
   campShowPreview.value = false;
+  // Re-save campaign sections to Supabase (captures any edits made in review panel)
+  if (lstActiveProp.value && lstActiveProp.value.id && campParsed.value && campParsed.value.length) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
+        method: 'DELETE', headers: supaRest.headers()
+      });
+      await supaRest.insert('property_notes', {
+        property_id: lstActiveProp.value.id,
+        subfolder: 'campaign_sections',
+        content: JSON.stringify(campParsed.value),
+        created_by: sessionEmail.value
+      });
+    } catch(e) { console.warn('campaign_sections re-save failed:', e); }
+  }
   await new Promise(r => setTimeout(r, 200));
   await campExportPDF();
 }
