@@ -8409,14 +8409,28 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           }
         }
 
+        // Build asset map from Drive file uploads (property_assets)
+        const TRACKED_SF = ['listing_photos','cma','seller_net_sheet','listing_remarks','mls_data'];
         const assetsByProp = {};
         (allAssets || []).forEach(a => {
           if (!assetsByProp[a.property_id]) assetsByProp[a.property_id] = {};
           assetsByProp[a.property_id][a.subfolder] = true;
         });
+        // Also count saved property_notes — a filled note counts the same as an uploaded file
+        try {
+          const allNotes = await supaRest.select('property_notes', 'select=property_id,subfolder,content').catch(() => []);
+          (allNotes || []).forEach(n => {
+            if (TRACKED_SF.includes(n.subfolder) && n.content && n.content.trim()) {
+              if (!assetsByProp[n.property_id]) assetsByProp[n.property_id] = {};
+              assetsByProp[n.property_id][n.subfolder] = true;
+            }
+          });
+        } catch(e) { console.warn('property_notes dot merge failed:', e); }
         allProps.forEach(p => {
-          p._assetMap = assetsByProp[p.id] || {};
-          p._assetCount = Object.keys(p._assetMap).length;
+          const map = assetsByProp[p.id] || {};
+          // Only count the 5 tracked subfolders toward the dot score
+          p._assetMap = map;
+          p._assetCount = TRACKED_SF.filter(sf => map[sf]).length;
         });
         lstProperties.value = allProps;
       } catch (e) { console.warn('Fetch properties failed:', e); }
