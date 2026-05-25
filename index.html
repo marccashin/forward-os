@@ -1357,7 +1357,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:var(--cream);opacity:0.8;line-height:1.6;">Ensure your Follow Up Boss Deal Cards and SOP tasks are up to date.</div>
               </div>
               <div style="padding:20px 28px;">
-                <button @click="taskModalShow=false" style="width:100%;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;background:var(--navy);color:var(--cream);border:none;padding:15px;border-radius:2px;cursor:pointer;">Got It</button>
+                <button @click="fubReminderDismiss()" style="width:100%;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;background:var(--navy);color:var(--cream);border:none;padding:15px;border-radius:2px;cursor:pointer;">Got It</button>
               </div>
             </div>
           </div>
@@ -7062,6 +7062,15 @@ createApp({
     const taskFeedSyncedAt = ref(null); // ISO timestamp of last cache write
     const taskFeedLoading  = ref(false);
     const taskModalShow    = ref(false);  // blocking overdue-tasks modal
+    function fubReminderKey() { return 'fos_fub_reminder_' + (agentName.value || '__default__'); }
+    function fubReminderDismiss() {
+      localStorage.setItem(fubReminderKey(), new Date().toDateString());
+      taskModalShow.value = false;
+    }
+    function fubReminderCheckAndShow() {
+      const last = localStorage.getItem(fubReminderKey());
+      if (last !== new Date().toDateString()) taskModalShow.value = true;
+    }
     const overdueTasks = computed(() => {
       const today = new Date().toISOString().slice(0, 10);
       return taskFeed.value.filter(t => t.due_date && t.due_date < today);
@@ -9528,6 +9537,7 @@ async function lstSubmitToPipeline() {
         loadPropFiles();
         loadTaskFeed();
         mktLoadLinks();
+        fubReminderCheckAndShow();
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
         if (!apiKeySet.value && agentName.value) {
@@ -15774,6 +15784,8 @@ function logActMicToggle() {
           }
         }
       } catch(e) { console.warn('Could not fetch global config from Supabase:', e); }
+      // Auto-show FUB reminder once per day
+      fubReminderCheckAndShow();
     }
     // ── Form reset helpers ─────────────────────────────────────────────────
     // Called after a tool is saved/exported, or on logout.
@@ -16739,7 +16751,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Agent Task Feed
       taskFeed, taskFeedSyncedAt, taskFeedLoading, loadTaskFeed, syncAndRefreshTaskFeed,
       archSearchQ, archProps, archBuyers, archLoading, archRestoring, archFiltered, archFetchAll, archRestore,
-      taskModalShow, overdueTasks, daysOverdue,
+      taskModalShow, overdueTasks, daysOverdue, fubReminderDismiss,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
