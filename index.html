@@ -14227,40 +14227,37 @@ No markdown. Valid JSON only.`;
     const atNewDesc    = ref('');
 
     async function atSaveEntries() {
+      // Save to localStorage immediately — this is the display source of truth
       localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
-
-      // Sync full library to knowledge_docs so voice assistant can search it
-      // file_name (title) is the unique key — re-uploading same title replaces old version
-      try {
-        await fetch(RAILWAY_URL + '/knowledge-docs/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            entries: atEntries.value.map(e => ({
-              file_name: e.title,
-              content:   e.desc,
-              category:  e.section || ''
-            }))
-          })
-        });
-      } catch(e) { console.warn('Could not sync training docs to knowledge_docs:', e); }
+      // Background sync to Supabase (fire-and-forget, never affects display)
+      ;(async () => {
+        try {
+          await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=is.null', { method: 'DELETE', headers: supaRest.headers() });
+          const rows = atEntries.value.map(e => ({ file_name: e.title || '', content: e.desc || '', category: e.section || '' }));
+          const BATCH = 20;
+          for (let i = 0; i < rows.length; i += BATCH) {
+            await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs', { method: 'POST', headers: Object.assign({}, supaRest.headers(), {'Prefer':'return=minimal'}), body: JSON.stringify(rows.slice(i, i + BATCH)) });
+          }
+        } catch(e) { console.warn('Supabase background sync failed:', e); }
+      })();
     }
+
     async function atLoadEntries() {
+      // Always load from localStorage first (instant, reliable display)
+      try {
+        const cached = JSON.parse(localStorage.getItem(AT_KEY) || '[]');
+        if (cached.length > 0) { atEntries.value = cached; return; }
+      } catch(e) {}
+      // localStorage empty — pull from Supabase (cross-device first load)
       try {
         const rows = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category&order=id.desc');
-        if (Array.isArray(rows)) {
-          atEntries.value = rows.map(r => ({
-            id: r.id,
-            section: r.category || 'General',
-            title: r.file_name || '',
-            desc: r.content || '',
-            createdAt: r.created_at || ''
-          }));
-          // Cache locally so getAgentToolsContent (in-app voice context) still works
+        if (Array.isArray(rows) && rows.length > 0) {
+          atEntries.value = rows.map(r => ({ id: r.id, section: r.category || 'General', title: r.file_name || '', desc: r.content || '', createdAt: '' }));
           localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
         }
-      } catch(e) { console.warn('Could not load training docs from knowledge_docs:', e); }
+      } catch(e) { console.warn('Could not load from Supabase:', e); }
     }
+
     async function atAddEntry() {
       if (!atNewTitle.value.trim()) return;
       atEntries.value.unshift({
