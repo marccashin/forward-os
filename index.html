@@ -7565,7 +7565,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
 
         if (isTextContent && typeof data.data === 'string') {
-          try { await supaRest.insert('property_notes', { property_id: targetProp.id, subfolder, content: data.data, created_by: AGENT_EMAILS[agentName.value] || '' }); }
+          try { await supaRest.insert('property_notes', { property_id: targetProp.id, subfolder, content: data.data }); }
           catch (e) { console.warn('property_notes write failed:', e); }
         }
 
@@ -8589,8 +8589,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           });
         } catch {}
         await supaRest.insert('property_notes', {
-          property_id: lstActiveProp.value.id, subfolder, content,
-          created_by: sessionEmail.value
+          property_id: lstActiveProp.value.id, subfolder, content
         });
       } catch (e) { console.warn('Save note failed:', e); }
     }
@@ -8781,8 +8780,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         await supaRest.insert('property_notes', {
           property_id: lstActiveProp.value.id,
           subfolder: 'campaign_sections',
-          content: JSON.stringify(parsed),
-          created_by: sessionEmail.value
+          content: JSON.stringify(parsed)
         });
       } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
     }
@@ -8809,8 +8807,7 @@ async function campApproveAndSend() {
       await supaRest.insert('property_notes', {
         property_id: lstActiveProp.value.id,
         subfolder: 'campaign_sections',
-        content: JSON.stringify(campParsed.value),
-        created_by: sessionEmail.value
+        content: JSON.stringify(campParsed.value)
       });
     } catch(e) { console.warn('campaign_sections re-save failed:', e); }
   }
