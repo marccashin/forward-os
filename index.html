@@ -14220,21 +14220,27 @@ No markdown. Valid JSON only.`;
 
     async function atSaveEntries() {
       localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
-
-      // Sync full library to knowledge_docs so voice assistant can search it
-      // file_name (title) is the unique key — re-uploading same title replaces old version
+      // Sync directly to Supabase knowledge_docs in batches (bypasses Railway payload limits)
       try {
-        await fetch(RAILWAY_URL + '/knowledge-docs/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            entries: atEntries.value.map(e => ({
-              file_name: e.title,
-              content:   e.desc,
-              category:  e.section || ''
-            }))
-          })
+        // Remove all text-only training entries (drive_file_id is null = manually entered)
+        await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=is.null', {
+          method: 'DELETE',
+          headers: supaRest.headers()
         });
+        // Re-insert all current entries in batches of 20
+        const BATCH = 20;
+        const rows = atEntries.value.map(e => ({
+          file_name: e.title || '',
+          content:   e.desc  || '',
+          category:  e.section || ''
+        }));
+        for (let i = 0; i < rows.length; i += BATCH) {
+          await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs', {
+            method: 'POST',
+            headers: Object.assign({}, supaRest.headers(), { 'Prefer': 'return=minimal' }),
+            body: JSON.stringify(rows.slice(i, i + BATCH))
+          });
+        }
       } catch(e) { console.warn('Could not sync training docs to knowledge_docs:', e); }
     }
     async function atLoadEntries() {
@@ -14279,13 +14285,7 @@ No markdown. Valid JSON only.`;
       const entry = atEntries.value.find(e => e.id === id);
       atEntries.value = atEntries.value.filter(e => e.id !== id);
       await atSaveEntries();
-      // Also remove directly from knowledge_docs (atSaveEntries syncs remaining, but
-      // explicitly delete to handle edge cases where sync is partial)
-      if (entry && entry.title) {
-        try {
-          await fetch(RAILWAY_URL + '/knowledge-docs?' + new URLSearchParams({ file_name: entry.title }), { method: 'DELETE' });
-        } catch(e) { /* non-critical */ }
-      }
+      // knowledge_docs sync handled by atSaveEntries above (direct Supabase batch write)
       await atLoadEntries(); // Refresh list from global source
       showToast('Entry removed.', 2000);
     }
