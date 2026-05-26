@@ -14221,20 +14221,14 @@ No markdown. Valid JSON only.`;
 
     // == Training Admin (Marc-only) ==
     const AT_KEY = 'fos_training_custom'; // global, not per-agent — shared across all agents via voice
-    const atEntries = ref((() => { try { return JSON.parse(localStorage.getItem(AT_KEY) || '[]'); } catch { return []; } })());
+    const atEntries = ref([]);
     const atNewSection = ref('Foundation & Vision');
     const atNewTitle   = ref('');
     const atNewDesc    = ref('');
 
     async function atSaveEntries() {
       localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
-      // Save to agent_config for app-level loading
-      try {
-        await supaRest.upsert('agent_config', {
-          agent_name: '__global__',
-          training_docs: JSON.stringify(atEntries.value)
-        }, 'agent_name');
-      } catch(e) { console.warn('Could not sync training docs to Supabase:', e); }
+
       // Sync full library to knowledge_docs so voice assistant can search it
       // file_name (title) is the unique key — re-uploading same title replaces old version
       try {
@@ -14250,6 +14244,22 @@ No markdown. Valid JSON only.`;
           })
         });
       } catch(e) { console.warn('Could not sync training docs to knowledge_docs:', e); }
+    }
+    async function atLoadEntries() {
+      try {
+        const rows = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category,created_at&order=created_at.desc');
+        if (Array.isArray(rows)) {
+          atEntries.value = rows.map(r => ({
+            id: r.id,
+            section: r.category || 'General',
+            title: r.file_name || '',
+            desc: r.content || '',
+            createdAt: r.created_at || ''
+          }));
+          // Cache locally so getAgentToolsContent (in-app voice context) still works
+          localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
+        }
+      } catch(e) { console.warn('Could not load training docs from knowledge_docs:', e); }
     }
     async function atAddEntry() {
       if (!atNewTitle.value.trim()) return;
@@ -14276,6 +14286,7 @@ No markdown. Valid JSON only.`;
           await fetch(RAILWAY_URL + '/knowledge-docs?' + new URLSearchParams({ file_name: entry.title }), { method: 'DELETE' });
         } catch(e) { /* non-critical */ }
       }
+      await atLoadEntries(); // Refresh list from global source
       showToast('Entry removed.', 2000);
     }
 
@@ -15762,16 +15773,8 @@ function logActMicToggle() {
             localStorage.setItem('fos_voice', g.voice_tone);
             settVoice.value = g.voice_tone;
           }
-          // Training docs
-          if (g.training_docs) {
-            try {
-              const remoteDocs = JSON.parse(g.training_docs);
-              if (remoteDocs.length > 0) {
-                localStorage.setItem(AT_KEY, g.training_docs);
-                atEntries.value = remoteDocs;
-              }
-            } catch {}
-          }
+          // Training docs — loaded globally from knowledge_docs table
+          atLoadEntries();
           // Brand PDFs
           if (g.brand_pdfs) {
             try {
