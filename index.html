@@ -4038,12 +4038,6 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             </button>
           </div>
 
-          <!-- Migration banner -->
-          <div v-if="lstPkgMovedBanner" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fffbeb;border:1px solid #f5d87a;border-radius:2px;padding:12px 16px;margin-bottom:16px;">
-            <span style="font-size:9px;color:#92400e;line-height:1.4;"><strong>Listing Package has moved.</strong> Find it inside each property file under Listing Presentation.</span>
-            <button @click="lstDismissPkgBanner" style="background:none;border:none;cursor:pointer;font-size:16px;color:#92400e;flex-shrink:0;">✕</button>
-          </div>
-
           <!-- Loading -->
           <div v-if="lstLoading" style="text-align:center;padding:48px;color:#aaa;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;">Loading properties…</div>
 
@@ -8221,8 +8215,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         moAnalysisLoading.value = false;
       }
     }
-    const lstPkgMovedBanner = ref(!localStorage.getItem('fos_lp_moved_dismissed')); // one-time migration banner
-    function lstDismissPkgBanner() { lstPkgMovedBanner.value = false; localStorage.setItem('fos_lp_moved_dismissed', '1'); }
     const lstShowCompleteModal = ref(true); // shown when status===complete, reset on dismiss
     const lstPipelineSteps = [
       { name: 'Brand Strategist', desc: 'Analyzing property, comps, and target buyer profiles' },
@@ -16734,7 +16726,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstPkgMovedBanner, lstDismissPkgBanner, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
