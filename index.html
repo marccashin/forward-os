@@ -17,7 +17,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
   <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCBt9sfObec8xAcgu98h1U1hiHRyhGOdFU&libraries=places&loading=async" async defer onerror="console.warn('Google Maps failed to load')"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -14166,6 +14165,15 @@ No markdown. Valid JSON only.`;
 
       // ── MERGE BUYERS GUIDE PDF (full 33 pages from Supabase) ────────────
       const mainPdfBytes = doc.output('arraybuffer');
+      // Lazy-load pdf-lib only when needed (avoids blocking Vue on startup)
+      if (!window.PDFLib) {
+        await new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
       const { PDFDocument } = window.PDFLib;
       const mergedPdf = await PDFDocument.load(mainPdfBytes);
 
