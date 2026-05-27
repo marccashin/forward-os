@@ -13790,6 +13790,7 @@ No markdown. Valid JSON only.`;
 
     async function byrCreateBuyer() {
       if (!byrNewName.value.trim()) { showToast('Enter a buyer name.', 3000); return; }
+      if (!agentName.value) { showToast('Agent not loaded. Please refresh and log in again.', 4000); return; }
       if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       byrCreating.value = true;
       try {
@@ -14465,7 +14466,7 @@ No markdown. Valid JSON only.`;
       feedbackModal.submitting = true; feedbackModal.error = '';
       try {
         await supaRest.insert('agent_feedback', {
-          agent_name: agentName.value || 'Unknown',
+          agent_name: agentName.value,
           type: feedbackModal.type === 'positive' ? 'praise' : 'bug',
           message: feedbackModal.transcript.trim()
         });
