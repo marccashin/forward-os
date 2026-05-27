@@ -4940,13 +4940,24 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <button @click="campShowPreview=false" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
                 </div>
                 <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
-                  <div v-if="lstNotes.listing_remarks" style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;flex-shrink:0;margin-bottom:6px;">
-                    <details>
-                      <summary style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:13px 18px;background:var(--cream);">
-                        Listing Description <span style="font-weight:400;opacity:.6;font-size:7px;">▼ expand</span>
-                      </summary>
-                      <div style="padding:14px 18px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);white-space:pre-wrap;line-height:1.75;border-top:1px solid var(--cream-mid);">{{ lstNotes.listing_remarks }}</div>
-                    </details>
+                  <div v-if="lstNotes.listing_remarks" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
+                    <div @click="campOpenSection = campOpenSection==='__ld__' ? null : '__ld__'"
+                         style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
+                         :style="{borderLeftColor: campOpenSection==='__ld__' ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
+                      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:4px;">Listing Description</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;color:rgba(247,244,239,0.5);">{{ lstNotes.listing_remarks.slice(0,90) }}…</div>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                        <span style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(200,169,110,0.6);">{{ campOpenSection==='__ld__' ? '▲ Close' : '▼ Expand' }}</span>
+                      </div>
+                    </div>
+                    <div v-if="campOpenSection==='__ld__'" style="padding:16px 20px;background:#0d1f35;border-top:1px solid rgba(200,169,110,0.15);">
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:rgba(247,244,239,0.85);white-space:pre-wrap;line-height:1.75;">{{ lstNotes.listing_remarks }}</div>
+                    </div>
                   </div>
                   <div v-for="(section, idx) in campParsed" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
                     <!-- Section header — always navy, click to expand -->
@@ -9884,7 +9895,8 @@ async function lstSubmitToPipeline() {
     const lstPersonaExists = computed(() => {
       if (!lstActiveProp.value) return false;
       return lstActiveFiles.value.some(f => (f.subfolder || '') === 'listing_remarks')
-        || (ldOutput.value?.trim().length > 0);
+        || (ldOutput.value?.trim().length > 0)
+        || !!lstNotes.listing_remarks;
     });
 
     // Fix 2: single Save button — auto-saves to listing_remarks subfolder
