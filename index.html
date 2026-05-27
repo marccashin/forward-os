@@ -14005,24 +14005,44 @@ No markdown. Valid JSON only.`;
       byrPackageLoading.value = true;
       byrPackageError.value = '';
       try {
-        // Build letter text: use BNA buyer summary if available, else a professional template
-        const letterText = (bnaResult.value && bnaResult.value.buyerSummary)
-          ? bnaResult.value.buyerSummary
-          : [
-              'Dear ' + (b.buyer_name || 'Valued Client') + ',',
-              '',
-              'Thank you for trusting FORWARD to guide you through your home search. It is my privilege to represent you, and I am fully committed to finding you the right home at the right price.',
-              '',
-              'Every step of the process — from understanding your needs, to navigating the market, to negotiating on your behalf — I will be your advocate and your guide.',
-              '',
-              'Enclosed you will find the FORWARD Buyer\u2019s Guide, a complete overview of the home-buying process from your first search through closing day. Please reach out any time with questions.',
-              '',
-              'Looking forward to finding your home,',
-            ].join('\n');
+        const _name = b.buyer_name || 'Valued Client';
 
-        // bioCardB64 and buyersGuideB64: null — byrBuildPackage has clean fallbacks for both
+        // Build context from available buyer data + BNA result
+        const _ctx = [
+          bnaResult.value && bnaResult.value.agentBrief   ? 'Agent brief: '     + bnaResult.value.agentBrief   : '',
+          bnaResult.value && bnaResult.value.buyerSummary ? 'Buyer summary: '   + bnaResult.value.buyerSummary : '',
+          b.budget    ? 'Budget: '        + b.budget    : '',
+          b.markets   ? 'Target markets: '+ b.markets   : '',
+          b.home_type ? 'Home type: '     + b.home_type : '',
+          b.timeline  ? 'Timeline: '      + b.timeline  : '',
+        ].filter(Boolean).join('\n');
+
+        let letterText = '';
+        try {
+          const _prompt =
+            'Write a warm, professional intro letter from agent ' + agentName.value + ' to buyer ' + _name + ' for their FORWARD Buyer Package.\n\n'
+            + (_ctx ? 'Buyer context:\n' + _ctx + '\n\n' : '')
+            + 'Format:\n'
+            + '- Start with: "Dear ' + _name + ',"\n'
+            + '- 3 short paragraphs (2-3 sentences each)\n'
+            + '- Para 1: Thank them for trusting FORWARD and express personal commitment\n'
+            + '- Para 2: Speak to their specific needs/situation if context provided, otherwise speak to the search process\n'
+            + '- Para 3: Introduce the enclosed FORWARD Buyer\'s Guide and invite them to reach out\n'
+            + '- Do NOT include any closing line (e.g. "Looking forward...") \u2014 it is added automatically\n'
+            + '- Plain text only, no markdown, no asterisks';
+          const _sys = 'You are a luxury real estate agent writing polished, client-facing documents. Tone: warm, confident, professional. Keep it concise \u2014 this is a one-page letter.';
+          letterText = await claude(_prompt, _sys, 512);
+        } catch(_aiErr) {
+          // Fallback if Claude API unavailable \u2014 clean template, no duplicate closing
+          letterText = 'Dear ' + _name + ',\n\n'
+            + 'Thank you for trusting FORWARD to guide you through your home search. It is my privilege to represent you, and I am fully committed to finding you the right home at the right price.\n\n'
+            + 'Every step of the process \u2014 from understanding your needs, to navigating the market, to negotiating on your behalf \u2014 I will be your advocate and your guide.\n\n'
+            + 'Enclosed you will find the FORWARD Buyer\u2019s Guide, a complete overview of the home-buying process from your first search through closing day. Please reach out any time with questions.';
+        }
+
+        // bioCardB64 + buyersGuideB64: null \u2014 byrBuildPackage has clean fallbacks for both
         await byrBuildPackage(b, letterText, null, null);
-        showGoldToast('📦 Buyer package ready!');
+        showGoldToast('\u{1F4E6} Buyer package ready!');
       } catch(e) {
         byrPackageError.value = e.message || 'Generation failed. Try again.';
       }
