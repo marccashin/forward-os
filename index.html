@@ -14052,123 +14052,331 @@ No markdown. Valid JSON only.`;
     async function byrBuildPackage(b, letterText, bioCardB64, buyersGuideB64) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-      const W = 612, H = 792;
-      const navy = [10, 22, 40], gold = [201, 168, 76], lgold = [180, 160, 100], gray = [107, 114, 128], white = [255, 255, 255], dark = [40, 50, 65], lgray = [245, 246, 248];
+      await _loadCampaignFonts(doc);
+
+      const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
+      let y = 0;
+      let pageNum = 1;
 
       const _agent      = agentName.value || 'Your FORWARD Agent';
       const _agentEmail = AGENT_EMAILS[agentName.value] || '';
       const _agentPhone = AGENT_PHONES[agentName.value] || '';
-      const _agentWeb   = AGENT_WEBSITE;
-      const _footerLine = [_agentEmail, _agentPhone, _agentWeb].filter(Boolean).join('  ·  ');
+      const _buyerName  = b.buyer_name || 'Valued Client';
+      const today       = new Date();
+      const dateStr     = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-      function hdr() {
-        doc.setFillColor(...navy); doc.rect(0, 0, W, 54, 'F');
-        if (FORWARD_LOGO_B64) {
-          const lH = 32, lW = lH * 4.85;
-          doc.addImage(FORWARD_LOGO_B64, 'PNG', 36, 11, lW, lH);
-        } else {
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...gold);
-          doc.text('FORWARD  |  CORCORAN McENEARNEY', 36, 22);
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...lgold);
-          doc.text('BUYER INTELLIGENCE PACKAGE', 36, 36);
+      function addPage() { doc.addPage(); pageNum++; y = 60; }
+      function checkY(needed) { if (y + needed > H - 60) addPage(); }
+
+      function clean(text) {
+        return (text || '')
+          .replace(/```[\s\S]*?```/g, function(m){ return m.replace(/```[a-z]*/g,'').trim(); })
+          .replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu, '')
+          .replace(/\*\*([^*]+)\*\*/g, '$1')
+          .replace(/\*([^*]+)\*/g, '$1')
+          .replace(/^#{1,6}\s+/gm, '')
+          .replace(/^>\s*/gm, '    ')
+          .replace(/^[+\-\*]\s+/gm, '- ')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/—/g, ',')
+          .replace(/–/g, '-')
+          .replace(/\\#/g, '#')
+          .replace(/\\([^\\])/g, '$1')
+          .replace(/→/g, '->')
+          .replace(/‘|’/g, "'")
+          .replace(/“|”/g, '"')
+          .replace(/•/g, '-')
+          .replace(/[^\x00-\x7E]/g, ' ');
+      }
+
+      function renderBlock(text, indent) {
+        const x = ML + (indent || 0);
+        const blockW = TW - (indent || 0);
+        const rawLines = clean(text).split('\n');
+        rawLines.forEach(function(raw) {
+          const line = raw.trimEnd();
+          if (!line.trim()) { y += 6; return; }
+          if (/^-{3,}$/.test(line.trim())) {
+            checkY(12);
+            doc.setDrawColor(180, 180, 180);
+            doc.setLineWidth(0.5);
+            doc.line(ML, y - 2, W - MR, y - 2);
+            y += 10;
+            return;
+          }
+          const isBold = /^\d+\.\s+[A-Z]/.test(line.trim()) || /^(Step|Phase|STEP|PHASE|Week|DAY)/.test(line.trim());
+          doc.setFont('CormorantGaramond', isBold ? 'bold' : 'normal');
+          doc.setFontSize(11);
+          doc.setTextColor(30, 30, 30);
+          const wrapped = doc.splitTextToSize(line, blockW);
+          wrapped.forEach(function(wl) {
+            checkY(15);
+            doc.text(wl, x, y);
+            y += 15;
+          });
+          doc.setFont('CormorantGaramond', 'normal');
+        });
+      }
+
+      function sectionHeader(title) {
+        checkY(36);
+        doc.setFillColor(10, 37, 64);
+        doc.rect(0, y - 18, W, 28, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(12);
+        doc.setFont('Montserrat', 'bold');
+        doc.text(title.toUpperCase(), ML, y);
+        y += 56;
+        doc.setTextColor(30, 30, 30);
+        doc.setFont('CormorantGaramond', 'normal');
+      }
+
+      function labelValue(label, value) {
+        if (!value || !String(value).trim()) return;
+        checkY(16);
+        doc.setFont('Montserrat', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(10, 37, 64);
+        doc.text(label.toUpperCase() + ':', ML, y);
+        doc.setFont('CormorantGaramond', 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(30, 30, 30);
+        const valLines = doc.splitTextToSize(String(value), TW - 120);
+        doc.text(valLines[0], ML + 120, y);
+        y += 15;
+        for (let i = 1; i < valLines.length; i++) {
+          checkY(15);
+          doc.text(valLines[i], ML + 120, y);
+          y += 15;
         }
-        doc.setFillColor(...gold); doc.rect(0, 54, W, 2, 'F');
       }
 
-      function ftr(label) {
-        doc.setFillColor(...navy); doc.rect(0, H - 36, W, 36, 'F');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...lgold);
-        doc.text(_footerLine, 36, H - 18);
-        if (label) doc.text(label, W - 36, H - 18, { align: 'right' });
-      }
+      // ── COVER PAGE ─────────────────────────────────────────────
+      doc.setFillColor(10, 37, 64);
+      doc.rect(0, 0, W, H, 'F');
+      // Top gold rule
+      doc.setFillColor(200, 169, 110);
+      doc.rect(ML, 72, TW, 1.5, 'F');
+      // Wordmark
+      doc.setTextColor(200, 169, 110);
+      doc.setFontSize(8);
+      doc.setFont('Montserrat', 'bold');
+      doc.text('FORWARD  |  CORCORAN MCENEARNEY', ML, 62);
+      // Title
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(42);
+      doc.setFont('Montserrat', 'bold');
+      doc.text('BUYER', ML, 224);
+      doc.text('PACKAGE', ML, 274);
+      // Gold rule under title
+      doc.setFillColor(200, 169, 110);
+      doc.rect(ML, 292, TW, 2, 'F');
+      // Buyer name
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(16);
+      doc.setFont('CormorantGaramond', 'normal');
+      var _cBuyerLines = doc.splitTextToSize('Prepared for ' + clean(_buyerName), TW);
+      var _cY = 322;
+      _cBuyerLines.forEach(function(al, i) { doc.text(al, ML, _cY + i * 22); });
+      var _cY2 = _cY + _cBuyerLines.length * 22 + 20;
+      // Agent name
+      doc.setFontSize(10);
+      doc.setTextColor(200, 169, 110);
+      doc.setFont('Montserrat', 'bold');
+      doc.text(clean(_agent).toUpperCase(), ML, _cY2);
+      // Date
+      doc.setFontSize(10);
+      doc.setTextColor(170, 170, 170);
+      doc.setFont('CormorantGaramond', 'normal');
+      doc.text(dateStr, ML, _cY2 + 18);
+      // Bottom rule + label
+      doc.setFillColor(200, 169, 110);
+      doc.rect(ML, H - 72, TW, 1.5, 'F');
+      doc.setTextColor(200, 169, 110);
+      doc.setFontSize(7);
+      doc.setFont('Montserrat', 'bold');
+      doc.text('PREPARED EXCLUSIVELY FOR BUYER USE', ML, H - 52);
 
-      // ── PAGE 1: WELCOME LETTER (BNA buyerSummary or Railway intro_letter) ──
-      hdr();
-      // Buyer name banner
-      doc.setFillColor(...lgray); doc.rect(36, 74, W - 72, 30, 'F');
-      doc.setFont('helvetica', 'oblique'); doc.setFontSize(9); doc.setTextColor(...gray);
-      doc.text('Prepared exclusively for', 52, 93);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...navy);
-      doc.text(b.buyer_name || 'Valued Client', 196, 93);
+      // ── PAGE 2: LETTER TO BUYER ────────────────────────────────
+      addPage();
+      sectionHeader('Letter to Buyer');
+      doc.setFont('CormorantGaramond', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(30, 30, 30);
 
-      let y = 132;
-      // Letter body
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(...dark);
-      const letterParas = (letterText || '').split(/\n+/).filter(p => p.trim());
-      for (const para of letterParas) {
-        const lines = doc.splitTextToSize(para.trim(), W - 108);
-        if (y + lines.length * 15 > H - 60) break; // safety: don't overflow
-        doc.text(lines, 54, y);
-        y += lines.length * 15 + 16;
-      }
-      // Signature
+      var _bFirst = _buyerName.split(' ')[0];
+      var _greeting = 'Dear ' + _bFirst + ',';
+
+      y += 36;
+      doc.text(dateStr, ML, y); y += 28;
+      doc.text(_greeting, ML, y); y += 28;
+
+      const _letterParas = (letterText || '').split(/\n+/).filter(function(p){ return p.trim() && p.trim() !== _greeting; });
+      doc.setFontSize(11);
+      _letterParas.forEach(function(para) {
+        const wrapped = doc.splitTextToSize(clean(para.trim()), TW);
+        wrapped.forEach(function(line) { checkY(16); doc.text(line, ML, y); y += 16; });
+        y += 12;
+      });
+
+      y += 8;
+      doc.text('Looking forward to finding your home,', ML, y); y += 22;
+      doc.setFont('Montserrat', 'bold');
+      doc.setFontSize(10);
+      doc.text(clean(_agent), ML, y); y += 18;
+      doc.setFont('CormorantGaramond', 'normal');
+      doc.setFontSize(11);
+      doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 14;
+      doc.setTextColor(150, 150, 150);
+      doc.setFontSize(9);
+      if (_agentEmail) { doc.text(_agentEmail, ML, y); y += 13; }
+      if (_agentPhone) { doc.text(_agentPhone, ML, y); y += 13; }
+
+      // ── PAGE 3: BUYER SEARCH PROFILE ──────────────────────────
+      addPage();
+      sectionHeader('Buyer Search Profile');
       y += 6;
-      doc.text('Looking forward to finding your home,', 54, y); y += 22;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...navy);
-      doc.text(_agent, 54, y); y += 15;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gold);
-      doc.text('FORWARD  |  Corcoran McEnearney', 54, y); y += 13;
-      doc.setTextColor(...gray);
-      if (_agentEmail) { doc.text(_agentEmail, 54, y); y += 12; }
-      if (_agentPhone) { doc.text(_agentPhone, 54, y); }
-      doc.setFillColor(...gold); doc.rect(54, y + 16, 80, 2, 'F');
-      ftr('Welcome Letter · 1 of 3');
 
-      // ── PAGE 2: AGENT BIO CARD (real Canva design from Supabase) ──────────
-      doc.addPage(); hdr();
-      if (bioCardB64) {
-        // Full-page pitch book image
-        doc.addImage(bioCardB64, 'JPEG', 0, 56, W, H - 56 - 36);
-      } else {
-        // Fallback text block if bio card not uploaded yet
-        let by = 100;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...gold);
-        doc.text('YOUR AGENT', 40, by); by += 22;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(...navy);
-        doc.text(_agent, 40, by); by += 26;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...gold);
-        doc.text('FORWARD  |  Corcoran McEnearney', 40, by); by += 18;
-        doc.setFontSize(10); doc.setTextColor(...gray);
-        if (_agentEmail) { doc.text(_agentEmail, 40, by); by += 14; }
-        if (_agentPhone) { doc.text(_agentPhone, 40, by); by += 14; }
-        doc.text(_agentWeb, 40, by);
+      // Budget
+      var _budgetStr = '';
+      if (b.budget_min && b.budget_max) _budgetStr = '$' + Number(b.budget_min).toLocaleString() + ' - $' + Number(b.budget_max).toLocaleString();
+      else if (b.budget_max) _budgetStr = 'Up to $' + Number(b.budget_max).toLocaleString();
+      else if (b.budget_min) _budgetStr = '$' + Number(b.budget_min).toLocaleString() + '+';
+      else if (b.budget) _budgetStr = b.budget;
+      labelValue('Budget Range', _budgetStr);
+
+      if (b.pre_approval_amount) {
+        var _preApprStr = '$' + Number(b.pre_approval_amount).toLocaleString();
+        if (b.pre_approval_lender) _preApprStr += ' (' + b.pre_approval_lender + ')';
+        labelValue('Pre-Approval', _preApprStr);
       }
-      ftr('Agent Bio · 2 of 3');
+      if (b.down_payment) labelValue('Down Payment', b.down_payment);
+      if (b.loan_type) labelValue('Financing', b.loan_type);
 
-      // ── PAGE 3: FWRD BUYERS GUIDE COVER ─────────────────────────────────
-      doc.addPage(); hdr();
-      doc.setFillColor(...navy); doc.rect(0, 56, W, H - 56 - 36, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(54); doc.setTextColor(...gold);
-      doc.text('FWRD', W / 2, 200, { align: 'center' });
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(13); doc.setTextColor(...white);
-      doc.text("BUYER'S GUIDE", W / 2, 234, { align: 'center' });
-      doc.setFillColor(...gold); doc.rect(W / 2 - 60, 250, 120, 1.5, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...lgold);
-      doc.text('Everything you need to know about the buying process —', W / 2, 274, { align: 'center' });
-      doc.text('from your first search to closing day.', W / 2, 290, { align: 'center' });
-      const guideChapters = [
-        '01  Understanding Your Buying Power',
-        '02  Navigating the Market',
-        '03  The Offer & Negotiation Process',
-        '04  Inspections, Appraisals & Due Diligence',
-        '05  The Path to Closing',
-        '06  Life After Closing',
+      y += 10;
+      labelValue('Target Markets', b.target_areas || b.market_area || b.markets || '');
+      if (b.areas_note) labelValue('Area Notes', b.areas_note);
+
+      y += 10;
+      labelValue('Home Type', b.home_type || '');
+      if (b.home_type_note) labelValue('Type Notes', b.home_type_note);
+      if (b.bedrooms_min) labelValue('Bedrooms', b.bedrooms_min + (b.bedrooms_note ? ' — ' + b.bedrooms_note : ''));
+      if (b.bathrooms) labelValue('Bathrooms', b.bathrooms);
+      if (b.parking) labelValue('Parking', b.parking + (b.parking_note ? ' — ' + b.parking_note : ''));
+      if (b.outdoor_space) labelValue('Outdoor Space', b.outdoor_space + (b.outdoor_note ? ' — ' + b.outdoor_note : ''));
+
+      y += 10;
+      if (b.must_haves) {
+        checkY(16);
+        doc.setFont('Montserrat', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(10, 37, 64);
+        doc.text('MUST-HAVES:', ML, y);
+        y += 14;
+        doc.setFont('CormorantGaramond', 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(30, 30, 30);
+        renderBlock(b.must_haves, 0);
+      }
+      if (b.deal_breakers) {
+        y += 6;
+        checkY(16);
+        doc.setFont('Montserrat', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(10, 37, 64);
+        doc.text('DEAL BREAKERS:', ML, y);
+        y += 14;
+        doc.setFont('CormorantGaramond', 'normal');
+        doc.setFontSize(11);
+        doc.setTextColor(30, 30, 30);
+        renderBlock(b.deal_breakers, 0);
+      }
+
+      y += 10;
+      var _timelineStr = b.timeline || '';
+      if (b.move_in_target) _timelineStr += (_timelineStr ? ' — ' : '') + 'Target: ' + b.move_in_target;
+      if (b.urgency) _timelineStr += (_timelineStr ? ' · ' : '') + b.urgency;
+      if (b.urgency_note) _timelineStr += (_timelineStr ? ' · ' : '') + b.urgency_note;
+      labelValue('Timeline', _timelineStr);
+
+      // BNA summary if available
+      if (bnaResult.value && bnaResult.value.buyerSummary) {
+        y += 14;
+        checkY(16);
+        doc.setFont('Montserrat', 'bold');
+        doc.setFontSize(8);
+        doc.setTextColor(10, 37, 64);
+        doc.text('INTELLIGENCE BRIEF:', ML, y);
+        y += 14;
+        doc.setFont('CormorantGaramond', 'italic');
+        doc.setFontSize(11);
+        doc.setTextColor(60, 60, 60);
+        renderBlock(bnaResult.value.buyerSummary, 0);
+      }
+
+      // ── PAGE 4: THE BUYING PROCESS ─────────────────────────────
+      addPage();
+      sectionHeader('The Buying Process');
+      y += 6;
+
+      var _processSteps = [
+        { step: '01  Getting Preapproved', body: 'Before we begin touring homes, we will ensure you have a current pre-approval letter from a trusted lender. This not only clarifies your buying power but positions you as a serious buyer when it is time to make an offer. If you need a lender recommendation, I have a network of professionals who move quickly and communicate clearly.' },
+        { step: '02  Defining Your Search', body: 'We begin with a focused conversation about what you need, what you want, and what you will not compromise on. Your search profile — the one you have already completed — guides everything. I will monitor the market daily and alert you to properties that match before they hit the public feed.' },
+        { step: '03  Touring Homes', body: 'I will schedule showings efficiently so you can see the right homes without wasting time on the wrong ones. During tours, I will point out things that may not be obvious — condition red flags, layout limitations, neighborhood dynamics, and the factors that drive resale value.' },
+        { step: '04  Making an Offer', body: 'When you find the right home, speed and precision matter. I will prepare a competitive offer strategy specific to that property: the right price, the right terms, and the right contingencies to protect you. I will walk you through every line before you sign.' },
+        { step: '05  Under Contract', body: 'Once you are under contract, the process moves fast. We will schedule a home inspection, order an appraisal if financed, and navigate any repair requests or renegotiations. I will be your point of contact for every party — the seller, the lender, the title company, and the inspector.' },
+        { step: '06  Closing Day', body: 'You will receive a clear closing disclosure detailing every fee before you arrive. On closing day, you will sign the final documents, wire the remaining funds, and receive the keys. I will be with you from first showing to final signature.' },
       ];
-      let cy = 344; doc.setFontSize(9.5);
-      for (const ch of guideChapters) {
-        doc.setTextColor(...gold); doc.text('—', W / 2 - 150, cy);
-        doc.setTextColor(...white); doc.text(ch, W / 2 - 135, cy);
-        cy += 22;
-      }
-      doc.setFont('helvetica', 'oblique'); doc.setFontSize(8.5); doc.setTextColor(120, 140, 160);
-      doc.text('Full guide follows this cover', W / 2, H - 56, { align: 'center' });
-      ftr("FWRD Buyer's Guide · 3 of 3");
 
-      // ── MERGE BUYERS GUIDE PDF (full 33 pages from Supabase) ────────────
+      _processSteps.forEach(function(item) {
+        checkY(50);
+        doc.setFont('Montserrat', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(10, 37, 64);
+        doc.text(item.step, ML, y);
+        y += 14;
+        renderBlock(item.body, 0);
+        y += 10;
+      });
+
+      // ── PAGE 5: OFFER STRATEGY ─────────────────────────────────
+      addPage();
+      sectionHeader('Our Offer Strategy');
+      y += 6;
+
+      var _offerContent = 'At FORWARD, we do not believe in leaving offers to chance. Every offer we submit is deliberate, well-structured, and built to win on the right terms.\n\nHere is how we approach it:\n\nPrice Intelligence. Before we write a number, I will pull a full market analysis on the specific property: recent sales within the past 90 days, active competing listings, days on market, and any price reduction history. You will know exactly what a competitive offer looks like before you commit.\n\nTerms That Win. Price is only one factor. Strong offers often win on terms: a flexible closing date, a limited inspection contingency, a large earnest money deposit, or a clean contract with minimal conditions. We will tailor the offer to what the seller values most.\n\nEscalation Clauses. In competitive markets, an escalation clause lets your offer automatically beat competing offers up to a maximum you are comfortable with — without overpaying when there is no competition. We use them when the situation warrants.\n\nPersonal Touch. In select situations, a buyer letter accompanying the offer can tip the scales. I will advise you on when this is appropriate and help you craft one if it makes strategic sense.\n\nSpeed. The difference between winning and losing is often hours, not dollars. When the right home comes on the market, we move. You will never lose a home because we were slow.';
+      renderBlock(_offerContent, 0);
+
+      // ── PAGE 6: NEXT STEPS ─────────────────────────────────────
+      addPage();
+      sectionHeader('Next Steps');
+      y += 6;
+
+      var _nextStepsContent = 'Here is what happens from this point forward.\n\nYou are enrolled in our FORWARD Buyer Intelligence system. Each morning, properties matching your search profile are reviewed against the market. You will hear from me when there is something worth seeing — not as noise, but as signal.\n\nIn the meantime, here is what I need from you:\n\n1. Confirm your pre-approval is current. If your letter is more than 60 days old, we should refresh it now. A stale letter can delay or disqualify an offer.\n\n2. Set your non-negotiables. Review your search profile and let me know if anything has changed. The clearer your criteria, the faster we can move when the right property appears.\n\n3. Stay reachable. When I call or text about a new listing, time is often of the essence. The best properties in our price range receive offers within 48-72 hours of hitting the market.\n\nI am your advocate throughout this process. My job is not just to open doors — it is to get you the right home at the right price, on terms that protect your interests. That is what FORWARD delivers.\n\nLet\'s find your home.';
+      renderBlock(_nextStepsContent, 0);
+
+      y += 20;
+      doc.setFont('Montserrat', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(10, 37, 64);
+      doc.text(clean(_agent).toUpperCase(), ML, y); y += 16;
+      doc.setFont('CormorantGaramond', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(120, 120, 120);
+      if (_agentEmail) { doc.text(_agentEmail, ML, y); y += 13; }
+      if (_agentPhone) { doc.text(_agentPhone, ML, y); y += 13; }
+      doc.setFontSize(9);
+      doc.text('www.FwrdRealEstate.com', ML, y);
+
+      // Bottom gold accent on last page
+      doc.setFillColor(200, 169, 110);
+      doc.rect(ML, H - 48, 60, 1.5, 'F');
+
+      // ── MERGE BUYERS GUIDE PDF if provided ─────────────────────
       const mainPdfBytes = doc.output('arraybuffer');
-      // Lazy-load pdf-lib only when needed (avoids blocking Vue on startup)
       if (!window.PDFLib) {
-        await new Promise((res, rej) => {
+        await new Promise(function(res, rej) {
           const s = document.createElement('script');
           s.src = 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';
           s.onload = res; s.onerror = rej;
@@ -14185,7 +14393,7 @@ No markdown. Valid JSON only.`;
           const guidePdf   = await PDFDocument.load(guideBytes);
           const pageIdxs   = guidePdf.getPageIndices();
           const copiedPages = await mergedPdf.copyPages(guidePdf, pageIdxs);
-          copiedPages.forEach(p => mergedPdf.addPage(p));
+          copiedPages.forEach(function(p) { mergedPdf.addPage(p); });
         } catch(guideErr) {
           console.warn('Could not merge buyers guide:', guideErr);
         }
