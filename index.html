@@ -14205,14 +14205,12 @@ No markdown. Valid JSON only.`;
       doc.setFontSize(11);
       doc.setTextColor(30, 30, 30);
 
-      var _bFirst = _buyerName.split(' ')[0];
-      var _greeting = 'Dear ' + _bFirst + ',';
-
       y += 36;
       doc.text(dateStr, ML, y); y += 28;
-      doc.text(_greeting, ML, y); y += 28;
+      y += 6;
 
-      const _letterParas = (letterText || '').split(/\n+/).filter(function(p){ return p.trim() && p.trim() !== _greeting; });
+      // Strip any "Dear..." line that Claude may have included — we render it as-is from letterText
+      const _letterParas = (letterText || '').split(/\n+/).filter(function(p){ return p.trim(); });
       doc.setFontSize(11);
       _letterParas.forEach(function(para) {
         const wrapped = doc.splitTextToSize(clean(para.trim()), TW);
