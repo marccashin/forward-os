@@ -538,7 +538,7 @@
         <div class="vb-label" style="color:var(--gold);">Agent Override <span style="font-weight:400;opacity:.75;font-size:9px;">(optional)</span></div>
         <input type="number" id="agentPriceOverride" placeholder="e.g. 595000" step="1000" min="0"
           style="border:1.5px solid var(--gold);border-radius:6px;padding:5px 8px;font-size:16px;font-weight:700;color:var(--navy);width:100%;text-align:center;background:white;"
-          oninput="updateOverrideDisplay()" />
+          oninput="updateOverrideDisplay(); _scheduleAutoSave()" />
         <div style="font-size:10px;color:var(--muted);margin-top:4px;" id="overrideNote">Enter to override PDF value</div>
       </div>
       <div class="value-box">
@@ -553,7 +553,7 @@
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
       <div class="field">
         <label>Agent Notes / Narrative</label>
-        <textarea id="agentNotes" rows="3" placeholder="Summarize your value conclusion, market conditions, and pricing rationale..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;width:100%;"></textarea>
+        <textarea id="agentNotes" rows="3" placeholder="Summarize your value conclusion, market conditions, and pricing rationale..." style="border:1.5px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;resize:vertical;width:100%;" oninput="_scheduleAutoSave()"></textarea>
       </div>
     </div>
   </div>
@@ -818,6 +818,7 @@ function calcCondAdj(subjectCond, compCond) {
 }
 
 function recalcAll() {
+  _scheduleAutoSave();
   const subGla      = getNum('s_gla');
   const subBelow    = getNum('s_below');
   const subCond     = getVal('s_condition') || 'C';
@@ -1022,6 +1023,45 @@ function loadDraft() {
   } catch(e) { /* ignore */ }
 }
 
+// ── AUTOSAVE ──
+let _autoSaveTimer = null;
+function _scheduleAutoSave() {
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = setTimeout(() => {
+    try { _supaSave(_buildDraft()); } catch(e) { /* silent */ }
+  }, 2000);
+}
+
+// ── CMA SUMMARY TEXT ── (saved to property_notes subfolder:cma for campaign context)
+function _buildCmaSummary() {
+  const address  = getVal('s_address') || '';
+  const override = getVal('agentPriceOverride');
+  const estVal   = override ? '$' + parseInt(override).toLocaleString('en-US') : (document.getElementById('vRecommended')?.textContent || '—');
+  const low      = document.getElementById('vLow')?.textContent  || '—';
+  const high     = document.getElementById('vHigh')?.textContent || '—';
+  const range    = document.getElementById('vListPrice')?.textContent || '—';
+  const narrative = getVal('agentNotes') || '';
+
+  const compLines = comps
+    .filter(c => c.address && c.salePrice)
+    .map(c => {
+      const adjPx = c._adj ? '$' + Math.round(c._adj.adjusted).toLocaleString('en-US') : '';
+      const netAdj = c._adj ? (c._adj.net >= 0 ? '+' : '') + '$' + Math.round(c._adj.net).toLocaleString('en-US') : '';
+      return `• ${c.address} — Sold $${parseInt(c.salePrice).toLocaleString('en-US')} | Net Adj ${netAdj} | Adj Price ${adjPx}`;
+    })
+    .join('\n');
+
+  return [
+    `ESTIMATED VALUE: ${estVal}`,
+    `Range: ${low} – ${high}`,
+    `Suggested List: ${range}`,
+    '',
+    'COMPS:',
+    compLines || '(none entered)',
+    narrative ? '\nAGENT NARRATIVE:\n' + narrative : ''
+  ].join('\n').trim();
+}
+
 function showToast(msg) {
   const t = document.createElement('div');
   t.textContent = msg;
@@ -1049,12 +1089,27 @@ async function saveToFolder() {
   const driveFolderId = prefill.driveFolderId || '';
   const agentUpload   = getVal('s_agentName') || localStorage.getItem('fos_agent') || 'Agent';
   const address       = getVal('s_address') || prefill.address || 'Property';
-  if (!driveFolderId) { showToast('⚠️ No Drive folder — open CMA from your active listing'); return; }
   _folderSaving = true;
   const btn = document.getElementById('btnSaveFolder');
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const { blob, filename } = await _buildPDFBlob();
+    if (!driveFolderId) {
+      // No Drive folder linked — download PDF locally and log to property record
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      _folderSaved = true;
+      if (propId && _SUPA_KEY) {
+        const cmaSummary = _buildCmaSummary();
+        fetch(_SUPA_URL + '/rest/v1/property_notes', { method: 'POST', headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ property_id: propId, subfolder: 'cma', content: cmaSummary, updated_at: new Date().toISOString() }) }).catch(() => {});
+        localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: '', filename, date: new Date().toISOString(), address }));
+      }
+      if (btn) { btn.innerHTML = '✅ PDF Downloaded'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
+      showToast('✅ CMA downloaded — link a Drive folder to auto-file next time');
+      saveLocal();
+      return;
+    }
     const fd = new FormData();
     fd.append('file', blob, filename);
     fd.append('folder_id', driveFolderId);
@@ -1067,7 +1122,10 @@ async function saveToFolder() {
     _folderSaved = true;
     const driveUrl = result.webViewLink || result.url || result.fileUrl || '';
     if (propId) { localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: driveUrl, filename, date: new Date().toISOString(), address })); }
-    if (propId && _SUPA_KEY) { fetch(_SUPA_URL + '/rest/v1/property_notes', { method: 'POST', headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ property_id: propId, note_type: 'cma_report', content: filename, url: driveUrl, created_by: agentUpload, updated_at: new Date().toISOString() }) }).catch(() => {}); }
+    if (propId && _SUPA_KEY) {
+      const cmaSummary = _buildCmaSummary();
+      fetch(_SUPA_URL + '/rest/v1/property_notes', { method: 'POST', headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ property_id: propId, subfolder: 'cma', content: cmaSummary, updated_at: new Date().toISOString() }) }).catch(() => {});
+    }
     if (btn) { btn.innerHTML = '✅ Saved to Folder'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
     showToast('✅ CMA saved to ' + address + ' client folder');
     saveLocal();
