@@ -8673,7 +8673,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // Show complete modal if returning to a completed property
       lstShowCompleteModal.value = (prop.status === 'complete');
       // Reset tool states so previous property data doesn't bleed through
+      // Reset mlsForm, then immediately repopulate from saved note if one exists
       Object.assign(mlsForm, { listPrice:'', beds:'', baths:'', sqft:'', yearBuilt:'', hoa:'', propType:'', parking:'', features:['','','','',''] });
+      if (lstNotes.mls_data) {
+        const _mlsGet = (label) => {
+          const _m = lstNotes.mls_data.match(new RegExp(label + '\\s*:\\s*(.+)'));
+          return _m ? _m[1].trim() : '';
+        };
+        const _lp = _mlsGet('List Price');     if (_lp && _lp !== '—') mlsForm.listPrice  = _lp;
+        const _bd = _mlsGet('Bedrooms');       if (_bd && _bd !== '—') mlsForm.beds       = _bd;
+        const _ba = _mlsGet('Bathrooms');      if (_ba && _ba !== '—') mlsForm.baths      = _ba;
+        const _sq = _mlsGet('Square Footage'); if (_sq && _sq !== '—') mlsForm.sqft       = _sq.replace(/\s*sq\s*ft.*/i, '').trim();
+        const _yr = _mlsGet('Year Built');     if (_yr && _yr !== '—') mlsForm.yearBuilt  = _yr;
+        const _ho = _mlsGet('HOA Fee');        if (_ho && _ho !== '—' && _ho.toLowerCase() !== 'none') mlsForm.hoa = _ho;
+        const _pt = _mlsGet('Property Type');  if (_pt && _pt !== '—') mlsForm.propType   = _pt;
+        const _pk = _mlsGet('Parking');        if (_pk && _pk !== '—') mlsForm.parking    = _pk;
+        const _fb = lstNotes.mls_data.match(/---\s*Key Features\s*---\n([\s\S]*)/i);
+        if (_fb) {
+          const _fl = _fb[1].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(l => l);
+          for (let _fi = 0; _fi < 5; _fi++) mlsForm.features[_fi] = _fl[_fi] || '';
+        }
+      }
       ldOutput.value = ''; ldMessages.value = []; ldStarted.value = false;
       jlOutput.value = null;
       Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
