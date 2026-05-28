@@ -5053,7 +5053,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                         </label>
                         <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:6px 12px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
                              :style="{background: byrPackageOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: byrPackageOpenSection===idx ? 'var(--navy)' : 'var(--gold)', border:'1px solid rgba(200,169,110,0.4)'}">
-                          {{ byrPackageOpenSection===idx ? '&#9650; CLOSE' : '&#9660; EDIT' }}
+                          {{ byrPackageOpenSection===idx ? '▲ CLOSE' : '▼ EDIT' }}
                         </div>
                       </div>
                     </div>
@@ -5061,7 +5061,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     <div v-if="byrPackageOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div v-if="!section.editable" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">This section is auto-formatted in the PDF and is shown here for reference only.</div>
                       <div v-if="!section.editable" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);white-space:pre-wrap;line-height:1.7;">{{ section.content }}</div>
-                      <template v-else>
+                      <div v-else>
                         <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
                         <textarea v-model="section.content" class="byr-pkg-ta"
                           @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
@@ -5070,7 +5070,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                           @focus="$event.target.style.borderColor='var(--gold-muted)'"
                           @blur="$event.target.style.borderColor='var(--cream-mid)'"
                           placeholder="Type or paste content for this section…"></textarea>
-                      </template>
+                      </div>
                     </div>
                     <div v-else-if="!section.included" style="padding:8px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
