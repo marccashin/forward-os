@@ -2856,9 +2856,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               <!-- Generate Buyer Package — below tools -->
               <button class="btn-navy" @click="byrGeneratePackage" :disabled="byrPackageLoading || !byrActiveBuyer" style="width:100%;padding:16px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;border-radius:2px;display:flex;align-items:center;justify-content:center;gap:10px;">
                 <span v-if="byrPackageLoading" class="spinner" style="width:16px;height:16px;border-width:2px;"></span>
-                <span><span v-if="byrPackageLoading">Generating Buyer Package...</span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,8 12,3 22,8 22,20 12,22 2,20" fill="#0d1f35"/><polygon points="2,8 12,13 22,8" fill="none" stroke="white" stroke-width="1.5"/><line x1="12" y1="13" x2="12" y2="22" stroke="white" stroke-width="1.5"/></svg> Generate Buyer Package</span></span>
+                <span><span v-if="byrPackageLoading">Building Package...</span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,8 12,3 22,8 22,20 12,22 2,20" fill="#0d1f35"/><polygon points="2,8 12,13 22,8" fill="none" stroke="white" stroke-width="1.5"/><line x1="12" y1="13" x2="12" y2="22" stroke="white" stroke-width="1.5"/></svg> Generate Buyer Package</span></span>
               </button>
-              <div v-if="byrPackageLoading" style="text-align:center;font-size:12px;color:#9ca3af;margin-top:8px;">Building personalized guide + intro letter. Takes 20-30 seconds.</div>
+              <div v-if="byrPackageLoading" style="text-align:center;font-size:12px;color:#9ca3af;margin-top:8px;">Generating letter, budget analysis &amp; neighborhood intelligence. Takes 30-45 seconds.</div>
               <div v-if="byrPackageError" style="color:#dc2626;font-size:12px;margin-top:6px;text-align:center;">{{ byrPackageError }}</div>
             </div>
           </div>
@@ -5010,6 +5010,79 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
             </div>
 
+            <!-- ── Buyer Package Review Panel ─────────────────────────── -->
+            <div v-if="byrShowPackageReview" style="position:fixed;inset:0;background:rgba(10,35,66,0.55);z-index:9000;display:flex;align-items:stretch;justify-content:flex-end;" @click.self="byrShowPackageReview=false">
+              <div style="background:var(--cream);width:min(700px,100vw);display:flex;flex-direction:column;height:100%;overflow:hidden;box-shadow:-6px 0 32px rgba(10,35,66,.22);">
+                <!-- Panel header -->
+                <div style="padding:20px 26px 18px;border-bottom:1px solid var(--cream-mid);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--navy);">
+                  <div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--cream);letter-spacing:0.02em;">Buyer Package</div>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-top:4px;">{{ byrActiveBuyer ? byrActiveBuyer.buyer_name : '' }} &middot; {{ byrPackageSections.length }} sections &middot; click any section to edit</div>
+                  </div>
+                  <button @click="byrShowPackageReview=false" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">&#x2715;</button>
+                </div>
+                <!-- Profile summary (read-only reminder) -->
+                <div style="padding:10px 24px 0;flex-shrink:0;">
+                  <div style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;overflow:hidden;">
+                    <div style="display:flex;align-items:center;gap:12px;padding:12px 18px;background:var(--navy);">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                      <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);">Buyer Search Profile</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:rgba(200,169,110,0.6);margin-left:auto;">Auto-generated from buyer record &mdash; always included</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Sections list -->
+                <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px 24px 20px;display:flex;flex-direction:column;gap:8px;">
+                  <div v-for="(section, idx) in byrPackageSections" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;overflow:hidden;flex-shrink:0;">
+                    <div @click="byrPackageOpenSection = byrPackageOpenSection===idx ? null : idx"
+                         style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
+                         :style="{borderLeftColor: byrPackageOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
+                      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:3px;">{{ section.title }}</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:12px;line-height:1.3;max-width:380px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
+                               :style="{color: byrPackageOpenSection===idx ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)', fontStyle: (!section.content||section.content.length<=10)?'italic':'normal'}">
+                            {{ byrPackageOpenSection===idx ? 'Editing — click ▲ Close when done' : (section.content&&section.content.length>10 ? section.content.slice(0,90).trim()+'…' : 'Empty') }}
+                          </div>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;margin-left:14px;">
+                        <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,169,110,0.55);cursor:pointer;white-space:nowrap;">
+                          <input type="checkbox" v-model="section.included" style="cursor:pointer;accent-color:var(--gold);"> Include
+                        </label>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:6px 12px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
+                             :style="{background: byrPackageOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: byrPackageOpenSection===idx ? 'var(--navy)' : 'var(--gold)', border:'1px solid rgba(200,169,110,0.4)'}">
+                          {{ byrPackageOpenSection===idx ? '&#9650; CLOSE' : '&#9660; EDIT' }}
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Edit area -->
+                    <div v-if="byrPackageOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
+                      <div v-if="!section.editable" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">This section is auto-formatted in the PDF and is shown here for reference only.</div>
+                      <div v-if="!section.editable" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);white-space:pre-wrap;line-height:1.7;">{{ section.content }}</div>
+                      <template v-else>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                        <textarea v-model="section.content" class="byr-pkg-ta"
+                          @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                          style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
+                          :style="{height: Math.max(180,(section.content||'a').split('\n').length*24+60)+'px'}"
+                          @focus="$event.target.style.borderColor='var(--gold-muted)'"
+                          @blur="$event.target.style.borderColor='var(--cream-mid)'"
+                          placeholder="Type or paste content for this section…"></textarea>
+                      </template>
+                    </div>
+                    <div v-else-if="!section.included" style="padding:8px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
+                  </div>
+                </div>
+                <!-- Footer actions -->
+                <div style="padding:16px 24px;border-top:1px solid var(--cream-mid);display:flex;gap:10px;flex-shrink:0;background:var(--cream);">
+                  <button @click="byrApprovePackage()" style="flex:1;padding:13px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">&#10003; Approve &amp; Download</button>
+                  <button @click="byrShowPackageReview=false" style="padding:13px 18px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Close</button>
+                </div>
+              </div>
+            </div>
+
             <!-- In-App Campaign Generator -->
             <div class="camp-settings-panel">
               <div @click="campShowSettings=!campShowSettings" class="camp-settings-header">
@@ -6415,6 +6488,35 @@ const AGENT_PHONES = {
   'Shannon Casey':  '540.222.2119',
 };
 const AGENT_WEBSITE = 'www.FwrdRealEstate.com';
+
+const AGENT_BIOS = {
+  'Marc Cashin':     'Marc Cashin is a luxury real estate specialist with FORWARD | Corcoran McEnearney, focused on the DC Metro market including Capitol Hill, Navy Yard, Del Ray, Old Town Alexandria, and Northern Virginia. Known for market intelligence, negotiating precision, and a concierge approach to client service, Marc has guided buyers through some of the DMV\'s most competitive transactions.\n\nHis approach is straightforward: every client receives the same level of preparation, market analysis, and honest counsel — from first showing through final signature. He brings data to every offer and is committed to winning on the right terms, not just the highest number.\n\nFORWARD | Corcoran McEnearney\n202.900.3126 · marc.cashin@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Ash McGowan':     'Ashling McGowan is a buyer\'s specialist with FORWARD | Corcoran McEnearney, with deep expertise across Capitol Hill, Navy Yard, and the Maryland suburbs. Her clients value her responsiveness, her market read, and her ability to move quickly when the right home appears.\n\nFORWARD | Corcoran McEnearney\n202.779.6263 · ash.mcgowan@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Ashling McGowan': 'Ashling McGowan is a buyer\'s specialist with FORWARD | Corcoran McEnearney, with deep expertise across Capitol Hill, Navy Yard, and the Maryland suburbs. Her clients value her responsiveness, her market read, and her ability to move quickly when the right home appears.\n\nFORWARD | Corcoran McEnearney\n202.779.6263 · ash.mcgowan@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Niki Lang':       'Niki Lang is a licensed real estate professional with FORWARD | Corcoran McEnearney, specializing in buyer representation across the DC Metro area. Known for her thorough preparation and clear communication, Niki guides clients through every step of the buying process with precision and care.\n\nFORWARD | Corcoran McEnearney\n202.905.8828 · niki.lang@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Cesar Rivera':    'Cesar Rivera is a luxury real estate professional with FORWARD | Corcoran McEnearney, focused on buyer representation across Northern Virginia and the greater DMV market. Bilingual in English and Spanish, Cesar brings a global perspective and a disciplined, client-first approach to every transaction.\n\nFORWARD | Corcoran McEnearney\n202.878.2897 · cesar.rivera@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Charlotte Lee':   'Charlotte Lee is a real estate professional with FORWARD | Corcoran McEnearney, specializing in buyer representation across DC and Northern Virginia. Charlotte is known for her attention to detail, her calm presence in competitive situations, and her ability to find opportunities others miss.\n\nFORWARD | Corcoran McEnearney\n202.258.6608 · charlotte.lee@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Shannon Casey':   'Shannon Casey is a licensed real estate professional with FORWARD | Corcoran McEnearney, working with buyers and sellers across Northern Virginia and the Shenandoah Valley corridor. Shannon\'s clients appreciate her market knowledge, her work ethic, and her commitment to making the buying process clear and stress-free.\n\nFORWARD | Corcoran McEnearney\n540.222.2119 · shannon.casey@corcoranmce.com\nwww.FwrdRealEstate.com',
+};
+
+const FORWARD_TRUSTED_PARTNERS = `MORTGAGE & FINANCING
+[Lender Name] — [Company]
+[Phone] | [Email]
+[One sentence on why you trust them.]
+
+HOME INSPECTION
+[Inspector Name / Company]
+[Phone] | [Website]
+[One sentence on their specialty or turnaround time.]
+
+TITLE & SETTLEMENT
+KVS Title
+[Phone] | [Website]
+[One sentence on their service.]
+
+REAL ESTATE ATTORNEY
+[Attorney Name / Firm — or: Referrals available upon request based on transaction type and jurisdiction.]`;
+
 
 // ── Tool-to-Subfolder Auto-Routing Map ──────────────────────────────────
 const TOOL_SUBFOLDER_MAP = {
@@ -8571,7 +8673,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // Show complete modal if returning to a completed property
       lstShowCompleteModal.value = (prop.status === 'complete');
       // Reset tool states so previous property data doesn't bleed through
+      // Reset mlsForm, then immediately repopulate from saved note if one exists
       Object.assign(mlsForm, { listPrice:'', beds:'', baths:'', sqft:'', yearBuilt:'', hoa:'', propType:'', parking:'', features:['','','','',''] });
+      if (lstNotes.mls_data) {
+        const _mlsGet = (label) => {
+          const _m = lstNotes.mls_data.match(new RegExp(label + '\\s*:\\s*(.+)'));
+          return _m ? _m[1].trim() : '';
+        };
+        const _lp = _mlsGet('List Price');     if (_lp && _lp !== '—') mlsForm.listPrice  = _lp;
+        const _bd = _mlsGet('Bedrooms');       if (_bd && _bd !== '—') mlsForm.beds       = _bd;
+        const _ba = _mlsGet('Bathrooms');      if (_ba && _ba !== '—') mlsForm.baths      = _ba;
+        const _sq = _mlsGet('Square Footage'); if (_sq && _sq !== '—') mlsForm.sqft       = _sq.replace(/\s*sq\s*ft.*/i, '').trim();
+        const _yr = _mlsGet('Year Built');     if (_yr && _yr !== '—') mlsForm.yearBuilt  = _yr;
+        const _ho = _mlsGet('HOA Fee');        if (_ho && _ho !== '—' && _ho.toLowerCase() !== 'none') mlsForm.hoa = _ho;
+        const _pt = _mlsGet('Property Type');  if (_pt && _pt !== '—') mlsForm.propType   = _pt;
+        const _pk = _mlsGet('Parking');        if (_pk && _pk !== '—') mlsForm.parking    = _pk;
+        const _fb = lstNotes.mls_data.match(/---\s*Key Features\s*---\n([\s\S]*)/i);
+        if (_fb) {
+          const _fl = _fb[1].split('\n').map(l => l.replace(/^\d+\.\s*/, '').trim()).filter(l => l);
+          for (let _fi = 0; _fi < 5; _fi++) mlsForm.features[_fi] = _fl[_fi] || '';
+        }
+      }
       ldOutput.value = ''; ldMessages.value = []; ldStarted.value = false;
       jlOutput.value = null;
       Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
@@ -13790,6 +13912,7 @@ No markdown. Valid JSON only.`;
 
     async function byrCreateBuyer() {
       if (!byrNewName.value.trim()) { showToast('Enter a buyer name.', 3000); return; }
+      if (!agentName.value) { showToast('Agent not loaded. Please refresh and log in again.', 4000); return; }
       if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       byrCreating.value = true;
       try {
@@ -13997,6 +14120,9 @@ No markdown. Valid JSON only.`;
 
     const byrPackageLoading = ref(false);
     const byrPackageError = ref('');
+    const byrPackageSections = ref([]);
+    const byrShowPackageReview = ref(false);
+    const byrPackageOpenSection = ref(null);
 
     async function byrGeneratePackage() {
       if (!byrActiveBuyer.value) return;
@@ -14004,176 +14130,378 @@ No markdown. Valid JSON only.`;
       byrPackageLoading.value = true;
       byrPackageError.value = '';
       try {
-        // Call Railway Python endpoint — returns a fully-rendered PDF
-        const res = await fetch(RAILWAY_URL + '/generate-package-pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            buyer_id:   b.id,
-            agent_name: agentName.value
-          })
-        });
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error(err.error || 'Package generation failed (' + res.status + ')');
+        const _name    = b.buyer_name || 'Valued Client';
+        const _agent   = agentName.value || 'Your FORWARD Agent';
+        const _markets = b.target_areas || b.market_area || b.markets || '';
+        const _budgetMin = b.budget_min ? '$' + Number(b.budget_min).toLocaleString() : '';
+        const _budgetMax = b.budget_max ? '$' + Number(b.budget_max).toLocaleString() : '';
+        const _budgetStr = _budgetMin && _budgetMax ? _budgetMin + ' – ' + _budgetMax
+                         : _budgetMax ? 'Up to ' + _budgetMax
+                         : _budgetMin ? _budgetMin + '+' : (b.budget || '');
+        const _homeType  = b.home_type || '';
+        const _timeline  = b.timeline  || '';
+        const _preApproval = b.pre_approval_amount ? '$' + Number(b.pre_approval_amount).toLocaleString() : '';
+
+        const _ctx = [
+          bnaResult.value && bnaResult.value.agentBrief    ? 'Agent brief: '      + bnaResult.value.agentBrief    : '',
+          bnaResult.value && bnaResult.value.buyerSummary  ? 'Buyer summary: '    + bnaResult.value.buyerSummary  : '',
+          _budgetStr   ? 'Budget: '          + _budgetStr   : '',
+          _preApproval ? 'Pre-approved: '    + _preApproval : '',
+          _markets     ? 'Target markets: '  + _markets     : '',
+          _homeType    ? 'Home type: '       + _homeType    : '',
+          b.bedrooms_min  ? 'Bedrooms: '     + b.bedrooms_min  : '',
+          b.must_haves    ? 'Must-haves: '   + b.must_haves    : '',
+          b.deal_breakers ? 'Deal-breakers: '+ b.deal_breakers : '',
+          _timeline    ? 'Timeline: '        + _timeline    : '',
+        ].filter(Boolean).join('\n');
+
+        const _sys = 'You are a luxury real estate agent writing polished, client-facing documents for FORWARD | Corcoran McEnearney. Tone: warm, confident, professional. Plain text only, no markdown, no asterisks, no em dashes.';
+
+        // ── 1. Letter to Buyer
+        let _letter = '';
+        try {
+          const _lPrompt = 'Write a warm, professional intro letter from agent ' + _agent + ' to buyer ' + _name + ' for their FORWARD Buyer Package.\n\n'
+            + (_ctx ? 'Buyer context:\n' + _ctx + '\n\n' : '')
+            + 'Format:\n- Start with: "Dear ' + _name + ',"\n'
+            + '- 3 paragraphs (3-4 sentences each)\n'
+            + '- Para 1: Thank them for trusting FORWARD, express personal commitment\n'
+            + '- Para 2: Speak directly to their specific search criteria and situation\n'
+            + '- Para 3: Introduce what is enclosed and invite them to reach out\n'
+            + '- Do NOT include any closing line like "Looking forward" — it is added automatically\n'
+            + '- Plain text only, no markdown';
+          _letter = await claude(_lPrompt, _sys, 600);
+        } catch(e) {
+          _letter = 'Dear ' + _name + ',\n\n'
+            + 'Thank you for trusting FORWARD to guide you through your home search. It is my privilege to represent you, and I am fully committed to finding you the right home at the right price.\n\n'
+            + 'Every step of the process — from understanding your needs, to navigating the market, to negotiating on your behalf — I will be your advocate and your guide.\n\n'
+            + 'Enclosed you will find everything you need to begin this search with clarity and confidence. Please reach out any time with questions.';
         }
 
-        // Download the PDF
-        const blob = await res.blob();
-        const buyerSlug = (b.buyer_name || 'buyer').toLowerCase().replace(/[^a-z0-9]+/g, '-');
-        const today     = new Date().toISOString().slice(0, 10);
-        const filename  = `FORWARD-Buyer-Package-${buyerSlug}-${today}.pdf`;
-        const url = URL.createObjectURL(blob);
-        const a   = document.createElement('a');
-        a.href = url; a.download = filename;
-        document.body.appendChild(a); a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // ── 2. What Your Budget Gets You
+        let _budget = '';
+        try {
+          const _bPrompt = 'Write a plain-text section titled "What Your Budget Gets You" for a luxury real estate buyer package.\n\n'
+            + 'Buyer details:\n'
+            + (_budgetStr    ? 'Budget: '        + _budgetStr    + '\n' : '')
+            + (_preApproval  ? 'Pre-approval: '  + _preApproval  + '\n' : '')
+            + (_markets      ? 'Target markets: '+ _markets      + '\n' : '')
+            + (_homeType     ? 'Home type: '     + _homeType     + '\n' : '')
+            + (b.bedrooms_min ? 'Bedrooms: '     + b.bedrooms_min + '\n' : '')
+            + (b.must_haves   ? 'Must-haves: '   + b.must_haves   + '\n' : '')
+            + '\nWrite 3-4 paragraphs honestly describing:\n'
+            + '- What this budget commands in their specific target markets (property type, size, condition, trade-offs)\n'
+            + '- What level of competition they will face (how fast properties move, multiple offers)\n'
+            + '- Strategic opportunities (where to find value, off-market options, timing considerations)\n'
+            + '- A clear-eyed reality check so they have accurate expectations\n'
+            + 'Be specific to the DMV market. No markdown.';
+          _budget = await claude(_bPrompt, _sys, 700);
+        } catch(e) {
+          _budget = 'At ' + (_budgetStr || 'your target budget') + (_markets ? ' in ' + _markets : ' in your target markets') + ', you are competing in an active tier of the DMV market. Properties matching your criteria move quickly — well-priced homes in this range typically receive offers within 5-10 days.\n\nYour pre-approval' + (_preApproval ? ' of ' + _preApproval : '') + ' positions you as a serious buyer. When the right home appears, we will be ready to move decisively.';
+        }
 
-        showGoldToast('📦 Buyer package ready!');
+        // ── 3. Neighborhood Intelligence
+        let _neighborhoods = '';
+        try {
+          const _nPrompt = 'Write a plain-text neighborhood intelligence section for a luxury real estate buyer package.\n\n'
+            + 'Target markets: ' + (_markets || 'DC Metro area') + '\n'
+            + (_homeType  ? 'Home type: ' + _homeType  + '\n' : '')
+            + (_budgetStr ? 'Budget: '    + _budgetStr + '\n' : '')
+            + (b.must_haves ? 'Priorities: ' + b.must_haves + '\n' : '')
+            + '\nFor each neighborhood or area in the target list, write a focused paragraph (3-5 sentences) covering:\n'
+            + '- Character and vibe\n- What type of buyer it attracts and why\n'
+            + '- Current demand level and what the budget buys here\n'
+            + '- One specific thing to know or watch for\n'
+            + 'Be specific to the actual DMV neighborhoods. Knowledgeable and honest. No markdown headers.';
+          _neighborhoods = await claude(_nPrompt, _sys, 800);
+        } catch(e) {
+          _neighborhoods = 'Your target markets span some of the most sought-after areas in the DMV. Each has its own character, price dynamics, and buyer profile — and understanding those nuances is what turns a good search into a great outcome.\n\nI will walk you through what each area offers at your budget level as we tour, and will flag any market shifts that affect our strategy along the way.';
+        }
+
+        // ── Static sections (editable in review panel)
+        const _difference = 'FORWARD | Corcoran McEnearney is the DMV\'s premier boutique luxury team. Here is what that means for you as a buyer.\n\nMarket Access. We monitor the MLS and off-market pipeline every day. Before most buyers see a new listing, we have already evaluated it against your criteria and reached out to the listing agent.\n\nOffer Precision. Every offer we write is backed by a current market analysis of that specific property. We do not guess on price — we build your offer around data, the seller\'s situation, and the competitive landscape.\n\nFull Concierge Service. From your first tour to closing day, we coordinate everything — inspector scheduling, attorney introductions, lender communication, title tracking. One point of contact for all of it.\n\nAgent Relationships. FORWARD agents have earned trust with listing agents across DC, Maryland, and Northern Virginia. Those relationships get you access to showings, advance notice on listings, and a reputation as a serious buyer before you write your first offer.\n\nAccountability. You will always know where you stand. Regular updates, honest feedback on every property, and no games. We work for you — not the other side of the table.';
+
+        const _partners = FORWARD_TRUSTED_PARTNERS;
+
+        const _howWeWork = '01  Pre-Approval First\nConfirm financing before we tour. A current pre-approval letter makes every offer faster, cleaner, and more competitive.\n\n02  Daily Market Monitoring\nWe scan new listings every morning and alert you the moment something matches your criteria — before it hits the public feed.\n\n03  Focused Touring\nWe schedule showings strategically so you see the right properties, not every property. Our job is to filter, not overwhelm.\n\n04  Offer Strategy Session\nWhen you find the right home, we talk before writing a single word. We analyze the specific property, the seller\'s situation, and any competing offers to build the strongest possible strategy.\n\n05  Contract to Close\nOnce under contract, we coordinate every step: inspection, appraisal, lender updates, title commitment, final walkthrough. You will never wonder what is happening next.\n\n06  Closing Day\nWe walk you through the closing disclosure, confirm wire instructions with your settlement company, and are there at the table.';
+
+        const _scorecard = 'Use this scorecard at every showing. Rate each category 1–5. Total the score to compare homes objectively.\n\nPROPERTY ADDRESS: ___________________________________\nDATE: ___________________  ASKING PRICE: _______________\n\nLOCATION                                              ___ / 5\nNeighborhood feel, walkability, commute, schools, amenities.\n\nLAYOUT & FLOW                                         ___ / 5\nRoom sizes, natural light, ceiling height, flow between spaces.\n\nCONDITION                                             ___ / 5\nOverall maintenance, age of roof/HVAC/water heater, visible issues.\n\nOUTDOOR SPACE                                         ___ / 5\nYard, privacy, parking, condition of exterior.\n\nPRICE vs. VALUE                                       ___ / 5\nDoes the asking price feel right given condition and location?\n\nGUT FEELING                                           ___ / 5\nCould you see yourself living here?\n\nTOTAL SCORE:                                          ___ / 30\n\nNOTES:\n_______________________________________________\n\nRed Flags Noted:\n_______________________________________________\n\nNext Step:  [ ] Second Showing   [ ] Request Disclosures   [ ] Move On';
+
+        const _bio = AGENT_BIOS[_agent] || (_agent + '\nFORWARD | Corcoran McEnearney\n' + (AGENT_EMAILS[_agent] || '') + (AGENT_PHONES[_agent] ? '  ·  ' + AGENT_PHONES[_agent] : '') + '\nwww.FwrdRealEstate.com');
+
+        byrPackageSections.value = [
+          { id: 'letter',        title: 'Letter to Buyer',           content: _letter,        editable: true,  included: true },
+          { id: 'budget',        title: 'What Your Budget Gets You', content: _budget,        editable: true,  included: true },
+          { id: 'neighborhoods', title: 'Neighborhood Intelligence', content: _neighborhoods, editable: true,  included: true },
+          { id: 'difference',    title: 'The FORWARD Difference',    content: _difference,    editable: true,  included: true },
+          { id: 'partners',      title: 'Trusted Partners',          content: _partners,      editable: true,  included: true },
+          { id: 'how-we-work',   title: 'How We Work',               content: _howWeWork,     editable: true,  included: true },
+          { id: 'scorecard',     title: 'Home Tour Scorecard',       content: _scorecard,     editable: false, included: true },
+          { id: 'bio',           title: 'Your Agent',                content: _bio,           editable: true,  included: true },
+        ];
+
+        byrShowPackageReview.value = true;
+        byrPackageOpenSection.value = null;
+        setTimeout(function() {
+          document.querySelectorAll('.byr-pkg-ta').forEach(function(ta) {
+            ta.style.height = 'auto';
+            ta.style.height = Math.max(180, ta.scrollHeight) + 'px';
+          });
+        }, 150);
+
       } catch(e) {
         byrPackageError.value = e.message || 'Generation failed. Try again.';
       }
       byrPackageLoading.value = false;
     }
 
-    async function byrBuildPackage(b, letterText, bioCardB64, buyersGuideB64) {
+    async function byrApprovePackage() {
+      byrShowPackageReview.value = false;
+      await byrBuildPackage(byrActiveBuyer.value, byrPackageSections.value);
+    }
+
+    async function byrBuildPackage(b, sections) {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-      const W = 612, H = 792;
-      const navy = [10, 22, 40], gold = [201, 168, 76], lgold = [180, 160, 100], gray = [107, 114, 128], white = [255, 255, 255], dark = [40, 50, 65], lgray = [245, 246, 248];
+      await _loadCampaignFonts(doc);
+
+      const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
+      let y = 0;
+      let pageNum = 1;
 
       const _agent      = agentName.value || 'Your FORWARD Agent';
       const _agentEmail = AGENT_EMAILS[agentName.value] || '';
       const _agentPhone = AGENT_PHONES[agentName.value] || '';
-      const _agentWeb   = AGENT_WEBSITE;
-      const _footerLine = [_agentEmail, _agentPhone, _agentWeb].filter(Boolean).join('  ·  ');
+      const _buyerName  = b.buyer_name || 'Valued Client';
+      const today       = new Date();
+      const dateStr     = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-      function hdr() {
-        doc.setFillColor(...navy); doc.rect(0, 0, W, 54, 'F');
-        if (FORWARD_LOGO_B64) {
-          const lH = 32, lW = lH * 4.85;
-          doc.addImage(FORWARD_LOGO_B64, 'PNG', 36, 11, lW, lH);
-        } else {
-          doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...gold);
-          doc.text('FORWARD  |  CORCORAN McENEARNEY', 36, 22);
-          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(...lgold);
-          doc.text('BUYER INTELLIGENCE PACKAGE', 36, 36);
-        }
-        doc.setFillColor(...gold); doc.rect(0, 54, W, 2, 'F');
+      function addPage() { doc.addPage(); pageNum++; y = 60; }
+      function checkY(needed) { if (y + needed > H - 60) addPage(); }
+
+      function clean(text) {
+        return (text || '')
+          .replace(/```[\s\S]*?```/g, function(m){ return m.replace(/```[a-z]*/g,'').trim(); })
+          .replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu, '')
+          .replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1')
+          .replace(/^#{1,6}\s+/gm, '').replace(/^>\s*/gm, '    ')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/`([^`]+)`/g, '$1')
+          .replace(/\u2014/g, ',').replace(/\u2013/g, '-')
+          .replace(/\\#/g, '#').replace(/\\([^\\])/g, '$1')
+          .replace(/\u2192/g, '->').replace(/[\u2018\u2019]/g, "'")
+          .replace(/[\u201C\u201D]/g, '"').replace(/\u2022/g, '-')
+          .replace(/[^\x00-\x7E]/g, ' ');
       }
 
-      function ftr(label) {
-        doc.setFillColor(...navy); doc.rect(0, H - 36, W, 36, 'F');
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...lgold);
-        doc.text(_footerLine, 36, H - 18);
-        if (label) doc.text(label, W - 36, H - 18, { align: 'right' });
+      function renderBlock(text, indent) {
+        const x = ML + (indent || 0);
+        const blockW = TW - (indent || 0);
+        (clean(text)).split('\n').forEach(function(raw) {
+          const line = raw.trimEnd();
+          if (!line.trim()) { y += 6; return; }
+          if (/^-{3,}$/.test(line.trim())) {
+            checkY(12); doc.setDrawColor(180,180,180); doc.setLineWidth(0.5);
+            doc.line(ML, y-2, W-MR, y-2); y += 10; return;
+          }
+          // Step labels like "01  Pre-Approval First" get Montserrat bold
+          const isStep = /^\d{2}\s{2}/.test(line);
+          const isBold = isStep || /^(LOCATION|LAYOUT|CONDITION|OUTDOOR|PRICE|GUT|TOTAL|NOTES|Red Flag|Next Step|MORTGAGE|HOME INS|TITLE|REAL ESTATE|PROPERTY ADD|DATE|FORWARD\s*\|)/.test(line.trim());
+          if (isStep) {
+            checkY(20);
+            doc.setFont('Montserrat', 'bold'); doc.setFontSize(9); doc.setTextColor(10,37,64);
+            doc.text(line, x, y); y += 16;
+            doc.setFont('CormorantGaramond', 'normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+            return;
+          }
+          doc.setFont('CormorantGaramond', isBold ? 'bold' : 'normal');
+          doc.setFontSize(11); doc.setTextColor(30,30,30);
+          doc.splitTextToSize(line, blockW).forEach(function(wl) {
+            checkY(15); doc.text(wl, x, y); y += 15;
+          });
+          doc.setFont('CormorantGaramond', 'normal');
+        });
       }
 
-      // ── PAGE 1: WELCOME LETTER (BNA buyerSummary or Railway intro_letter) ──
-      hdr();
-      // Buyer name banner
-      doc.setFillColor(...lgray); doc.rect(36, 74, W - 72, 30, 'F');
-      doc.setFont('helvetica', 'oblique'); doc.setFontSize(9); doc.setTextColor(...gray);
-      doc.text('Prepared exclusively for', 52, 93);
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...navy);
-      doc.text(b.buyer_name || 'Valued Client', 196, 93);
-
-      let y = 132;
-      // Letter body
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(...dark);
-      const letterParas = (letterText || '').split(/\n+/).filter(p => p.trim());
-      for (const para of letterParas) {
-        const lines = doc.splitTextToSize(para.trim(), W - 108);
-        if (y + lines.length * 15 > H - 60) break; // safety: don't overflow
-        doc.text(lines, 54, y);
-        y += lines.length * 15 + 16;
+      function sectionHeader(title) {
+        checkY(36);
+        doc.setFillColor(10,37,64); doc.rect(0, y-18, W, 28, 'F');
+        doc.setTextColor(255,255,255); doc.setFontSize(12); doc.setFont('Montserrat','bold');
+        doc.text(title.toUpperCase(), ML, y);
+        y += 56;
+        doc.setTextColor(30,30,30); doc.setFont('CormorantGaramond','normal');
       }
-      // Signature
+
+      function labelValue(label, value) {
+        if (!value || !String(value).trim()) return;
+        checkY(16);
+        doc.setFont('Montserrat','bold'); doc.setFontSize(8); doc.setTextColor(10,37,64);
+        doc.text(label.toUpperCase() + ':', ML, y);
+        doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+        const valLines = doc.splitTextToSize(String(value), TW - 120);
+        doc.text(valLines[0], ML+120, y); y += 15;
+        for (let i=1; i<valLines.length; i++) { checkY(15); doc.text(valLines[i], ML+120, y); y += 15; }
+      }
+
+      // ── COVER PAGE ────────────────────────────────────────────────────────────
+      doc.setFillColor(10,37,64); doc.rect(0,0,W,H,'F');
+      doc.setFillColor(200,169,110); doc.rect(ML,72,TW,1.5,'F');
+      doc.setTextColor(200,169,110); doc.setFontSize(8); doc.setFont('Montserrat','bold');
+      doc.text('FORWARD  |  CORCORAN MCENEARNEY', ML, 62);
+      doc.setTextColor(255,255,255); doc.setFontSize(42); doc.setFont('Montserrat','bold');
+      doc.text('BUYER', ML, 224); doc.text('PACKAGE', ML, 274);
+      doc.setFillColor(200,169,110); doc.rect(ML,292,TW,2,'F');
+      doc.setTextColor(255,255,255); doc.setFontSize(16); doc.setFont('CormorantGaramond','normal');
+      var _cLines = doc.splitTextToSize('Prepared for ' + clean(_buyerName), TW);
+      var _cY = 322;
+      _cLines.forEach(function(al,i){ doc.text(al, ML, _cY + i*22); });
+      var _cY2 = _cY + _cLines.length*22 + 20;
+      doc.setFontSize(10); doc.setTextColor(200,169,110); doc.setFont('Montserrat','bold');
+      doc.text(clean(_agent).toUpperCase(), ML, _cY2);
+      doc.setFontSize(10); doc.setTextColor(170,170,170); doc.setFont('CormorantGaramond','normal');
+      doc.text(dateStr, ML, _cY2+18);
+      doc.setFillColor(200,169,110); doc.rect(ML,H-72,TW,1.5,'F');
+      doc.setTextColor(200,169,110); doc.setFontSize(7); doc.setFont('Montserrat','bold');
+      doc.text('PREPARED EXCLUSIVELY FOR BUYER USE', ML, H-52);
+
+      // ── BUYER SEARCH PROFILE (always page 2, built from buyer fields) ─────────
+      addPage();
+      sectionHeader('Buyer Search Profile');
       y += 6;
-      doc.text('Looking forward to finding your home,', 54, y); y += 22;
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(11); doc.setTextColor(...navy);
-      doc.text(_agent, 54, y); y += 15;
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gold);
-      doc.text('FORWARD  |  Corcoran McEnearney', 54, y); y += 13;
-      doc.setTextColor(...gray);
-      if (_agentEmail) { doc.text(_agentEmail, 54, y); y += 12; }
-      if (_agentPhone) { doc.text(_agentPhone, 54, y); }
-      doc.setFillColor(...gold); doc.rect(54, y + 16, 80, 2, 'F');
-      ftr('Welcome Letter · 1 of 3');
 
-      // ── PAGE 2: AGENT BIO CARD (real Canva design from Supabase) ──────────
-      doc.addPage(); hdr();
-      if (bioCardB64) {
-        // Full-page pitch book image
-        doc.addImage(bioCardB64, 'JPEG', 0, 56, W, H - 56 - 36);
-      } else {
-        // Fallback text block if bio card not uploaded yet
-        let by = 100;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(...gold);
-        doc.text('YOUR AGENT', 40, by); by += 22;
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(20); doc.setTextColor(...navy);
-        doc.text(_agent, 40, by); by += 26;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(...gold);
-        doc.text('FORWARD  |  Corcoran McEnearney', 40, by); by += 18;
-        doc.setFontSize(10); doc.setTextColor(...gray);
-        if (_agentEmail) { doc.text(_agentEmail, 40, by); by += 14; }
-        if (_agentPhone) { doc.text(_agentPhone, 40, by); by += 14; }
-        doc.text(_agentWeb, 40, by);
+      var _bMin = b.budget_min ? '$'+Number(b.budget_min).toLocaleString() : '';
+      var _bMax = b.budget_max ? '$'+Number(b.budget_max).toLocaleString() : '';
+      var _bStr = _bMin&&_bMax ? _bMin+' – '+_bMax : _bMax ? 'Up to '+_bMax : _bMin ? _bMin+'+' : (b.budget||'');
+      labelValue('Budget Range', _bStr);
+      if (b.pre_approval_amount) {
+        var _pa = '$'+Number(b.pre_approval_amount).toLocaleString() + (b.pre_approval_lender ? ' ('+b.pre_approval_lender+')' : '');
+        labelValue('Pre-Approval', _pa);
       }
-      ftr('Agent Bio · 2 of 3');
-
-      // ── PAGE 3: FWRD BUYERS GUIDE COVER ─────────────────────────────────
-      doc.addPage(); hdr();
-      doc.setFillColor(...navy); doc.rect(0, 56, W, H - 56 - 36, 'F');
-      doc.setFont('helvetica', 'bold'); doc.setFontSize(54); doc.setTextColor(...gold);
-      doc.text('FWRD', W / 2, 200, { align: 'center' });
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(13); doc.setTextColor(...white);
-      doc.text("BUYER'S GUIDE", W / 2, 234, { align: 'center' });
-      doc.setFillColor(...gold); doc.rect(W / 2 - 60, 250, 120, 1.5, 'F');
-      doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(...lgold);
-      doc.text('Everything you need to know about the buying process —', W / 2, 274, { align: 'center' });
-      doc.text('from your first search to closing day.', W / 2, 290, { align: 'center' });
-      const guideChapters = [
-        '01  Understanding Your Buying Power',
-        '02  Navigating the Market',
-        '03  The Offer & Negotiation Process',
-        '04  Inspections, Appraisals & Due Diligence',
-        '05  The Path to Closing',
-        '06  Life After Closing',
-      ];
-      let cy = 344; doc.setFontSize(9.5);
-      for (const ch of guideChapters) {
-        doc.setTextColor(...gold); doc.text('—', W / 2 - 150, cy);
-        doc.setTextColor(...white); doc.text(ch, W / 2 - 135, cy);
-        cy += 22;
+      if (b.down_payment)  labelValue('Down Payment', b.down_payment);
+      if (b.loan_type)     labelValue('Financing', b.loan_type);
+      y += 8;
+      labelValue('Target Markets', b.target_areas||b.market_area||b.markets||'');
+      if (b.areas_note)    labelValue('Area Notes', b.areas_note);
+      y += 8;
+      labelValue('Home Type', b.home_type||'');
+      if (b.home_type_note) labelValue('Type Notes', b.home_type_note);
+      if (b.bedrooms_min)  labelValue('Bedrooms', b.bedrooms_min+(b.bedrooms_note?' — '+b.bedrooms_note:''));
+      if (b.bathrooms)     labelValue('Bathrooms', b.bathrooms);
+      if (b.parking)       labelValue('Parking', b.parking+(b.parking_note?' — '+b.parking_note:''));
+      if (b.outdoor_space) labelValue('Outdoor', b.outdoor_space+(b.outdoor_note?' — '+b.outdoor_note:''));
+      y += 8;
+      if (b.must_haves) {
+        checkY(16); doc.setFont('Montserrat','bold'); doc.setFontSize(8); doc.setTextColor(10,37,64);
+        doc.text('MUST-HAVES:', ML, y); y += 14;
+        doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+        renderBlock(b.must_haves, 0);
       }
-      doc.setFont('helvetica', 'oblique'); doc.setFontSize(8.5); doc.setTextColor(120, 140, 160);
-      doc.text('Full guide follows this cover', W / 2, H - 56, { align: 'center' });
-      ftr("FWRD Buyer's Guide · 3 of 3");
+      if (b.deal_breakers) {
+        y += 6; checkY(16); doc.setFont('Montserrat','bold'); doc.setFontSize(8); doc.setTextColor(10,37,64);
+        doc.text('DEAL BREAKERS:', ML, y); y += 14;
+        doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+        renderBlock(b.deal_breakers, 0);
+      }
+      y += 8;
+      var _tStr = b.timeline||'';
+      if (b.move_in_target) _tStr += (_tStr?' — ':'')+b.move_in_target;
+      if (b.urgency)        _tStr += (_tStr?' · ':'')+b.urgency;
+      if (b.urgency_note)   _tStr += (_tStr?' · ':'')+b.urgency_note;
+      labelValue('Timeline', _tStr);
+      if (bnaResult.value && bnaResult.value.buyerSummary) {
+        y += 14; checkY(16);
+        doc.setFont('Montserrat','bold'); doc.setFontSize(8); doc.setTextColor(10,37,64);
+        doc.text('INTELLIGENCE BRIEF:', ML, y); y += 14;
+        doc.setFont('CormorantGaramond','italic'); doc.setFontSize(11); doc.setTextColor(60,60,60);
+        renderBlock(bnaResult.value.buyerSummary, 0);
+      }
 
-      // ── MERGE BUYERS GUIDE PDF (full 33 pages from Supabase) ────────────
+      // ── APPROVED SECTIONS ────────────────────────────────────────────────────
+      var _sectionList = sections || [];
+      _sectionList.forEach(function(sec) {
+        if (!sec.included) return;
+        var _content = (sec.content || '').trim();
+        if (!_content) return;
+
+        if (sec.id === 'scorecard') {
+          // Scorecard gets special monospaced-style rendering on its own page
+          addPage();
+          sectionHeader(sec.title || 'Home Tour Scorecard');
+          y += 6;
+          doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+          var _scLines = clean(_content).split('\n');
+          _scLines.forEach(function(raw) {
+            var line = raw.trimEnd();
+            if (!line.trim()) { y += 5; return; }
+            var _isBold = /^(LOCATION|LAYOUT|CONDITION|OUTDOOR|PRICE|GUT|TOTAL|NOTES|Red Flag|Next Step|USE THIS|PROPERTY ADD|DATE)/.test(line.trim());
+            doc.setFont('CormorantGaramond', _isBold ? 'bold' : 'normal');
+            doc.setFontSize(_isBold ? 10 : 11);
+            var _wrapped = doc.splitTextToSize(line, TW);
+            _wrapped.forEach(function(wl) { checkY(15); doc.text(wl, ML, y); y += 15; });
+          });
+        } else if (sec.id === 'letter') {
+          addPage();
+          sectionHeader(sec.title || 'Letter to Buyer');
+          doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+          y += 36;
+          doc.text(dateStr, ML, y); y += 28;
+          var _lParas = _content.split(/\n+/).filter(function(p){ return p.trim(); });
+          _lParas.forEach(function(para) {
+            var wrapped = doc.splitTextToSize(clean(para.trim()), TW);
+            wrapped.forEach(function(line) { checkY(16); doc.text(line, ML, y); y += 16; });
+            y += 10;
+          });
+          y += 8;
+          doc.text('Looking forward to finding your home,', ML, y); y += 22;
+          doc.setFont('Montserrat','bold'); doc.setFontSize(10);
+          doc.text(clean(_agent), ML, y); y += 17;
+          doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11);
+          doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 14;
+          doc.setTextColor(150,150,150); doc.setFontSize(9);
+          if (_agentEmail) { doc.text(_agentEmail, ML, y); y += 13; }
+          if (_agentPhone) { doc.text(_agentPhone, ML, y); }
+        } else if (sec.id === 'bio') {
+          addPage();
+          sectionHeader(sec.title || 'Your Agent');
+          y += 6;
+          doc.setFont('CormorantGaramond','normal'); doc.setFontSize(11); doc.setTextColor(30,30,30);
+          var _bioParas = _content.split(/\n+/).filter(function(p){ return p.trim(); });
+          _bioParas.forEach(function(para) {
+            var _isLabel = /^FORWARD\s*\|/.test(para.trim()) || /^\d{3}[\.\-]/.test(para.trim()) || /^www\./.test(para.trim()) || /@/.test(para.trim());
+            doc.setFont('CormorantGaramond', _isLabel ? 'bold' : 'normal');
+            doc.setFontSize(_isLabel ? 9 : 11);
+            doc.setTextColor(_isLabel ? 10 : 30, _isLabel ? 37 : 30, _isLabel ? 64 : 30);
+            var wrapped = doc.splitTextToSize(clean(para.trim()), TW);
+            wrapped.forEach(function(line) { checkY(15); doc.text(line, ML, y); y += 15; });
+            y += 8;
+          });
+        } else {
+          // Standard section: new page, section header, body text
+          addPage();
+          sectionHeader(sec.title || 'Section');
+          y += 6;
+          renderBlock(_content, 0);
+        }
+      });
+
+      // ── Gold accent on last page ──────────────────────────────────────────────
+      doc.setFillColor(200,169,110); doc.rect(ML, H-48, 60, 1.5, 'F');
+
+      // ── MERGE PDF-LIB ──────────────────────────────────────────────────────────
       const mainPdfBytes = doc.output('arraybuffer');
+      if (!window.PDFLib) {
+        await new Promise(function(res, rej) {
+          var s = document.createElement('script');
+          s.src = 'https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';
+          s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
       const { PDFDocument } = window.PDFLib;
       const mergedPdf = await PDFDocument.load(mainPdfBytes);
-
-      if (buyersGuideB64) {
-        try {
-          const base64Data = buyersGuideB64.includes(',') ? buyersGuideB64.split(',')[1] : buyersGuideB64;
-          const guideBytes = Uint8Array.from(atob(base64Data), c => c.charCodeAt(0));
-          const guidePdf   = await PDFDocument.load(guideBytes);
-          const pageIdxs   = guidePdf.getPageIndices();
-          const copiedPages = await mergedPdf.copyPages(guidePdf, pageIdxs);
-          copiedPages.forEach(p => mergedPdf.addPage(p));
-        } catch(guideErr) {
-          console.warn('Could not merge buyers guide:', guideErr);
-        }
-      }
-
       const mergedBytes = await mergedPdf.save();
       const blob = new Blob([mergedBytes], { type: 'application/pdf' });
-      const fileName = 'FORWARD-Buyer-Package-' + (b.buyer_name || 'Client').replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+      const fileName = 'FORWARD-Buyer-Package-' + (b.buyer_name || 'Client').replace(/[^a-zA-Z0-9]/g,'_') + '.pdf';
       openPDFBlob(blob, fileName);
+      showGoldToast('\u{1F4E6} Buyer package ready!');
     }
 
     function byrBuildLetter(b, data) {
@@ -14445,7 +14773,7 @@ No markdown. Valid JSON only.`;
       feedbackModal.submitting = true; feedbackModal.error = '';
       try {
         await supaRest.insert('agent_feedback', {
-          agent_name: agentName.value || 'Unknown',
+          agent_name: agentName.value,
           type: feedbackModal.type === 'positive' ? 'praise' : 'bug',
           message: feedbackModal.transcript.trim()
         });
@@ -16681,7 +17009,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrConfirmArchive, byrDoArchive, byrArchiveTarget, byrArchiving, byrUpdateProfile,
-      byrPackageLoading, byrPackageError, byrGeneratePackage,
+      byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrGeneratePackage, byrApprovePackage,
       byrCreating,
       atEntries, atNewSection, atNewTitle, atNewDesc, atAddEntry, atDeleteEntry, atHandleFile,
       bnaVoiceToggle, bnaGenerate, bnaDownloadAgentPDF, bnaDownloadBuyerPDF, bnaSavePDF, bnaReset, bnaApplyToProfile,
