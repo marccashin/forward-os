@@ -16070,7 +16070,7 @@ function logActMicToggle() {
       // Load all shared global settings from Supabase (__global__ row)
       try {
         const globalRows = await supaRest.select('agent_config',
-          `select=fub_api_key,brokerage,markets,voice_tone,training_docs,brand_pdfs&agent_name=eq.__global__`
+          `select=fub_api_key,brokerage,markets,voice_tone,brand_pdfs&agent_name=eq.__global__`
         );
         const g = globalRows && globalRows[0];
         if (g) {
@@ -16093,8 +16093,6 @@ function logActMicToggle() {
             localStorage.setItem('fos_voice', g.voice_tone);
             settVoice.value = g.voice_tone;
           }
-          // Training docs — loaded globally from knowledge_docs table
-          atLoadEntries();
           // Brand PDFs
           if (g.brand_pdfs) {
             try {
@@ -16107,6 +16105,8 @@ function logActMicToggle() {
           }
         }
       } catch(e) { console.warn('Could not fetch global config from Supabase:', e); }
+      // Training docs — always load regardless of global config success
+      atLoadEntries();
       // Auto-show FUB reminder once per day
       fubReminderCheckAndShow();
     }
