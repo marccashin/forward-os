@@ -16288,13 +16288,18 @@ function logActMicToggle() {
         const entry = { id: Date.now(), name: file.name, content: fullText.trim() };
         settBrandPdfs.value.push(entry);
         await saveBrandPdfs();
+        // Also save to knowledge_docs so Voice can search Brand PDFs
+        try { await supaRest.insert('knowledge_docs', { file_name: file.name, content: fullText.trim(), category: 'Brand Reference', drive_file_id: 'brand_pdf' }); } catch(e) { console.warn('knowledge_docs insert failed:', e); }
         showToast('✅ Brand PDF added (' + pdfDoc.numPages + ' page' + (pdfDoc.numPages === 1 ? '' : 's') + ')');
       } catch(err) { console.error(err); showToast('Could not read PDF: ' + err.message, 4000); }
       e.target.value = '';
     }
     async function bpRemove(id) {
+      const pdf = settBrandPdfs.value.find(p => p.id === id);
       settBrandPdfs.value = settBrandPdfs.value.filter(p => p.id !== id);
       await saveBrandPdfs();
+      // Also remove from knowledge_docs
+      if (pdf) { try { await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?file_name=eq.' + encodeURIComponent(pdf.name) + '&category=eq.Brand%20Reference', { method: 'DELETE', headers: supaRest.headers() }); } catch(e) { console.warn('knowledge_docs delete failed:', e); } }
       showToast('Brand PDF removed.');
     }
 
