@@ -14584,6 +14584,9 @@ No markdown. Valid JSON only.`;
         if (Array.isArray(rows) && rows.length > 0) {
           atEntries.value = rows.map(r => ({ id: r.id, section: r.category || 'General', title: r.file_name || '', desc: r.content || '', createdAt: '' }));
           localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
+        } else if (atEntries.value.length > 0) {
+          // Supabase empty but localStorage has entries — push them up (migration / first-load sync)
+          atSaveEntries();
         }
       } catch(e) { console.warn('Could not load from Supabase:', e); }
     }
