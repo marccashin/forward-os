@@ -5505,20 +5505,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
               </div>
 
               <!-- Custom entries list -->
-              <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;">
-                Custom Entries ({{ atEntries.length }})
-              </div>
-              <div v-if="atEntries.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:12px 0;">No custom entries yet. Add one above.</div>
-              <div v-for="entry in atEntries" :key="entry.id" style="border:1.5px solid #e5e7eb;border-radius:10px;padding:12px 14px;margin-bottom:8px;">
-                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
-                  <div style="flex:1;min-width:0;">
-                    <div style="font-size:11px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;">{{ entry.section }}</div>
-                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ entry.title }}</div>
-                    <div style="font-size:12px;color:#6b7280;line-height:1.5;white-space:pre-wrap;">{{ entry.desc.length > 200 ? entry.desc.slice(0,200)+'…' : entry.desc }}</div>
-                  </div>
-                  <button @click="atDeleteEntry(entry.id)" style="background:#fff0f0;border:1.5px solid #fecaca;color:#dc2626;border-radius:6px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;">Delete</button>
-                </div>
-              </div>
+
             </div>
           </div>
         </template>
