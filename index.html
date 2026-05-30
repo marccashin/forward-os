@@ -9660,6 +9660,7 @@ async function lstSubmitToPipeline() {
         loadTaskFeed();
         mktLoadLinks();
         fubReminderCheckAndShow();
+        atLoadEntries(); // Load training docs on page refresh for already-logged-in users
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
         if (!apiKeySet.value && agentName.value) {
@@ -14561,8 +14562,8 @@ No markdown. Valid JSON only.`;
       // Background sync to Supabase (fire-and-forget, never affects display)
       ;(async () => {
         try {
-          await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=is.null', { method: 'DELETE', headers: supaRest.headers() });
-          const rows = atEntries.value.map(e => ({ file_name: e.title || '', content: e.desc || '', category: e.section || '' }));
+          await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=eq.manual', { method: 'DELETE', headers: supaRest.headers() });
+          const rows = atEntries.value.map(e => ({ file_name: e.title || '', content: e.desc || '', category: e.section || '', drive_file_id: 'manual' }));
           const BATCH = 20;
           for (let i = 0; i < rows.length; i += BATCH) {
             await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs', { method: 'POST', headers: Object.assign({}, supaRest.headers(), {'Prefer':'return=minimal'}), body: JSON.stringify(rows.slice(i, i + BATCH)) });
