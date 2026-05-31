@@ -15216,7 +15216,10 @@ async function voiceParse() {
       } else {
         raw = await claude(voiceModal.transcript, VOICE_INTENT_SYSTEM);
       }
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      // Strip markdown fences and normalize smart quotes before parsing
+      let _cleanRaw = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+        .replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "\'");
+      const jsonMatch = _cleanRaw.match(/\{[\s\S]*\}/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
       if (!parsed || !parsed.tool) throw new Error('Could not understand request. Please try again.');
     } catch(e) {
