@@ -15717,26 +15717,6 @@ async function voiceCrmSubmit() {
     }
 
     const contactName = [r.firstName, r.lastName].filter(Boolean).join(' ');
-
-    // Also create an OS buyer record filed under the assigned agent
-    const _osAgentName = r.assignedTo || agentName.value;
-    try {
-      await fetch(RAILWAY_URL + '/create-buyer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          buyer_name:  contactName,
-          agent_name:  _osAgentName,
-          agent_email: AGENT_EMAILS[_osAgentName] || '',
-          email:       r.email  || '',
-          phone:       r.phone  || '',
-          status:      'active'
-        })
-      });
-      // Refresh buyer list if this contact belongs to the logged-in agent
-      if (_osAgentName === agentName.value) byrFetchBuyers();
-    } catch(e) { console.warn('OS buyer record creation failed:', e); }
-
     voiceModal.crmResult = {
       personId, name: contactName,
       email: r.email || null, phone: r.phone || null,
