@@ -16074,6 +16074,10 @@ function logActMicToggle() {
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
           }
+          // Auto-sync FUB users on this device if key is available but team list isn't cached
+          if (localStorage.getItem('fos_fub_key') && !localStorage.getItem('fos_fub_users')) {
+            fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
+          }
           // Branding — Supabase wins over local defaults but not over explicit local saves
           if (g.brokerage) {
             localStorage.setItem('fos_brokerage', g.brokerage);
