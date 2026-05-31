@@ -4941,23 +4941,40 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 </div>
                 <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
                   <div v-if="lstNotes.listing_remarks" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
-                    <div @click="campOpenSection = campOpenSection==='__ld__' ? null : '__ld__'"
+                    <div @click="campOpenSection = campOpenSection==='__ld__' ? null : (campLdEditVal=lstNotes.listing_remarks, '__ld__')"
                          style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
                          :style="{borderLeftColor: campOpenSection==='__ld__' ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
                       <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         <div>
                           <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:4px;">Listing Description</div>
-                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;color:rgba(247,244,239,0.5);">{{ lstNotes.listing_remarks.slice(0,90) }}…</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
+                               :style="{color: campOpenSection==='__ld__' ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)', fontStyle:'normal'}">
+                            {{ campOpenSection==='__ld__' ? 'Editing now — click ▲ Close when done' : lstNotes.listing_remarks.slice(0,90).trim() + '…' }}
+                          </div>
                         </div>
                       </div>
-                      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
-                        <span style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:rgba(200,169,110,0.6);">{{ campOpenSection==='__ld__' ? '▲ Close' : '▼ Expand' }}</span>
+                      <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:16px;">
+                        <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,169,110,0.55);cursor:pointer;white-space:nowrap;">
+                          <input type="checkbox" v-model="campLdIncluded" style="cursor:pointer;accent-color:var(--gold);"> Include
+                        </label>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:7px 14px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
+                             :style="{background: campOpenSection==='__ld__' ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: campOpenSection==='__ld__' ? 'var(--navy)' : 'var(--gold)', border: '1px solid rgba(200,169,110,0.4)'}">
+                          {{ campOpenSection==='__ld__' ? '▲ CLOSE' : '▼ EDIT' }}
+                        </div>
                       </div>
                     </div>
-                    <div v-if="campOpenSection==='__ld__'" style="padding:16px 20px;background:#0d1f35;border-top:1px solid rgba(200,169,110,0.15);">
-                      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:rgba(247,244,239,0.85);white-space:pre-wrap;line-height:1.75;">{{ lstNotes.listing_remarks }}</div>
+                    <div v-if="campOpenSection==='__ld__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                      <textarea v-model="campLdEditVal" class="camp-section-ta"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';campLdSave();}"
+                        style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
+                        :style="{height: Math.max(180, (campLdEditVal||'a').split('\n').length * 25 + 60) + 'px'}"
+                        @focus="$event.target.style.borderColor='var(--gold-muted)'"
+                        @blur="$event.target.style.borderColor='var(--cream-mid)'"
+                        placeholder="Listing description…"></textarea>
                     </div>
+                    <div v-else-if="!campLdIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
                   <div v-for="(section, idx) in campParsed" :key="idx" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
                     <!-- Section header — always navy, click to expand -->
@@ -5678,7 +5695,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="btn-outline" @click="voiceModal.crmEditing=false" style="flex:1;min-height:46px;font-size:13px;">← Back</button>
-          <button class="btn-gold" @click="voiceCrmSubmit" :disabled="voiceModal.crmSubmitting || !voiceModal.crmReview.firstName" style="flex:2;min-height:46px;font-size:15px;font-weight:700;">
+          <button class="btn-gold" @click="voiceCrmSubmit" :disabled="voiceModal.crmSubmitting || !voiceModal.crmReview.firstName || !voiceModal.crmReview.lastName || (!voiceModal.crmReview.phone && !voiceModal.crmReview.email)" style="flex:2;min-height:46px;font-size:15px;font-weight:700;">
             <span v-if="voiceModal.crmSubmitting"><span class="spinner spinner-dark"></span>Submitting…</span>
             <span v-else>Submit to Follow Up Boss</span>
           </button>
@@ -9132,7 +9149,7 @@ async function campExportPDF() {
 
   // ── 2. LISTING DESCRIPTION ───────────────────────────────────
   const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
-  if (listingDesc) {
+  if (listingDesc && campLdIncluded.value) {
     addPage();
     sectionHeader('Listing Description');
     y += 6;
@@ -9172,9 +9189,10 @@ async function campExportPDF() {
 
 
 function campCopyToClipboard() {
-  const listing = 'LISTING DESCRIPTION\n' + '─'.repeat(40) + '\n' + (lstNotes.listing_remarks || '') + '\n\n';
+  const ldPart = campLdIncluded.value && lstNotes.listing_remarks
+    ? 'LISTING DESCRIPTION\n' + '─'.repeat(40) + '\n' + lstNotes.listing_remarks + '\n\n' : '';
   const body = campParsed.value.filter(s => s.included).map(s => s.title + '\n' + '─'.repeat(40) + '\n' + s.content).join('\n\n');
-  navigator.clipboard.writeText(listing + body).then(() => showToast('Campaign copied to clipboard!', 3000)).catch(() => showToast('Copy failed.', 4000));
+  navigator.clipboard.writeText(ldPart + body).then(() => showToast('Campaign copied to clipboard!', 3000)).catch(() => showToast('Copy failed.', 4000));
 }
 
 async function lstSubmitToPipeline() {
@@ -9985,6 +10003,14 @@ async function lstSubmitToPipeline() {
     const ldSaving   = ref(false);
     const lstDescEditing = ref(false);
     const lstDescEditVal = ref('');
+    const campLdIncluded = ref(true);
+    const campLdEditVal  = ref('');
+    async function campLdSave() {
+      const trimmed = campLdEditVal.value.trim();
+      if (!trimmed || !lstActiveProp.value) return;
+      lstNotes.listing_remarks = trimmed;
+      await lstSaveNote('listing_remarks');
+    }
     async function lstDescSave() {
       const trimmed = lstDescEditVal.value.trim();
       if (!trimmed || !lstActiveProp.value) return;
@@ -15216,7 +15242,10 @@ async function voiceParse() {
       } else {
         raw = await claude(voiceModal.transcript, VOICE_INTENT_SYSTEM);
       }
-      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      // Strip markdown fences and normalize smart quotes before parsing
+      let _cleanRaw = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
+        .replace(/[\u201C\u201D]/g, '"').replace(/[\u2018\u2019]/g, "\'");
+      const jsonMatch = _cleanRaw.match(/\{[\s\S]*\}/);
       parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
       if (!parsed || !parsed.tool) throw new Error('Could not understand request. Please try again.');
     } catch(e) {
@@ -15315,11 +15344,21 @@ async function voiceParse() {
     return;
   }
 
-  // For add-contact: keep the followup conversation in the modal
+  // For add-contact: only ask for firstName/lastName if missing,
+  // then check phone-or-email; skip all other optional fields
+  if (voiceModal.detectedTool === 'add-contact') {
+    voiceModal.missingFields = voiceModal.missingFields.filter(f => f === 'firstName' || f === 'lastName');
+    // If neither phone nor email was captured, ask for at least one
+    if (!voiceModal.extractedFields.phone && !voiceModal.extractedFields.email) {
+      voiceModal.missingFields.push('__phoneOrEmail__');
+    }
+  }
   if (voiceModal.missingFields.length > 0) {
     voiceModal.phase = 'followup';
     const firstMissing = voiceModal.missingFields[0];
-    const question = (VOICE_FOLLOWUP_QUESTIONS[parsed.tool] || {})[firstMissing] || `What is the ${firstMissing}?`;
+    const question = firstMissing === '__phoneOrEmail__'
+      ? "What's their phone number or email address?"
+      : ((VOICE_FOLLOWUP_QUESTIONS[parsed.tool] || {})[firstMissing] || `What is the ${firstMissing}?`);
     voiceModal.conversation = [{ role: 'assistant', content: question }];
   } else {
     voiceApplyFields();
@@ -15333,7 +15372,13 @@ function voiceFollowupSubmit() {
   const currentField = voiceModal.missingFields[0];
   voiceModal.conversation.push({ role: 'user', content: answer });
   nextTick(() => { const el = document.getElementById('voice-convo-scroll'); if(el) el.scrollTop = el.scrollHeight; });
-  voiceModal.extractedFields[currentField] = answer;
+  if (currentField === '__phoneOrEmail__') {
+    // Detect whether the answer looks like an email or phone
+    if (answer.includes('@')) { voiceModal.extractedFields.email = answer; }
+    else { voiceModal.extractedFields.phone = answer; }
+  } else {
+    voiceModal.extractedFields[currentField] = answer;
+  }
   voiceModal.missingFields.shift();
   voiceModal.followupInput = '';
 
@@ -16073,6 +16118,10 @@ function logActMicToggle() {
             localStorage.setItem('fos_fub_key', g.fub_api_key);
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
+          }
+          // Auto-sync FUB users on this device if key is available but team list isn't cached
+          if (localStorage.getItem('fos_fub_key') && !localStorage.getItem('fos_fub_users')) {
+            fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
           }
           // Branding — Supabase wins over local defaults but not over explicit local saves
           if (g.brokerage) {
@@ -17058,7 +17107,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
