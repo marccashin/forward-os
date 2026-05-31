@@ -9149,7 +9149,7 @@ async function campExportPDF() {
 
   // ── 2. LISTING DESCRIPTION ───────────────────────────────────
   const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
-  if (listingDesc) {
+  if (listingDesc && campLdIncluded.value) {
     addPage();
     sectionHeader('Listing Description');
     y += 6;
