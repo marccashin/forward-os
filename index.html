@@ -5678,7 +5678,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         </div>
         <div style="display:flex;gap:8px;margin-top:12px;">
           <button class="btn-outline" @click="voiceModal.crmEditing=false" style="flex:1;min-height:46px;font-size:13px;">← Back</button>
-          <button class="btn-gold" @click="voiceCrmSubmit" :disabled="voiceModal.crmSubmitting || !voiceModal.crmReview.firstName" style="flex:2;min-height:46px;font-size:15px;font-weight:700;">
+          <button class="btn-gold" @click="voiceCrmSubmit" :disabled="voiceModal.crmSubmitting || !voiceModal.crmReview.firstName || !voiceModal.crmReview.lastName || (!voiceModal.crmReview.phone && !voiceModal.crmReview.email)" style="flex:2;min-height:46px;font-size:15px;font-weight:700;">
             <span v-if="voiceModal.crmSubmitting"><span class="spinner spinner-dark"></span>Submitting…</span>
             <span v-else>Submit to Follow Up Boss</span>
           </button>
@@ -15318,11 +15318,21 @@ async function voiceParse() {
     return;
   }
 
-  // For add-contact: keep the followup conversation in the modal
+  // For add-contact: only ask for firstName/lastName if missing,
+  // then check phone-or-email; skip all other optional fields
+  if (voiceModal.detectedTool === 'add-contact') {
+    voiceModal.missingFields = voiceModal.missingFields.filter(f => f === 'firstName' || f === 'lastName');
+    // If neither phone nor email was captured, ask for at least one
+    if (!voiceModal.extractedFields.phone && !voiceModal.extractedFields.email) {
+      voiceModal.missingFields.push('__phoneOrEmail__');
+    }
+  }
   if (voiceModal.missingFields.length > 0) {
     voiceModal.phase = 'followup';
     const firstMissing = voiceModal.missingFields[0];
-    const question = (VOICE_FOLLOWUP_QUESTIONS[parsed.tool] || {})[firstMissing] || `What is the ${firstMissing}?`;
+    const question = firstMissing === '__phoneOrEmail__'
+      ? "What's their phone number or email address?"
+      : ((VOICE_FOLLOWUP_QUESTIONS[parsed.tool] || {})[firstMissing] || `What is the ${firstMissing}?`);
     voiceModal.conversation = [{ role: 'assistant', content: question }];
   } else {
     voiceApplyFields();
@@ -15336,7 +15346,13 @@ function voiceFollowupSubmit() {
   const currentField = voiceModal.missingFields[0];
   voiceModal.conversation.push({ role: 'user', content: answer });
   nextTick(() => { const el = document.getElementById('voice-convo-scroll'); if(el) el.scrollTop = el.scrollHeight; });
-  voiceModal.extractedFields[currentField] = answer;
+  if (currentField === '__phoneOrEmail__') {
+    // Detect whether the answer looks like an email or phone
+    if (answer.includes('@')) { voiceModal.extractedFields.email = answer; }
+    else { voiceModal.extractedFields.phone = answer; }
+  } else {
+    voiceModal.extractedFields[currentField] = answer;
+  }
   voiceModal.missingFields.shift();
   voiceModal.followupInput = '';
 
