@@ -5513,7 +5513,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                   <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
                     <label style="display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:#f3f4f6;border:1.5px solid #e5e7eb;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;color:#374151;">
                       <svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><path d="M19 8l-9.5 9.5a5 5 0 0 1-7-7l9.5-9.5a3 3 0 0 1 4.2 4.2l-8.5 8.5a1.5 1.5 0 0 1-2.1-2.1l7.5-7.5" fill="none" stroke="#0d1f35" stroke-width="2" stroke-linecap="round"/></svg> Upload File
-                      <input type="file" accept=".txt,.md,.csv,.json,.html,.pdf" @change="atHandleFile" style="display:none;" />
+                      <input type="file" accept=".txt,.md,.csv,.json,.html,.pdf" @change="atHandleFile" multiple style="display:none;" />
                     </label>
                     <span style="font-size:11px;color:#9ca3af;">Upload a .txt, .md, or .pdf file to auto-fill content</span>
                   </div>
@@ -14595,7 +14595,7 @@ No markdown. Valid JSON only.`;
       } catch(e) {}
       // Always read from Supabase — it is the source of truth
       try {
-        const rows = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category&order=id.desc');
+        const rows = await supaRest.select('knowledge_docs', 'select=id,file_name,content,category&drive_file_id=eq.manual&order=id.desc');
         if (Array.isArray(rows) && rows.length > 0) {
           atEntries.value = rows.map(r => ({ id: r.id, section: r.category || 'General', title: r.file_name || '', desc: r.content || '', createdAt: '' }));
           localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
@@ -14624,46 +14624,64 @@ No markdown. Valid JSON only.`;
       const entry = atEntries.value.find(e => e.id === id);
       atEntries.value = atEntries.value.filter(e => e.id !== id);
       await atSaveEntries();
-      // knowledge_docs sync handled by atSaveEntries above (direct Supabase batch write)
-      await atLoadEntries(); // Refresh list from global source
       showToast('Entry removed.', 2000);
     }
 
     async function atHandleFile(e) {
-      const file = e.target.files[0]; if (!file) return;
-      if (!atNewTitle.value.trim()) atNewTitle.value = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-      const isPDF = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
-      if (isPDF) {
-        try {
-          showToast('Reading PDF…', 1500);
-          const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
-          if (!pdfjsLib) { showToast('PDF reader not loaded.', 3000); e.target.value = ''; return; }
-          if (!pdfjsLib.GlobalWorkerOptions.workerSrc) {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-          }
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      // Multi-file: extract each file and auto-add as a separate entry
+      const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+      if (pdfjsLib && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+      async function extractFile(file) {
+        const isPDF = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+        if (isPDF) {
+          if (!pdfjsLib) throw new Error('PDF reader not loaded');
           const arrayBuffer = await file.arrayBuffer();
           const pdfDoc = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
           let fullText = '';
           for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
             const page = await pdfDoc.getPage(pageNum);
             const content = await page.getTextContent();
-            const pageText = content.items.map(item => item.str).join(' ');
-            fullText += pageText + '\n';
+            fullText += content.items.map(item => item.str).join(' ') + '\n';
           }
-          const extracted = fullText.trim();
-          if (extracted) {
-            atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + extracted;
-            showToast('✅ PDF text extracted — review and click Add');
-          } else {
-            showToast('⚠️ No text extracted (scanned PDF). Paste content manually, then click Add.', 4000);
-          }
-        } catch(err) { console.error(err); showToast('Could not read PDF: ' + err.message, 4000); }
-      } else {
+          return fullText.trim();
+        } else {
+          return (await file.text()).trim();
+        }
+      }
+      if (files.length === 1) {
+        // Single file: populate form fields for review before adding
+        const file = files[0];
+        if (!atNewTitle.value.trim()) atNewTitle.value = file.name.replace(/\.([^.]+)$/, '').replace(/[-_]/g, ' ');
         try {
-          const text = await file.text();
-          atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + (text.trim() || '');
-          showToast('✅ File loaded — review and click Add');
-        } catch { showToast('Could not read file', 3000); }
+          showToast('Reading file…', 1500);
+          const text = await extractFile(file);
+          if (text) {
+            atNewDesc.value = (atNewDesc.value.trim() ? atNewDesc.value + '\n\n---\n\n' : '') + text;
+            showToast('✅ File loaded — review and click Add');
+          } else {
+            showToast('⚠️ No text extracted. Paste content manually, then click Add.', 4000);
+          }
+        } catch(err) { showToast('Could not read file: ' + err.message, 4000); }
+      } else {
+        // Multiple files: auto-add each as a separate entry
+        showToast(`Reading ${files.length} files…`, 2000);
+        let added = 0, failed = 0;
+        for (const file of files) {
+          try {
+            const text = await extractFile(file);
+            if (!text) { failed++; continue; }
+            const title = file.name.replace(/\.([^.]+)$/, '').replace(/[-_]/g, ' ');
+            atEntries.value.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2), section: atNewSection.value, title, desc: text, createdAt: new Date().toISOString() });
+            added++;
+          } catch(err) { console.warn('Could not read', file.name, err); failed++; }
+        }
+        if (added > 0) await atSaveEntries();
+        const msg = failed > 0 ? `✅ Added ${added} entries (${failed} failed)` : `✅ Added ${added} entries to Training Library`;
+        showGoldToast(msg);
       }
       e.target.value = '';
     }
