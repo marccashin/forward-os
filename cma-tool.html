@@ -139,8 +139,47 @@
     /* ── NOTICE ── */
     .notice { background: #f0f4ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 12px 16px; font-size: 12px; color: #3730a3; margin-bottom: 20px; }
 
+    /* ===== MOBILE: no horizontal scrolling anywhere ===== */
+    html, body { max-width: 100%; overflow-x: hidden; }
+    img, table, iframe, svg, canvas { max-width: 100%; }
+
     @media (max-width: 640px) {
       .header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      input, select, textarea { max-width: 100%; }
+      [style*="min-width:220px"], [style*="min-width: 220px"] { min-width: 0 !important; }
+
+      /* Comps table -> stacked cards (one card per comp, label/value rows) */
+      .comps-wrapper { overflow-x: visible; }
+      table.comps-table, table.comps-table tbody,
+      table.comps-table tr, table.comps-table td { display: block; width: 100%; }
+      table.comps-table { table-layout: auto; border-collapse: separate; }
+      table.comps-table thead { display: none; }
+      table.comps-table tr {
+        margin: 0 0 14px; border: 1.5px solid var(--border);
+        border-radius: 10px; overflow: hidden; background: white;
+      }
+      table.comps-table tr:nth-child(even) td,
+      table.comps-table tr:hover td { background: white; }
+      table.comps-table td {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px; border: none; border-bottom: 1px solid #eef1f6;
+        text-align: left;
+      }
+      table.comps-table td:last-child { border-bottom: none; }
+      table.comps-table td::before {
+        content: attr(data-label);
+        flex: 0 0 40%;
+        font-size: 10px; font-weight: 700; letter-spacing: .3px;
+        text-transform: uppercase; color: var(--muted);
+      }
+      table.comps-table td > input,
+      table.comps-table td > select,
+      table.comps-table td > div { flex: 1 1 auto; width: 100%; min-width: 0; }
+      /* calc / adjustment cells: no input, show value at the right */
+      table.comps-table td.calc,
+      table.comps-table td.adj-val,
+      table.comps-table td.adj-neg { justify-content: space-between; text-align: right; }
+      table.comps-table td .cond-adj-badge { flex: 0 0 auto; }
     }
   </style>
 </head>
@@ -757,21 +796,21 @@ function buildCompRow(i) {
   const c = comps[i];
   const condOpts = ['A+','A','B','C','D'].map(v => `<option value="${v}"${c.condition===v?' selected':''}>${v}</option>`).join('');
   tr.innerHTML = `
-    <td><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="compChange(${i},'address',this.value)" /></td>
-    <td><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
-    <td><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
-    <td><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
-    <td><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
-    <td><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
-    <td><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
-    <td><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
-    <td><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="compChange(${i},'proximity',this.value)" /></td>
-    <td><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="compChange(${i},'dom',+this.value)" /></td>
-    <td class="calc" id="c${i}_psf">—</td>
-    <td class="calc" id="c${i}_netAdj">—</td>
-    <td class="calc" id="c${i}_adjPrice">—</td>
+    <td data-label="Address"><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="compChange(${i},'address',this.value)" /></td>
+    <td data-label="Sold Date"><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
+    <td data-label="Sale Price"><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
+    <td data-label="Sq Ft"><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
+    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
+    <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
+    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
+    <td data-label="Condition"><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
+    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
+    <td data-label="Concess."><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
+    <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="compChange(${i},'proximity',this.value)" /></td>
+    <td data-label="DOM"><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="compChange(${i},'dom',+this.value)" /></td>
+    <td class="calc" data-label="$/SqFt" id="c${i}_psf">—</td>
+    <td class="calc" data-label="Net Adj" id="c${i}_netAdj">—</td>
+    <td class="calc" data-label="Adj Price" id="c${i}_adjPrice">—</td>
   `;
   const removeTd = document.createElement('td');
   const btn = document.createElement('button');
