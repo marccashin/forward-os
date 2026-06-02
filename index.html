@@ -730,6 +730,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
+.mo-disc-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.mo-disc-text { flex:1 1 300px; min-width:0; }
+.mo-disc-actions { display:flex; gap:8px; flex-shrink:0; }
+@media (max-width:700px){
+  .mo-disclaimer { font-size:11px; line-height:1.5; }
+  .mo-disc-row { flex-direction:column; gap:10px; }
+  .mo-disc-actions { width:100%; }
+  .mo-disc-actions button { flex:1 1 auto; font-size:9.5px !important; padding:8px 10px !important; }
+}
 .mo-analysis-wrap { margin-top:20px; border:1px solid var(--cream-mid); border-radius:3px; overflow:hidden; box-shadow:0 4px 20px rgba(10,35,66,0.10); }
 .mo-analysis-section { padding:26px 32px; border-bottom:1px solid var(--cream-mid); background:#fff; }
 .mo-analysis-section > div > .mo-analysis-bullet { border-bottom:1px solid var(--cream-mid); }
@@ -1002,6 +1011,42 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .crm-result-icon { display:flex !important; align-items:center; justify-content:center; }
 .crm-result-label { font-family:'Montserrat',sans-serif !important; font-size:9px !important; font-weight:700 !important; letter-spacing:0.12em !important; text-transform:uppercase !important; color:#c8a96e !important; line-height:1.4 !important; }
 .crm-result-value { font-family:'Cormorant Garamond',serif !important; font-size:15px !important; font-weight:600 !important; color:#0d1f35 !important; line-height:1.35 !important; word-break:break-word !important; }
+
+/* ===================================================================
+   MOBILE: eliminate ALL horizontal scrolling (no sideways scroll)
+   =================================================================== */
+html, body { max-width: 100%; overflow-x: hidden; }
+#app, .main, .content { max-width: 100%; min-width: 0; }
+.content img, .content svg, .content video, .content canvas,
+.content iframe, .content table { max-width: 100%; }
+
+@media (max-width: 700px) {
+  /* Inline flex rows wrap instead of running off the screen */
+  .content [style*="display:flex"],
+  .content [style*="display: flex"] { flex-wrap: wrap; }
+
+  /* Inline CSS grids collapse to a single column on phones */
+  .content [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+
+  /* Form fields, media and tables can never exceed the viewport */
+  .content input, .content select, .content textarea,
+  .content img, .content svg, .content iframe { max-width: 100% !important; }
+
+  /* Neutralise fixed min-widths that are wider than a phone */
+  .content [style*="min-width:500px"], .content [style*="min-width: 500px"],
+  .content [style*="min-width:480px"], .content [style*="min-width:420px"],
+  .content [style*="min-width:340px"], .content [style*="min-width:300px"],
+  .content [style*="min-width:260px"], .content [style*="min-width:240px"],
+  .content [style*="min-width:220px"], .content [style*="min-width:200px"],
+  .content [style*="min-width:180px"], .content [style*="min-width:160px"],
+  .content [style*="min-width:140px"], .content [style*="min-width:130px"] { min-width: 0 !important; }
+
+  /* Side-by-side comparison table: shrink to fit rather than scroll the page */
+  .scroll-table-wrap { overflow-x: visible !important; }
+  .scroll-table-wrap > table { min-width: 0 !important; width: 100% !important; table-layout: fixed; }
+  .scroll-table-wrap th, .scroll-table-wrap td { word-break: break-word; }
+  /* (The multi-offer matrix .mo-wrap keeps its own contained swipe by design.) */
+}
 </style>
 </head>
 <body>
@@ -4753,9 +4798,9 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                 <div v-if="lstToolOpen==='multioffers'" class="subfolder-body" style="padding:16px;">
 
                   <!-- Disclaimer -->
-                  <div class="mo-disclaimer" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                    <span>⚠️ <strong>Agent Responsibility</strong> <span style="font-size:6px;opacity:0.5;">v26</span>: The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</span>
-                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                  <div class="mo-disclaimer mo-disc-row">
+                    <span class="mo-disc-text">⚠️ <strong>Agent Responsibility</strong> <span style="font-size:6px;opacity:0.5;">v26</span>: The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</span>
+                    <div class="mo-disc-actions">
                       <button v-if="moSlotCount < 6" @click="moAddSlot" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--gold-muted);color:var(--gold);padding:4px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;">+ Add Offer</button>
                       <button @click="moClearAll" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid #92400e;color:#92400e;padding:4px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;">✕ Clear All &amp; Start Over</button>
                     </div>
@@ -5346,7 +5391,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="card" v-if="agentName === 'Marc Cashin'">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Follow Up Boss CRM</h3>
               <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Connect your team's FUB account to enable voice-to-contact. Use Marc's admin API key. Get it from <strong>FUB Admin → API</strong>.</p>
-              <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Connected · { fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
+              <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Connected · {{ fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
               <div v-else class="fub-status disconnected" style="margin-bottom:12px;">⚠️ Not connected</div>
               <div style="display:flex;gap:10px;margin-bottom:10px;">
                 <input :type="showFubKey?'text':'password'" v-model="settFubKey" placeholder="FUB API key…" style="flex:1;"/>
@@ -6297,7 +6342,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
         </div>
       </div>
       <div style="flex:1;overflow:hidden;-webkit-overflow-scrolling:touch;position:relative;">
-        <iframe :src="pdfViewerSrc" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" scrolling="yes"></iframe>
+        <iframe :src="pdfViewerSrc + '#view=FitH&toolbar=1'" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" scrolling="yes"></iframe>
       </div>
     </div>
 
@@ -6924,8 +6969,37 @@ async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
 }
 
 // ── Follow Up Boss API helpers ─────────────────────────────────────────────
+// Single source of truth for the team's GLOBAL FUB key. Fetches from Supabase
+// (agent_config.__global__) and reconciles localStorage — Supabase always wins, so a
+// rotated/updated key propagates to every device and a stale cached key can't keep failing.
+// De-dupes concurrent callers. Returns the key, '' if none, or the existing local key as a
+// fallback when the network fetch fails (so a transient blip never breaks a working device).
+let _fubKeyPromise = null;
+async function ensureFubKey() {
+  const local = localStorage.getItem('fos_fub_key') || '';
+  if (!_fubKeyPromise) {
+    _fubKeyPromise = (async () => {
+      try {
+        const rows = await supaRest.select('agent_config', 'select=fub_api_key&agent_name=eq.__global__');
+        return rows && rows[0] ? (rows[0].fub_api_key || '') : '';
+      } catch (e) {
+        console.warn('ensureFubKey: Supabase fetch failed, using local key:', e);
+        return null; // signal failure -> caller falls back to local
+      }
+    })();
+  }
+  let remote;
+  try { remote = await _fubKeyPromise; } finally { _fubKeyPromise = null; }
+  if (remote === null) return local;            // fetch failed -> keep whatever we have
+  if (remote && remote !== local) {             // Supabase has a new/different key -> adopt it
+    localStorage.setItem('fos_fub_key', remote);
+  }
+  return remote || local;
+}
+
 async function fubFetch(path, method='GET', body=null) {
-  const key = localStorage.getItem('fos_fub_key');
+  let key = localStorage.getItem('fos_fub_key');
+  if (!key) key = await ensureFubKey();   // on-demand recovery closes the load-race window
   if (!key) throw new Error('No Follow Up Boss API key. Add it in Settings.');
   const opts = {
     method,
@@ -7773,7 +7847,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       };
       _revVoiceRec.onerror = (e) => { if (e.error !== 'no-speech') showToast('Mic error. Try again.', 3000); revVoiceRecording.value = false; };
       _revVoiceRec.onend = () => { revVoiceRecording.value = false; };
-      _revVoiceRec.start(); revVoiceRecording.value = true;
+      _safeRecStart(_revVoiceRec, () => { revVoiceRecording.value = true; }, () => { revVoiceRecording.value = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function revVoiceStop() {
       if (_revVoiceRec) { _revVoiceRec.stop(); _revVoiceRec = null; }
@@ -9498,7 +9572,7 @@ async function lstSubmitToPipeline() {
       };
       _lstRevVoiceRec.onerror = (e) => { if (e.error !== 'no-speech') showToast('Mic error. Try again.', 3000); lstRevVoiceRecording.value = false; };
       _lstRevVoiceRec.onend = () => { lstRevVoiceRecording.value = false; };
-      _lstRevVoiceRec.start(); lstRevVoiceRecording.value = true;
+      _safeRecStart(_lstRevVoiceRec, () => { lstRevVoiceRecording.value = true; }, () => { lstRevVoiceRecording.value = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function lstRevVoiceStop() {
       if (_lstRevVoiceRec) { _lstRevVoiceRec.stop(); _lstRevVoiceRec = null; }
@@ -9703,6 +9777,21 @@ async function lstSubmitToPipeline() {
             }
           } catch(e) { /* silent — user can re-enter manually in Settings */ }
         }
+
+        // Reconcile the GLOBAL FUB key from Supabase on every load (source of truth).
+        // Returning devices boot straight in via session restore and never run doLogin(),
+        // so without this the key never lands in localStorage and FUB falsely reads "not
+        // connected." ensureFubKey() also adopts a rotated/updated key so a stale cached
+        // key can't keep failing.
+        try {
+          const hadKey = localStorage.getItem('fos_fub_key');
+          const gFubKey = await ensureFubKey();
+          if (gFubKey) {
+            fubKeySet.value = true;
+            settFubKey.value = gFubKey;
+            if (gFubKey !== hadKey) fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
+          }
+        } catch(e) { /* silent — Settings still allows manual entry */ }
       }
     });
 
@@ -10132,7 +10221,7 @@ async function lstSubmitToPipeline() {
         if (e.error !== 'no-speech') showToast('Mic error — try again.', 3000);
       };
 
-      _ldVoiceRec.start();
+      _safeRecStart(_ldVoiceRec, null, () => { ldVoiceListening.value = false; ldVoiceLiveText.value = ''; showToast('Mic was busy — tap the mic again.', 2500); });
     }
 
     // ── Generic inline mic for all textareas ─────────────────────────
@@ -10163,7 +10252,7 @@ async function lstSubmitToPipeline() {
         if (text) setter(getter() ? getter() + ' ' + text : text);
       };
       _inlineMicRec.onerror = () => { inlineMicActive.value = null; };
-      _inlineMicRec.start();
+      _safeRecStart(_inlineMicRec, null, () => { inlineMicActive.value = null; showToast('Mic was busy — tap the mic again.', 2500); });
     }
     // ── End generic inline mic ────────────────────────────────────────
 
@@ -13320,7 +13409,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
       };
       _bnaVoiceRec.onend = () => { bnaListening.value = false; bnaTranscript.value = finalText.trim(); };
       _bnaVoiceRec.onerror = () => { bnaListening.value = false; };
-      _bnaVoiceRec.start();
+      _safeRecStart(_bnaVoiceRec, null, () => { bnaListening.value = false; showToast('Mic was busy — tap the mic again.', 2500); });
     }
 
     async function bnaGenerate() {
@@ -14726,7 +14815,7 @@ No markdown. Valid JSON only.`;
     async function mktLoadLinks() {
       try {
         const rows = await supaRest.select('property_notes',
-          `select=content&property_id=eq.__market_reports__&subfolder=eq.links&order=updated_at.desc&limit=1`);
+          `select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links&order=updated_at.desc&limit=1`);
         if (rows && rows[0] && rows[0].content) {
           marketReportLinks.value = JSON.parse(rows[0].content);
         }
@@ -14738,11 +14827,11 @@ No markdown. Valid JSON only.`;
       try {
         const payload = JSON.stringify(mktEditLinks.value);
         // Delete existing then insert fresh
-        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.__market_reports__&subfolder=eq.links`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links`, {
           method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' }
         });
         await supaRest.insert('property_notes', {
-          property_id: '__market_reports__', subfolder: 'links',
+          property_id: '00000000-0000-0000-0000-000000000001', subfolder: 'links',
           content: payload, updated_by: agentName.value
         });
         marketReportLinks.value = { ...mktEditLinks.value };
@@ -14820,7 +14909,7 @@ No markdown. Valid JSON only.`;
       _fbRecognition.onresult = (e) => { feedbackModal.transcript = e.results[0][0].transcript; feedbackModal.recording = false; };
       _fbRecognition.onerror = () => { feedbackModal.recording = false; };
       _fbRecognition.onend = () => { feedbackModal.recording = false; };
-      _fbRecognition.start(); feedbackModal.recording = true;
+      _safeRecStart(_fbRecognition, () => { feedbackModal.recording = true; }, () => { feedbackModal.recording = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function feedbackStopVoice() {
       if (_fbRecognition) { try { _fbRecognition.stop(); } catch(e){} }
@@ -14917,6 +15006,35 @@ async function ensureMicPermission() {
       showToast('⚠️ Microphone access denied. Go to your browser settings to allow it for this site.', 6000);
     }
     return false;
+  }
+}
+
+// ── Voice recognition safe-start ──────────────────────────────────────────
+// iOS/Safari allows only ONE SpeechRecognition active at a time, and calling
+// .start() on a busy or stale instance throws InvalidStateError. That previously
+// left a tool showing "listening" while nothing recorded — only a view remount
+// ("swipe out and back in") cleared it. This frees any prior instance, starts
+// inside try/catch, flips the UI to "listening" only on a real start, and resets
+// + prompts a retry on failure.
+let _activeRecognition = null;
+function _safeRecStart(rec, onStarted, onFail) {
+  if (_activeRecognition && _activeRecognition !== rec) {
+    try { _activeRecognition.abort(); } catch (_) {}
+  }
+  _activeRecognition = rec;
+  const _origEnd = rec.onend;
+  rec.onend = function (ev) {
+    if (_activeRecognition === rec) _activeRecognition = null;
+    if (typeof _origEnd === 'function') { try { _origEnd.call(this, ev); } catch (_) {} }
+  };
+  try {
+    rec.start();
+    if (typeof onStarted === 'function') onStarted();
+  } catch (err) {
+    try { rec.abort(); } catch (_) {}
+    if (_activeRecognition === rec) _activeRecognition = null;
+    if (typeof onFail === 'function') onFail(err);
+    else showToast('Mic was busy — tap the mic again.', 2500);
   }
 }
 
@@ -15175,7 +15293,7 @@ async function voiceStart() {
     if (voiceModal.phase === 'listening') voiceModal.phase = 'review';
   };
 
-  _voiceRecognition.start();
+  _safeRecStart(_voiceRecognition, null, () => { voiceModal.phase = 'error'; voiceModal.errorMsg = 'Could not start the microphone — please tap to try again.'; });
 }
 
 function voiceStop() {
@@ -15451,7 +15569,7 @@ function voiceFollowupMic() {
   };
   _voiceFollowupRecognition.onend = () => { voiceModal.followupListening = false; };
   _voiceFollowupRecognition.onerror = () => { voiceModal.followupListening = false; };
-  _voiceFollowupRecognition.start();
+  _safeRecStart(_voiceFollowupRecognition, null, () => { voiceModal.followupListening = false; showToast('Mic was busy — tap the mic again.', 2500); });
 }
 
 // ── Business Card Scanner ─────────────────────────────────────────────
@@ -15721,7 +15839,8 @@ async function voiceCrmSubmit() {
   if (!r.firstName) { showToast('First name is required.'); return; }
   voiceModal.crmSubmitting = true;
 
-  const fubKey = localStorage.getItem('fos_fub_key');
+  let fubKey = localStorage.getItem('fos_fub_key');
+  if (!fubKey) fubKey = await ensureFubKey();   // recover if submit fired before session-restore finished
   if (!fubKey) {
     voiceModal.crmSubmitting = false;
     voiceModal.phase = 'error';
@@ -15958,7 +16077,7 @@ function logActMicToggle() {
   };
   _logActMic.onend = () => { logAct.micListening = false; };
   _logActMic.onerror = () => { logAct.micListening = false; };
-  _logActMic.start();
+  _safeRecStart(_logActMic, null, () => { logAct.micListening = false; showToast('Mic was busy — tap the mic again.', 2500); });
 }
 // ── End Log Activity handlers ──────────────────────────────────────────
 
@@ -16186,7 +16305,7 @@ function logActMicToggle() {
         const g = globalRows && globalRows[0];
         if (g) {
           // FUB key
-          if (g.fub_api_key && !localStorage.getItem('fos_fub_key')) {
+          if (g.fub_api_key && g.fub_api_key !== localStorage.getItem('fos_fub_key')) {
             localStorage.setItem('fos_fub_key', g.fub_api_key);
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
@@ -17207,6 +17326,6 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
   }
 }).mount('#app');
 </script>
-<script id="_upload_ux">(function(){const _f=window.fetch,s={n:0,wl:null,el:null};function init(){if(s.el)return;const st=document.createElement('style');st.textContent='@keyframes _sp{to{transform:rotate(360deg)}}#_ub{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;color:#fff;padding:14px 18px;z-index:2147483646;align-items:center;gap:13px;border-top:2px solid #2563eb;display:none}#_ub._on{display:flex}._spn{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:#60a5fa;border-radius:50%;animation:_sp .8s linear infinite;flex-shrink:0}';document.head.appendChild(st);s.el=document.createElement('div');s.el.id='_ub';s.el.innerHTML='<span class="_spn"></span><div><div id="_um" style="font-family:'Cormorant Garamond',serif;font-weight:600;font-size:14px"></div><div style="font-size:11px;opacity:.65;margin-top:3px">Keep this screen on · Don\'t lock your phone or close the app · You\'ll see a confirmation when it\'s done</div></div>';document.body.appendChild(s.el);}function upd(){init();document.getElementById('_um').textContent='Uploading'+(s.n>1?' ('+s.n+' files)':'')+'…';s.el.classList.add('_on');}function done(){if(s.el)s.el.classList.remove('_on');}async function lk(){if('wakeLock'in navigator&&!s.wl)try{s.wl=await navigator.wakeLock.request('screen');}catch(e){}}function ulk(){if(s.wl){s.wl.release();s.wl=null;}}window.fetch=async function(u,o){const up=o&&o.body instanceof FormData&&typeof u==='string'&&(u.toLowerCase().includes('upload')||u.toLowerCase().includes('railway'));if(up){s.n++;upd();if(s.n===1)lk();}try{return await _f.apply(this,arguments);}finally{if(up){s.n=Math.max(0,s.n-1);if(!s.n){done();ulk();}else upd();}}};})();</script>
+<script id="_upload_ux">(function(){const _f=window.fetch,s={n:0,wl:null,el:null};function init(){if(s.el)return;const st=document.createElement('style');st.textContent='@keyframes _sp{to{transform:rotate(360deg)}}#_ub{position:fixed;bottom:0;left:0;right:0;background:#0d1b3e;color:#fff;padding:14px 18px;z-index:2147483646;align-items:center;gap:13px;border-top:2px solid #2563eb;display:none}#_ub._on{display:flex}._spn{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.2);border-top-color:#60a5fa;border-radius:50%;animation:_sp .8s linear infinite;flex-shrink:0}';document.head.appendChild(st);s.el=document.createElement('div');s.el.id='_ub';s.el.innerHTML='<span class="_spn"></span><div><div id="_um" style="font-family:\'Cormorant Garamond\',serif;font-weight:600;font-size:14px"></div><div style="font-size:11px;opacity:.65;margin-top:3px">Keep this screen on · Don\'t lock your phone or close the app · You\'ll see a confirmation when it\'s done</div></div>';document.body.appendChild(s.el);}function upd(){init();document.getElementById('_um').textContent='Uploading'+(s.n>1?' ('+s.n+' files)':'')+'…';s.el.classList.add('_on');}function done(){if(s.el)s.el.classList.remove('_on');}async function lk(){if('wakeLock'in navigator&&!s.wl)try{s.wl=await navigator.wakeLock.request('screen');}catch(e){}}function ulk(){if(s.wl){s.wl.release();s.wl=null;}}window.fetch=async function(u,o){const up=o&&o.body instanceof FormData&&typeof u==='string'&&(u.toLowerCase().includes('upload')||u.toLowerCase().includes('railway'));if(up){s.n++;upd();if(s.n===1)lk();}try{return await _f.apply(this,arguments);}finally{if(up){s.n=Math.max(0,s.n-1);if(!s.n){done();ulk();}else upd();}}};})();</script>
 </body>
 </html>
