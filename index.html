@@ -730,6 +730,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-loading-cell { display:flex; align-items:center; justify-content:center; padding:12px; gap:6px; }
 .mo-spinner { width:14px; height:14px; border:2px solid var(--cream-mid); border-top-color:var(--gold); border-radius:50%; animation:spin .7s linear infinite; }
 .mo-disclaimer { font-family:'Montserrat',sans-serif; font-size:7.5px; color:#92400e; background:#fef3c7; border:1px solid #fcd34d; border-radius:2px; padding:10px 14px; margin:14px 0; line-height:1.55; }
+.mo-disc-row { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.mo-disc-text { flex:1 1 300px; min-width:0; }
+.mo-disc-actions { display:flex; gap:8px; flex-shrink:0; }
+@media (max-width:700px){
+  .mo-disclaimer { font-size:11px; line-height:1.5; }
+  .mo-disc-row { flex-direction:column; gap:10px; }
+  .mo-disc-actions { width:100%; }
+  .mo-disc-actions button { flex:1 1 auto; font-size:9.5px !important; padding:8px 10px !important; }
+}
 .mo-analysis-wrap { margin-top:20px; border:1px solid var(--cream-mid); border-radius:3px; overflow:hidden; box-shadow:0 4px 20px rgba(10,35,66,0.10); }
 .mo-analysis-section { padding:26px 32px; border-bottom:1px solid var(--cream-mid); background:#fff; }
 .mo-analysis-section > div > .mo-analysis-bullet { border-bottom:1px solid var(--cream-mid); }
@@ -4789,9 +4798,9 @@ html, body { max-width: 100%; overflow-x: hidden; }
                 <div v-if="lstToolOpen==='multioffers'" class="subfolder-body" style="padding:16px;">
 
                   <!-- Disclaimer -->
-                  <div class="mo-disclaimer" style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
-                    <span>⚠️ <strong>Agent Responsibility</strong> <span style="font-size:6px;opacity:0.5;">v26</span>: The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</span>
-                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                  <div class="mo-disclaimer mo-disc-row">
+                    <span class="mo-disc-text">⚠️ <strong>Agent Responsibility</strong> <span style="font-size:6px;opacity:0.5;">v26</span>: The information extracted from uploaded offer PDFs must be independently verified for accuracy before presenting to your client. Claude may misread handwritten text, checkboxes, or non-standard contract formats. You are solely responsible for confirming all terms prior to any seller presentation.</span>
+                    <div class="mo-disc-actions">
                       <button v-if="moSlotCount < 6" @click="moAddSlot" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid var(--gold-muted);color:var(--gold);padding:4px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;">+ Add Offer</button>
                       <button @click="moClearAll" style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;background:none;border:1px solid #92400e;color:#92400e;padding:4px 10px;border-radius:2px;cursor:pointer;white-space:nowrap;">✕ Clear All &amp; Start Over</button>
                     </div>
