@@ -14815,7 +14815,7 @@ No markdown. Valid JSON only.`;
     async function mktLoadLinks() {
       try {
         const rows = await supaRest.select('property_notes',
-          `select=content&property_id=eq.__market_reports__&subfolder=eq.links&order=updated_at.desc&limit=1`);
+          `select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links&order=updated_at.desc&limit=1`);
         if (rows && rows[0] && rows[0].content) {
           marketReportLinks.value = JSON.parse(rows[0].content);
         }
@@ -14827,11 +14827,11 @@ No markdown. Valid JSON only.`;
       try {
         const payload = JSON.stringify(mktEditLinks.value);
         // Delete existing then insert fresh
-        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.__market_reports__&subfolder=eq.links`, {
+        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links`, {
           method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' }
         });
         await supaRest.insert('property_notes', {
-          property_id: '__market_reports__', subfolder: 'links',
+          property_id: '00000000-0000-0000-0000-000000000001', subfolder: 'links',
           content: payload, updated_by: agentName.value
         });
         marketReportLinks.value = { ...mktEditLinks.value };

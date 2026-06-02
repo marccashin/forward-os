@@ -645,17 +645,32 @@ async function _supaSave(draftData) {
     const prefillRaw = localStorage.getItem('cma_voice_prefill');
     const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
     const address = prefill.address || getVal('s_address') || _URL_ADDRESS || '';
-    await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
-      method: 'POST',
-      headers: _supaHdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify({
-        agent_name: _AGENT,
-        property_address: address,
-        prefill_data: prefill,
-        draft_data: draftData,
-        updated_at: new Date().toISOString()
-      })
-    });
+    const payload = {
+      agent_name: _AGENT,
+      property_address: address,
+      prefill_data: prefill,
+      draft_data: draftData,
+      updated_at: new Date().toISOString()
+    };
+    // Find an existing session for this agent+address and UPDATE it; otherwise INSERT.
+    // (The table has a unique (agent_name, property_address) constraint, so a blind POST
+    //  with merge-duplicates but no on_conflict target returned 409 Conflict.)
+    const _filter = `agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(address)}`;
+    const _existRes = await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?select=id&${_filter}&limit=1`, { headers: _supaHdrs() });
+    const _existing = await _existRes.json().catch(() => []);
+    if (Array.isArray(_existing) && _existing.length) {
+      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?${_filter}`, {
+        method: 'PATCH',
+        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(payload)
+      });
+    } else {
+      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
+        method: 'POST',
+        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify(payload)
+      });
+    }
   } catch(e) { console.warn('Supabase save failed', e); }
 }
 
