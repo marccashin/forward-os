@@ -7847,7 +7847,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       };
       _revVoiceRec.onerror = (e) => { if (e.error !== 'no-speech') showToast('Mic error. Try again.', 3000); revVoiceRecording.value = false; };
       _revVoiceRec.onend = () => { revVoiceRecording.value = false; };
-      _revVoiceRec.start(); revVoiceRecording.value = true;
+      _safeRecStart(_revVoiceRec, () => { revVoiceRecording.value = true; }, () => { revVoiceRecording.value = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function revVoiceStop() {
       if (_revVoiceRec) { _revVoiceRec.stop(); _revVoiceRec = null; }
@@ -9572,7 +9572,7 @@ async function lstSubmitToPipeline() {
       };
       _lstRevVoiceRec.onerror = (e) => { if (e.error !== 'no-speech') showToast('Mic error. Try again.', 3000); lstRevVoiceRecording.value = false; };
       _lstRevVoiceRec.onend = () => { lstRevVoiceRecording.value = false; };
-      _lstRevVoiceRec.start(); lstRevVoiceRecording.value = true;
+      _safeRecStart(_lstRevVoiceRec, () => { lstRevVoiceRecording.value = true; }, () => { lstRevVoiceRecording.value = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function lstRevVoiceStop() {
       if (_lstRevVoiceRec) { _lstRevVoiceRec.stop(); _lstRevVoiceRec = null; }
@@ -10221,7 +10221,7 @@ async function lstSubmitToPipeline() {
         if (e.error !== 'no-speech') showToast('Mic error — try again.', 3000);
       };
 
-      _ldVoiceRec.start();
+      _safeRecStart(_ldVoiceRec, null, () => { ldVoiceListening.value = false; ldVoiceLiveText.value = ''; showToast('Mic was busy — tap the mic again.', 2500); });
     }
 
     // ── Generic inline mic for all textareas ─────────────────────────
@@ -10252,7 +10252,7 @@ async function lstSubmitToPipeline() {
         if (text) setter(getter() ? getter() + ' ' + text : text);
       };
       _inlineMicRec.onerror = () => { inlineMicActive.value = null; };
-      _inlineMicRec.start();
+      _safeRecStart(_inlineMicRec, null, () => { inlineMicActive.value = null; showToast('Mic was busy — tap the mic again.', 2500); });
     }
     // ── End generic inline mic ────────────────────────────────────────
 
@@ -13409,7 +13409,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
       };
       _bnaVoiceRec.onend = () => { bnaListening.value = false; bnaTranscript.value = finalText.trim(); };
       _bnaVoiceRec.onerror = () => { bnaListening.value = false; };
-      _bnaVoiceRec.start();
+      _safeRecStart(_bnaVoiceRec, null, () => { bnaListening.value = false; showToast('Mic was busy — tap the mic again.', 2500); });
     }
 
     async function bnaGenerate() {
@@ -14909,7 +14909,7 @@ No markdown. Valid JSON only.`;
       _fbRecognition.onresult = (e) => { feedbackModal.transcript = e.results[0][0].transcript; feedbackModal.recording = false; };
       _fbRecognition.onerror = () => { feedbackModal.recording = false; };
       _fbRecognition.onend = () => { feedbackModal.recording = false; };
-      _fbRecognition.start(); feedbackModal.recording = true;
+      _safeRecStart(_fbRecognition, () => { feedbackModal.recording = true; }, () => { feedbackModal.recording = false; showToast('Mic was busy — tap to try again.', 2500); });
     }
     function feedbackStopVoice() {
       if (_fbRecognition) { try { _fbRecognition.stop(); } catch(e){} }
@@ -15006,6 +15006,35 @@ async function ensureMicPermission() {
       showToast('⚠️ Microphone access denied. Go to your browser settings to allow it for this site.', 6000);
     }
     return false;
+  }
+}
+
+// ── Voice recognition safe-start ──────────────────────────────────────────
+// iOS/Safari allows only ONE SpeechRecognition active at a time, and calling
+// .start() on a busy or stale instance throws InvalidStateError. That previously
+// left a tool showing "listening" while nothing recorded — only a view remount
+// ("swipe out and back in") cleared it. This frees any prior instance, starts
+// inside try/catch, flips the UI to "listening" only on a real start, and resets
+// + prompts a retry on failure.
+let _activeRecognition = null;
+function _safeRecStart(rec, onStarted, onFail) {
+  if (_activeRecognition && _activeRecognition !== rec) {
+    try { _activeRecognition.abort(); } catch (_) {}
+  }
+  _activeRecognition = rec;
+  const _origEnd = rec.onend;
+  rec.onend = function (ev) {
+    if (_activeRecognition === rec) _activeRecognition = null;
+    if (typeof _origEnd === 'function') { try { _origEnd.call(this, ev); } catch (_) {} }
+  };
+  try {
+    rec.start();
+    if (typeof onStarted === 'function') onStarted();
+  } catch (err) {
+    try { rec.abort(); } catch (_) {}
+    if (_activeRecognition === rec) _activeRecognition = null;
+    if (typeof onFail === 'function') onFail(err);
+    else showToast('Mic was busy — tap the mic again.', 2500);
   }
 }
 
@@ -15264,7 +15293,7 @@ async function voiceStart() {
     if (voiceModal.phase === 'listening') voiceModal.phase = 'review';
   };
 
-  _voiceRecognition.start();
+  _safeRecStart(_voiceRecognition, null, () => { voiceModal.phase = 'error'; voiceModal.errorMsg = 'Could not start the microphone — please tap to try again.'; });
 }
 
 function voiceStop() {
@@ -15540,7 +15569,7 @@ function voiceFollowupMic() {
   };
   _voiceFollowupRecognition.onend = () => { voiceModal.followupListening = false; };
   _voiceFollowupRecognition.onerror = () => { voiceModal.followupListening = false; };
-  _voiceFollowupRecognition.start();
+  _safeRecStart(_voiceFollowupRecognition, null, () => { voiceModal.followupListening = false; showToast('Mic was busy — tap the mic again.', 2500); });
 }
 
 // ── Business Card Scanner ─────────────────────────────────────────────
@@ -16048,7 +16077,7 @@ function logActMicToggle() {
   };
   _logActMic.onend = () => { logAct.micListening = false; };
   _logActMic.onerror = () => { logAct.micListening = false; };
-  _logActMic.start();
+  _safeRecStart(_logActMic, null, () => { logAct.micListening = false; showToast('Mic was busy — tap the mic again.', 2500); });
 }
 // ── End Log Activity handlers ──────────────────────────────────────────
 
