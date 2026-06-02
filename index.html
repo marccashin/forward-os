@@ -5914,6 +5914,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div style="display:flex;gap:10px;">
             <button class="btn-outline-navy" @click="logAct.phase='input'" style="flex:1;min-height:46px;">← Edit Command</button>
             <button class="btn-navy" @click="logActSearch" :disabled="!logAct.contactQuery.trim()" style="flex:2;min-height:46px;">Search FUB for "{{ logAct.contactQuery }}" →</button>
+            <div v-if="logAct.error" style="width:100%;margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;background:#fff5f5;border-radius:6px;padding:10px 12px;">{{ logAct.error }}</div>
           </div>
         </div>
 
@@ -15821,10 +15822,18 @@ async function logActSearch() {
   logAct.phase = 'searching';
   logAct.error = '';
   try {
-    const results = await fubSearchPerson(logAct.contactQuery);
+    let results = await fubSearchPerson(logAct.contactQuery);
+    // Fallback: try first-name only if full name returns nothing
     if (!results || results.length === 0) {
-      logAct.phase = 'error';
-      logAct.error = 'No contact found for "' + logAct.contactQuery + '" in Follow Up Boss. Check the spelling or search again.';
+      const firstName = logAct.contactQuery.trim().split(/\s+/)[0];
+      if (firstName && firstName !== logAct.contactQuery.trim()) {
+        results = await fubSearchPerson(firstName);
+      }
+    }
+    if (!results || results.length === 0) {
+      // Go back to parsed phase with editable name field so they can correct spelling
+      logAct.phase = 'parsed';
+      logAct.error = 'No contact found for "' + logAct.contactQuery + '" — check the spelling and try again.';
       return;
     }
     logAct.matches = results.map(p => ({
@@ -16157,8 +16166,8 @@ function logActMicToggle() {
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
           }
-          // Auto-sync FUB users on this device if key is available but team list isn't cached
-          if (localStorage.getItem('fos_fub_key') && !localStorage.getItem('fos_fub_users')) {
+          // Always re-sync FUB users on login so the list stays fresh for agent assignment
+          if (localStorage.getItem('fos_fub_key')) {
             fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
           }
           // Branding — Supabase wins over local defaults but not over explicit local saves
