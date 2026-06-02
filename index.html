@@ -5346,7 +5346,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div class="card" v-if="agentName === 'Marc Cashin'">
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">Follow Up Boss CRM</h3>
               <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Connect your team's FUB account to enable voice-to-contact. Use Marc's admin API key. Get it from <strong>FUB Admin → API</strong>.</p>
-              <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Connected · { fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
+              <div v-if="fubKeySet" class="fub-status connected" style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:13px;height:13px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Connected · {{ fubUserCount }} team member{{ fubUserCount===1?'':'s' }} synced</div>
               <div v-else class="fub-status disconnected" style="margin-bottom:12px;">⚠️ Not connected</div>
               <div style="display:flex;gap:10px;margin-bottom:10px;">
                 <input :type="showFubKey?'text':'password'" v-model="settFubKey" placeholder="FUB API key…" style="flex:1;"/>
@@ -9702,6 +9702,23 @@ async function lstSubmitToPipeline() {
               settKey.value = remoteKey; // keep settings display in sync
             }
           } catch(e) { /* silent — user can re-enter manually in Settings */ }
+        }
+
+        // Auto-recover GLOBAL FUB key if missing — returning devices boot straight in
+        // via session restore and never run doLogin(), so the __global__ loader is skipped.
+        // Without this, the FUB key never lands in localStorage on that device and every
+        // FUB gate falsely reports "not connected" even though the key is global + synced.
+        if (!localStorage.getItem('fos_fub_key')) {
+          try {
+            const gRows = await supaRest.select('agent_config', `select=fub_api_key&agent_name=eq.__global__`);
+            const gFubKey = gRows && gRows[0] && gRows[0].fub_api_key;
+            if (gFubKey) {
+              localStorage.setItem('fos_fub_key', gFubKey);
+              fubKeySet.value = true;
+              settFubKey.value = gFubKey;
+              fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
+            }
+          } catch(e) { /* silent — Settings still allows manual entry */ }
         }
       }
     });
