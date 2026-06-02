@@ -997,43 +997,11 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 }
 
 /* ── CRM Review / Result card rows ─────────────────────────────────────── */
-.crm-result-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 9px 0;
-  border-bottom: 1px solid #f0ece6;
-}
-.crm-result-row:last-child { border-bottom: none; }
-.crm-result-icon {
-  flex-shrink: 0;
-  width: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 2px;
-}
-.crm-result-label {
-  flex-shrink: 0;
-  width: 68px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #9ca3af;
-  padding-top: 2px;
-  line-height: 1.4;
-}
-.crm-result-value {
-  flex: 1;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 15px;
-  font-weight: 600;
-  color: #0d1f35;
-  line-height: 1.35;
-  word-break: break-word;
-}
+.crm-result-row { display:grid; grid-template-columns:20px 72px 1fr; align-items:baseline; gap:6px; padding:8px 0; border-bottom:1px solid #ede8e1; }
+.crm-result-row:last-child { border-bottom:none; }
+.crm-result-icon { display:flex; align-items:center; justify-content:center; }
+.crm-result-label { font-family:'Montserrat',sans-serif; font-size:9px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:#c8a96e; line-height:1.4; }
+.crm-result-value { font-family:'Cormorant Garamond',serif; font-size:15px; font-weight:600; color:#0d1f35; line-height:1.35; word-break:break-word; }
 </style>
 </head>
 <body>
@@ -5701,7 +5669,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div v-if="voiceModal.crmReview.taskText" class="crm-result-row"><span class="crm-result-icon">⏰</span><span class="crm-result-label">Task</span><span class="crm-result-value">{{ voiceModal.crmReview.taskText }}<span v-if="voiceModal.crmReview.taskDue" style="color:#9ca3af;font-weight:400;"> · {{ voiceModal.crmReview.taskDue }}</span></span></div>
         </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn-outline" @click="voiceModal.crmEditing=true" style="flex:1;min-height:50px;font-size:14px;">✏️ Edit</button>
+          <button class="btn-outline" @click="voiceModal.crmEditing=true" style="flex:1;min-height:50px;font-size:14px;color:var(--gold);border-color:var(--gold);">✏️ Edit</button>
           <button class="btn-gold" @click="voiceCrmSubmit" :disabled="voiceModal.crmSubmitting" style="flex:2;min-height:50px;font-size:15px;font-weight:700;">
             <span v-if="voiceModal.crmSubmitting"><span class="spinner spinner-dark"></span>Submitting…</span>
             <span v-else>Submit to Follow Up Boss</span>
@@ -15028,6 +14996,8 @@ Signals it's an existing contact: agent says "add a note TO [name]", "update [na
 
 ━━ RULES ━━
 - Strip $ signs and commas from all numbers ("800000" not "$800,000", "2.5" not "2.5%")
+- Email/URL normalization: convert spoken "dot" → ".", "at" → "@", "dash" → "-", "underscore" → "_" (e.g. "john dot smith at gmail dot com" → "john.smith@gmail.com")
+- Phone numbers: extract only the FINAL number if the speaker corrects themselves mid-sentence
 - jurisdiction: dc | va-nova | va-other | md-montgomery | md-pgcounty | md-other
 - loanType: conventional | fha | va | cash
 - "DC" or "Washington DC" → "dc", "Northern Virginia"/Arlington/Fairfax → "va-nova"
@@ -15583,8 +15553,8 @@ async function voiceApplyFields() {
   // MUST be handled before voiceClose() is ever called, otherwise the modal
   // hides and the crm-review template never renders.
   if (tool === 'add-contact') {
-    const assignedName = val(f.assignedTo) === 'me' || !val(f.assignedTo)
-      ? agentName.value : (val(f.assignedTo) || agentName.value);
+    // Always assign to logged-in agent — voice parse should not override this
+    const assignedName = agentName.value;
     voiceModal.crmReview = {
       firstName:  val(f.firstName)  || '',
       lastName:   val(f.lastName)   || '',
@@ -15760,12 +15730,14 @@ async function voiceCrmSubmit() {
   }
 
   try {
-    // Use the FUB user ID already resolved on the review screen
-    // Falls back to email lookup if somehow not set (e.g. old session data)
+    // Resolve FUB user ID for the logged-in agent
     let assignedUserId = r.assignedToFubId || null;
     if (!assignedUserId) {
-      const _fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
       const _agentEmail = AGENT_EMAILS[agentName.value] || '';
+      let _fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
+      if (!_fubUsers.length && fubKeySet.value) {
+        try { _fubUsers = await fubGetUsers(); localStorage.setItem('fos_fub_users', JSON.stringify(_fubUsers)); fubUsersList.value = _fubUsers; } catch(e) { console.warn('FUB user fetch failed:', e); }
+      }
       const _match = _agentEmail
         ? _fubUsers.find(u => u.email && u.email.toLowerCase() === _agentEmail.toLowerCase())
         : _fubUsers.find(u => u.name && u.name.toLowerCase() === (agentName.value || '').toLowerCase());
