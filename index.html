@@ -2561,6 +2561,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </button>
                   </div>
                 </div>
+                <button v-if="fubKeySet" @click="logActOpenForContact(byrActiveBuyer.buyer_name)" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 12px;background:rgba(200,169,110,0.12);border:1.5px solid var(--gold-muted);border-radius:8px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);white-space:nowrap;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(200,169,110,0.22)';this.style.borderColor='var(--gold)'" onmouseout="this.style.background='rgba(200,169,110,0.12)';this.style.borderColor='var(--gold-muted)'">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Log Activity
+                </button>
 
               </div>
               <!-- BNA quick-access — Step 1 prominent card above Buyer Information -->
@@ -15707,12 +15711,12 @@ async function voiceCrmSubmit() {
   try {
     const fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
     let assignedUserId = null;
-    if (r.assignedTo) {
-      const match = fubUsers.find(u =>
-        u.name && u.name.toLowerCase().includes(r.assignedTo.toLowerCase())
-      );
-      if (match) assignedUserId = match.id;
-    }
+    // Always assign to the logged-in agent — look up by email (reliable) first, fall back to exact name
+    const _agentEmail = AGENT_EMAILS[agentName.value] || '';
+    const _agentMatch = _agentEmail
+      ? fubUsers.find(u => u.email && u.email.toLowerCase() === _agentEmail.toLowerCase())
+      : fubUsers.find(u => u.name && u.name.toLowerCase() === (agentName.value || '').toLowerCase());
+    if (_agentMatch) assignedUserId = _agentMatch.id;
 
     const personId = await fubCreatePerson({
       firstName: r.firstName, lastName: r.lastName,
@@ -15797,6 +15801,22 @@ async function logActParse() {
   }
 }
 
+function logActOpenForContact(name) {
+  logAct.show = true;
+  logAct.phase = 'searching';
+  logAct.command = '';
+  logAct.contactQuery = name;
+  logAct.note = '';
+  logAct.birthday = '';
+  logAct.taskText = '';
+  logAct.taskDue = '';
+  logAct.stage = '';
+  logAct.matches = [];
+  logAct.selected = null;
+  logAct.error = '';
+  logAct.results = {};
+  logActSearch();
+}
 async function logActSearch() {
   logAct.phase = 'searching';
   logAct.error = '';
@@ -17109,7 +17129,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       revVoiceRecording, revSubmitting, revActiveStatus, revLatestNumber,
       canRequestRevision, revVoiceStart, revVoiceStop, submitRevisionRequest,
       fetchRevisionRequests,
-      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle, partnerModal, partnerOpen, partnerAdd, partnerRemove, partnerGetCoAgents,
+      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle, logActOpenForContact, partnerModal, partnerOpen, partnerAdd, partnerRemove, partnerGetCoAgents,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
