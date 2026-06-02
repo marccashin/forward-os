@@ -5690,7 +5690,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Company</label><input v-model="voiceModal.crmReview.company" style="padding:8px 10px;font-size:13px;"></div>
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Source</label><input v-model="voiceModal.crmReview.source" placeholder="Where/how you met" style="padding:8px 10px;font-size:13px;"></div>
           </div>
-          <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Assigned To</label><input v-model="voiceModal.crmReview.assignedTo" style="padding:8px 10px;font-size:13px;"></div>
+          <div style="margin-bottom:8px;">
+            <label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Assigned To</label>
+            <select v-if="fubUsersList.length" @change="e=>{ const u=fubUsersList.find(x=>x.id==e.target.value); voiceModal.crmReview.assignedTo=u?u.name:''; voiceModal.crmReview.assignedToFubId=u?u.id:null; }" style="width:100%;padding:8px 10px;font-size:13px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;color:#374151;">
+              <option value="">— Select agent —</option>
+              <option v-for="u in fubUsersList" :key="u.id" :value="u.id" :selected="u.id===voiceModal.crmReview.assignedToFubId">{{ u.name }}</option>
+            </select>
+            <input v-else v-model="voiceModal.crmReview.assignedTo" placeholder="Agent name" style="padding:8px 10px;font-size:13px;width:100%;box-sizing:border-box;">
+          </div>
           <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Notes</label><textarea v-model="voiceModal.crmReview.note" rows="2" placeholder="Background info, interests, context…" style="padding:8px 10px 32px;font-size:13px;resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='crm-note'}" @click="inlineMicToggle('crm-note',()=>voiceModal.crmReview.note,v=>voiceModal.crmReview.note=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:4px;">
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Follow-up Task</label><input v-model="voiceModal.crmReview.taskText" placeholder="e.g. Call back about listing" style="padding:8px 10px;font-size:13px;"></div>
@@ -7276,6 +7283,7 @@ createApp({
     const showFubKey   = ref(false);
     const fubSyncing   = ref(false);
     const fubUserCount = ref((JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).length);
+    const fubUsersList = ref(JSON.parse(localStorage.getItem('fos_fub_users')||'[]'));
     // ── Meeting Prep ───────────────────────────────────────────────────────
     const DISC_SYSTEM = `You are an expert behavioral analyst and real estate sales coach. Based on the contact information below, generate a 60-second meeting preparation brief for a real estate agent. Be specific, practical, and base the DISC assessment on concrete signals in the data.
 
@@ -7544,6 +7552,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const users = await fubGetUsers();
         localStorage.setItem('fos_fub_users', JSON.stringify(users));
         fubUserCount.value = users.length;
+        fubUsersList.value = users;
         showToast(`✅ Synced ${users.length} team members from FUB`);
       } catch(e) {
         showToast('❌ FUB sync failed: ' + e.message, 5000);
@@ -14849,7 +14858,7 @@ const voiceModal = reactive({
   imageName: '',
   imageMediaType: 'image/jpeg',
   // CRM review (editable before submission)
-  crmReview: { firstName:'', lastName:'', email:'', phone:'', source:'', note:'', taskText:'', taskDue:'', assignedTo:'', company:'', jobTitle:'', address:'' },
+  crmReview: { firstName:'', lastName:'', email:'', phone:'', source:'', note:'', taskText:'', taskDue:'', assignedTo:'', assignedToFubId:null, company:'', jobTitle:'', address:'' },
   crmSubmitting: false,
   crmEditing: false,
   // CRM result
@@ -15493,7 +15502,8 @@ Rules:
       note:       fields.note       || '',
       taskText:   '',
       taskDue:    '',
-      assignedTo: agentName.value
+      assignedTo: agentName.value,
+      assignedToFubId: (()=>{ const e=AGENT_EMAILS[agentName.value]||''; const u=(JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).find(x=>x.email&&x.email.toLowerCase()===e.toLowerCase()); return u?u.id:null; })()
     });
     voiceModal.crmSubmitting = false;
     voiceModal.crmEditing = false;
@@ -15548,7 +15558,8 @@ async function voiceApplyFields() {
       note:       val(f.note)       || '',
       taskText:   val(f.taskText)   || '',
       taskDue:    val(f.taskDue)    || '',
-      assignedTo: assignedName
+      assignedTo: assignedName,
+      assignedToFubId: (()=>{ const e=AGENT_EMAILS[agentName.value]||''; const u=(JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).find(x=>x.email&&x.email.toLowerCase()===e.toLowerCase()); return u?u.id:null; })()
     };
     voiceModal.crmSubmitting = false;
     voiceModal.crmEditing = false;
@@ -15710,14 +15721,17 @@ async function voiceCrmSubmit() {
   }
 
   try {
-    const fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
-    let assignedUserId = null;
-    // Always assign to the logged-in agent — look up by email (reliable) first, fall back to exact name
-    const _agentEmail = AGENT_EMAILS[agentName.value] || '';
-    const _agentMatch = _agentEmail
-      ? fubUsers.find(u => u.email && u.email.toLowerCase() === _agentEmail.toLowerCase())
-      : fubUsers.find(u => u.name && u.name.toLowerCase() === (agentName.value || '').toLowerCase());
-    if (_agentMatch) assignedUserId = _agentMatch.id;
+    // Use the FUB user ID already resolved on the review screen
+    // Falls back to email lookup if somehow not set (e.g. old session data)
+    let assignedUserId = r.assignedToFubId || null;
+    if (!assignedUserId) {
+      const _fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
+      const _agentEmail = AGENT_EMAILS[agentName.value] || '';
+      const _match = _agentEmail
+        ? _fubUsers.find(u => u.email && u.email.toLowerCase() === _agentEmail.toLowerCase())
+        : _fubUsers.find(u => u.name && u.name.toLowerCase() === (agentName.value || '').toLowerCase());
+      if (_match) assignedUserId = _match.id;
+    }
 
     const personId = await fubCreatePerson({
       firstName: r.firstName, lastName: r.lastName,
@@ -17062,7 +17076,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       apiKeySet, settKey, showKey, settModel, settBrokerage, settMarkets, settVoice, settBrandPdfs,
       saveKey, clearKey, saveModel, saveBranding, bpHandleUpload, bpRemove,
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
-      fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, saveFubKey, clearFubKey, fubSyncUsers,
+      fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, fubUsersList, saveFubKey, clearFubKey, fubSyncUsers,
       goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
