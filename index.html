@@ -995,6 +995,45 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
   gap: 8px;
   flex-wrap: wrap;
 }
+
+/* ── CRM Review / Result card rows ─────────────────────────────────────── */
+.crm-result-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid #f0ece6;
+}
+.crm-result-row:last-child { border-bottom: none; }
+.crm-result-icon {
+  flex-shrink: 0;
+  width: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 2px;
+}
+.crm-result-label {
+  flex-shrink: 0;
+  width: 68px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  padding-top: 2px;
+  line-height: 1.4;
+}
+.crm-result-value {
+  flex: 1;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0d1f35;
+  line-height: 1.35;
+  word-break: break-word;
+}
 </style>
 </head>
 <body>
@@ -2561,6 +2600,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
                     </button>
                   </div>
                 </div>
+                <button v-if="fubKeySet" @click="logActOpenForContact(byrActiveBuyer.buyer_name)" style="flex-shrink:0;display:flex;align-items:center;gap:6px;padding:7px 12px;background:rgba(200,169,110,0.12);border:1.5px solid var(--gold-muted);border-radius:8px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);white-space:nowrap;transition:background 0.15s,border-color 0.15s;" onmouseover="this.style.background='rgba(200,169,110,0.22)';this.style.borderColor='var(--gold)'" onmouseout="this.style.background='rgba(200,169,110,0.12)';this.style.borderColor='var(--gold-muted)'">
+                  <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                  Log Activity
+                </button>
 
               </div>
               <!-- BNA quick-access — Step 1 prominent card above Buyer Information -->
@@ -5646,7 +5689,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
       <template v-if="!voiceModal.crmEditing">
         <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:4px;">Ready to Add Contact?</div>
         <div style="font-size:12px;color:#9ca3af;margin-bottom:12px;">Review what was captured. Tap <strong style="color:var(--navy);">Edit</strong> to fix anything, or <strong style="color:#059669;">Submit</strong> to send straight to Follow Up Boss.</div>
-        <div style="background:#f9fafb;border-radius:14px;padding:14px;margin-bottom:14px;max-height:320px;overflow-y:auto;">
+        <div style="background:#ffffff;border:1.5px solid #e8e2d9;border-radius:12px;padding:16px 18px;margin-bottom:16px;max-height:340px;overflow-y:auto;">
           <div class="crm-result-row"><span class="crm-result-icon"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 17,7 17,11 12,15 7,11 7,7" fill="#0d1f35"/><polygon points="3,22 5,16 9,14 15,14 19,16 21,22" fill="#0d1f35"/></svg></span><span class="crm-result-label">Name</span><span class="crm-result-value">{{ voiceModal.crmReview.firstName }} {{ voiceModal.crmReview.lastName }}</span></div>
           <div v-if="voiceModal.crmReview.email" class="crm-result-row"><span class="crm-result-icon"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="5" width="20" height="14" rx="1" fill="#0d1f35"/><polygon points="2,5 12,13 22,5" fill="none" stroke="white" stroke-width="1.5"/></svg></span><span class="crm-result-label">Email</span><span class="crm-result-value">{{ voiceModal.crmReview.email }}</span></div>
           <div v-if="voiceModal.crmReview.phone" class="crm-result-row"><span class="crm-result-icon"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="3" fill="#0d1f35"/><circle cx="12" cy="18" r="1.5" fill="white"/><rect x="9" y="5" width="6" height="1.5" rx="0.75" fill="white"/></svg></span><span class="crm-result-label">Phone</span><span class="crm-result-value">{{ voiceModal.crmReview.phone }}</span></div>
@@ -5686,7 +5729,14 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Company</label><input v-model="voiceModal.crmReview.company" style="padding:8px 10px;font-size:13px;"></div>
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Source</label><input v-model="voiceModal.crmReview.source" placeholder="Where/how you met" style="padding:8px 10px;font-size:13px;"></div>
           </div>
-          <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Assigned To</label><input v-model="voiceModal.crmReview.assignedTo" style="padding:8px 10px;font-size:13px;"></div>
+          <div style="margin-bottom:8px;">
+            <label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Assigned To</label>
+            <select v-if="fubUsersList.length" @change="e=>{ const u=fubUsersList.find(x=>x.id==e.target.value); voiceModal.crmReview.assignedTo=u?u.name:''; voiceModal.crmReview.assignedToFubId=u?u.id:null; }" style="width:100%;padding:8px 10px;font-size:13px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;color:#374151;">
+              <option value="">— Select agent —</option>
+              <option v-for="u in fubUsersList" :key="u.id" :value="u.id" :selected="u.id===voiceModal.crmReview.assignedToFubId">{{ u.name }}</option>
+            </select>
+            <input v-else v-model="voiceModal.crmReview.assignedTo" placeholder="Agent name" style="padding:8px 10px;font-size:13px;width:100%;box-sizing:border-box;">
+          </div>
           <div style="margin-bottom:8px;"><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Notes</label><textarea v-model="voiceModal.crmReview.note" rows="2" placeholder="Background info, interests, context…" style="padding:8px 10px 32px;font-size:13px;resize:vertical;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='crm-note'}" @click="inlineMicToggle('crm-note',()=>voiceModal.crmReview.note,v=>voiceModal.crmReview.note=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button></div>
           <div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;margin-bottom:4px;">
             <div><label style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;">Follow-up Task</label><input v-model="voiceModal.crmReview.taskText" placeholder="e.g. Call back about listing" style="padding:8px 10px;font-size:13px;"></div>
@@ -5910,6 +5960,7 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
           <div style="display:flex;gap:10px;">
             <button class="btn-outline-navy" @click="logAct.phase='input'" style="flex:1;min-height:46px;">← Edit Command</button>
             <button class="btn-navy" @click="logActSearch" :disabled="!logAct.contactQuery.trim()" style="flex:2;min-height:46px;">Search FUB for "{{ logAct.contactQuery }}" →</button>
+            <div v-if="logAct.error" style="width:100%;margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;background:#fff5f5;border-radius:6px;padding:10px 12px;">{{ logAct.error }}</div>
           </div>
         </div>
 
@@ -7271,6 +7322,7 @@ createApp({
     const showFubKey   = ref(false);
     const fubSyncing   = ref(false);
     const fubUserCount = ref((JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).length);
+    const fubUsersList = ref(JSON.parse(localStorage.getItem('fos_fub_users')||'[]'));
     // ── Meeting Prep ───────────────────────────────────────────────────────
     const DISC_SYSTEM = `You are an expert behavioral analyst and real estate sales coach. Based on the contact information below, generate a 60-second meeting preparation brief for a real estate agent. Be specific, practical, and base the DISC assessment on concrete signals in the data.
 
@@ -7539,6 +7591,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const users = await fubGetUsers();
         localStorage.setItem('fos_fub_users', JSON.stringify(users));
         fubUserCount.value = users.length;
+        fubUsersList.value = users;
         showToast(`✅ Synced ${users.length} team members from FUB`);
       } catch(e) {
         showToast('❌ FUB sync failed: ' + e.message, 5000);
@@ -14844,7 +14897,7 @@ const voiceModal = reactive({
   imageName: '',
   imageMediaType: 'image/jpeg',
   // CRM review (editable before submission)
-  crmReview: { firstName:'', lastName:'', email:'', phone:'', source:'', note:'', taskText:'', taskDue:'', assignedTo:'', company:'', jobTitle:'', address:'' },
+  crmReview: { firstName:'', lastName:'', email:'', phone:'', source:'', note:'', taskText:'', taskDue:'', assignedTo:'', assignedToFubId:null, company:'', jobTitle:'', address:'' },
   crmSubmitting: false,
   crmEditing: false,
   // CRM result
@@ -15488,7 +15541,8 @@ Rules:
       note:       fields.note       || '',
       taskText:   '',
       taskDue:    '',
-      assignedTo: agentName.value
+      assignedTo: agentName.value,
+      assignedToFubId: (()=>{ const e=AGENT_EMAILS[agentName.value]||''; const u=(JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).find(x=>x.email&&x.email.toLowerCase()===e.toLowerCase()); return u?u.id:null; })()
     });
     voiceModal.crmSubmitting = false;
     voiceModal.crmEditing = false;
@@ -15543,7 +15597,8 @@ async function voiceApplyFields() {
       note:       val(f.note)       || '',
       taskText:   val(f.taskText)   || '',
       taskDue:    val(f.taskDue)    || '',
-      assignedTo: assignedName
+      assignedTo: assignedName,
+      assignedToFubId: (()=>{ const e=AGENT_EMAILS[agentName.value]||''; const u=(JSON.parse(localStorage.getItem('fos_fub_users')||'[]')).find(x=>x.email&&x.email.toLowerCase()===e.toLowerCase()); return u?u.id:null; })()
     };
     voiceModal.crmSubmitting = false;
     voiceModal.crmEditing = false;
@@ -15705,13 +15760,16 @@ async function voiceCrmSubmit() {
   }
 
   try {
-    const fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
-    let assignedUserId = null;
-    if (r.assignedTo) {
-      const match = fubUsers.find(u =>
-        u.name && u.name.toLowerCase().includes(r.assignedTo.toLowerCase())
-      );
-      if (match) assignedUserId = match.id;
+    // Use the FUB user ID already resolved on the review screen
+    // Falls back to email lookup if somehow not set (e.g. old session data)
+    let assignedUserId = r.assignedToFubId || null;
+    if (!assignedUserId) {
+      const _fubUsers = JSON.parse(localStorage.getItem('fos_fub_users') || '[]');
+      const _agentEmail = AGENT_EMAILS[agentName.value] || '';
+      const _match = _agentEmail
+        ? _fubUsers.find(u => u.email && u.email.toLowerCase() === _agentEmail.toLowerCase())
+        : _fubUsers.find(u => u.name && u.name.toLowerCase() === (agentName.value || '').toLowerCase());
+      if (_match) assignedUserId = _match.id;
     }
 
     const personId = await fubCreatePerson({
@@ -15797,14 +15855,38 @@ async function logActParse() {
   }
 }
 
+function logActOpenForContact(name) {
+  logAct.show = true;
+  logAct.phase = 'searching';
+  logAct.command = '';
+  logAct.contactQuery = name;
+  logAct.note = '';
+  logAct.birthday = '';
+  logAct.taskText = '';
+  logAct.taskDue = '';
+  logAct.stage = '';
+  logAct.matches = [];
+  logAct.selected = null;
+  logAct.error = '';
+  logAct.results = {};
+  logActSearch();
+}
 async function logActSearch() {
   logAct.phase = 'searching';
   logAct.error = '';
   try {
-    const results = await fubSearchPerson(logAct.contactQuery);
+    let results = await fubSearchPerson(logAct.contactQuery);
+    // Fallback: try first-name only if full name returns nothing
     if (!results || results.length === 0) {
-      logAct.phase = 'error';
-      logAct.error = 'No contact found for "' + logAct.contactQuery + '" in Follow Up Boss. Check the spelling or search again.';
+      const firstName = logAct.contactQuery.trim().split(/\s+/)[0];
+      if (firstName && firstName !== logAct.contactQuery.trim()) {
+        results = await fubSearchPerson(firstName);
+      }
+    }
+    if (!results || results.length === 0) {
+      // Go back to parsed phase with editable name field so they can correct spelling
+      logAct.phase = 'parsed';
+      logAct.error = 'No contact found for "' + logAct.contactQuery + '" — check the spelling and try again.';
       return;
     }
     logAct.matches = results.map(p => ({
@@ -16137,8 +16219,8 @@ function logActMicToggle() {
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
           }
-          // Auto-sync FUB users on this device if key is available but team list isn't cached
-          if (localStorage.getItem('fos_fub_key') && !localStorage.getItem('fos_fub_users')) {
+          // Always re-sync FUB users on login so the list stays fresh for agent assignment
+          if (localStorage.getItem('fos_fub_key')) {
             fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
           }
           // Branding — Supabase wins over local defaults but not over explicit local saves
@@ -17033,7 +17115,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       apiKeySet, settKey, showKey, settModel, settBrokerage, settMarkets, settVoice, settBrandPdfs,
       saveKey, clearKey, saveModel, saveBranding, bpHandleUpload, bpRemove,
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
-      fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, saveFubKey, clearFubKey, fubSyncUsers,
+      fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, fubUsersList, saveFubKey, clearFubKey, fubSyncUsers,
       goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
@@ -17109,7 +17191,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       revVoiceRecording, revSubmitting, revActiveStatus, revLatestNumber,
       canRequestRevision, revVoiceStart, revVoiceStop, submitRevisionRequest,
       fetchRevisionRequests,
-      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle, partnerModal, partnerOpen, partnerAdd, partnerRemove, partnerGetCoAgents,
+      voiceModal, voiceStart, voiceStop, voiceClose, voiceRestart, voiceParse, voiceFollowupSubmit, voiceFollowupMic, voiceAttachImage, voiceCrmSubmit, aiMsgIdx, logAct, logActParse, logActSearch, logActSubmit, logActMicToggle, logActOpenForContact, partnerModal, partnerOpen, partnerAdd, partnerRemove, partnerGetCoAgents,
       cardScan, cardScanAttach, cardScanProcess,
       // Agent Session
       sessionEmail, switchAgent, originalAgent, isOriginalAdmin, agentSwitchList, quickSwitchAgent,
