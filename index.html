@@ -6924,8 +6924,37 @@ async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
 }
 
 // ── Follow Up Boss API helpers ─────────────────────────────────────────────
+// Single source of truth for the team's GLOBAL FUB key. Fetches from Supabase
+// (agent_config.__global__) and reconciles localStorage — Supabase always wins, so a
+// rotated/updated key propagates to every device and a stale cached key can't keep failing.
+// De-dupes concurrent callers. Returns the key, '' if none, or the existing local key as a
+// fallback when the network fetch fails (so a transient blip never breaks a working device).
+let _fubKeyPromise = null;
+async function ensureFubKey() {
+  const local = localStorage.getItem('fos_fub_key') || '';
+  if (!_fubKeyPromise) {
+    _fubKeyPromise = (async () => {
+      try {
+        const rows = await supaRest.select('agent_config', 'select=fub_api_key&agent_name=eq.__global__');
+        return rows && rows[0] ? (rows[0].fub_api_key || '') : '';
+      } catch (e) {
+        console.warn('ensureFubKey: Supabase fetch failed, using local key:', e);
+        return null; // signal failure -> caller falls back to local
+      }
+    })();
+  }
+  let remote;
+  try { remote = await _fubKeyPromise; } finally { _fubKeyPromise = null; }
+  if (remote === null) return local;            // fetch failed -> keep whatever we have
+  if (remote && remote !== local) {             // Supabase has a new/different key -> adopt it
+    localStorage.setItem('fos_fub_key', remote);
+  }
+  return remote || local;
+}
+
 async function fubFetch(path, method='GET', body=null) {
-  const key = localStorage.getItem('fos_fub_key');
+  let key = localStorage.getItem('fos_fub_key');
+  if (!key) key = await ensureFubKey();   // on-demand recovery closes the load-race window
   if (!key) throw new Error('No Follow Up Boss API key. Add it in Settings.');
   const opts = {
     method,
@@ -9704,22 +9733,20 @@ async function lstSubmitToPipeline() {
           } catch(e) { /* silent — user can re-enter manually in Settings */ }
         }
 
-        // Auto-recover GLOBAL FUB key if missing — returning devices boot straight in
-        // via session restore and never run doLogin(), so the __global__ loader is skipped.
-        // Without this, the FUB key never lands in localStorage on that device and every
-        // FUB gate falsely reports "not connected" even though the key is global + synced.
-        if (!localStorage.getItem('fos_fub_key')) {
-          try {
-            const gRows = await supaRest.select('agent_config', `select=fub_api_key&agent_name=eq.__global__`);
-            const gFubKey = gRows && gRows[0] && gRows[0].fub_api_key;
-            if (gFubKey) {
-              localStorage.setItem('fos_fub_key', gFubKey);
-              fubKeySet.value = true;
-              settFubKey.value = gFubKey;
-              fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
-            }
-          } catch(e) { /* silent — Settings still allows manual entry */ }
-        }
+        // Reconcile the GLOBAL FUB key from Supabase on every load (source of truth).
+        // Returning devices boot straight in via session restore and never run doLogin(),
+        // so without this the key never lands in localStorage and FUB falsely reads "not
+        // connected." ensureFubKey() also adopts a rotated/updated key so a stale cached
+        // key can't keep failing.
+        try {
+          const hadKey = localStorage.getItem('fos_fub_key');
+          const gFubKey = await ensureFubKey();
+          if (gFubKey) {
+            fubKeySet.value = true;
+            settFubKey.value = gFubKey;
+            if (gFubKey !== hadKey) fubSyncUsers().catch(e => console.warn('Auto FUB user sync failed:', e));
+          }
+        } catch(e) { /* silent — Settings still allows manual entry */ }
       }
     });
 
@@ -15738,7 +15765,8 @@ async function voiceCrmSubmit() {
   if (!r.firstName) { showToast('First name is required.'); return; }
   voiceModal.crmSubmitting = true;
 
-  const fubKey = localStorage.getItem('fos_fub_key');
+  let fubKey = localStorage.getItem('fos_fub_key');
+  if (!fubKey) fubKey = await ensureFubKey();   // recover if submit fired before session-restore finished
   if (!fubKey) {
     voiceModal.crmSubmitting = false;
     voiceModal.phase = 'error';
@@ -16203,7 +16231,7 @@ function logActMicToggle() {
         const g = globalRows && globalRows[0];
         if (g) {
           // FUB key
-          if (g.fub_api_key && !localStorage.getItem('fos_fub_key')) {
+          if (g.fub_api_key && g.fub_api_key !== localStorage.getItem('fos_fub_key')) {
             localStorage.setItem('fos_fub_key', g.fub_api_key);
             fubKeySet.value = true;
             settFubKey.value = g.fub_api_key;
