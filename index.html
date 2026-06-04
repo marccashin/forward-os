@@ -15539,8 +15539,10 @@ function normalizeVoiceAddress(text) {
   if (!text) return text;
   // "11:11" → "1111" (speech-to-text reads 4-digit address numbers as time codes)
   text = text.replace(/(^|\s)(\d{1,2}):(\d{2,4})(?=\s|$)/g, (m, pre, a, b) => pre + a + b);
-  // "23/rd", "1/st", "2/nd", "4/th" → "23rd", "1st", "2nd", "4th"
-  text = text.replace(/(\d+)\/(st|nd|rd|th)/gi, '$1$2');
+  // "1111/23rd" → "1111 23rd" (slash between house number and street ordinal)
+  text = text.replace(/(\d+)\/(\d+(?:st|nd|rd|th))/gi, '$1 $2');
+  // "23/rd" → "23rd", "1/st" → "1st"
+  text = text.replace(/(\d+)\/(st|nd|rd|th)/gi, '$1$2');
   return text;
 }
 
