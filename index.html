@@ -15535,8 +15535,18 @@ async function kbSearch(query) {
   } catch(e) { return []; }
 }
 
+function normalizeVoiceAddress(text) {
+  if (!text) return text;
+  // "11:11" → "1111" (speech-to-text reads 4-digit address numbers as time codes)
+  text = text.replace(/(^|\s)(\d{1,2}):(\d{2,4})(?=\s|$)/g, (m, pre, a, b) => pre + a + b);
+  // "23/rd", "1/st", "2/nd", "4/th" → "23rd", "1st", "2nd", "4th"
+  text = text.replace(/(\d+)\/(st|nd|rd|th)/gi, '$1$2');
+  return text;
+}
+
 async function voiceParse() {
   if (!voiceModal.transcript.trim()) return;
+  voiceModal.transcript = normalizeVoiceAddress(voiceModal.transcript);
 
   // ── Navigation pre-check (no Claude call needed) ──────────────────
   const _navPat = /^(?:open(?!\s+house)|go to|take me to|show me|navigate to|pull up|bring up|switch to)\s+(.+)/i;
@@ -16097,8 +16107,8 @@ async function voiceApplyFields() {
     voiceClose();
 
     if (tool === 'net-sheet') {
-      go('just-listed'); lpOpen('netsheet');
-      nextTick(() => {
+      view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
+      nextTick(() => { lpOpen('netsheet');
         if (val(f.address))       ns.address        = f.address;
         if (num(f.salePrice))     ns.salePrice      = num(f.salePrice);
         if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction;
@@ -17469,10 +17479,10 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
       const val2 = v => (v && !/^none$/i.test(v.toString().trim())) ? v.toString().trim() : null;
 
       if (tool === 'net-sheet' || tool === 'listing-package') {
-        go('just-listed');
+        // Bypass go() — it remaps 'just-listed' → 'listings' grid, killing lpActivePanel
+        view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
         if (tool === 'net-sheet') {
-          lpOpen('netsheet');
-          nextTick(() => {
+          nextTick(() => { lpOpen('netsheet');
             if (val2(f.address))      ns.address       = f.address;
             if (num(f.salePrice))     ns.salePrice     = num(f.salePrice);
             if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction;
