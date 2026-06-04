@@ -15181,7 +15181,7 @@ address, salePrice, jurisdiction, closingDate, loan1, sellerComp, buyerComp, pro
 
 Field keys: address, salePrice, jurisdiction, closingDate, loan1, loan2,
   sellerComp (seller agent %, e.g. "2.5"), buyerComp (buyer agent %, e.g. "2.5"),
-  transactionFee, concession ($), hoaAmount (monthly $), propTaxAnnual (annual $), otherCosts
+  transactionFee (brokerage transaction/admin fee $), concession ($), hoaAmount (monthly $), hoaPaidCurrent ("yes" if seller paid current HOA period, "no" if not), propTaxAnnual (annual $), otherCosts
 
 ━━ CASH TO CLOSE — required fields ━━
 address, purchasePrice, jurisdiction, loanType, downPct, interestRate, closingDate, propTax, homeInsurance, agentComp, earnestMoney
@@ -15538,7 +15538,7 @@ async function kbSearch(query) {
 function normalizeVoiceAddress(text) {
   if (!text) return text;
   // "11:11" → "1111" (speech-to-text reads 4-digit address numbers as time codes)
-  text = text.replace(/(^|\s)(\d{1,2}):(\d{2,4})(?=\s|$)/g, (m, pre, a, b) => pre + a + b);
+  text = text.replace(/(^|\s)(\d{1,2}):(\d{2,4})(?=[\s\/]|$)/g, (m, pre, a, b) => pre + a + b);
   // "1111/23rd" → "1111 23rd" (slash between house number and street ordinal)
   text = text.replace(/(\d+)\/(\d+(?:st|nd|rd|th))/gi, '$1 $2');
   // "23/rd" → "23rd", "1/st" → "1st"
@@ -16122,6 +16122,7 @@ async function voiceApplyFields() {
         if (num(f.transactionFee)){ ns.transactionFee = num(f.transactionFee); ns._showComp = true; }
         if (num(f.concession))    { ns.concessionMode = 'flat'; ns.concessionVal = num(f.concession); ns._showConcession = true; }
         if (num(f.hoaAmount))     { ns.hoaAmount = num(f.hoaAmount); ns.hoaFreq = 'monthly'; ns._showHOA = true; }
+        if (f.hoaPaidCurrent)  { ns.hoaPaidCurrent = /^yes$/i.test(f.hoaPaidCurrent) ? 'yes' : 'no'; ns._showHOA = true; }
         if (num(f.propTaxAnnual)) { ns.propTaxAnnual = num(f.propTaxAnnual); ns._showTax = true; }
         if (num(f.otherCosts))    { ns.otherCosts = num(f.otherCosts); ns._showOther = true; }
       });
@@ -17496,6 +17497,7 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
             if (num(f.propTaxAnnual)) { ns.propTaxAnnual=num(f.propTaxAnnual); ns._showTax=true; }
             if (num(f.concession))    { ns.concessionMode='flat'; ns.concessionVal=num(f.concession); ns._showConcession=true; }
             if (num(f.hoaAmount))     { ns.hoaAmount=num(f.hoaAmount); ns.hoaFreq='monthly'; ns._showHOA=true; }
+            if (f.hoaPaidCurrent)   { ns.hoaPaidCurrent=/^yes$/i.test(f.hoaPaidCurrent)?'yes':'no'; ns._showHOA=true; }
           });
         }
 
