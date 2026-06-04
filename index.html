@@ -1401,6 +1401,56 @@ html, body { max-width: 100%; overflow-x: hidden; }
           </div>
 
           <!-- FUB Reminder Modal -->
+          <!-- ── OS Updates Modal ──────────────────────────────────────────── -->
+          <div v-if="updatesModal.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.88);z-index:9600;display:flex;align-items:flex-end;justify-content:center;padding:0;" @click.self="dismissUpdates()">
+            <div style="background:var(--cream);width:100%;max-width:520px;border-radius:16px 16px 0 0;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 -8px 40px rgba(0,0,0,0.35);">
+              <!-- Header -->
+              <div style="background:var(--navy);padding:22px 24px 18px;flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                  <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);">FORWARD OS</div>
+                  <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:rgba(247,244,239,0.4);">{{ CHANGELOG[CHANGELOG.length-1].date }}</div>
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:15px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--cream);margin-bottom:6px;">What's New</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:rgba(247,244,239,0.75);line-height:1.5;">{{ CHANGELOG[CHANGELOG.length-1].summary }}</div>
+              </div>
+              <!-- Update list -->
+              <div style="overflow-y:auto;flex:1;padding:16px 20px;">
+                <div v-for="update in CHANGELOG[CHANGELOG.length-1].updates" :key="update.title"
+                  style="border:1px solid var(--cream-dark);border-radius:10px;margin-bottom:10px;overflow:hidden;cursor:pointer;"
+                  @click="updatesModal.expandedId = updatesModal.expandedId === update.title ? null : update.title">
+                  <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:white;">
+                    <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);flex:1;">{{ update.title }}</div>
+                    <svg :style="{transform: updatesModal.expandedId===update.title ? 'rotate(180deg)' : 'rotate(0deg)',transition:'transform 0.2s',flexShrink:0,marginLeft:'10px'}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--navy-mid)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div v-if="updatesModal.expandedId===update.title"
+                    style="padding:14px 16px;background:#f9f7f4;border-top:1px solid var(--cream-dark);font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);line-height:1.7;white-space:pre-line;">{{ update.detail }}</div>
+                </div>
+                <!-- Previous batches (collapsed) -->
+                <div v-for="batch in CHANGELOG.slice(0,-1).reverse()" :key="batch.id" style="margin-bottom:10px;">
+                  <div @click="updatesModal.expandedId = updatesModal.expandedId === batch.id ? null : batch.id"
+                    style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border:1px solid var(--cream-dark);border-radius:8px;background:white;cursor:pointer;">
+                    <div>
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy-mid);">{{ batch.date }}</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);margin-top:2px;">{{ batch.title }}</div>
+                    </div>
+                    <svg :style="{transform: updatesModal.expandedId===batch.id ? 'rotate(180deg)' : 'rotate(0deg)',transition:'transform 0.2s',flexShrink:0,marginLeft:'10px'}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--navy-mid)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                  </div>
+                  <div v-if="updatesModal.expandedId===batch.id" style="border:1px solid var(--cream-dark);border-top:none;border-radius:0 0 8px 8px;overflow:hidden;">
+                    <div v-for="u in batch.updates" :key="u.title" style="padding:12px 14px;border-bottom:1px solid var(--cream-dark);background:#f9f7f4;">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--navy);margin-bottom:5px;">{{ u.title }}</div>
+                      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);line-height:1.6;white-space:pre-line;">{{ u.detail }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Footer -->
+              <div style="padding:16px 20px;border-top:1px solid var(--cream-dark);flex-shrink:0;background:white;">
+                <button @click="dismissUpdates()" style="width:100%;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;background:var(--navy);color:var(--cream);border:none;padding:16px;border-radius:8px;cursor:pointer;">Got It — All Caught Up</button>
+              </div>
+            </div>
+          </div>
+          <!-- ── End OS Updates Modal ────────────────────────────────────────── -->
+
           <div v-if="taskModalShow" style="position:fixed;inset:0;background:rgba(10,35,66,0.9);z-index:9500;display:flex;align-items:center;justify-content:center;padding:20px;" @click.self="taskModalShow=false">
             <div style="background:var(--cream);border-radius:2px;width:100%;max-width:480px;overflow:hidden;">
               <div style="background:var(--navy);padding:26px 28px 22px;">
@@ -5822,9 +5872,7 @@ html, body { max-width: 100%; overflow-x: hidden; }
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn-outline" @click="voiceClose" style="flex:1;min-height:48px;">Close</button>
-        <button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy Content</button><template v-if="voiceModal.detectedTool!=='write-content'"><a v-if="voiceModal.kbSourceFiles && voiceModal.kbSourceFiles.length && voiceModal.kbSourceFiles[0].driveUrl" :href="voiceModal.kbSourceFiles[0].driveUrl" target="_blank" class="btn-navy" @click="voiceClose()" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ voiceModal.kbSourceFiles[0].name }}
-</a><button v-else-if="voiceModal.kbSourceFiles && voiceModal.kbSourceFiles.length" class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ voiceModal.kbSourceFiles[0].name }}
-</button><button v-else class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Full Training</button></template>
+        <button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy Content</button><template v-if="voiceModal.detectedTool!=='write-content'"><a v-if="voiceModal.kbSourceFiles && voiceModal.kbSourceFiles.length && voiceModal.kbSourceFiles[0].driveUrl && voiceModal.kbSourceFiles[0].name && voiceModal.kbSourceFiles[0].name.toUpperCase().includes('BRAND BOOK')" :href="voiceModal.kbSourceFiles[0].driveUrl" target="_blank" class="btn-navy" @click="voiceClose()" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>FWRD Brand Book</a><button v-else class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Training Library</button></template>
       </div>
     </template>
 
@@ -9762,6 +9810,7 @@ async function lstSubmitToPipeline() {
         loadTaskFeed();
         mktLoadLinks();
         fubReminderCheckAndShow();
+        checkForUpdates();
         atLoadEntries(); // Load training docs on page refresh for already-logged-in users
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
@@ -14991,6 +15040,7 @@ const logAct = reactive({
 });
 let _logActMic = null;
 let _micPermissionGranted = false;
+const updatesModal = reactive({ show: false, expandedId: null });
 
 // Request mic permission once — browser remembers it for the domain (HTTPS)
 async function ensureMicPermission() {
@@ -15038,6 +15088,85 @@ function _safeRecStart(rec, onStarted, onFail) {
   }
 }
 
+const CHANGELOG = [
+  {
+    id: 'v2026-05-19',
+    date: 'May 19, 2026',
+    title: 'Archive, Faster Uploads & Brand Customization',
+    summary: 'Archive old buyers and sellers, upload files faster, and customize your brand voice.',
+    updates: [
+      {
+        title: 'Archive Your Buyers & Sellers',
+        detail: 'You can now archive closed or inactive buyers and sellers instead of deleting them. Archived records stay hidden from your main list but are accessible anytime.\n\nHow to use: Open any buyer or seller card and tap "Archive." To find archived records, look for the Archive section in the sidebar.\n\nBest practice: Archive deals when they close so your active pipeline stays clean. Never delete — archiving keeps your history.'
+      },
+      {
+        title: 'Faster File Uploads',
+        detail: 'Files now upload directly to Google Drive without bouncing through our servers. Uploads are significantly faster, especially for large photos and PDFs.\n\nBest practice: Make sure your Google Drive folder is connected in Settings for the fastest uploads.'
+      },
+      {
+        title: 'Brand Voice & Reference PDFs',
+        detail: 'You can now upload brand reference PDFs (like the FWRD Brand Book) in Team Branding settings. The AI will use these when generating content to keep everything on-brand.\n\nBest practice: Fill in your Brand Voice Notes and upload the brand book in Settings so all AI content matches your style.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-05-26',
+    date: 'May 26, 2026',
+    title: 'CMA Autosave, Campaign Package & Training Library',
+    summary: 'The CMA tool now autosaves, listing descriptions appear in your campaign package, and training uploads are easier.',
+    updates: [
+      {
+        title: 'CMA Tool Autosaves Your Work',
+        detail: 'The CMA tool automatically saves your progress as you go. If you close the tab and come back, everything is right where you left it.\n\nBest practice: After completing a CMA, click "Save to Folder" to save a summary to the listing\'s campaign package. It will show up automatically in the campaign.'
+      },
+      {
+        title: 'Listing Description Appears in Campaign Package',
+        detail: 'The listing description you write is now visible as its own section in the Campaign Package, with a clean expandable card.\n\nBest practice: Always save your Listing Description in the Listing Description tool first — it will automatically appear in the Campaign Package for that property.'
+      },
+      {
+        title: 'Progress Tracking Is More Accurate',
+        detail: 'The progress dots on each listing card now light up for both uploaded files AND saved text content like descriptions and notes.\n\nBest practice: Save a listing description, CMA summary, and at least one photo to see your progress dots fill in.'
+      },
+      {
+        title: 'Training Library: Upload Multiple Files at Once',
+        detail: 'You can now select multiple training files in one click. Each file is added as a separate entry automatically.\n\nBest practice: Batch-upload your scripts, playbooks, and rate sheets all at once. The voice assistant pulls from these when you ask questions.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-06-02',
+    date: 'June 2, 2026',
+    title: 'Voice Fixes, FUB on Every Device & Mobile Polish',
+    summary: 'Voice is more reliable, FUB stays connected on all your devices, and everything looks great on your phone.',
+    updates: [
+      {
+        title: 'Voice Mic No Longer Gets Stuck',
+        detail: 'Fixed an issue where the mic would show "listening" but not actually record — forcing you to reload the app. All voice tools now reset automatically.\n\nBest practice: If the mic ever doesn\'t respond, tap it once to reset. You no longer need to reload the app.'
+      },
+      {
+        title: 'FUB Stays Connected on Every Device',
+        detail: 'Fixed an issue where Follow Up Boss showed "not connected" on phones and tablets even when properly set up. FUB now stays connected everywhere.\n\nBest practice: If you had this issue before, log out and back in once to refresh. It will stay connected from now on.'
+      },
+      {
+        title: 'Every Screen Fits on Your Phone',
+        detail: 'Fixed horizontal scrolling across the entire app. Every screen — including the CMA comps table — now fits properly on mobile. The CMA table displays as stacked cards on phones.\n\nBest practice: Use Safari on iPhone and add the app to your home screen as a bookmark for the fastest access.'
+      },
+      {
+        title: 'New Contacts Always Assigned to the Right Agent',
+        detail: 'Contacts added via voice or card scan are now always assigned to you as the logged-in agent. A dropdown on the review screen lets you change the assignment before saving.\n\nBest practice: Double-check the agent assignment on the review screen before tapping "Add to Follow Up Boss."'
+      },
+      {
+        title: 'Log Activity: Smarter Search & Better Errors',
+        detail: 'Log Activity now auto-retries with just the first name if the full name isn\'t found. If no match is found, it returns to an editable state so you can fix the spelling.\n\nBest practice: Use the full name (e.g. "John Smith") when possible. If a contact still doesn\'t show, check their name in FUB directly.'
+      },
+      {
+        title: 'Log Activity Button on Buyer Cards',
+        detail: 'There\'s now a Log Activity button directly on each buyer card. Tap it and the buyer\'s name is pre-filled so you can log notes and tasks in seconds.\n\nBest practice: Get in the habit of logging activity from the buyer card right after every client interaction.'
+      }
+    ]
+  }
+];
+
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
 
 Return format:
@@ -15052,7 +15181,7 @@ address, salePrice, jurisdiction, closingDate, loan1, sellerComp, buyerComp, pro
 
 Field keys: address, salePrice, jurisdiction, closingDate, loan1, loan2,
   sellerComp (seller agent %, e.g. "2.5"), buyerComp (buyer agent %, e.g. "2.5"),
-  transactionFee, concession ($), hoaAmount (monthly $), propTaxAnnual (annual $), otherCosts
+  transactionFee (brokerage transaction/admin fee $), concession ($), hoaAmount (monthly $), hoaPaidCurrent ("yes" if seller paid current HOA period, "no" if not), propTaxAnnual (annual $), otherCosts
 
 ━━ CASH TO CLOSE — required fields ━━
 address, purchasePrice, jurisdiction, loanType, downPct, interestRate, closingDate, propTax, homeInsurance, agentComp, earnestMoney
@@ -15143,7 +15272,33 @@ firstName, lastName
 Field keys: firstName, lastName, email, phone, address, company, jobTitle,
   source (where/how they met), note (background info, interests, context),
   taskText (follow-up reminder), taskDue (when: "tomorrow", "in 1 week", "next Monday"),
-  assignedTo ("me" = current agent, or agent name)`;
+  assignedTo ("me" = current agent, or agent name)
+
+━━ ADD PROPERTY NOTE ━━
+Use when agent says: add a note to [address], save a note for [address], note that [address]...
+Field keys: query (address as spoken), note_text (the note content), type ("listing" — always listing for property addresses)
+IMPORTANT: Use this for property/listing addresses. Use "log-activity" for FUB contacts (people).
+
+━━ PIPELINE SUMMARY ━━
+Use when agent says: what's on my plate, summarize my pipeline, what do I have today, how many listings/buyers do I have, give me a rundown.
+Field keys: none required
+
+━━ SHOWING LOG ━━
+Use when agent says: I just showed / I showed / we toured + [address] + to [buyer name] + optional feedback.
+Field keys: address (property shown), buyerName (buyer's full name), feedback (what they thought), sentiment ("positive" | "neutral" | "negative" — infer from feedback)
+IMPORTANT: This is for AFTER a showing. It logs a note on the property AND creates a FUB activity for the buyer.
+
+━━ PRICE CHECK ━━
+Use when agent says: what's the list price / what are we listed at / what's the price for [address].
+Field keys: query (address as spoken)
+
+━━ OPEN HOUSE PREP ━━
+Use when agent says: what do I need for the open house / open house prep / am I ready for [address] open house / what's missing for [address].
+Field keys: query (address as spoken)
+
+━━ OFFER READBACK ━━
+Use when agent says: what offers do I have / read me my offers / how many offers on [address] / show me offers for [address].
+Field keys: query (address as spoken)`;
 
 const VOICE_MOCK_RESPONSE = {
   tool: 'net-sheet',
@@ -15242,6 +15397,24 @@ const VOICE_FOLLOWUP_QUESTIONS = {
     note:       'Any background info — interests, motivation, or notes to remember?',
     taskText:   'Do you want a follow-up reminder? If so, what should it say?',
     taskDue:    'When should the reminder be due — tomorrow, in one week, next Monday?'
+  },
+  'add-property-note': {
+    query:     'Which property is this note for? Give me the address.',
+    note_text: 'What should the note say?'
+  },
+  'showing-log': {
+    address:   'What is the address of the property you showed?',
+    buyerName: 'Who did you show it to? Full name?',
+    feedback:  'What was their feedback?'
+  },
+  'price-check': {
+    query: 'Which property? Give me the address.'
+  },
+  'open-house-prep': {
+    query: 'Which property? Give me the address.'
+  },
+  'offer-readback': {
+    query: 'Which property? Give me the address.'
   }
 };
 
@@ -15362,8 +15535,20 @@ async function kbSearch(query) {
   } catch(e) { return []; }
 }
 
+function normalizeVoiceAddress(text) {
+  if (!text) return text;
+  // "11:11" → "1111" (speech-to-text reads 4-digit address numbers as time codes)
+  text = text.replace(/(^|\s)(\d{1,2}):(\d{2,4})(?=[\s\/]|$)/g, (m, pre, a, b) => pre + a + b);
+  // "1111/23rd" → "1111 23rd" (slash between house number and street ordinal)
+  text = text.replace(/(\d+)\/(\d+(?:st|nd|rd|th))/gi, '$1 $2');
+  // "23/rd" → "23rd", "1/st" → "1st"
+  text = text.replace(/(\d+)\/(st|nd|rd|th)/gi, '$1$2');
+  return text;
+}
+
 async function voiceParse() {
   if (!voiceModal.transcript.trim()) return;
+  voiceModal.transcript = normalizeVoiceAddress(voiceModal.transcript);
 
   // ── Navigation pre-check (no Claude call needed) ──────────────────
   const _navPat = /^(?:open(?!\s+house)|go to|take me to|show me|navigate to|pull up|bring up|switch to)\s+(.+)/i;
@@ -15500,6 +15685,229 @@ async function voiceParse() {
     logAct.stage = f.stage || '';
     logAct.show = true;
     logAct.phase = 'parsed';
+    return;
+  }
+
+  // ── Add Property Note ──────────────────────────────────────────────────────
+  if (parsed.tool === 'add-property-note') {
+    const _q = ((parsed.fields && parsed.fields.query) || voiceModal.transcript).trim();
+    const _nt = (parsed.fields && parsed.fields.note_text) || '';
+    const _prop = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase(); const _qL = _q.toLowerCase();
+      return _a.includes(_qL) || _qL.includes(_a.split(',')[0].trim());
+    });
+    if (!_prop) {
+      voiceModal.phase = 'error';
+      voiceModal.errorMsg = 'Could not find a listing matching "' + _q + '". Check the address in your Listings tab.';
+      return;
+    }
+    if (!_nt) {
+      voiceModal.phase = 'followup';
+      voiceModal.conversation = [{ role: 'assistant', content: 'Got it — ' + _prop.address + '. What should the note say?' }];
+      voiceModal.missingFields = ['note_text'];
+      return;
+    }
+    try {
+      await supaRest.insert('property_notes', {
+        property_id: _prop.id, subfolder: 'voice_note', content: _nt,
+        updated_by: agentName.value, updated_at: new Date().toISOString()
+      });
+      voiceClose();
+      showToast('Note saved to ' + _prop.address.split(',')[0], 3000);
+    } catch(e) {
+      voiceModal.phase = 'error';
+      voiceModal.errorMsg = 'Could not save note: ' + e.message;
+    }
+    return;
+  }
+
+  // ── Pipeline Summary ───────────────────────────────────────────────────────
+  if (parsed.tool === 'pipeline-summary') {
+    const _agentL = (agentName.value || '').toLowerCase();
+    const _myListings = lstProperties.value.filter(p => (p.agent_name || '').toLowerCase() === _agentL);
+    const _myBuyers = byrBuyers.value.filter(b => (b.agent_name || '').toLowerCase() === _agentL);
+    const _summary = [
+      '📋 Your Pipeline Summary',
+      '',
+      '🏠 Active Listings: ' + _myListings.length,
+      ..._myListings.map(p => '   • ' + p.address.split(',')[0]),
+      '',
+      '👥 Active Buyers: ' + _myBuyers.length,
+      ..._myBuyers.map(b => '   • ' + b.buyer_name),
+      '',
+      'Total active: ' + (_myListings.length + _myBuyers.length) + ' clients'
+    ].join('\n');
+    voiceModal.phase = 'answer';
+    voiceModal.answerQuestion = 'Pipeline summary for ' + agentName.value;
+    voiceModal.answerText = _summary;
+    return;
+  }
+
+  // ── Showing Log ────────────────────────────────────────────────────────────
+  if (parsed.tool === 'showing-log') {
+    const _f = parsed.fields || {};
+    const _addr = (_f.address || '').trim();
+    const _buyer = (_f.buyerName || '').trim();
+    const _feedback = (_f.feedback || '').trim();
+    const _prop = _addr ? lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase(); const _qL = _addr.toLowerCase();
+      return _a.includes(_qL) || _qL.includes(_a.split(',')[0].trim());
+    }) : null;
+    // Save note to property
+    if (_prop && _feedback) {
+      try {
+        const _noteText = 'Showing with ' + (_buyer || 'buyer') + ': ' + _feedback;
+        await supaRest.insert('property_notes', {
+          property_id: _prop.id, subfolder: 'voice_note', content: _noteText,
+          updated_by: agentName.value, updated_at: new Date().toISOString()
+        });
+      } catch(e) { console.warn('Showing note save failed:', e); }
+    }
+    // Open logAct pre-filled for the buyer contact in FUB
+    voiceClose();
+    if (_buyer) {
+      logAct.show = true; logAct.phase = 'searching';
+      logAct.command = ''; logAct.contactQuery = _buyer;
+      logAct.note = 'Showing at ' + (_addr || 'property') + (_feedback ? ': ' + _feedback : '');
+      logAct.birthday = ''; logAct.taskText = ''; logAct.taskDue = '';
+      logAct.stage = ''; logAct.matches = []; logAct.selected = null;
+      logAct.error = ''; logAct.results = {};
+      logActSearch();
+    } else {
+      showToast(_prop ? 'Showing note saved to ' + _prop.address.split(',')[0] : 'Showing logged.', 3000);
+    }
+    return;
+  }
+
+  // ── Price Check ────────────────────────────────────────────────────────────
+  if (parsed.tool === 'price-check') {
+    const _q = ((parsed.fields && parsed.fields.query) || voiceModal.transcript).trim();
+    const _prop = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase(); const _qL = _q.toLowerCase();
+      return _a.includes(_qL) || _qL.includes(_a.split(',')[0].trim());
+    });
+    if (!_prop) {
+      voiceModal.phase = 'error';
+      voiceModal.errorMsg = 'No listing found for "' + _q + '". Check the address in your Listings tab.';
+      return;
+    }
+    voiceModal.phase = 'answer';
+    voiceModal.answerQuestion = 'List price for ' + _prop.address.split(',')[0];
+    voiceModal.answerText = '⏳ Looking up MLS data…';
+    try {
+      const _notes = await supaRest.select('property_notes',
+        'select=content&property_id=eq.' + _prop.id + '&subfolder=eq.mls_data&order=updated_at.desc&limit=1'
+      );
+      const _mlsText = _notes && _notes[0] && _notes[0].content;
+      if (_mlsText) {
+        const _lpM = _mlsText.match(/List Price\s*:\s*([^\n]+)/i);
+        const _lp = _lpM ? _lpM[1].trim() : null;
+        const _bdM = _mlsText.match(/Bedrooms\s*:\s*([^\n]+)/i);
+        const _baM = _mlsText.match(/Bathrooms\s*:\s*([^\n]+)/i);
+        const _sqM = _mlsText.match(/Square Footage\s*:\s*([^\n]+)/i);
+        voiceModal.answerText = [
+          '🏠 ' + _prop.address.split(',')[0],
+          _lp ? '💰 List Price: ' + _lp : '(No list price saved in MLS data)',
+          _bdM ? '🛏 Beds: ' + _bdM[1].trim() : null,
+          _baM ? '🛁 Baths: ' + _baM[1].trim() : null,
+          _sqM ? '📐 Sq Ft: ' + _sqM[1].trim() : null
+        ].filter(Boolean).join('\n');
+      } else {
+        voiceModal.answerText = 'No MLS data saved for ' + _prop.address.split(',')[0] + '. Open the listing, go to MLS Data, and save it first.';
+      }
+    } catch(e) {
+      voiceModal.answerText = 'Could not fetch MLS data: ' + e.message;
+    }
+    return;
+  }
+
+  // ── Open House Prep ────────────────────────────────────────────────────────
+  if (parsed.tool === 'open-house-prep') {
+    const _q = ((parsed.fields && parsed.fields.query) || voiceModal.transcript).trim();
+    const _prop = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase(); const _qL = _q.toLowerCase();
+      return _a.includes(_qL) || _qL.includes(_a.split(',')[0].trim());
+    });
+    if (!_prop) {
+      voiceModal.phase = 'error';
+      voiceModal.errorMsg = 'No listing found for "' + _q + '". Check the address in your Listings tab.';
+      return;
+    }
+    voiceModal.phase = 'answer';
+    voiceModal.answerQuestion = 'Open house prep for ' + _prop.address.split(',')[0];
+    voiceModal.answerText = '⏳ Checking campaign status…';
+    try {
+      const _notes = await supaRest.select('property_notes',
+        'select=subfolder,content&property_id=eq.' + _prop.id
+      );
+      const _assets = await supaRest.select('property_assets',
+        'select=subfolder&property_id=eq.' + _prop.id
+      );
+      const _have = new Set([
+        ...(_notes || []).filter(n => n.content && n.content.trim()).map(n => n.subfolder),
+        ...(_assets || []).map(a => a.subfolder)
+      ]);
+      const _checklist = [
+        { key: 'listing_remarks', label: 'Listing Description' },
+        { key: 'mls_data', label: 'MLS Data' },
+        { key: 'cma', label: 'CMA / Pricing' },
+        { key: 'seller_net_sheet', label: 'Seller Net Sheet' },
+        { key: 'listing_photos', label: 'Listing Photos' },
+        { key: 'open_house', label: 'Open House Materials' },
+        { key: 'social_media', label: 'Social Media Copy' }
+      ];
+      const _done = _checklist.filter(c => _have.has(c.key));
+      const _missing = _checklist.filter(c => !_have.has(c.key));
+      voiceModal.answerText = [
+        '🏡 ' + _prop.address.split(',')[0],
+        '',
+        _done.length > 0 ? '✅ Ready:\n' + _done.map(c => '   • ' + c.label).join('\n') : '⚠️ No campaign items saved yet.',
+        '',
+        _missing.length > 0 ? '❌ Still needed:\n' + _missing.map(c => '   • ' + c.label).join('\n') : '🎉 All items are ready!'
+      ].filter(Boolean).join('\n');
+    } catch(e) {
+      voiceModal.answerText = 'Could not check campaign status: ' + e.message;
+    }
+    return;
+  }
+
+  // ── Offer Readback ─────────────────────────────────────────────────────────
+  if (parsed.tool === 'offer-readback') {
+    const _q = ((parsed.fields && parsed.fields.query) || voiceModal.transcript).trim();
+    const _prop = lstProperties.value.find(p => {
+      const _a = p.address.toLowerCase(); const _qL = _q.toLowerCase();
+      return _a.includes(_qL) || _qL.includes(_a.split(',')[0].trim());
+    });
+    if (!_prop) {
+      voiceModal.phase = 'error';
+      voiceModal.errorMsg = 'No listing found for "' + _q + '". Check the address in your Listings tab.';
+      return;
+    }
+    voiceModal.phase = 'answer';
+    voiceModal.answerQuestion = 'Offers on ' + _prop.address.split(',')[0];
+    voiceModal.answerText = '⏳ Fetching offers…';
+    try {
+      const _offers = await supaRest.select('property_offers',
+        'property_id=eq.' + _prop.id + '&order=offer_number.asc'
+      );
+      if (!_offers || _offers.length === 0) {
+        voiceModal.answerText = 'No offers saved for ' + _prop.address.split(',')[0] + '. Add offers in the Offer Strategy section of the listing.';
+      } else {
+        voiceModal.answerText = [
+          '📋 ' + _offers.length + ' offer' + (_offers.length === 1 ? '' : 's') + ' on ' + _prop.address.split(',')[0],
+          '',
+          ..._offers.map((o, i) => {
+            const _price = o.offer_price ? '$' + Number(o.offer_price).toLocaleString() : 'no price';
+            const _buyer = o.buyer_name || ('Offer #' + (i + 1));
+            const _fin = o.financing_type ? ' · ' + o.financing_type : '';
+            const _close = o.closing_date ? ' · Close ' + o.closing_date : '';
+            return (i+1) + '. ' + _buyer + ' — ' + _price + _fin + _close;
+          })
+        ].join('\n');
+      }
+    } catch(e) {
+      voiceModal.answerText = 'Could not fetch offers: ' + e.message;
+    }
     return;
   }
 
@@ -15701,8 +16109,8 @@ async function voiceApplyFields() {
     voiceClose();
 
     if (tool === 'net-sheet') {
-      go('just-listed'); lpOpen('netsheet');
-      nextTick(() => {
+      view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
+      nextTick(() => { lpOpen('netsheet');
         if (val(f.address))       ns.address        = f.address;
         if (num(f.salePrice))     ns.salePrice      = num(f.salePrice);
         if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction;
@@ -15714,6 +16122,7 @@ async function voiceApplyFields() {
         if (num(f.transactionFee)){ ns.transactionFee = num(f.transactionFee); ns._showComp = true; }
         if (num(f.concession))    { ns.concessionMode = 'flat'; ns.concessionVal = num(f.concession); ns._showConcession = true; }
         if (num(f.hoaAmount))     { ns.hoaAmount = num(f.hoaAmount); ns.hoaFreq = 'monthly'; ns._showHOA = true; }
+        if (f.hoaPaidCurrent)  { ns.hoaPaidCurrent = /^yes$/i.test(f.hoaPaidCurrent) ? 'yes' : 'no'; ns._showHOA = true; }
         if (num(f.propTaxAnnual)) { ns.propTaxAnnual = num(f.propTaxAnnual); ns._showTax = true; }
         if (num(f.otherCosts))    { ns.otherCosts = num(f.otherCosts); ns._showOther = true; }
       });
@@ -16079,6 +16488,61 @@ function logActMicToggle() {
   _logActMic.onerror = () => { logAct.micListening = false; };
   _safeRecStart(_logActMic, null, () => { logAct.micListening = false; showToast('Mic was busy — tap the mic again.', 2500); });
 }
+// ── Updates Changelog ─────────────────────────────────────────────────────
+async function checkForUpdates() {
+  if (!CHANGELOG || CHANGELOG.length === 0) return;
+  const latestId = CHANGELOG[CHANGELOG.length - 1].id;
+  const agent = agentName.value || localStorage.getItem('fos_agent') || '';
+  if (!agent) return;
+  // Check localStorage first (fast, per-device fallback)
+  const localKey = 'fos_last_update_' + agent.replace(/\s+/g,'_');
+  if (localStorage.getItem(localKey) === latestId) return;
+  // Check Supabase (global across devices — source of truth)
+  try {
+    const rows = await supaRest.select('property_notes',
+      'select=content&property_id=eq.00000000-0000-0000-0000-000000000003&subfolder=eq.changelog_meta&updated_by=eq.' + encodeURIComponent(agent) + '&limit=1'
+    );
+    const lastSeen = rows && rows[0] && rows[0].content;
+    if (lastSeen === latestId) {
+      localStorage.setItem(localKey, latestId); // sync local cache
+      return;
+    }
+  } catch(e) { /* silent — fall through to show modal */ }
+  updatesModal.show = true;
+  updatesModal.expandedId = null;
+}
+
+async function dismissUpdates() {
+  if (!CHANGELOG || CHANGELOG.length === 0) return;
+  const latestId = CHANGELOG[CHANGELOG.length - 1].id;
+  const agent = agentName.value || localStorage.getItem('fos_agent') || '';
+  updatesModal.show = false;
+  // Save to localStorage immediately
+  if (agent) localStorage.setItem('fos_last_update_' + agent.replace(/\s+/g,'_'), latestId);
+  // Save to Supabase (global sync across devices)
+  if (agent && SUPABASE_URL) {
+    try {
+      const existing = await supaRest.select('property_notes',
+        'select=id&property_id=eq.00000000-0000-0000-0000-000000000003&subfolder=eq.changelog_meta&updated_by=eq.' + encodeURIComponent(agent) + '&limit=1'
+      );
+      if (existing && existing[0]) {
+        await fetch(SUPABASE_URL + '/rest/v1/property_notes?id=eq.' + existing[0].id, {
+          method: 'PATCH', headers: { ...supaRest.headers() },
+          body: JSON.stringify({ content: latestId, updated_at: new Date().toISOString() })
+        });
+      } else {
+        await supaRest.insert('property_notes', {
+          property_id: '00000000-0000-0000-0000-000000000003',
+          subfolder: 'changelog_meta',
+          content: latestId,
+          updated_by: agent,
+          updated_at: new Date().toISOString()
+        });
+      }
+    } catch(e) { /* silent — localStorage already saved */ }
+  }
+}
+
 // ── End Log Activity handlers ──────────────────────────────────────────
 
 // ── End Voice Assistant System ───────────────────────────────────────────
@@ -16343,6 +16807,8 @@ function logActMicToggle() {
       atLoadEntries();
       // Auto-show FUB reminder once per day
       fubReminderCheckAndShow();
+      // Check for new OS updates
+      checkForUpdates();
     }
     // ── Form reset helpers ─────────────────────────────────────────────────
     // Called after a tool is saved/exported, or on logout.
@@ -17016,10 +17482,10 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
       const val2 = v => (v && !/^none$/i.test(v.toString().trim())) ? v.toString().trim() : null;
 
       if (tool === 'net-sheet' || tool === 'listing-package') {
-        go('just-listed');
+        // Bypass go() — it remaps 'just-listed' → 'listings' grid, killing lpActivePanel
+        view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
         if (tool === 'net-sheet') {
-          lpOpen('netsheet');
-          nextTick(() => {
+          nextTick(() => { lpOpen('netsheet');
             if (val2(f.address))      ns.address       = f.address;
             if (num(f.salePrice))     ns.salePrice     = num(f.salePrice);
             if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction;
@@ -17031,6 +17497,7 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
             if (num(f.propTaxAnnual)) { ns.propTaxAnnual=num(f.propTaxAnnual); ns._showTax=true; }
             if (num(f.concession))    { ns.concessionMode='flat'; ns.concessionVal=num(f.concession); ns._showConcession=true; }
             if (num(f.hoaAmount))     { ns.hoaAmount=num(f.hoaAmount); ns.hoaFreq='monthly'; ns._showHOA=true; }
+            if (f.hoaPaidCurrent)   { ns.hoaPaidCurrent=/^yes$/i.test(f.hoaPaidCurrent)?'yes':'no'; ns._showHOA=true; }
           });
         }
 
@@ -17318,6 +17785,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       taskFeed, taskFeedSyncedAt, taskFeedLoading, loadTaskFeed, syncAndRefreshTaskFeed,
       archSearchQ, archProps, archBuyers, archLoading, archRestoring, archFiltered, archFetchAll, archRestore,
       taskModalShow, overdueTasks, daysOverdue, fubReminderDismiss,
+      updatesModal, dismissUpdates, CHANGELOG,
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
