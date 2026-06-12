@@ -10312,15 +10312,15 @@ function buildCampPkg(sections, prop, agName, mls) {
           .trim();
         buyerProfiles.push({
           indexLabel: 'Buyer Profile 0' + (idx + 1),
-          name: nameLine || ('Buyer ' + (idx + 1)),
+          name: nameLine || xf('Name') || ('Buyer ' + (idx + 1)),
           age: xf('Age', 'Ages'),
           occupation: xf('Occupation', 'Career', 'Profession'),
-          netWorth: xf('Net Worth', 'Wealth', 'Assets'),
+          netWorth: xf('Net Worth Range', 'Net Worth', 'Wealth', 'Assets'),
           leavingBehind: xf('Leaving Behind', 'Moving From', "What They.re Leaving"),
           movingToward: xf('Moving Toward', 'Moving To', 'Seeking', "What They.re Seeking"),
           afraidOf: xf('Afraid Of', 'Fear', 'Concern', 'Worried About', 'Pain Point'),
-          stopScrolling: xf('Stop.Scrolling', 'Hook', 'Headline', 'Key Line', 'Catchphrase') ||
-                         stripMd(blines[blines.length - 1] || ''),
+          stopScrolling: (xf('Stop.Scrolling Sentence', 'Stop.Scrolling', 'Hook', 'Headline', 'Key Line', 'Catchphrase') ||
+                         stripMd(blines[blines.length - 1] || '')).replace(/^Sentence\s*[:\-]\s*/i, '').trim(),
         });
       });
     } else {
@@ -10492,6 +10492,9 @@ function buildCampPkg(sections, prop, agName, mls) {
     }
   }
 
+  var _debug = sections.map(function(s) {
+    return { title: s.title, len: (s.content || s.text || s.body || '').length, hasContent: !!(s.content || s.text || s.body) };
+  });
   return { cover: cover, letter: letter, listing: listing, buyerProfiles: buyerProfiles,
            campaign: campaign, social: social, tiktok: tiktok, flyer: flyer,
            linkedin: linkedin, prep: prep };
