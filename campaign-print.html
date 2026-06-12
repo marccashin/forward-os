@@ -241,6 +241,40 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-prep-section__list { gap: 8px; }
   .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
 }
+
+/* ── Listing prop badge (year + style, e.g. "1913 · Colonial Revival") ── */
+.fwd-listing__badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.fwd-listing__badge-year {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--fwd-navy);
+  letter-spacing: 0.03em;
+}
+.fwd-listing__badge-rule {
+  width: 1px;
+  height: 36px;
+  background: var(--fwd-rule-gold);
+}
+.fwd-listing__badge-style {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+@media print {
+  .fwd-listing__badge { margin-bottom: 20px; }
+  .fwd-listing__badge-year { font-size: 32px; }
+  .fwd-listing__badge-rule { height: 28px; }
+}
 </style>
 </head>
 <body>
@@ -297,6 +331,11 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
           <span class="fwd-listing__spec-value">{{ s.value }}</span>
           <span class="fwd-listing__spec-key">{{ s.key }}</span>
         </div>
+      </div>
+      <div class="fwd-listing__badge" v-if="pkg.listing.propBadge && (pkg.listing.propBadge.year || pkg.listing.propBadge.style)">
+        <span class="fwd-listing__badge-year" v-if="pkg.listing.propBadge.year">{{ pkg.listing.propBadge.year }}</span>
+        <span class="fwd-listing__badge-rule" v-if="pkg.listing.propBadge.year && pkg.listing.propBadge.style"></span>
+        <span class="fwd-listing__badge-style" v-if="pkg.listing.propBadge.style">{{ pkg.listing.propBadge.style }}</span>
       </div>
       <p class="fwd-listing__statement" v-html="pkg.listing.statementHtml"></p>
       <div class="fwd-listing__statement-rule"></div>

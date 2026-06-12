@@ -10165,10 +10165,41 @@ function buildCampPkg(sections, prop, agName, mls) {
   function stripMd(s) { return (s || '').replace(/\*\*/g, '').replace(/\*/g, '').trim(); }
 
   // ── address / agent ───────────────────────────────────────────────────────
+  function titleCaseAddr(s) {
+    var ABBREVS = { rd:'Road', st:'Street', ave:'Avenue', dr:'Drive', blvd:'Boulevard',
+                    ln:'Lane', ct:'Court', pl:'Place', way:'Way', cir:'Circle',
+                    ter:'Terrace', trl:'Trail', hwy:'Highway', pkwy:'Parkway' };
+    return s.split(/\s+/).map(function(w) {
+      var l = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+      if (ABBREVS[l]) return ABBREVS[l];
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+  }
+  var STATE_NAMES = {
+    'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California',
+    'CO':'Colorado','CT':'Connecticut','DE':'Delaware','DC':'D.C.','FL':'Florida',
+    'GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana',
+    'IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine',
+    'MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota',
+    'MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada',
+    'NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York',
+    'NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma',
+    'OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina',
+    'SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont',
+    'VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
+  };
   var addr      = ((prop.address || prop.full_address || '')).trim();
   var addrM     = addr.match(/^(.+?),\s*(.+)$/);
-  var street    = addrM ? addrM[1] : addr;
-  var locale    = addrM ? addrM[2] : '';
+  var streetRaw = addrM ? addrM[1] : addr;
+  var localeRaw = addrM ? addrM[2] : '';
+  var street    = titleCaseAddr(streetRaw);
+  // Normalize locale: 'BALTIMORE MD 21204' → 'BALTIMORE, MARYLAND 21204'
+  var locale    = (function(r) {
+    r = r.toUpperCase();
+    r = r.replace(/\b([A-Z]{2})\b(?=\s+\d{5})/, function(m,s){ return (STATE_NAMES[s]||s).toUpperCase(); });
+    r = r.replace(/([A-Za-z]+)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)(?=\s+\d{5})/, '$1, $2');
+    return r;
+  })(localeRaw);
   var agentN    = ((prop.agent_name || agName || 'Marc Cashin')).trim();
   var today     = new Date();
   var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
@@ -10204,8 +10235,12 @@ function buildCampPkg(sections, prop, agName, mls) {
     letter = {
       date: dateStr,
       salutationName: greeting,
-      leadParagraph: 'It has been a privilege preparing this campaign package for ' + street + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property.',
-      paragraphs: [],
+      leadParagraph: 'It has been a privilege preparing this campaign package for ' + street + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.',
+      paragraphs: [
+        'Every element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.',
+        'The 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
+        'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
+      ],
       agentName: agentN,
       firm: 'FORWARD | Corcoran McEnearney',
     };
@@ -10218,7 +10253,13 @@ function buildCampPkg(sections, prop, agName, mls) {
   if (mls.beds)      specs.push({ value: mls.beds,    key: 'Bedrooms' });
   if (mls.baths)     specs.push({ value: mls.baths,   key: 'Baths' });
   if (mls.sqft)      specs.push({ value: mls.sqft,    key: 'Square Feet' });
-  if (mls.yearBuilt) specs.push({ value: mls.yearBuilt, key: 'Year Built' });
+  // Prefer acres over year built in stats row; yearBuilt becomes a badge
+  var acresVal = (prop.acres || prop.lot_acres || prop.lot_size_acres || '').toString().trim();
+  if (acresVal) specs.push({ value: acresVal, key: 'Private Acres' });
+  var propBadge = null;
+  if (mls.yearBuilt || mls.propType || prop.prop_type || prop.year_built) {
+    propBadge = { year: mls.yearBuilt || prop.year_built || '', style: mls.propType || prop.prop_type || '' };
+  }
 
   // ── LISTING DESCRIPTION ───────────────────────────────────────────────────
   var lstSec = find(/listing.*desc|description|the residence/);
@@ -10234,9 +10275,9 @@ function buildCampPkg(sections, prop, agName, mls) {
     var stmtHtml = stmtWords.join(' ') + (stmtWords.length ? ' <em>' + lastW + '</em>' : lastW);
     var body = lps2.slice(1).map(stripMd);
     var closer = body.length > 1 ? body.pop() : '';
-    listing = { specs: specs, statementHtml: stmtHtml, columns: body, closer: closer };
+    listing = { specs: specs, propBadge: propBadge, statementHtml: stmtHtml, columns: body, closer: closer };
   } else {
-    listing = { specs: specs, statementHtml: street + '.', columns: [], closer: '' };
+    listing = { specs: specs, propBadge: propBadge, statementHtml: street + '.', columns: [], closer: '' };
   }
 
   // ── BUYER PROFILES ────────────────────────────────────────────────────────
@@ -10245,7 +10286,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   if (avatarSec) {
     var atext = avatarSec.content || '';
     // Try splitting on profile header lines (numbered or labeled)
-    var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n))/i).filter(function(s) { return s.trim(); });
+    var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Persona\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n))/i).filter(function(s) { return s.trim(); });
     if (splits.length < 2) {
       // Try splitting on bold name lines or numbered items
       splits = atext.split(/\n(?=(?:\d+[\.\)]\s+[A-Z]|[A-Z][a-z]+ &? ?[A-Z][a-z]+\s*\n))/g).filter(function(s) { return s.trim(); });
@@ -10262,7 +10303,13 @@ function buildCampPkg(sections, prop, agName, mls) {
           }
           return '';
         }
-        var nameLine = stripMd(blines[0] || '').replace(/^[\d\.\)\s]+/, '').replace(/^\*+|\*+$/g, '');
+        var firstLine = stripMd(blines[0] || '');
+        var nameLine = firstLine
+          .replace(/^(?:Persona|Profile|Buyer|Avatar|Dossier)\s+\d+\s*/i, '')
+          .replace(/^Name\s*[:\-]\s*/i, '')
+          .replace(/^[\d\.\)\s]+/, '')
+          .replace(/^\*+|\*+$/g, '')
+          .trim();
         buyerProfiles.push({
           indexLabel: 'Buyer Profile 0' + (idx + 1),
           name: nameLine || ('Buyer ' + (idx + 1)),
@@ -10294,7 +10341,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   if (campSec) {
     var ctext = campSec.content || '';
     // Split by phase header lines
-    var cblocks = ctext.split(/\n(?=(?:Pre-Market|Week\s*[\d\-&]+|Days?\s*\d|Ongoing|Phase\s*\d|Month\s*\d))/i).filter(function(s) { return s.trim(); });
+    var cblocks = ctext.split(/\n(?=(?:Pre-Market|Weeks?\s*[\d\-&]+(?:\s+(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing|Sustained|Phase\s*\d|Month\s*\d))/i).filter(function(s) { return s.trim(); });
     if (cblocks.length < 2) cblocks = [ctext]; // no headers found — one phase
     cblocks.forEach(function(block) {
       var cl = lns(block);
