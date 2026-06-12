@@ -249,6 +249,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   gap: 14px;
   margin-bottom: 36px;
 }
+.fwd-listing__badge-year-wrap { display: flex; flex-direction: column; gap: 4px; }
 .fwd-listing__badge-year {
   font-family: var(--fwd-font-display);
   font-weight: 600;
@@ -256,6 +257,14 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   line-height: 1;
   color: var(--fwd-navy);
   letter-spacing: 0.03em;
+}
+.fwd-listing__badge-year-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
 }
 .fwd-listing__badge-rule {
   width: 1px;
@@ -333,7 +342,10 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </div>
       </div>
       <div class="fwd-listing__badge" v-if="pkg.listing.propBadge && (pkg.listing.propBadge.year || pkg.listing.propBadge.style)">
-        <span class="fwd-listing__badge-year" v-if="pkg.listing.propBadge.year">{{ pkg.listing.propBadge.year }}</span>
+        <div class="fwd-listing__badge-year-wrap" v-if="pkg.listing.propBadge.year">
+          <span class="fwd-listing__badge-year">{{ pkg.listing.propBadge.year }}</span>
+          <span class="fwd-listing__badge-year-label">Year Built</span>
+        </div>
         <span class="fwd-listing__badge-rule" v-if="pkg.listing.propBadge.year && pkg.listing.propBadge.style"></span>
         <span class="fwd-listing__badge-style" v-if="pkg.listing.propBadge.style">{{ pkg.listing.propBadge.style }}</span>
       </div>
@@ -380,8 +392,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       <div class="fwd-runninghead"><span class="fwd-section-label">30-Day Campaign Plan</span><span class="fwd-page-number">05</span></div>
       <div class="fwd-campaign__timeline">
         <div class="fwd-campaign-phase" v-for="(phase, i) in pkg.campaign.phases" :key="i">
-          <div class="fwd-campaign-phase__when">{{ phase.when }}</div>
-          <h3 class="fwd-campaign-phase__title">{{ phase.title }}</h3>
+          <h3 class="fwd-campaign-phase__title">{{ phase.when }}{{ phase.title ? ' ' + phase.title : '' }}</h3>
           <ul class="fwd-campaign-phase__list">
             <li class="fwd-campaign-phase__item" v-for="(item, j) in phase.items" :key="j">
               <strong v-if="item.lead">{{ item.lead }}</strong>{{ item.text }}

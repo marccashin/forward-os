@@ -10378,9 +10378,25 @@ function buildCampPkg(sections, prop, agName, mls) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      var hdrClean = hdr.replace(/^\d+[\.)\s]+/, '');
-      var pm  = hdrClean.match(/^(Instagram|Facebook|Story|Twitter|LinkedIn)(?:\s*[·\-]\s*(.+?))?(?:\s+\d+)?(?:[:\s]*$)/i);
-      var plat = pm ? (pm[2] ? pm[1] + ' · ' + pm[2] : pm[1]) : (hdrClean.replace(/\s+Post$/i,'').replace(/\s+Instagram.*|\s+Facebook.*|\s+Story.*/i,'').trim() || 'Social');
+      var hdrClean = hdr.replace(/^\d+[.)]\s+/, '');
+      var plat;
+      var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
+      if (_storyM) {
+        plat = 'Story · ' + _storyM[1].replace(/\s*\d+$/, '').trim();
+      } else {
+        var _netM = hdrClean.match(/^(.+?)\s+(Instagram|Facebook|Twitter|LinkedIn|TikTok)\b(.*)/i);
+        if (_netM) {
+          var _desc = (_netM[1] + (_netM[3] || '')).replace(/\s*Post\s*$/i, '').trim();
+          plat = _netM[2] + (_desc ? ' · ' + _desc : '');
+        } else {
+          var _startM = hdrClean.match(/^(Instagram|Facebook|Twitter|LinkedIn|TikTok)\s+(.+)/i);
+          if (_startM) {
+            plat = _startM[1] + ' · ' + _startM[2].replace(/\s*Post\s*$/i, '').trim();
+          } else {
+            plat = hdrClean.replace(/\s*Post\s*$/i, '').trim() || 'Social';
+          }
+        }
+      }
       var content = sl.slice(1).join('\n');
       var sps = paras(content);
       var tagLine = sps.find(function(p) { return /^#\w+/.test(p.trim()); }) || '';
