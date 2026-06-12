@@ -10347,10 +10347,10 @@ function buildCampPkg(sections, prop, agName, mls) {
       var cl = lns(block);
       if (!cl.length) return;
       var hdr = stripMd(cl[0]);
-      var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+|Days?\s*[\d\-]+|Ongoing|Phase\s*\d|Month\s*\d)/i);
+      var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+(?:(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing(?:\s+\w+)?|Sustained(?:\s+\w+)?|Phase\s*\d|Month\s*\d)/i);
       var when  = wm ? wm[1].trim() : (campaign.phases.length === 0 ? '30-Day Campaign' : 'Phase ' + (campaign.phases.length + 1));
       var title = wm ? hdr.replace(wm[0], '').replace(/^[\s:\-–—]+/, '').trim() : hdr;
-      if (!title) title = 'Campaign Phase';
+      if (!title) title = '';
       var items = cl.slice(1).filter(function(l) { return l.trim() && l.trim() !== ':'; }).map(function(l) {
         var clean = l.replace(/^[\-\*\•·▸►◆]+\s*/, '').trim();
         clean = stripMd(clean);
@@ -10373,13 +10373,14 @@ function buildCampPkg(sections, prop, agName, mls) {
   var social = { posts: [] };
   if (socSec) {
     var stext = socSec.content || '';
-    var sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
+    var sblocks = stext.split(/\n(?=(?:\d+[\.\.\)]\s+[A-Z]|Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
     sblocks.forEach(function(block, idx) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      var pm  = hdr.match(/^(Instagram|Facebook|Story|Twitter|LinkedIn)(?:\s*[·\-]\s*(.+?))?(?:\s+\d+)?(?:[:\s]*$)/i);
-      var plat = pm ? ((pm[2] ? pm[1] + ' · ' + pm[2] : pm[1])) : 'Social';
+      var hdrClean = hdr.replace(/^\d+[\.)\s]+/, '');
+      var pm  = hdrClean.match(/^(Instagram|Facebook|Story|Twitter|LinkedIn)(?:\s*[·\-]\s*(.+?))?(?:\s+\d+)?(?:[:\s]*$)/i);
+      var plat = pm ? (pm[2] ? pm[1] + ' · ' + pm[2] : pm[1]) : (hdrClean.replace(/\s+Post$/i,'').replace(/\s+Instagram.*|\s+Facebook.*|\s+Story.*/i,'').trim() || 'Social');
       var content = sl.slice(1).join('\n');
       var sps = paras(content);
       var tagLine = sps.find(function(p) { return /^#\w+/.test(p.trim()); }) || '';
@@ -10437,10 +10438,10 @@ function buildCampPkg(sections, prop, agName, mls) {
     var ftext  = flySec.content || '';
     var fps    = paras(ftext);
     var flines = lns(ftext);
-    var headline = (fps.find(function(p) { return p.length < 120 && !/^\$[\d,]/.test(p) && !/\bbed\b|\bbath\b/i.test(p); }) || fps[0] || street);
+    var headline = (fps.find(function(p) { return p.length < 120 && !/^\$[\d,]/.test(p) && !/\bbed\b|\bbath\b/i.test(p); }) || fps[0] || street).replace(/^(?:Headline|Tagline|Title)\s*[:\-]\s*/i, '').trim();
     var features = flines.filter(function(l) { return /^[\-\*\•·✓✔▸►◆□]/.test(l); }).map(function(l) { return stripMd(l.replace(/^[\-\*\•·✓✔▸►◆□\s]+/, '')); }).filter(Boolean);
     var bodyPs   = fps.filter(function(p) { return p !== headline && !/^#\w+/.test(p) && !/^[\-\*\•]/.test(p.trim()); }).slice(0, 3).map(stripMd);
-    flyer = { headline: headline, address: addr, price: price, specs: specs.slice(0, 5), body: bodyPs, features: features.slice(0, 8) };
+    flyer = { headline: headline, address: street + ', ' + locale, price: price, specs: specs.slice(0, 5), body: bodyPs, features: features.slice(0, 8) };
   } else {
     var mfeat = (mls.features || []).filter(Boolean);
     flyer = { headline: street, address: addr, price: price, specs: specs, body: [], features: mfeat };
