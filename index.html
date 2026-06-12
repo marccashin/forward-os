@@ -10510,6 +10510,12 @@ async function campExportPDF() {
   if (!prop) { alert('No active property. Please select a listing first.'); return; }
 
   // Collect included sections only
+  // Inject listing description as a synthetic section if not already present
+  var _lstDesc = lstNotes && lstNotes.listing_remarks && lstNotes.listing_remarks.trim();
+  var _hasLstSec = sections.some(function(s) { return /listing.*desc|description|the residence/i.test(s.title || ''); });
+  if (_lstDesc && !_hasLstSec) {
+    sections = [{ title: 'LISTING DESCRIPTION', content: _lstDesc, included: true }].concat(sections);
+  }
   var included = sections.filter(function(s) { return s.included !== false; });
   if (!included.length) { showToast('All sections are excluded. Include at least one section.', 5000); return; }
 
