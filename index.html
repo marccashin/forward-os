@@ -10245,7 +10245,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   if (avatarSec) {
     var atext = avatarSec.content || '';
     // Try splitting on profile header lines (numbered or labeled)
-    var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n)/i).filter(function(s) { return s.trim(); });
+    var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n))/i).filter(function(s) { return s.trim(); });
     if (splits.length < 2) {
       // Try splitting on bold name lines or numbered items
       splits = atext.split(/\n(?=(?:\d+[\.\)]\s+[A-Z]|[A-Z][a-z]+ &? ?[A-Z][a-z]+\s*\n))/g).filter(function(s) { return s.trim(); });
@@ -10294,7 +10294,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   if (campSec) {
     var ctext = campSec.content || '';
     // Split by phase header lines
-    var cblocks = ctext.split(/\n(?=(?:Pre-Market|Week\s*[\d\-&]+|Days?\s*\d|Ongoing|Phase\s*\d|Month\s*\d)/i).filter(function(s) { return s.trim(); });
+    var cblocks = ctext.split(/\n(?=(?:Pre-Market|Week\s*[\d\-&]+|Days?\s*\d|Ongoing|Phase\s*\d|Month\s*\d))/i).filter(function(s) { return s.trim(); });
     if (cblocks.length < 2) cblocks = [ctext]; // no headers found — one phase
     cblocks.forEach(function(block) {
       var cl = lns(block);
@@ -10326,7 +10326,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   var social = { posts: [] };
   if (socSec) {
     var stext = socSec.content || '';
-    var sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d)/i).filter(function(s) { return s.trim(); });
+    var sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
     sblocks.forEach(function(block, idx) {
       var sl = lns(block);
       if (!sl.length) return;
