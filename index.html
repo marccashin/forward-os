@@ -5637,6 +5637,13 @@ html, body { max-width: 100%; overflow-x: hidden; }
 
     </div><!-- /main -->
 
+    <!-- ══════════════════════════════════════════════════════════════════
+         GLOBAL MODALS & OVERLAYS — position:fixed, always in the DOM
+         ALL new modals/overlays/drawers must go in this section.
+         NEVER put them inside a view template (v-if="view==='...'")
+         or they will be invisible from other views.
+    ══════════════════════════════════════════════════════════════════ -->
+
     <!-- Client File Picker Modal — global (Supabase buyers + Supabase listings) -->
     <div v-if="showClientFilePicker" class="modal-bg" @click.self="showClientFilePicker=false" style="z-index:10001;">
       <div class="modal-box" style="max-width:480px;max-height:78vh;display:flex;flex-direction:column;">
