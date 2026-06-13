@@ -296,7 +296,6 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       <div class="fwd-cover__frame"></div>
       <header class="fwd-cover__top">
         <div class="fwd-cover__lockup">
-          <div class="fwd-cover__lockup-eyebrow">{{ pkg.cover.brokerageEyebrow }}</div>
           <div class="fwd-cover__wordmark">FORWARD</div>
         </div>
       </header>
@@ -341,14 +340,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
           <span class="fwd-listing__spec-key">{{ s.key }}</span>
         </div>
       </div>
-      <div class="fwd-listing__badge" v-if="pkg.listing.propBadge && (pkg.listing.propBadge.year || pkg.listing.propBadge.style)">
-        <div class="fwd-listing__badge-year-wrap" v-if="pkg.listing.propBadge.year">
-          <span class="fwd-listing__badge-year">{{ pkg.listing.propBadge.year }}</span>
-          <span class="fwd-listing__badge-year-label">Year Built</span>
-        </div>
-        <span class="fwd-listing__badge-rule" v-if="pkg.listing.propBadge.year && pkg.listing.propBadge.style"></span>
-        <span class="fwd-listing__badge-style" v-if="pkg.listing.propBadge.style">{{ pkg.listing.propBadge.style }}</span>
-      </div>
+
       <p class="fwd-listing__statement" v-html="pkg.listing.statementHtml"></p>
       <div class="fwd-listing__statement-rule"></div>
       <div class="fwd-listing__columns">

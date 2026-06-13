@@ -10256,9 +10256,11 @@ function buildCampPkg(sections, prop, agName, mls) {
   // Prefer acres over year built in stats row; yearBuilt becomes a badge
   var acresVal = (prop.acres || prop.lot_acres || prop.lot_size_acres || '').toString().trim();
   if (acresVal) specs.push({ value: acresVal, key: 'Private Acres' });
+  var yearBuiltVal = (mls.yearBuilt || prop.year_built || '').toString().trim();
+  if (yearBuiltVal) specs.push({ value: yearBuiltVal, key: 'Year Built' });
   var propBadge = null;
-  if (mls.yearBuilt || mls.propType || prop.prop_type || prop.year_built) {
-    propBadge = { year: mls.yearBuilt || prop.year_built || '', style: mls.propType || prop.prop_type || '' };
+  if (mls.propType || prop.prop_type) {
+    propBadge = { year: '', style: mls.propType || prop.prop_type || '' };
   }
 
   // ── LISTING DESCRIPTION ───────────────────────────────────────────────────
@@ -10349,16 +10351,22 @@ function buildCampPkg(sections, prop, agName, mls) {
       var hdr = stripMd(cl[0]);
       var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+(?:(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing(?:\s+\w+)?|Sustained(?:\s+\w+)?|Phase\s*\d|Month\s*\d)/i);
       var when  = wm ? wm[1].trim() : (campaign.phases.length === 0 ? '30-Day Campaign' : 'Phase ' + (campaign.phases.length + 1));
-      var title = wm ? hdr.replace(wm[0], '').replace(/^[\s:\-–—]+/, '').trim() : hdr;
-      if (!title) title = '';
       var items = cl.slice(1).filter(function(l) { return l.trim() && l.trim() !== ':'; }).map(function(l) {
-        var clean = l.replace(/^[\-\*\•·▸►◆]+\s*/, '').trim();
+        var clean = l.replace(/^[\-\*\u2022\u00b7\u2713\u2714\u25b8\u25ba\u25c6\u25a1]+\s*/, '').trim();
         clean = stripMd(clean);
         var bm = l.match(/^\*\*(.+?)\*\*\s*[:\-]?\s*(.+)/);
-        if (bm) return { lead: bm[1], text: bm[2] };
-        var cm = clean.match(/^([^:]{5,45}?):\s+(.{10,})/);
-        if (cm) return { lead: cm[1], text: cm[2] };
-        return { lead: '', text: clean };
+        var _item;
+        if (bm) _item = { lead: bm[1], text: bm[2] };
+        else {
+          var cm = clean.match(/^([^:]{5,45}?):\s+(.{10,})/);
+          if (cm) _item = { lead: cm[1], text: cm[2] };
+          else _item = { lead: '', text: clean };
+        }
+        if (_item.lead && /^(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+\.?)$/i.test(_item.lead.trim())) {
+          _item.text = _item.lead + (_item.text ? ': ' + _item.text : '');
+          _item.lead = '';
+        }
+        return _item;
       }).filter(function(it) { return it.text; });
       if (title || items.length) campaign.phases.push({ when: when, title: title, items: items });
     });
