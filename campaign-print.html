@@ -289,6 +289,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-listing__badge-rule { height: 28px; }
 }
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
 <body>
 <div id="app"></div>
@@ -552,8 +553,52 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       onMounted(function () {
         if (!pkg) return;
         document.fonts.ready.then(function () {
-          setTimeout(function () { window.print(); }, 300);
-        });
+          setTimeout(function () {
+            var addrSlug = (pkg.cover && pkg.cover.address)
+              ? pkg.cover.address.replace(/[^a-zA-Z0-9 ]/g,'').trim().replace(/\s+/g,'-')
+              : 'campaign';
+            var filename = 'campaign-package-' + addrSlug + '.pdf';
+            var element  = document.getElementById('app');
+            var opt = {
+              margin: 0,
+              filename: filename,
+              image: { type: 'jpeg', quality: 0.92 },
+              html2canvas: {
+                scale: 1.5,
+                useCORS: true,
+                logging: false,
+                windowWidth: 816,
+                windowHeight: 1056,
+              },
+              jsPDF: {
+                unit: 'px',
+                format: [816, 1056],
+                orientation: 'portrait',
+                hotfixes: ['px_scaling'],
+              },
+              pagebreak: {
+                mode: ['css', 'legacy'],
+                before: ['.fwd-divider', '.fwd-colophon'],
+                avoid: ['.fwd-avatar-card', '.fwd-social-card', '.fwd-campaign-phase'],
+              },
+            };
+            if (!window.html2pdf) { window.print(); return; }
+            window.html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
+              var blob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' });
+              var shareFile = new File([blob], filename, { type: 'application/pdf' });
+              // Mobile: Web Share API → agent can send directly to client
+              if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
+                navigator.share({ title: 'Campaign Package', files: [shareFile] })
+                  .catch(function () { pdf.save(filename); });
+              } else {
+                // Desktop: direct download to Downloads folder
+                pdf.save(filename);
+              }
+              // Close this tab after download begins
+              setTimeout(function () { try { window.close(); } catch(e){} }, 1500);
+            }).catch(function () { window.print(); });
+          }, 600);
+        }).catch(function () { window.print(); });
       });
       return { pkg: pkg };
     },
