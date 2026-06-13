@@ -10792,8 +10792,23 @@ async function campExportPDF() {
 
   } catch (err) {
     campPdfGenerating.value = false;
-    console.error('[PDF] export failed:', err);
-    showToast('PDF failed: ' + (err && err.message ? err.message : String(err)), 8000);
+    console.warn('[PDF] backend unavailable, opening print dialog:', err && err.message || err);
+    // Fallback: open campaign-print.html — @media print CSS handles navy backgrounds
+    // and @page { margin:0 } removes browser URL/date headers. One extra "Save as PDF" click.
+    try {
+      var _pkgForPrint = JSON.parse(JSON.stringify(pkg));
+      delete _pkgForPrint._siteUrl; // backend hint, not needed in print page
+      sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
+      var _pwin = window.open('/campaign-print.html', '_blank');
+      showToast(
+        _pwin
+          ? 'PDF opening — in the print dialog, choose “Save as PDF”.'
+          : 'Could not open PDF. Please allow pop-ups for this site and try again.',
+        6000
+      );
+    } catch (_fbErr) {
+      showToast('PDF export failed. Please try again.', 5000);
+    }
   }
 }
 
