@@ -10738,30 +10738,37 @@ async function campExportPDF() {
     : 'campaign';
   var _filename = 'campaign-package-' + _addr + '.pdf';
 
+  // AbortSignal.timeout() not available in Safari <16 — use AbortController instead
+  function _makeSignal(ms) {
+    var ctrl = new AbortController();
+    setTimeout(function () { ctrl.abort(); }, ms);
+    return ctrl.signal;
+  }
+
   try {
     pkg._siteUrl = window.location.origin;
     var pkgBody = JSON.stringify(pkg);
 
-    // Primary: Railway backend — headless Playwright, no timeout, proper CSS rendering
+    // Primary: Railway backend — headless Playwright, no 10s limit, proper CSS rendering
     var resp = null;
     try {
       resp = await fetch(RAILWAY_URL + '/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: pkgBody,
-        signal: AbortSignal.timeout(90000),
+        signal: _makeSignal(90000),
       });
-      if (!resp.ok) throw new Error('Railway /export-pdf returned ' + resp.status);
+      if (!resp.ok) throw new Error('Railway ' + resp.status);
     } catch (railwayErr) {
-      console.warn('Railway export-pdf failed, trying Netlify function:', railwayErr);
-      // Secondary: Netlify function
+      console.warn('[PDF] Railway failed:', railwayErr.message || railwayErr);
+      // Secondary: Netlify function (may timeout on free plan cold starts)
       resp = await fetch('/.netlify/functions/export-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: pkgBody,
-        signal: AbortSignal.timeout(30000),
+        signal: _makeSignal(30000),
       });
-      if (!resp.ok) throw new Error('Netlify function returned ' + resp.status);
+      if (!resp.ok) throw new Error('Netlify ' + resp.status);
     }
 
     var blob = await resp.blob();
@@ -10785,8 +10792,8 @@ async function campExportPDF() {
 
   } catch (err) {
     campPdfGenerating.value = false;
-    console.error('PDF export failed:', err);
-    showToast('PDF generation failed. Please try again or check your connection.', 6000);
+    console.error('[PDF] export failed:', err);
+    showToast('PDF failed: ' + (err && err.message ? err.message : String(err)), 8000);
   }
 }
 
