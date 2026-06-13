@@ -583,19 +583,22 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
               },
             };
             if (!window.html2pdf) { window.print(); return; }
+            var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+            // Lower scale on mobile to reduce memory + generation time
+            if (isMobile) { opt.html2canvas.scale = 1.0; opt.image.quality = 0.88; }
             window.html2pdf().set(opt).from(element).toPdf().get('pdf').then(function (pdf) {
-              var blob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' });
-              var shareFile = new File([blob], filename, { type: 'application/pdf' });
-              // Mobile: Web Share API → agent can send directly to client
-              if (navigator.canShare && navigator.canShare({ files: [shareFile] })) {
-                navigator.share({ title: 'Campaign Package', files: [shareFile] })
-                  .catch(function () { pdf.save(filename); });
+              if (isMobile) {
+                // Mobile: open PDF blob in Safari's built-in viewer.
+                // User taps the ⬆ Share button → Mail / Messages / AirDrop to send to client.
+                var pdfBlob = new Blob([pdf.output('arraybuffer')], { type: 'application/pdf' });
+                var blobUrl = URL.createObjectURL(pdfBlob);
+                window.location.href = blobUrl;
+                // Don't close — let user interact with the PDF viewer / share sheet
               } else {
-                // Desktop: direct download to Downloads folder
+                // Desktop: download directly to Downloads folder, then close tab
                 pdf.save(filename);
+                setTimeout(function () { try { window.close(); } catch(e){} }, 1500);
               }
-              // Close this tab after download begins
-              setTimeout(function () { try { window.close(); } catch(e){} }, 1500);
             }).catch(function () { window.print(); });
           }, 600);
         }).catch(function () { window.print(); });

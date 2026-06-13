@@ -9665,7 +9665,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campParsed = ref((function(){try{var d=window['localStorage'].getItem('fos_campSections');return d?JSON.parse(d):[];}catch(e){return [];}})());
     const campRawResult = ref(localStorage.getItem('fos_campSections') ? 'cached' : '');
     const campShowPreview = ref(false);
-    const campOpenSection = ref(0);
+    const campOpenSection = ref(null);
     const campRevOpen = ref(false);
     const campGenerating = ref(false);
     const campIncludes = reactive({ listing_remarks: true, cma: true, seller_net_sheet: true, seller_prep: true, mls_data: true });
@@ -10768,7 +10768,7 @@ async function campExportPDF() {
     if (!win) {
       showToast('Pop-up blocked — allow pop-ups and try again.', 5000);
     } else {
-      showToast('PDF ready — use Print → Save as PDF in the new tab.', 6000);
+      showToast('PDF is generating in the new tab — it will download automatically.', 8000);
     }
   }
 }
