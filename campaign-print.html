@@ -181,8 +181,12 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   @page fwdBleed   { margin: 0; }
   @page fwdContent { margin: 11mm 17mm 11mm; }
   html, body { background: var(--fwd-page); }
-  .fwd-cover, .fwd-divider, .fwd-colophon {
+  .fwd-cover, .fwd-divider {
     page: fwdBleed; min-height: 100vh;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .fwd-colophon {
+    page: fwdBleed; /* no min-height — prevents blank trailing page */
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .fwd-page {
@@ -190,7 +194,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .fwd-divider, .fwd-page, .fwd-colophon { break-before: page; }
-  .fwd-avatar-card, .fwd-social-card, .fwd-prep-section, .fwd-campaign-phase,
+  .fwd-avatar-card, .fwd-campaign-phase,
   .fwd-letter__signoff, .fwd-listing__statement, .fwd-listing__closer, .fwd-listing__spec { break-inside: avoid; }
   .fwd-runninghead, .fwd-section-title, .fwd-campaign-phase__title,
   .fwd-prep-section__header, .fwd-social-card__title { break-after: avoid; }
@@ -220,7 +224,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-avatar-card__quote-label { margin-bottom: 8px; }
   .fwd-avatar-card__quote-text { font-size: 16px; line-height: 1.3; }
   .fwd-social__grid { display: block; }
-  .fwd-social-card { display: block; padding: 22px 26px 20px; box-shadow: none; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid; }
+  .fwd-social-card { display: block; padding: 18px 22px 16px; box-shadow: none; margin-bottom: 16px; break-inside: auto; page-break-inside: auto; }
   .fwd-social-card__head { padding-bottom: 14px; margin-bottom: 16px; }
   .fwd-social-card__title { font-size: 20px; margin-bottom: 12px; }
   .fwd-social-card__copy { font-size: 12.5px; line-height: 1.6; }
@@ -236,7 +240,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-campaign-phase__title { font-size: 26px; margin-bottom: 16px; }
   .fwd-campaign-phase__list { gap: 12px; }
   .fwd-prep__intro { font-size: 17px; line-height: 1.45; margin-bottom: 24px; }
-  .fwd-prep-section { margin-bottom: 18px; }
+  .fwd-prep-section { margin-bottom: 14px; break-inside: auto; }
   .fwd-prep-section__header { padding-bottom: 9px; margin-bottom: 13px; }
   .fwd-prep-section__list { gap: 8px; }
   .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
@@ -348,6 +352,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       </div>
       <p class="fwd-listing__closer">{{ pkg.listing.closer }}</p>
     </section>
+    <template v-if="pkg.buyerProfiles && pkg.buyerProfiles.length">
     <FwdDivider index="Section Three" title="Buyer Profiles" />
     <section class="fwd-page fwd-avatars" data-screen-label="Buyer Profiles">
       <div class="fwd-runninghead"><span class="fwd-section-label">Buyer Profiles</span><span class="fwd-page-number">04</span></div>
@@ -379,6 +384,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Four" title="The 30-Day Campaign" />
     <section class="fwd-page fwd-campaign" data-screen-label="Campaign">
       <div class="fwd-runninghead"><span class="fwd-section-label">30-Day Campaign Plan</span><span class="fwd-page-number">05</span></div>
@@ -394,6 +400,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </div>
       </div>
     </section>
+    <template v-if="pkg.social && pkg.social.posts && pkg.social.posts.length">
     <FwdDivider index="Section Five" title="Social Media Copy" />
     <section class="fwd-page fwd-social" data-screen-label="Social">
       <div class="fwd-runninghead"><span class="fwd-section-label">Social Media Copy</span><span class="fwd-page-number">06</span></div>
@@ -416,6 +423,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    <template v-if="pkg.tiktok && pkg.tiktok.scripts && pkg.tiktok.scripts.length">
     <FwdDivider index="Section Six" title="TikTok Scripts" />
     <section class="fwd-page fwd-social" data-screen-label="TikTok">
       <div class="fwd-runninghead"><span class="fwd-section-label">TikTok Scripts</span><span class="fwd-page-number">07</span></div>
@@ -434,6 +442,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Seven" title="Flyer Copy" />
     <section class="fwd-page fwd-flyer" data-screen-label="Flyer">
       <div class="fwd-runninghead"><span class="fwd-section-label">Flyer Copy</span><span class="fwd-page-number">08</span></div>
@@ -460,6 +469,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </div>
       </div>
     </section>
+    <template v-if="pkg.linkedin && pkg.linkedin.paragraphs && pkg.linkedin.paragraphs.length">
     <FwdDivider index="Section Eight" title="The LinkedIn Post" />
     <section class="fwd-page fwd-social" data-screen-label="LinkedIn">
       <div class="fwd-runninghead"><span class="fwd-section-label">LinkedIn Post</span><span class="fwd-page-number">09</span></div>
@@ -477,6 +487,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Nine" title="Seller Preparation" />
     <section class="fwd-page fwd-prep" data-screen-label="Prep">
       <div class="fwd-runninghead"><span class="fwd-section-label">Seller Prep Guide</span><span class="fwd-page-number">10</span></div>

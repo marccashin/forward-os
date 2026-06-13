@@ -1,3 +1,6 @@
 [functions]
   [functions."send-feedback-digest"]
     schedule = "0 22 * * *"
+
+[[plugins]]
+  package = "@netlify/plugin-functions-install-core"
