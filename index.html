@@ -10732,7 +10732,6 @@ async function campExportPDF() {
 
   // Show fullscreen overlay — user sees immediate feedback
   campPdfGenerating.value = true;
-  dismissToast && dismissToast();
 
   var _addr = (lstActiveProp.value && lstActiveProp.value.address)
     ? lstActiveProp.value.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-')
