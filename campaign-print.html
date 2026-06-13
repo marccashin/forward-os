@@ -320,7 +320,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       <div class="fwd-runninghead"><span class="fwd-section-label">Letter to Seller</span><span class="fwd-page-number">02</span></div>
       <div class="fwd-letter__body">
         <p class="fwd-letter__date">{{ pkg.letter.date }}</p>
-        <p class="fwd-letter__salutation">Dear {{ pkg.letter.salutationName }},</p>
+        <p v-if="pkg.letter.salutationName" class="fwd-letter__salutation">Dear {{ pkg.letter.salutationName }},</p>
         <p class="fwd-letter__lede">{{ pkg.letter.leadParagraph }}</p>
         <p v-for="(para, i) in pkg.letter.paragraphs" :key="i">{{ para }}</p>
         <div class="fwd-letter__signoff">
