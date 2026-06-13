@@ -10204,7 +10204,13 @@ function buildCampPkg(sections, prop, agName, mls) {
   var today     = new Date();
   var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
   var sellerN   = ((prop.seller_name || prop.contact_name || '')).trim();
-  var greeting  = sellerN ? (sellerN.split(/\s+/)[0] || '') : '';
+  var coSellerN = ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '').trim();
+  var greeting  = '';
+  if (sellerN) {
+    var _fn = sellerN.split(/\s+/)[0] || '';
+    var _cfn = coSellerN ? (coSellerN.split(/\s+/)[0] || '') : '';
+    greeting = _fn + (_cfn ? ' and ' + _cfn : '');
+  }
 
   // ── COVER ─────────────────────────────────────────────────────────────────
   var cover = {
@@ -10367,6 +10373,9 @@ function buildCampPkg(sections, prop, agName, mls) {
           _item.text = _item.lead + (_item.text ? ': ' + _item.text : '');
           _item.lead = '';
         }
+        if (_item.lead && /^Activity\s+\d+$/i.test(_item.lead.trim())) {
+          _item.lead = '';
+        }
         return _item;
       }).filter(function(it) { return it.text; });
       if (title || items.length) campaign.phases.push({ when: when, title: title, items: items });
@@ -10450,7 +10459,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   var tiktok = { scripts: [] };
   if (ttSec) {
     var ttext = ttSec.content || '';
-    var tblocks = ttext.split(/\n(?=(?:Script\s*\d+|TikTok\s*\d+|Video\s*\d+|\*\*Script))/i).filter(function(s) { return s.trim(); });
+    var tblocks = ttext.split(/\n(?=(?:Script\s*\d+|TikTok(?:\s+Script)?\s*\d+|Video\s*\d+|\*\*Script))/i).filter(function(s) { return s.trim(); });
     if (!tblocks.length) tblocks = [ttext];
     tblocks.forEach(function(block, idx) {
       var tl = lns(block);
