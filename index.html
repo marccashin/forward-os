@@ -6324,7 +6324,7 @@ body {
                   <div style="margin-top:6px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-family:'Montserrat',sans-serif;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:0.1em;">Stay on this page · ~60 seconds</div>
                 </div>
                 <div v-if="campRawResult" style="margin-top:12px;">
-                  <button @click="campShowPreview=true" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
+                  <button @click="campOpenPreview()" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
                 </div>
               </div>
             </div>
@@ -10180,18 +10180,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         });
       } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
     }
-    // Pre-populate letter and prep edit content each time preview opens
-    var _lprop = lstActiveProp.value || {};
-    var _lsn = (_lprop.seller_name || _lprop.contact_name || '').trim();
-    var _lcosn = ((_lprop.subfolder_drive_ids && _lprop.subfolder_drive_ids._co_seller) || '').trim();
-    var _lfn = _lsn ? _lsn.split(/\s+/)[0] : '';
-    var _lcfn = _lcosn ? _lcosn.split(/\s+/)[0] : '';
-    var _lgreet = _lfn ? ('Dear ' + _lfn + (_lcfn ? ' and ' + _lcfn : '') + ',') : '';
-    campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
-      'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (_lprop.agent_name || agentName.value || 'Marc Cashin');
-    campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
-    campShowPreview.value = true;
-          setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
+    campOpenPreview();
   } catch(e) {
     showToast('Generation failed: ' + (e.message || 'Check your API key in Settings.'), 6000);
     console.error('campGenerate error:', e);
@@ -10200,6 +10189,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     campPipelineStep.value = 0;
     campGenerating.value = false;
   }
+}
+
+function campOpenPreview() {
+  var _lprop = lstActiveProp.value || {};
+  var _lsn   = (_lprop.seller_name || _lprop.contact_name || '').trim();
+  var _lcosn = ((_lprop.subfolder_drive_ids && _lprop.subfolder_drive_ids._co_seller) || '').trim();
+  var _lfn   = _lsn   ? _lsn.split(/\s+/)[0]   : '';
+  var _lcfn  = _lcosn ? _lcosn.split(/\s+/)[0]  : '';
+  var _lgreet = _lfn ? ('Dear ' + _lfn + (_lcfn ? ' and ' + _lcfn : '') + ',') : '';
+  campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
+    'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (_lprop.agent_name || agentName.value || 'Marc Cashin');
+  campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
+  campShowPreview.value = true;
+  setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
 }
 
 async function campApproveAndSend() {
@@ -19158,7 +19161,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
