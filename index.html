@@ -6075,11 +6075,47 @@ body {
                 <div style="padding:20px 26px 18px;border-bottom:1px solid var(--cream-mid);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--navy);">
                   <div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--cream);letter-spacing:0.02em;">Campaign Package</div>
-                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-top:4px;">{{ lstActiveProp.address }} · {{ campParsed.length }} sections · click any section to edit</div>
+                    <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-top:4px;">{{ lstActiveProp.address }} · {{ campParsed.length + (lstNotes.listing_remarks ? 1 : 0) + 2 }} sections · click any section to edit</div>
                   </div>
                   <button @click="campShowPreview=false" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
                 </div>
                 <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
+                  <div style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
+                    <div @click="campOpenSection = campOpenSection==='__letter__' ? null : '__letter__'"
+                         style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
+                         :style="{borderLeftColor: campOpenSection==='__letter__' ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
+                      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:4px;">Letter to Seller</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
+                               :style="{color: campOpenSection==='__letter__' ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)'}">
+                            {{ campOpenSection==='__letter__' ? 'Editing now — click ▲ Close when done' : (campLetterEditVal).slice(0,90).trim() + '…' }}
+                          </div>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:16px;">
+                        <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,169,110,0.55);cursor:pointer;white-space:nowrap;">
+                          <input type="checkbox" v-model="campLetterIncluded" style="cursor:pointer;accent-color:var(--gold);"> Include
+                        </label>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:7px 14px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
+                             :style="{background: campOpenSection==='__letter__' ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: campOpenSection==='__letter__' ? 'var(--navy)' : 'var(--gold)', border: '1px solid rgba(200,169,110,0.4)'}">
+                          {{ campOpenSection==='__letter__' ? '▲ CLOSE' : '▼ EDIT' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="campOpenSection==='__letter__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                      <textarea v-model="campLetterEditVal" class="camp-section-ta"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
+                        :style="{height: Math.max(180, (campLetterEditVal||'a').split('\n').length * 25 + 60) + 'px'}"
+                        @focus="$event.target.style.borderColor='var(--gold-muted)'"
+                        @blur="$event.target.style.borderColor='var(--cream-mid)'"
+                        placeholder="Type or paste content…"></textarea>
+                    </div>
+                    <div v-else-if="!campLetterIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
+                  </div>
                   <div v-if="lstNotes.listing_remarks" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
                     <div @click="campOpenSection = campOpenSection==='__ld__' ? null : (campLdEditVal=lstNotes.listing_remarks, '__ld__')"
                          style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
@@ -6156,6 +6192,46 @@ body {
                         placeholder="Type or paste content for this section…"></textarea>
                     </div>
                     <div v-else-if="!section.included" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
+                  </div>
+                  <div style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
+                    <div @click="campOpenSection = campOpenSection==='__prep__' ? null : '__prep__'"
+                         style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
+                         :style="{borderLeftColor: campOpenSection==='__prep__' ? 'var(--gold)' : 'rgba(200,169,110,0.3)'}">
+                      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                        <div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:6px;">Seller Prep Guide</div>
+                          <div @click.stop style="display:flex;gap:0;margin-bottom:2px;">
+                            <button @click="campSetPrepType('sfh')" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);border-right:none;cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='sfh' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='sfh' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">SFH / Townhome</button>
+                            <button @click="campSetPrepType('condo')" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='condo' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='condo' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">Condo / Co-op</button>
+                          </div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
+                               :style="{color: campOpenSection==='__prep__' ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)'}">
+                            {{ campOpenSection==='__prep__' ? 'Editing now — click ▲ Close when done' : (campPrepEditVal).slice(0,90).trim() + '…' }}
+                          </div>
+                        </div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:16px;">
+                        <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,169,110,0.55);cursor:pointer;white-space:nowrap;">
+                          <input type="checkbox" v-model="campPrepIncluded" style="cursor:pointer;accent-color:var(--gold);"> Include
+                        </label>
+                        <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:7px 14px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
+                             :style="{background: campOpenSection==='__prep__' ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: campOpenSection==='__prep__' ? 'var(--navy)' : 'var(--gold)', border: '1px solid rgba(200,169,110,0.4)'}">
+                          {{ campOpenSection==='__prep__' ? '▲ CLOSE' : '▼ EDIT' }}
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="campOpenSection==='__prep__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                      <textarea v-model="campPrepEditVal" class="camp-section-ta"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
+                        :style="{height: Math.max(180, (campPrepEditVal||'a').split('\n').length * 25 + 60) + 'px'}"
+                        @focus="$event.target.style.borderColor='var(--gold-muted)'"
+                        @blur="$event.target.style.borderColor='var(--cream-mid)'"
+                        placeholder="Type or paste content…"></textarea>
+                    </div>
+                    <div v-else-if="!campPrepIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
                 </div>
                 <!-- Footer actions -->
@@ -6252,7 +6328,7 @@ body {
                   <div style="margin-top:6px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);font-family:'Montserrat',sans-serif;font-size:7px;color:rgba(255,255,255,0.3);letter-spacing:0.1em;">Stay on this page · ~60 seconds</div>
                 </div>
                 <div v-if="campRawResult" style="margin-top:12px;">
-                  <button @click="campShowPreview=true" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
+                  <button @click="campOpenPreview()" style="width:100%;padding:13px;background:rgba(200,169,110,0.12);border:1px solid rgba(200,169,110,0.5);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:background 0.15s;">Review &amp; Edit Campaign Sections</button>
                 </div>
               </div>
             </div>
@@ -10108,8 +10184,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         });
       } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
     }
-    campShowPreview.value = true;
-          setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
+    campOpenPreview();
   } catch(e) {
     showToast('Generation failed: ' + (e.message || 'Check your API key in Settings.'), 6000);
     console.error('campGenerate error:', e);
@@ -10118,6 +10193,35 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     campPipelineStep.value = 0;
     campGenerating.value = false;
   }
+}
+
+function campSetPrepType(type) {
+  sellerPrepType.value = type;
+  campPrepEditVal.value = sellerPrepBuildTextSummary();
+}
+
+function campOpenPreview() {
+  var _lprop = lstActiveProp.value || {};
+  var _lsn   = (_lprop.seller_name || _lprop.contact_name || '').trim();
+  var _lcosn = ((_lprop.subfolder_drive_ids && _lprop.subfolder_drive_ids._co_seller) || '').trim();
+  // Handle "Evan and Celeste" stored as a single seller_name field
+  var _fn1 = '', _fn2 = '';
+  if (_lcosn) {
+    _fn1 = _lsn.split(/\s+/)[0] || '';
+    _fn2 = _lcosn.split(/\s+/)[0] || '';
+  } else if (/\band\b/i.test(_lsn)) {
+    var _parts = _lsn.split(/\s+and\s+/i);
+    _fn1 = (_parts[0] || '').trim().split(/\s+/)[0] || '';
+    _fn2 = (_parts[1] || '').trim().split(/\s+/)[0] || '';
+  } else {
+    _fn1 = _lsn.split(/\s+/)[0] || '';
+  }
+  var _lgreet = _fn1 ? ('Dear ' + _fn1 + (_fn2 ? ' and ' + _fn2 : '') + ',') : '';
+  campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
+    'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (_lprop.agent_name || agentName.value || 'Marc Cashin');
+  campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
+  campShowPreview.value = true;
+  setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
 }
 
 async function campApproveAndSend() {
@@ -10204,7 +10308,13 @@ function buildCampPkg(sections, prop, agName, mls) {
   var today     = new Date();
   var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
   var sellerN   = ((prop.seller_name || prop.contact_name || '')).trim();
-  var greeting  = sellerN ? (sellerN.split(/\s+/)[0] || '') : '';
+  var coSellerN = ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '').trim();
+  var greeting  = '';
+  if (sellerN) {
+    var _fn = sellerN.split(/\s+/)[0] || '';
+    var _cfn = coSellerN ? (coSellerN.split(/\s+/)[0] || '') : '';
+    greeting = _fn + (_cfn ? ' and ' + _cfn : '');
+  }
 
   // ── COVER ─────────────────────────────────────────────────────────────────
   var cover = {
@@ -10367,6 +10477,9 @@ function buildCampPkg(sections, prop, agName, mls) {
           _item.text = _item.lead + (_item.text ? ': ' + _item.text : '');
           _item.lead = '';
         }
+        if (_item.lead && /^Activity\s+\d+$/i.test(_item.lead.trim())) {
+          _item.lead = '';
+        }
         return _item;
       }).filter(function(it) { return it.text; });
       if (title || items.length) campaign.phases.push({ when: when, title: title, items: items });
@@ -10450,7 +10563,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   var tiktok = { scripts: [] };
   if (ttSec) {
     var ttext = ttSec.content || '';
-    var tblocks = ttext.split(/\n(?=(?:Script\s*\d+|TikTok\s*\d+|Video\s*\d+|\*\*Script))/i).filter(function(s) { return s.trim(); });
+    var tblocks = ttext.split(/\n(?=(?:Script\s*\d+|TikTok(?:\s+Script)?\s*\d+|Video\s*\d+|\*\*Script))/i).filter(function(s) { return s.trim(); });
     if (!tblocks.length) tblocks = [ttext];
     tblocks.forEach(function(block, idx) {
       var tl = lns(block);
@@ -10562,10 +10675,18 @@ async function campExportPDF() {
   var included = sections.filter(function(s) { return s.included !== false; });
   if (!included.length) { showToast('All sections are excluded. Include at least one section.', 5000); return; }
 
+  // Letter to Seller — use preview-panel edit value if available
+  var _letterText = (campLetterEditVal && campLetterEditVal.value && campLetterEditVal.value.trim()) || '';
+  if (_letterText && campLetterIncluded.value !== false) {
+    // letter is passed directly to buildCampPkg via a special key; strip from included
+  }
+
   // Inject seller prep section if not already in AI sections
   var _hasPrepSec = included.some(function(s) { return /seller.*prep|prep.*guide|checklist|preparation/i.test(s.title || ''); });
-  if (!_hasPrepSec) {
-    var _prepContent = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
+  if (!_hasPrepSec && campPrepIncluded.value !== false) {
+    var _prepContent = (campPrepEditVal && campPrepEditVal.value && campPrepEditVal.value.trim()) ||
+                       (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) ||
+                       sellerPrepBuildTextSummary();
     if (_prepContent) included = included.concat([{ title: 'Seller Prep Guide', content: _prepContent }]);
   }
 
@@ -10583,6 +10704,24 @@ async function campExportPDF() {
       features:  (mlsForm.features || []).filter(Boolean),
     }
   );
+
+  // Override letter with user-edited value from preview panel
+  if (_letterText && campLetterIncluded.value !== false && pkg.letter) {
+    // Parse salutation out of edited letter text (first line "Dear X,")
+    var _ltLines = _letterText.split('\n');
+    var _salLine = _ltLines[0].trim();
+    var _salMatch = _salLine.match(/^Dear\s+(.+?),\s*$/i);
+    if (_salMatch) {
+      pkg.letter.salutationName = _salMatch[1];
+      pkg.letter.body = _ltLines.slice(1).join('\n').trim();
+    } else {
+      pkg.letter.salutationName = '';
+      pkg.letter.body = _letterText.trim();
+    }
+  }
+  if (campLetterIncluded.value === false && pkg.letter) {
+    pkg.letter._skip = true;
+  }
 
   // Store in sessionStorage — campaign-print.html reads this on load
   try {
@@ -11434,8 +11573,12 @@ async function lstSubmitToPipeline() {
     const ldSaving   = ref(false);
     const lstDescEditing = ref(false);
     const lstDescEditVal = ref('');
-    const campLdIncluded = ref(true);
-    const campLdEditVal  = ref('');
+    const campLdIncluded   = ref(true);
+    const campLdEditVal    = ref('');
+    const campLetterIncluded = ref(true);
+    const campLetterEditVal  = ref('');
+    const campPrepIncluded   = ref(true);
+    const campPrepEditVal    = ref('');
     async function campLdSave() {
       const trimmed = campLdEditVal.value.trim();
       if (!trimmed || !lstActiveProp.value) return;
@@ -19037,7 +19180,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
