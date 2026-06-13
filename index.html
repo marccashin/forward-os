@@ -6200,7 +6200,11 @@ body {
                       <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                         <div>
-                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:4px;">Seller Prep Guide</div>
+                          <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:6px;">Seller Prep Guide</div>
+                          <div @click.stop style="display:flex;gap:0;margin-bottom:2px;">
+                            <button @click="sellerPrepType='sfh'; campPrepEditVal = sellerPrepBuildTextSummary()" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);border-right:none;cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='sfh' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='sfh' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">SFH / Townhome</button>
+                            <button @click="sellerPrepType='condo'; campPrepEditVal = sellerPrepBuildTextSummary()" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='condo' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='condo' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">Condo / Co-op</button>
+                          </div>
                           <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
                                :style="{color: campOpenSection==='__prep__' ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)'}">
                             {{ campOpenSection==='__prep__' ? 'Editing now — click ▲ Close when done' : (campPrepEditVal).slice(0,90).trim() + '…' }}
@@ -10195,9 +10199,19 @@ function campOpenPreview() {
   var _lprop = lstActiveProp.value || {};
   var _lsn   = (_lprop.seller_name || _lprop.contact_name || '').trim();
   var _lcosn = ((_lprop.subfolder_drive_ids && _lprop.subfolder_drive_ids._co_seller) || '').trim();
-  var _lfn   = _lsn   ? _lsn.split(/\s+/)[0]   : '';
-  var _lcfn  = _lcosn ? _lcosn.split(/\s+/)[0]  : '';
-  var _lgreet = _lfn ? ('Dear ' + _lfn + (_lcfn ? ' and ' + _lcfn : '') + ',') : '';
+  // Handle "Evan and Celeste" stored as a single seller_name field
+  var _fn1 = '', _fn2 = '';
+  if (_lcosn) {
+    _fn1 = _lsn.split(/\s+/)[0] || '';
+    _fn2 = _lcosn.split(/\s+/)[0] || '';
+  } else if (/\band\b/i.test(_lsn)) {
+    var _parts = _lsn.split(/\s+and\s+/i);
+    _fn1 = (_parts[0] || '').trim().split(/\s+/)[0] || '';
+    _fn2 = (_parts[1] || '').trim().split(/\s+/)[0] || '';
+  } else {
+    _fn1 = _lsn.split(/\s+/)[0] || '';
+  }
+  var _lgreet = _fn1 ? ('Dear ' + _fn1 + (_fn2 ? ' and ' + _fn2 : '') + ',') : '';
   campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
     'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (_lprop.agent_name || agentName.value || 'Marc Cashin');
   campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
