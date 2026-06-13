@@ -10203,8 +10203,8 @@ function buildCampPkg(sections, prop, agName, mls) {
   var agentN    = ((prop.agent_name || agName || 'Marc Cashin')).trim();
   var today     = new Date();
   var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-  var sellerN   = ((prop.seller_name || prop.contact_name || 'Valued Seller')).trim();
-  var greeting  = sellerN.split(/\s+/)[0] || 'Valued Seller';
+  var sellerN   = ((prop.seller_name || prop.contact_name || '')).trim();
+  var greeting  = sellerN ? (sellerN.split(/\s+/)[0] || '') : '';
 
   // ── COVER ─────────────────────────────────────────────────────────────────
   var cover = {
@@ -10516,9 +10516,10 @@ function buildCampPkg(sections, prop, agName, mls) {
       var clean = stripMd(line);
       if (!clean) return;
       var isBullet = /^[\-\*\•·✓✔▸►◆□]/.test(line);
-      var isHeader = !isBullet && clean.length < 60 &&
+      var isHeader = !isBullet && clean.length < 80 &&
         (/^[A-Z][A-Z\s&\/]+$/.test(clean) ||
-         /(?:Curb|Interior|Kitchen|Bath|Outdoor|Mechanical|Staging|Lighting|Scent|Storage|Garage|Grounds|Living|Basement|Attic)/i.test(clean));
+         /(?:Curb|Interior|Kitchen|Bath|Outdoor|Mechanical|Staging|Lighting|Scent|Storage|Garage|Grounds|Living|Basement|Attic|Exterior|Structural|Photography|Documentation)/i.test(clean) ||
+         /^[A-Z][^\n•\-\*]{4,60}:$/.test(clean));
       if (isHeader) {
         curSec = { header: clean.replace(/:$/, ''), items: [] };
         prep.sections.push(curSec);
@@ -10560,6 +10561,13 @@ async function campExportPDF() {
   }
   var included = sections.filter(function(s) { return s.included !== false; });
   if (!included.length) { showToast('All sections are excluded. Include at least one section.', 5000); return; }
+
+  // Inject seller prep section if not already in AI sections
+  var _hasPrepSec = included.some(function(s) { return /seller.*prep|prep.*guide|checklist|preparation/i.test(s.title || ''); });
+  if (!_hasPrepSec) {
+    var _prepContent = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
+    if (_prepContent) included = included.concat([{ title: 'Seller Prep Guide', content: _prepContent }]);
+  }
 
   // Build the structured pkg object
   var pkg = buildCampPkg(
