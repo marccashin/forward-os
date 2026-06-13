@@ -10136,7 +10136,12 @@ async function campApproveAndSend() {
     } catch(e) { console.warn('campaign_sections re-save failed:', e); }
   }
   await new Promise(r => setTimeout(r, 200));
-  await campExportPDF();
+  try {
+    await campExportPDF();
+  } catch(e) {
+    console.error('campExportPDF error:', e);
+    showToast('Export error: ' + (e && e.message ? e.message : String(e)), 6000);
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -10351,6 +10356,8 @@ function buildCampPkg(sections, prop, agName, mls) {
       var hdr = stripMd(cl[0]);
       var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+(?:(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing(?:\s+\w+)?|Sustained(?:\s+\w+)?|Phase\s*\d|Month\s*\d)/i);
       var when  = wm ? wm[1].trim() : (campaign.phases.length === 0 ? '30-Day Campaign' : 'Phase ' + (campaign.phases.length + 1));
+      var title = wm ? hdr.replace(wm[0], '').replace(/^[\s:\-\u2013\u2014]+/, '').trim() : hdr;
+      if (!title) title = '';
       var items = cl.slice(1).filter(function(l) { return l.trim() && l.trim() !== ':'; }).map(function(l) {
         var clean = l.replace(/^[\-\*\u2022\u00b7\u2713\u2714\u25b8\u25ba\u25c6\u25a1]+\s*/, '').trim();
         clean = stripMd(clean);
