@@ -1047,6 +1047,1040 @@ html, body { max-width: 100%; overflow-x: hidden; }
   .scroll-table-wrap th, .scroll-table-wrap td { word-break: break-word; }
   /* (The multi-offer matrix .mo-wrap keeps its own contained swipe by design.) */
 }
+
+/* ── FORWARD Campaign Package Template (fwd-* classes) ─────────────────── */
+/* ============================================================
+   FORWARD CAMPAIGN PACKAGE — DESIGN TOKENS
+   Edit values here only. All section classes consume these.
+   ============================================================ */
+:root {
+  --fwd-navy:        #0A2342;
+  --fwd-navy-deep:   #071A33;
+  --fwd-gold:        #C8A96E;
+  --fwd-gold-soft:   #D8C39A;
+  --fwd-paper:       #F7F4EF;   /* warm highlight (stop-scrolling boxes, text on navy) */
+  --fwd-paper-warm:  #EFE9DF;
+  --fwd-page:        #FFFFFF;   /* standard page background */
+  --fwd-ink:         #2A323C;   /* body text */
+  --fwd-ink-soft:    #5A6470;   /* secondary text */
+  --fwd-rule:        rgba(10, 35, 66, 0.14);
+  --fwd-rule-gold:   rgba(200, 169, 110, 0.55);
+
+  --fwd-font-display: 'Cormorant Garamond', Georgia, serif;
+  --fwd-font-body:    'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+
+  --fwd-page-w:   880px;   /* content measure for paged sections */
+  --fwd-gutter:   96px;    /* page side padding */
+  --fwd-track:    0.28em;  /* small-caps letter tracking */
+}
+
+/* ============================================================
+   RESET / BASE
+   ============================================================ */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+
+body {
+  font-family: var(--fwd-font-body);
+  color: var(--fwd-ink);
+  background: var(--fwd-page);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ============================================================
+   SHARED PRIMITIVES
+   ============================================================ */
+
+/* Paged shell — each printed/scrolled section sits in one of these */
+.fwd-page {
+  position: relative;
+  max-width: var(--fwd-page-w);
+  margin: 0 auto;
+  padding: 120px var(--fwd-gutter) 132px;
+  background: var(--fwd-page);
+}
+
+/* Small-caps section label (gold) used in running heads */
+.fwd-section-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: var(--fwd-track);
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+
+/* Page number — small-caps gold, paired with section label */
+.fwd-page-number {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+
+/* Running head: section label left, page number right */
+.fwd-runninghead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 18px;
+  margin-bottom: 56px;
+  border-bottom: 1px solid var(--fwd-rule);
+}
+
+/* Display heading for section openers */
+.fwd-section-title {
+  font-family: var(--fwd-font-display);
+  font-weight: 500;
+  font-size: 52px;
+  line-height: 1.04;
+  letter-spacing: 0.01em;
+  color: var(--fwd-navy);
+}
+
+/* A short gold hairline used as an accent under headings */
+.fwd-gold-rule {
+  width: 64px;
+  height: 2px;
+  background: var(--fwd-gold);
+  border: 0;
+}
+
+/* ============================================================
+   SECTION TRANSITION — full-width navy divider w/ gold rule
+   ============================================================ */
+.fwd-divider {
+  background: var(--fwd-navy);
+  color: var(--fwd-paper);
+  padding: 60px var(--fwd-gutter);
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+/* Thin gold frame inset from the edge, matching the cover */
+.fwd-divider::before {
+  content: "";
+  position: absolute;
+  inset: 28px;
+  border: 1px solid var(--fwd-rule-gold);
+  pointer-events: none;
+}
+.fwd-divider__inner {
+  position: relative;
+  z-index: 1;
+  max-width: var(--fwd-page-w);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+.fwd-divider__index {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: var(--fwd-track);
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+.fwd-divider__title {
+  font-family: var(--fwd-font-display);
+  font-weight: 500;
+  font-size: 64px;
+  letter-spacing: 0.02em;
+  color: var(--fwd-paper);
+}
+.fwd-divider__rule {
+  width: 1px;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--fwd-gold));
+}
+.fwd-divider__rule-bottom {
+  width: 56px;
+  height: 2px;
+  background: var(--fwd-gold);
+}
+
+/* ============================================================
+   1 — COVER PAGE  (.fwd-cover)
+   ============================================================ */
+.fwd-cover {
+  position: relative;
+  min-height: 100vh;
+  background: var(--fwd-navy);
+  color: var(--fwd-paper);
+  padding: 64px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+/* Thin gold frame inset from the edge */
+.fwd-cover__frame {
+  position: absolute;
+  inset: 28px;
+  border: 1px solid var(--fwd-rule-gold);
+  pointer-events: none;
+}
+.fwd-cover__top {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.fwd-cover__lockup-eyebrow {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: var(--fwd-track);
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 14px;
+}
+/* FORWARD wordmark — dominant */
+.fwd-cover__wordmark {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 40px;
+  letter-spacing: 0.42em;
+  color: var(--fwd-paper);
+  padding-left: 0.42em; /* optical compensation for tracking */
+}
+.fwd-cover__center {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 760px;
+}
+.fwd-cover__eyebrow {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 40px;
+}
+.fwd-cover__rule-top {
+  width: 80px;
+  height: 2px;
+  background: var(--fwd-gold);
+  margin-bottom: 44px;
+}
+.fwd-cover__address {
+  font-family: var(--fwd-font-display);
+  font-weight: 500;
+  font-size: 88px;
+  line-height: 0.98;
+  letter-spacing: 0.005em;
+  color: var(--fwd-paper);
+}
+.fwd-cover__address em {
+  font-style: italic;
+  color: var(--fwd-gold-soft);
+}
+.fwd-cover__locale {
+  margin-top: 26px;
+  font-family: var(--fwd-font-body);
+  font-weight: 300;
+  font-size: 16px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: rgba(247, 244, 239, 0.8);
+}
+.fwd-cover__rule-bottom {
+  width: 100%;
+  max-width: 520px;
+  height: 1px;
+  background: var(--fwd-rule-gold);
+  margin-top: 54px;
+}
+
+.fwd-cover__bottom {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.fwd-cover__meta-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 8px;
+}
+.fwd-cover__meta-value {
+  font-family: var(--fwd-font-display);
+  font-weight: 500;
+  font-size: 26px;
+  color: var(--fwd-paper);
+}
+.fwd-cover__meta-sub {
+  margin-top: 4px;
+  font-family: var(--fwd-font-body);
+  font-weight: 300;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: rgba(247, 244, 239, 0.6);
+}
+.fwd-cover__seal {
+  text-align: right;
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(247, 244, 239, 0.55);
+}
+
+/* ============================================================
+   2 — LETTER TO SELLER  (.fwd-letter)
+   ============================================================ */
+.fwd-letter {
+  background: var(--fwd-page);
+}
+.fwd-letter__body {
+  max-width: 600px;
+  margin: 0 auto;
+}
+.fwd-letter__date {
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--fwd-ink-soft);
+  margin-bottom: 48px;
+}
+.fwd-letter__salutation {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 15px;
+  letter-spacing: 0.01em;
+  color: var(--fwd-navy);
+  margin-bottom: 24px;
+}
+.fwd-letter .fwd-letter__lede {
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--fwd-navy);
+  margin-bottom: 24px;
+}
+.fwd-letter p {
+  font-size: 15px;
+  line-height: 1.85;
+  color: var(--fwd-ink);
+  margin-bottom: 24px;
+}
+.fwd-letter__signoff {
+  margin-top: 52px;
+  padding-top: 38px;
+  border-top: 1px solid var(--fwd-rule);
+}
+.fwd-letter__regards {
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 14px;
+  color: var(--fwd-ink-soft);
+  margin-bottom: 16px;
+}
+.fwd-letter__signature {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 17px;
+  color: var(--fwd-navy);
+  letter-spacing: 0.03em;
+}
+.fwd-letter__signature-rule {
+  width: 48px;
+  height: 2px;
+  background: var(--fwd-gold);
+  margin: 14px 0 12px;
+}
+.fwd-letter__firm {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fwd-ink-soft);
+}
+
+/* ============================================================
+   3 — LISTING DESCRIPTION  (.fwd-listing)
+   ============================================================ */
+.fwd-listing {
+  background: var(--fwd-page);
+}
+/* Spec strip under the running head */
+.fwd-listing__spec {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 40px;
+  padding-bottom: 44px;
+  margin-bottom: 56px;
+  border-bottom: 1px solid var(--fwd-rule);
+}
+.fwd-listing__spec-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 0 0 auto;   /* never shrink below content (protects longer prices) */
+}
+.fwd-listing__spec-value {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 28px;
+  color: var(--fwd-navy);
+  line-height: 1;
+  white-space: nowrap;
+}
+.fwd-listing__spec-key {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+/* Opening line pulled into a large typographic statement */
+.fwd-listing__statement {
+  font-family: var(--fwd-font-display);
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 1.08;
+  letter-spacing: 0.005em;
+  color: var(--fwd-navy);
+  margin-bottom: 12px;
+  text-wrap: balance;
+}
+.fwd-listing__statement em {
+  font-style: italic;
+  color: var(--fwd-gold);
+}
+.fwd-listing__statement-rule {
+  width: 64px;
+  height: 2px;
+  background: var(--fwd-gold);
+  margin: 40px 0 48px;
+}
+/* Two-column narrative body */
+.fwd-listing__columns {
+  column-count: 2;
+  column-gap: 52px;
+  font-size: 14.5px;
+  line-height: 1.82;
+  color: var(--fwd-ink);
+}
+.fwd-listing__columns p {
+  margin-bottom: 20px;
+  break-inside: avoid-column;
+}
+.fwd-listing__columns p:first-child::first-letter {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 58px;
+  line-height: 0.8;
+  float: left;
+  padding: 6px 12px 0 0;
+  color: var(--fwd-navy);
+}
+.fwd-listing__closer {
+  margin-top: 12px;
+  font-family: var(--fwd-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 26px;
+  line-height: 1.4;
+  color: var(--fwd-navy);
+  text-align: center;
+  max-width: 640px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ============================================================
+   4 — BUYER AVATARS  (.fwd-avatars / .fwd-avatar-card)
+   Private intelligence brief
+   ============================================================ */
+.fwd-avatars {
+  background: var(--fwd-page);
+}
+.fwd-avatars__grid {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+.fwd-avatar-card {
+  background: #FFFFFF;
+  border: 1px solid var(--fwd-rule);
+  border-top: 3px solid var(--fwd-gold);
+  padding: 44px 48px 40px;
+  box-shadow: 0 18px 44px -34px rgba(10, 35, 66, 0.5);
+}
+.fwd-avatar-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding-bottom: 26px;
+  margin-bottom: 30px;
+  border-bottom: 1px solid var(--fwd-rule);
+}
+.fwd-avatar-card__dossier {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 10px;
+}
+.fwd-avatar-card__name {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 32px;
+  line-height: 1.05;
+  color: var(--fwd-navy);
+}
+.fwd-avatar-card__meta {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--fwd-ink-soft);
+}
+.fwd-avatar-card__meta span strong {
+  font-weight: 500;
+  color: var(--fwd-ink);
+}
+.fwd-avatar-card__networth {
+  flex-shrink: 0;
+  text-align: right;
+}
+.fwd-avatar-card__networth-key {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 6px;
+}
+.fwd-avatar-card__networth-value {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 26px;
+  color: var(--fwd-navy);
+  white-space: nowrap;
+}
+/* Three labeled intelligence blocks */
+.fwd-avatar-card__blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 32px;
+  margin-bottom: 34px;
+}
+.fwd-avatar-card__block-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fwd-navy);
+  padding-bottom: 10px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--fwd-rule-gold);
+}
+.fwd-avatar-card__block-text {
+  font-size: 13px;
+  line-height: 1.72;
+  color: var(--fwd-ink);
+}
+/* Stop-Scrolling Sentence as gold pull quote */
+.fwd-avatar-card__quote {
+  position: relative;
+  background: var(--fwd-paper);
+  border-left: 3px solid var(--fwd-gold);
+  padding: 26px 30px 26px 32px;
+}
+.fwd-avatar-card__quote-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 12px;
+}
+.fwd-avatar-card__quote-text {
+  font-family: var(--fwd-font-display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 21px;
+  line-height: 1.42;
+  color: var(--fwd-navy);
+}
+
+/* ============================================================
+   5 — 30-DAY CAMPAIGN PLAN  (.fwd-campaign / .fwd-campaign-phase)
+   ============================================================ */
+.fwd-campaign {
+  background: var(--fwd-page);
+}
+.fwd-campaign__timeline {
+  position: relative;
+  padding-left: 44px;
+}
+/* Vertical rail */
+.fwd-campaign__timeline::before {
+  content: "";
+  position: absolute;
+  left: 7px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--fwd-rule-gold);
+}
+.fwd-campaign-phase {
+  position: relative;
+  padding-bottom: 52px;
+}
+.fwd-campaign-phase:last-child {
+  padding-bottom: 0;
+}
+/* Gold node on the rail */
+.fwd-campaign-phase::before {
+  content: "";
+  position: absolute;
+  left: -44px;
+  top: 6px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--fwd-page);
+  border: 2px solid var(--fwd-gold);
+}
+.fwd-campaign-phase__when {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 8px;
+}
+.fwd-campaign-phase__title {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 30px;
+  color: var(--fwd-navy);
+  margin-bottom: 22px;
+}
+.fwd-campaign-phase__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.fwd-campaign-phase__item {
+  position: relative;
+  padding-left: 30px;
+  font-size: 13.5px;
+  line-height: 1.66;
+  color: var(--fwd-ink);
+}
+.fwd-campaign-phase__item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 9px;
+  width: 7px;
+  height: 7px;
+  background: var(--fwd-gold);
+  transform: rotate(45deg);
+}
+.fwd-campaign-phase__item strong {
+  display: block;
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--fwd-navy);
+  margin-bottom: 2px;
+}
+
+/* ============================================================
+   6 — SOCIAL MEDIA COPY  (.fwd-social / .fwd-social-card)
+   ============================================================ */
+.fwd-social {
+  background: var(--fwd-page);
+}
+.fwd-social__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 28px;
+}
+.fwd-social-card {
+  background: #FFFFFF;
+  border: 1px solid var(--fwd-rule);
+  box-shadow: 0 16px 40px -34px rgba(10, 35, 66, 0.45);
+  padding: 32px 34px 30px;
+  display: flex;
+  flex-direction: column;
+}
+.fwd-social-card--wide {
+  grid-column: 1 / -1;
+}
+.fwd-social-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 18px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--fwd-rule);
+}
+.fwd-social-card__platform {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--fwd-navy);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.fwd-social-card__platform::before {
+  content: "";
+  width: 18px;
+  height: 2px;
+  background: var(--fwd-gold);
+}
+.fwd-social-card__index {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--fwd-gold);
+}
+.fwd-social-card__title {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--fwd-navy);
+  margin-bottom: 16px;
+}
+.fwd-social-card__copy {
+  font-size: 13px;
+  line-height: 1.74;
+  color: var(--fwd-ink);
+  flex: 1;
+}
+.fwd-social-card__copy p { margin-bottom: 12px; }
+.fwd-social-card__copy p:last-child { margin-bottom: 0; }
+.fwd-social-card__lede {
+  font-family: var(--fwd-font-display);
+  font-style: italic;
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--fwd-navy);
+}
+.fwd-social-card__facts {
+  font-family: var(--fwd-font-body);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--fwd-ink-soft);
+}
+/* Stat list variant (Story bullet stats) */
+.fwd-social-card__stats {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 28px;
+  font-size: 12.5px;
+}
+.fwd-social-card__stats li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid var(--fwd-rule);
+}
+.fwd-social-card__stats .k {
+  color: var(--fwd-ink-soft);
+}
+.fwd-social-card__stats .v {
+  font-weight: 500;
+  color: var(--fwd-navy);
+  text-align: right;
+}
+/* Script blocks (TikTok) */
+.fwd-social-card__script-row { margin-bottom: 16px; }
+.fwd-social-card__script-cue {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  margin-bottom: 6px;
+}
+/* Hashtags subdued, below the copy */
+.fwd-social-card__tags {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--fwd-rule);
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  line-height: 1.9;
+  color: var(--fwd-ink-soft);
+  opacity: 0.85;
+}
+
+/* ============================================================
+   7 — SELLER PREP GUIDE  (.fwd-prep / .fwd-prep-section)
+   Concierge brief
+   ============================================================ */
+.fwd-prep {
+  background: var(--fwd-page);
+}
+.fwd-prep__intro {
+  max-width: 600px;
+  font-family: var(--fwd-font-display);
+  font-weight: 400;
+  font-size: 21px;
+  line-height: 1.5;
+  color: var(--fwd-navy);
+  margin-bottom: 56px;
+}
+.fwd-prep__columns {
+  column-count: 2;
+  column-gap: 52px;
+}
+.fwd-prep-section {
+  break-inside: avoid;
+  margin-bottom: 40px;
+}
+.fwd-prep-section__header {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--fwd-rule-gold);
+}
+.fwd-prep-section__list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.fwd-prep-section__item {
+  position: relative;
+  padding-left: 30px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--fwd-ink);
+}
+/* Refined open checkbox marker */
+.fwd-prep-section__item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid var(--fwd-gold);
+}
+
+/* ============================================================
+   COLOPHON / BACK
+   ============================================================ */
+.fwd-colophon {
+  background: var(--fwd-navy);
+  color: var(--fwd-paper);
+  text-align: center;
+  padding: 96px 64px;
+}
+.fwd-colophon__wordmark {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 34px;
+  letter-spacing: 0.4em;
+  padding-left: 0.4em;
+  margin-bottom: 20px;
+}
+.fwd-colophon__rule {
+  width: 56px;
+  height: 2px;
+  background: var(--fwd-gold);
+  margin: 0 auto 22px;
+}
+.fwd-colophon__line {
+  font-family: var(--fwd-font-body);
+  font-weight: 400;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(247, 244, 239, 0.7);
+  line-height: 2;
+}
+
+/* ============================================================
+   RESPONSIVE — graceful narrowing (preview/handoff convenience)
+   ============================================================ */
+@media (max-width: 920px) {
+  :root { --fwd-gutter: 48px; }
+  .fwd-cover { padding: 40px; }
+  .fwd-cover__address { font-size: 60px; }
+  .fwd-listing__statement { font-size: 40px; }
+  .fwd-listing__columns,
+  .fwd-prep__columns { column-count: 1; }
+  .fwd-avatar-card__blocks { grid-template-columns: 1fr; gap: 22px; }
+  .fwd-avatar-card__head { flex-direction: column; }
+  .fwd-avatar-card__networth { text-align: left; }
+  .fwd-social__grid { grid-template-columns: 1fr; }
+  .fwd-social-card__stats { grid-template-columns: 1fr; }
+}
+
+/* ============================================================
+   PRINT
+   ============================================================ */
+@media print {
+  /* Named page boxes: navy sections bleed to the sheet edge; content
+     sections carry a uniform margin that applies to EVERY page of the
+     section (including continuations), not just the first. */
+  @page { margin: 0; }
+  @page fwdBleed   { margin: 0; }
+  @page fwdContent { margin: 11mm 17mm 11mm; }
+
+  /* Tan is the base color of the whole sheet (incl. @page margins),
+     so a section's last page is never half-white. The root element's
+     background fills the entire page, margins included. */
+  html, body { background: var(--fwd-page); }
+
+  /* Full-bleed navy sections */
+  .fwd-cover,
+  .fwd-divider,
+  .fwd-colophon {
+    page: fwdBleed;
+    min-height: 100vh;
+  }
+
+  /* Content sections: page margin (above) provides spacing on every
+     sheet, so the tall on-screen padding is dropped here. */
+  .fwd-page {
+    page: fwdContent;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: var(--fwd-page);
+  }
+
+  /* Each top-level section opens on a fresh page (break BEFORE so a
+     section's tail never spawns a trailing blank page). */
+  .fwd-divider,
+  .fwd-page,
+  .fwd-colophon { break-before: page; }
+
+  /* Keep atomic blocks intact across page breaks. */
+  .fwd-avatar-card,
+  .fwd-social-card,
+  .fwd-prep-section,
+  .fwd-campaign-phase,
+  .fwd-letter__signoff,
+  .fwd-listing__statement,
+  .fwd-listing__closer,
+  .fwd-listing__spec { break-inside: avoid; }
+
+  /* Never strand a heading at the foot of a page; keep running heads
+     attached to the first block beneath them (fixes the header-alone
+     page before Buyer Profiles). */
+  .fwd-runninghead,
+  .fwd-section-title,
+  .fwd-campaign-phase__title,
+  .fwd-prep-section__header,
+  .fwd-social-card__title { break-after: avoid; }
+
+  /* ---- COMPACTION: fit each section in as few pages as possible ---- */
+  .fwd-runninghead { margin-top: 0; margin-bottom: 26px; padding-bottom: 14px; }
+
+  /* Letter: fits one page, sign-off included */
+  .fwd-letter__date { margin-bottom: 20px; }
+  .fwd-letter__salutation { margin-bottom: 20px; }
+  .fwd-letter .fwd-letter__lede { line-height: 1.62; margin-bottom: 16px; }
+  .fwd-letter p { line-height: 1.62; margin-bottom: 14px; }
+  .fwd-letter__signoff { margin-top: 26px; padding-top: 22px; }
+  .fwd-letter__regards { margin-bottom: 12px; }
+
+  /* Listing: fits two pages with the closer */
+  .fwd-listing__spec { padding-bottom: 24px; margin-bottom: 28px; gap: 28px; }
+  .fwd-listing__statement { font-size: 40px; }
+  .fwd-listing__statement-rule { margin: 22px 0 26px; }
+  .fwd-listing__columns { font-size: 13px; line-height: 1.6; column-gap: 40px; }
+  .fwd-listing__columns p { margin-bottom: 12px; }
+  .fwd-listing__closer { font-size: 21px; margin-top: 18px; }
+
+  /* Buyer profiles: two cards per sheet */
+  .fwd-avatars__grid { gap: 22px; }
+  .fwd-avatar-card { padding: 20px 28px 20px; box-shadow: none; }
+  .fwd-avatar-card__dossier { margin-bottom: 6px; }
+  .fwd-avatar-card__head { padding-bottom: 13px; margin-bottom: 14px; }
+  .fwd-avatar-card__meta { margin-top: 8px; }
+  .fwd-avatar-card__name { font-size: 25px; }
+  .fwd-avatar-card__blocks { gap: 20px; margin-bottom: 15px; }
+  .fwd-avatar-card__block-label { padding-bottom: 7px; margin-bottom: 10px; }
+  .fwd-avatar-card__block-text { font-size: 11.5px; line-height: 1.48; }
+  .fwd-avatar-card__quote { padding: 14px 20px; }
+  .fwd-avatar-card__quote-label { margin-bottom: 8px; }
+  .fwd-avatar-card__quote-text { font-size: 16px; line-height: 1.3; }
+
+  /* Social: tighter cards */
+  .fwd-social__grid { gap: 20px; }
+  .fwd-social-card { padding: 22px 26px 20px; box-shadow: none; }
+  .fwd-social-card__head { padding-bottom: 14px; margin-bottom: 16px; }
+  .fwd-social-card__title { font-size: 20px; margin-bottom: 12px; }
+  .fwd-social-card__copy { font-size: 12.5px; line-height: 1.6; }
+  .fwd-social-card__tags { margin-top: 16px; padding-top: 14px; }
+
+  /* Campaign: tighter phases */
+  .fwd-campaign-phase { padding-bottom: 30px; }
+  .fwd-campaign-phase__title { font-size: 26px; margin-bottom: 16px; }
+  .fwd-campaign-phase__list { gap: 12px; }
+
+  /* Prep: tighter sections */
+  .fwd-prep__intro { font-size: 17px; line-height: 1.45; margin-bottom: 24px; }
+  .fwd-prep-section { margin-bottom: 18px; }
+  .fwd-prep-section__header { padding-bottom: 9px; margin-bottom: 13px; }
+  .fwd-prep-section__list { gap: 8px; }
+  .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
+}
+
 </style>
 </head>
 <body>
@@ -9105,238 +10139,460 @@ async function campApproveAndSend() {
   await campExportPDF();
 }
 
-async function campExportPDF() {
-  const sections = campParsed.value;
-  if (!sections || !sections.length) { showToast('No campaign content to export. Use the Campaign Generator first.', 5000); return; }
-  const prop = lstActiveProp.value;
-  if (!prop) { alert('No active property. Please select a listing first.'); return; }
+// ─────────────────────────────────────────────────────────────────────────────
+// CAMPAIGN PACKAGE PDF EXPORT — scaffold approach (v2)
+// Builds structured `pkg` from campParsed + lstActiveProp + mlsForm,
+// stores in sessionStorage, opens campaign-print.html which auto-prints.
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF({ unit: 'pt', format: 'letter' });
-  await _loadCampaignFonts(doc);
-  const W = 612, H = 792, ML = 48, MR = 48, TW = 612 - 96;
-  let y = 0;
-  let pageNum = 1;
+function buildCampPkg(sections, prop, agName, mls) {
+  // ── helpers ──────────────────────────────────────────────────────────────
+  function find(pattern) {
+    return sections.find(function(s) {
+      return s.included !== false && pattern.test((s.title || '').toLowerCase());
+    });
+  }
+  function paras(text) {
+    return (text || '').split(/\n{2,}/)
+      .map(function(p) { return p.replace(/^\n+|\n+$/g, '').trim(); })
+      .filter(Boolean);
+  }
+  function lns(text) {
+    return (text || '').split(/\n/)
+      .map(function(l) { return l.trim(); })
+      .filter(Boolean);
+  }
+  function stripMd(s) { return (s || '').replace(/\*\*/g, '').replace(/\*/g, '').trim(); }
 
-  function addPage() { doc.addPage(); pageNum++; y = 60; }
-  function checkY(needed) { if (y + needed > H - 60) addPage(); }
+  // ── address / agent ───────────────────────────────────────────────────────
+  function titleCaseAddr(s) {
+    var ABBREVS = { rd:'Road', st:'Street', ave:'Avenue', dr:'Drive', blvd:'Boulevard',
+                    ln:'Lane', ct:'Court', pl:'Place', way:'Way', cir:'Circle',
+                    ter:'Terrace', trl:'Trail', hwy:'Highway', pkwy:'Parkway' };
+    return s.split(/\s+/).map(function(w) {
+      var l = w.replace(/[^a-zA-Z]/g, '').toLowerCase();
+      if (ABBREVS[l]) return ABBREVS[l];
+      return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+    }).join(' ');
+  }
+  var STATE_NAMES = {
+    'AL':'Alabama','AK':'Alaska','AZ':'Arizona','AR':'Arkansas','CA':'California',
+    'CO':'Colorado','CT':'Connecticut','DE':'Delaware','DC':'D.C.','FL':'Florida',
+    'GA':'Georgia','HI':'Hawaii','ID':'Idaho','IL':'Illinois','IN':'Indiana',
+    'IA':'Iowa','KS':'Kansas','KY':'Kentucky','LA':'Louisiana','ME':'Maine',
+    'MD':'Maryland','MA':'Massachusetts','MI':'Michigan','MN':'Minnesota',
+    'MS':'Mississippi','MO':'Missouri','MT':'Montana','NE':'Nebraska','NV':'Nevada',
+    'NH':'New Hampshire','NJ':'New Jersey','NM':'New Mexico','NY':'New York',
+    'NC':'North Carolina','ND':'North Dakota','OH':'Ohio','OK':'Oklahoma',
+    'OR':'Oregon','PA':'Pennsylvania','RI':'Rhode Island','SC':'South Carolina',
+    'SD':'South Dakota','TN':'Tennessee','TX':'Texas','UT':'Utah','VT':'Vermont',
+    'VA':'Virginia','WA':'Washington','WV':'West Virginia','WI':'Wisconsin','WY':'Wyoming'
+  };
+  var addr      = ((prop.address || prop.full_address || '')).trim();
+  var addrM     = addr.match(/^(.+?),\s*(.+)$/);
+  var streetRaw = addrM ? addrM[1] : addr;
+  var localeRaw = addrM ? addrM[2] : '';
+  var street    = titleCaseAddr(streetRaw);
+  // Normalize locale: 'BALTIMORE MD 21204' → 'BALTIMORE, MARYLAND 21204'
+  var locale    = (function(r) {
+    r = r.toUpperCase();
+    r = r.replace(/\b([A-Z]{2})\b(?=\s+\d{5})/, function(m,s){ return (STATE_NAMES[s]||s).toUpperCase(); });
+    r = r.replace(/([A-Za-z]+)\s+([A-Za-z]+(?:\s+[A-Za-z]+)*)(?=\s+\d{5})/, '$1, $2');
+    return r;
+  })(localeRaw);
+  var agentN    = ((prop.agent_name || agName || 'Marc Cashin')).trim();
+  var today     = new Date();
+  var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
+  var sellerN   = ((prop.seller_name || prop.contact_name || 'Valued Seller')).trim();
+  var greeting  = sellerN.split(/\s+/)[0] || 'Valued Seller';
 
-  // Strip markdown and emojis for plain-text PDF rendering
-  function clean(text) {
-    return (text || '')
-      .replace(/```[\s\S]*?```/g, function(m){ return m.replace(/```[a-z]*/g,'').trim(); })
-      .replace(/[\u{1F000}-\u{1FFFF}]|[\u{2600}-\u{27BF}]/gu, '')
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/^#{1,6}\s+/gm, '')
-      .replace(/^>\s*/gm, '    ')
-      .replace(/^[+\-\*]\s+/gm, '- ')
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      .replace(/`([^`]+)`/g, '$1')
-      .replace(/\u2014/g, ',')
-      .replace(/\u2013/g, '-')
-      .replace(/\\#/g, '#')
-      .replace(/\\([^\\])/g, '$1')
-      .replace(/\u2192/g, '->')
-      .replace(/\u2018|\u2019/g, "'")
-      .replace(/\u201C|\u201D/g, '"')
-      .replace(/\u2022/g, '-')
-      .replace(/[^\x00-\x7E]/g, ' ');
+  // ── COVER ─────────────────────────────────────────────────────────────────
+  var cover = {
+    brokerageEyebrow: 'Boutique Residential Brokerage',
+    address: street,
+    locale: locale,
+    agentName: agentN,
+    dateNote: dateStr + '  ·  Prepared exclusively for seller use',
+  };
+
+  // ── LETTER ────────────────────────────────────────────────────────────────
+  var letterSec = find(/letter|cover letter/);
+  var letter;
+  if (letterSec) {
+    var lt = (letterSec.content || '').replace(/^Dear [^,\n]+,?\s*\n?/i, '').trim();
+    var lps = paras(lt);
+    var siIdx = lps.findIndex(function(p) { return /warm regards|sincerely|best regards/i.test(p); });
+    var lbody = siIdx > 0 ? lps.slice(0, siIdx) : lps;
+    letter = {
+      date: dateStr,
+      salutationName: greeting,
+      leadParagraph: lbody[0] || '',
+      paragraphs: lbody.slice(1),
+      agentName: agentN,
+      firm: 'FORWARD | Corcoran McEnearney',
+    };
+  } else {
+    letter = {
+      date: dateStr,
+      salutationName: greeting,
+      leadParagraph: 'It has been a privilege preparing this campaign package for ' + street + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.',
+      paragraphs: [
+        'Every element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.',
+        'The 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
+        'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
+      ],
+      agentName: agentN,
+      firm: 'FORWARD | Corcoran McEnearney',
+    };
   }
 
-  // Render a block of text with markdown-aware line handling
-  function renderBlock(text, indent) {
-    const x = ML + (indent || 0);
-    const blockW = TW - (indent || 0);
-    const rawLines = clean(text).split('\n');
-    rawLines.forEach(function(raw) {
-      const line = raw.trimEnd();
-      if (!line.trim()) { y += 6; return; }
-      // Detect separator lines
-      if (/^-{3,}$/.test(line.trim())) {
-        checkY(12);
-        doc.setDrawColor(180, 180, 180);
-        doc.setLineWidth(0.5);
-        doc.line(ML, y - 2, W - MR, y - 2);
-        y += 10;
-        return;
-      }
-      // Detect bold-only lines (e.g. "1. Name: ..." or section subheads)
-      const isBold = /^\d+\.\s+[A-Z]/.test(line.trim()) || /^(Name:|PRE-MARKET|WEEKS?\s*\d|ONGOING)/.test(line.trim());
-      doc.setFont('CormorantGaramond', isBold ? 'bold' : 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(30, 30, 30);
-      const wrapped = doc.splitTextToSize(line, blockW);
-      wrapped.forEach(function(wl) {
-        checkY(14);
-        doc.text(wl, x, y);
-        y += 14;
+  // ── LISTING SPECS (from mlsForm + prop) ──────────────────────────────────
+  var specs = [];
+  var price = mls.listPrice || prop.list_price || '';
+  if (price)         specs.push({ value: price,       key: 'Offered At' });
+  if (mls.beds)      specs.push({ value: mls.beds,    key: 'Bedrooms' });
+  if (mls.baths)     specs.push({ value: mls.baths,   key: 'Baths' });
+  if (mls.sqft)      specs.push({ value: mls.sqft,    key: 'Square Feet' });
+  // Prefer acres over year built in stats row; yearBuilt becomes a badge
+  var acresVal = (prop.acres || prop.lot_acres || prop.lot_size_acres || '').toString().trim();
+  if (acresVal) specs.push({ value: acresVal, key: 'Private Acres' });
+  var yearBuiltVal = (mls.yearBuilt || prop.year_built || '').toString().trim();
+  if (yearBuiltVal) specs.push({ value: yearBuiltVal, key: 'Year Built' });
+  var propBadge = null;
+  if (mls.propType || prop.prop_type) {
+    propBadge = { year: '', style: mls.propType || prop.prop_type || '' };
+  }
+
+  // ── LISTING DESCRIPTION ───────────────────────────────────────────────────
+  var lstSec = find(/listing.*desc|description|the residence/);
+  var listing;
+  var lstText = (lstSec && lstSec.content) || '';
+  if (lstText) {
+    var lps2 = paras(lstText);
+    var stmt  = stripMd(lps2[0] || '');
+    // Split statement at sentence boundary for better typography
+    var sm = stmt.match(/^(.{20,100}[.!?])\s(.+)/s);
+    var stmtWords = (sm ? sm[1] : stmt.substring(0, 100)).trim().split(/\s+/);
+    var lastW = stmtWords.pop() || '';
+    var stmtHtml = stmtWords.join(' ') + (stmtWords.length ? ' <em>' + lastW + '</em>' : lastW);
+    var body = lps2.slice(1).map(stripMd);
+    var closer = body.length > 1 ? body.pop() : '';
+    listing = { specs: specs, propBadge: propBadge, statementHtml: stmtHtml, columns: body, closer: closer };
+  } else {
+    listing = { specs: specs, propBadge: propBadge, statementHtml: street + '.', columns: [], closer: '' };
+  }
+
+  // ── BUYER PROFILES ────────────────────────────────────────────────────────
+  var avatarSec = find(/buyer.*profile|avatar|persona|target buyer/);
+  var buyerProfiles = [];
+  if (avatarSec) {
+    var atext = avatarSec.content || '';
+    // Try splitting on profile header lines (numbered or labeled)
+    var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Persona\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n))/i).filter(function(s) { return s.trim(); });
+    if (splits.length < 2) {
+      // Try splitting on bold name lines or numbered items
+      splits = atext.split(/\n(?=(?:\d+[\.\)]\s+[A-Z]|[A-Z][a-z]+ &? ?[A-Z][a-z]+\s*\n))/g).filter(function(s) { return s.trim(); });
+    }
+    if (splits.length > 1) {
+      splits.forEach(function(block, idx) {
+        var blines = lns(block);
+        function xf() {
+          var pats = Array.prototype.slice.call(arguments);
+          for (var pi = 0; pi < pats.length; pi++) {
+            var rx = new RegExp(pats[pi] + '[:\\-\\s]+(.+)', 'im');
+            var m = block.match(rx);
+            if (m) return stripMd(m[1]);
+          }
+          return '';
+        }
+        var firstLine = stripMd(blines[0] || '');
+        var nameLine = firstLine
+          .replace(/^(?:Persona|Profile|Buyer|Avatar|Dossier)\s+\d+\s*/i, '')
+          .replace(/^Name\s*[:\-]\s*/i, '')
+          .replace(/^[\d\.\)\s]+/, '')
+          .replace(/^\*+|\*+$/g, '')
+          .trim();
+        buyerProfiles.push({
+          indexLabel: 'Buyer Profile 0' + (idx + 1),
+          name: nameLine || xf('Name') || ('Buyer ' + (idx + 1)),
+          age: xf('Age', 'Ages'),
+          occupation: xf('Occupation', 'Career', 'Profession'),
+          netWorth: xf('Net Worth Range', 'Net Worth', 'Wealth', 'Assets'),
+          leavingBehind: xf('Leaving Behind', 'Moving From', "What They.re Leaving"),
+          movingToward: xf('Moving Toward', 'Moving To', 'Seeking', "What They.re Seeking"),
+          afraidOf: xf('Afraid Of', 'Fear', 'Concern', 'Worried About', 'Pain Point'),
+          stopScrolling: (xf('Stop.Scrolling Sentence', 'Stop.Scrolling', 'Hook', 'Headline', 'Key Line', 'Catchphrase') ||
+                         stripMd(blines[blines.length - 1] || '')).replace(/^Sentence\s*[:\-]\s*/i, '').trim(),
+        });
       });
-      doc.setFont('CormorantGaramond', 'normal');
+    } else {
+      // Fall back: treat whole section as one card with raw content as stopScrolling
+      var alines = lns(atext);
+      buyerProfiles = [{
+        indexLabel: 'Buyer Profile 01',
+        name: stripMd(alines[0] || 'Target Buyer'),
+        age: '', occupation: '', netWorth: '', leavingBehind: '', movingToward: '', afraidOf: '',
+        stopScrolling: paras(atext).slice(1).join(' ').substring(0, 400),
+      }];
+    }
+  }
+
+  // ── CAMPAIGN PLAN ─────────────────────────────────────────────────────────
+  var campSec = find(/campaign.*plan|30.day|marketing.*plan|timeline|campaign strategy/);
+  var campaign = { phases: [] };
+  if (campSec) {
+    var ctext = campSec.content || '';
+    // Split by phase header lines
+    var cblocks = ctext.split(/\n(?=(?:Pre-Market|Weeks?\s*[\d\-&]+(?:\s+(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing|Sustained|Phase\s*\d|Month\s*\d))/i).filter(function(s) { return s.trim(); });
+    if (cblocks.length < 2) cblocks = [ctext]; // no headers found — one phase
+    cblocks.forEach(function(block) {
+      var cl = lns(block);
+      if (!cl.length) return;
+      var hdr = stripMd(cl[0]);
+      var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+(?:(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing(?:\s+\w+)?|Sustained(?:\s+\w+)?|Phase\s*\d|Month\s*\d)/i);
+      var when  = wm ? wm[1].trim() : (campaign.phases.length === 0 ? '30-Day Campaign' : 'Phase ' + (campaign.phases.length + 1));
+      var title = '';
+      var items = cl.slice(1).filter(function(l) { return l.trim() && l.trim() !== ':'; }).map(function(l) {
+        var clean = l.replace(/^[\-\*\u2022\u00b7\u2713\u2714\u25b8\u25ba\u25c6\u25a1]+\s*/, '').trim();
+        clean = stripMd(clean);
+        var bm = l.match(/^\*\*(.+?)\*\*\s*[:\-]?\s*(.+)/);
+        var _item;
+        if (bm) _item = { lead: bm[1], text: bm[2] };
+        else {
+          var cm = clean.match(/^([^:]{5,45}?):\s+(.{10,})/);
+          if (cm) _item = { lead: cm[1], text: cm[2] };
+          else _item = { lead: '', text: clean };
+        }
+        if (_item.lead && /^(?:one|two|three|four|five|six|seven|eight|nine|ten|\d+\.?)$/i.test(_item.lead.trim())) {
+          _item.text = _item.lead + (_item.text ? ': ' + _item.text : '');
+          _item.lead = '';
+        }
+        return _item;
+      }).filter(function(it) { return it.text; });
+      if (title || items.length) campaign.phases.push({ when: when, title: title, items: items });
+    });
+    if (!campaign.phases.length) {
+      campaign.phases = [{ when: '30-Day Campaign', title: 'Campaign Strategy',
+        items: paras(campSec.content || '').map(function(p) { return { lead: '', text: p }; }) }];
+    }
+  }
+
+  // ── SOCIAL MEDIA ──────────────────────────────────────────────────────────
+  var socSec = find(/social.*media|social.*copy|instagram|facebook/);
+  var social = { posts: [] };
+  if (socSec) {
+    var stext = socSec.content || '';
+    // Split ONLY on true numbered headers "N. Title" or "N) Title"
+    // Avoids false splits on "1926 Ruxton Road" or "4.5 baths" etc.
+    var sblocks = stext.split(/\n(?=\d+[.)]\s)/i).filter(function(s) { return s.trim(); });
+    // Fallback: inline "(N)" split
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/(?=\(\d+\)\s)/g).filter(function(s) { return s.trim(); });
+    }
+    // Fallback: platform name at line start
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Twitter|LinkedIn)\b)/i).filter(function(s) { return s.trim(); });
+    }
+    sblocks.forEach(function(block, idx) {
+      var sl = lns(block);
+      if (!sl.length) return;
+      var hdr = sl[0];
+      // Strip "N." or "N)" or "(N)" number prefix
+      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
+      var plat;
+      var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
+      if (_storyM) {
+        plat = 'Instagram Story \u00b7 ' + _storyM[1].replace(/\s*\d+$/, '').trim();
+      } else {
+        var _netM = hdrClean.match(/^(.+?)\s+(Instagram|Facebook|Twitter|LinkedIn|TikTok)\b(.*)/i);
+        if (_netM) {
+          var _desc = (_netM[1] + (_netM[3] || '')).replace(/\s*Post\s*$/i, '').trim();
+          plat = _netM[2] + (_desc ? ' \u00b7 ' + _desc : '');
+        } else {
+          var _startM = hdrClean.match(/^(Instagram|Facebook|Twitter|LinkedIn|TikTok)\s+(.+)/i);
+          if (_startM) {
+            plat = _startM[1] + ' \u00b7 ' + _startM[2].replace(/\s*Post\s*$/i, '').trim();
+          } else {
+            plat = hdrClean.replace(/\s*Post\s*$/i, '').trim() || 'Social';
+          }
+        }
+      }
+      // Scan lines individually — hashtags found regardless of newline format
+      var contentLines = sl.slice(1);
+      var tagLine = contentLines.filter(function(l) { return /^#\w/.test(l.trim()); }).join(' ');
+      var bodyLines = contentLines.filter(function(l) { return l.trim() && !/^#\w/.test(l.trim()); });
+      // Try double-newline paragraph split; fall back to per-line for single-newline content
+      var bodyText = bodyLines.join('\n');
+      var bodyPs = paras(bodyText);
+      if (bodyPs.length <= 1 && bodyLines.length > 1) { bodyPs = bodyLines; }
+      // Title only if first para is a short hook (< 80 chars, not ending with ":")
+      var title = (bodyPs.length > 1 && bodyPs[0].length < 80 && !/:\s*$/.test(bodyPs[0])) ? bodyPs.shift() : '';
+      social.posts.push({
+        platform: plat,
+        indexLabel: String(idx + 1).padStart(2, '0'),
+        layout: 'copy',
+        title: title,
+        paragraphs: bodyPs.map(function(t, i) {
+          return { text: t, facts: i === bodyPs.length - 1 && /\$[\d,]+|\bbed\b|\bbath\b|sq\s*ft/i.test(t) };
+        }),
+        tags: tagLine,
+      });
+    });
+    if (!social.posts.length) {
+      var sps2 = paras(stext);
+      social.posts = [{ platform: 'Social Media', indexLabel: '01', layout: 'copy',
+        title: sps2[0] || '', paragraphs: sps2.slice(1).map(function(t) { return { text: t }; }), tags: '' }];
+    }
+  }
+
+  // ── TIKTOK ────────────────────────────────────────────────────────────────
+  var ttSec = find(/tiktok|tik tok|video.*script/);
+  var tiktok = { scripts: [] };
+  if (ttSec) {
+    var ttext = ttSec.content || '';
+    var tblocks = ttext.split(/\n(?=(?:Script\s*\d+|TikTok\s*\d+|Video\s*\d+|\*\*Script))/i).filter(function(s) { return s.trim(); });
+    if (!tblocks.length) tblocks = [ttext];
+    tblocks.forEach(function(block, idx) {
+      var tl = lns(block);
+      var rows = [];
+      var curCue = '', curText = '';
+      tl.slice(1).forEach(function(line) {
+        var cm = line.match(/^(?:\[([^\]]+)\]|(?:Hook|Narration|Call to Action|CTA|B-Roll)(?:\s*[·\-]\s*[\d\-–]+s)?)\s*[:\-]?\s*/i);
+        if (cm) {
+          if (curText) rows.push({ cue: curCue, lede: /^hook/i.test(curCue), text: curText.trim() });
+          curCue = line.replace(/\s*[:\-\s]+$/, '').replace(/^\[|\]$/g, '').trim();
+          curText = '';
+        } else {
+          curText += (curText ? ' ' : '') + line.trim();
+        }
+      });
+      if (curText) rows.push({ cue: curCue, lede: /^hook/i.test(curCue), text: curText.trim() });
+      if (!rows.length) rows = [{ cue: '', lede: false, text: tl.slice(1).join(' ') }];
+      tiktok.scripts.push({ platform: 'TikTok · Script 0' + (idx + 1), indexLabel: String(idx + 1).padStart(2, '0'), rows: rows });
     });
   }
 
-  // Draw a navy section header bar
-  function sectionHeader(title) {
-    checkY(36);
-    doc.setFillColor(10, 37, 64);
-    doc.rect(0, y - 18, W, 28, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(12);
-    doc.setFont('Montserrat', 'bold');
-    doc.text(title.toUpperCase(), ML, y);
-    y += 56;
-    doc.setTextColor(30, 30, 30);
-    doc.setFont('CormorantGaramond', 'normal');
-  }
-
-  // ── Variables ──────────────────────────────────────────────────
-  const addr = clean(prop.address || prop.full_address || '');
-  const agentDisplay = clean(prop.agent_name || 'Marc Cashin');
-  const today = new Date();
-  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-  const sellerName = clean(prop.seller_name || prop.contact_name || '');
-  // Parse "Tom & Anette" or "Tom and Anette" from a single seller_name field,
-  // OR fall back to seller_name_2 for the second name.
-  let _gFirst = '', _gSecond = '';
-  const _andMatch = sellerName.match(/^(.+?)\s+(?:&|and)\s+(.+)$/i);
-  if (_andMatch) {
-    _gFirst  = _andMatch[1].trim().split(' ')[0];
-    _gSecond = _andMatch[2].trim().split(' ')[0];
+  // ── FLYER ─────────────────────────────────────────────────────────────────
+  var flySec = find(/flyer|property.*flyer/);
+  var flyer;
+  if (flySec) {
+    var ftext  = flySec.content || '';
+    var fps    = paras(ftext);
+    var flines = lns(ftext);
+    var headline = (fps.find(function(p) { return p.length < 120 && !/^\$[\d,]/.test(p) && !/\bbed\b|\bbath\b/i.test(p); }) || fps[0] || street).replace(/^(?:Headline|Tagline|Title)\s*[:\-]\s*/i, '').trim();
+    var features = flines.filter(function(l) { return /^[\-\*\•·✓✔▸►◆□]/.test(l); }).map(function(l) { return stripMd(l.replace(/^[\-\*\•·✓✔▸►◆□\s]+/, '')); }).filter(Boolean);
+    var bodyPs   = fps.filter(function(p) { return p !== headline && !/^#\w+/.test(p) && !/^[\-\*\•]/.test(p.trim()); }).slice(0, 3).map(stripMd);
+    flyer = { headline: headline, address: street + ', ' + locale, price: price, specs: specs.slice(0, 5), body: bodyPs, features: features.slice(0, 8) };
   } else {
-    _gFirst = sellerName ? sellerName.split(' ')[0] : '';
+    var mfeat = (mls.features || []).filter(Boolean);
+    flyer = { headline: street, address: addr, price: price, specs: specs, body: [], features: mfeat };
   }
 
-  // ── Cover Page (Page 1) ──────────────────────────────────────
-  doc.setFillColor(10, 37, 64);
-  doc.rect(0, 0, W, H, 'F');
-  // Top gold rule
-  doc.setFillColor(200, 169, 110);
-  doc.rect(ML, 72, TW, 1.5, 'F');
-  // Wordmark
-  doc.setTextColor(200, 169, 110);
-  doc.setFontSize(8);
-  doc.setFont('Montserrat', 'bold');
-  doc.text('FORWARD  |  CORCORAN MCENEARNEY', ML, 62);
-  // Title
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(42);
-  doc.setFont('Montserrat', 'bold');
-  doc.text('CAMPAIGN', ML, 224);
-  doc.text('PACKAGE', ML, 274);
-  // Gold rule under title
-  doc.setFillColor(200, 169, 110);
-  doc.rect(ML, 292, TW, 2, 'F');
-  // Property address
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(16);
-  doc.setFont('CormorantGaramond', 'normal');
-  var addrLines = doc.splitTextToSize(addr, TW);
-  var coverBodyY = 322;
-  addrLines.forEach(function(al, i) { doc.text(al, ML, coverBodyY + i * 22); });
-  var coverY2 = coverBodyY + addrLines.length * 22 + 20;
-  // Agent name
-  doc.setFontSize(10);
-  doc.setTextColor(200, 169, 110);
-  doc.setFont('Montserrat', 'bold');
-  doc.text(agentDisplay.toUpperCase(), ML, coverY2);
-  // Date
-  doc.setFontSize(10);
-  doc.setTextColor(170, 170, 170);
-  doc.setFont('CormorantGaramond', 'normal');
-  doc.text(dateStr, ML, coverY2 + 18);
-  // Bottom rule + label
-  doc.setFillColor(200, 169, 110);
-  doc.rect(ML, H - 72, TW, 1.5, 'F');
-  doc.setTextColor(200, 169, 110);
-  doc.setFontSize(7);
-  doc.setFont('Montserrat', 'bold');
-  doc.text('PREPARED EXCLUSIVELY FOR SELLER USE', ML, H - 52);
-
-  // ── Page 2: Letter to Seller ─────────────────────────────────
-  addPage();
-  sectionHeader('Letter to Seller');
-  doc.setFont('CormorantGaramond', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(30, 30, 30);
-
-  // Build greeting — use parsed names from seller_name field ("Tom & Anette")
-  // then fall back to seller_name_2 for a separately stored co-seller
-  if (!_gSecond) {
-    const _sn2 = clean(prop.seller_name_2 || (prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '');
-    if (_sn2) _gSecond = _sn2.split(' ')[0];
-  }
-  let greeting = '';
-  if (_gFirst && _gSecond) {
-    greeting = 'Dear ' + _gFirst + ' and ' + _gSecond + ',';
-  } else if (_gFirst) {
-    greeting = 'Dear ' + _gFirst + ',';
+  // ── LINKEDIN ──────────────────────────────────────────────────────────────
+  var liSec = find(/linkedin|professional.*post/);
+  var linkedin;
+  if (liSec) {
+    var liPs = paras(liSec.content || '');
+    var liTag = liPs.find(function(p) { return /^#\w+/.test(p.trim()); }) || '';
+    var liBody = liPs.filter(function(p) { return !/^#\w+/.test(p.trim()); });
+    var liTitle = (liBody.length > 1 && liBody[0].length < 120) ? liBody.shift() : '';
+    linkedin = { platform: 'LinkedIn',  title: liTitle,
+      paragraphs: liBody.map(function(t) { return { text: t, facts: /\$[\d,]+|bed|bath|sq ft/i.test(t) }; }),
+      tags: liTag };
+  } else {
+    linkedin = { platform: 'LinkedIn', title: '', paragraphs: [], tags: '' };
   }
 
-  y += 36; // breathing room after section header
-  doc.text(dateStr, ML, y); y += 28;
-  if (greeting) { doc.text(greeting, ML, y); y += 28; }
+  // ── SELLER PREP ───────────────────────────────────────────────────────────
+  var prepSec = find(/seller.*prep|prep.*guide|checklist|home.*prep|preparation/);
+  var prep = { intro: '', sections: [] };
+  if (prepSec) {
+    var ptext = prepSec.content || '';
+    var pps   = paras(ptext);
+    prep.intro = pps.find(function(p) { return !/^[\-\*\•]/.test(p.trim()) && p.length > 30 && !/^[A-Z][A-Z\s]+$/.test(p.trim()); }) || '';
+    var plines = lns(ptext);
+    var curSec = null;
+    plines.forEach(function(line) {
+      var clean = stripMd(line);
+      if (!clean) return;
+      var isBullet = /^[\-\*\•·✓✔▸►◆□]/.test(line);
+      var isHeader = !isBullet && clean.length < 60 &&
+        (/^[A-Z][A-Z\s&\/]+$/.test(clean) ||
+         /(?:Curb|Interior|Kitchen|Bath|Outdoor|Mechanical|Staging|Lighting|Scent|Storage|Garage|Grounds|Living|Basement|Attic)/i.test(clean));
+      if (isHeader) {
+        curSec = { header: clean.replace(/:$/, ''), items: [] };
+        prep.sections.push(curSec);
+      } else if (isBullet && curSec) {
+        curSec.items.push(clean.replace(/^[\-\*\•·✓✔▸►◆□\s]+/, '').trim());
+      } else if (curSec && clean && clean !== prep.intro) {
+        curSec.items.push(clean);
+      }
+    });
+    if (!prep.sections.length) {
+      var bullets = lns(ptext).filter(function(l) { return /^[\-\*\•]/.test(l); }).map(function(l) { return l.replace(/^[\-\*\•\s]+/, '').trim(); }).filter(Boolean);
+      if (bullets.length) prep.sections = [{ header: 'Preparation Checklist', items: bullets }];
+    }
+  }
 
-  const letterBody = [
-    'It has been a privilege preparing this campaign package for ' + addr + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its infrastructure, and the buyers who will recognize its true value.',
-    'Every element of this package has been designed to attract serious, qualified buyers: the buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social media, video, and advertising materials are ready to deploy across every relevant platform.',
-    'The 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.',
-    'I am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.',
-  ];
-
-  doc.setFontSize(11);
-  letterBody.forEach(function(para) {
-    const wrapped = doc.splitTextToSize(para, TW);
-    wrapped.forEach(function(line) { checkY(16); doc.text(line, ML, y); y += 16; });
-    y += 14;
+  var _debug = sections.map(function(s) {
+    return { title: s.title, len: (s.content || s.text || s.body || '').length, hasContent: !!(s.content || s.text || s.body) };
   });
-
-  y += 8;
-  doc.text('Warm regards,', ML, y); y += 22;
-  doc.setFont('Montserrat', 'bold');
-  doc.text(agentDisplay, ML, y); y += 18;
-  doc.setFont('CormorantGaramond', 'normal');
-  doc.text('FORWARD | Corcoran McEnearney', ML, y); y += 30;
-
-  // ── 2. LISTING DESCRIPTION ───────────────────────────────────
-  const listingDesc = clean(lstNotes.listing_remarks || lstNotes.listing_description || '');
-  if (listingDesc && campLdIncluded.value) {
-    addPage();
-    sectionHeader('Listing Description');
-    y += 6;
-    renderBlock(listingDesc, 0);
-    y += 10;
-  }
-
-  // ── 3-6. CAMPAIGN SECTIONS (sorted by desired order) ─────────
-  const ORDER = ['buyer', 'plan', '30-day', 'social', 'tiktok', 'flyer', 'linkedin'];
-  function sectionPriority(title) {
-    const t = (title || '').toLowerCase();
-    if (t.includes('buyer') || t.includes('avatar')) return 0;
-    if (t.includes('30-day') || t.includes('plan') || t.includes('marketing')) return 1;
-    if (t.includes('social') || t.includes('instagram') || t.includes('facebook')) return 2;
-    if (t.includes('tiktok') || t.includes('script') || t.includes('video')) return 3;
-    if (t.includes('flyer') || t.includes('print') || t.includes('brochure')) return 4;
-    if (t.includes('linkedin')) return 5;
-    return 6;
-  }
-
-  const sorted = sections
-    .filter(function(s) { return s.included !== false; })
-    .slice()
-    .sort(function(a, b) { return sectionPriority(a.title) - sectionPriority(b.title); });
-
-  sorted.forEach(function(section) {
-    addPage();
-    sectionHeader(section.title || 'Section');
-    y += 6;
-    renderBlock(section.content || '', 0);
-  });
-
-  // Save
-  const filename = (addr || 'Campaign').replace(/[^a-zA-Z0-9 ]/g, '_') + '_Campaign.pdf';
-  doc.save(filename);
+  return { cover: cover, letter: letter, listing: listing, buyerProfiles: buyerProfiles,
+           campaign: campaign, social: social, tiktok: tiktok, flyer: flyer,
+           linkedin: linkedin, prep: prep };
 }
+
+async function campExportPDF() {
+  var sections = campParsed.value;
+  if (!sections || !sections.length) {
+    showToast('No campaign content to export. Use the Campaign Generator first.', 5000);
+    return;
+  }
+  var prop = lstActiveProp.value;
+  if (!prop) { alert('No active property. Please select a listing first.'); return; }
+
+  // Collect included sections only
+  // Inject listing description as a synthetic section if not already present
+  var _lstDesc = lstNotes && lstNotes.listing_remarks && lstNotes.listing_remarks.trim();
+  var _hasLstSec = sections.some(function(s) { return /listing.*desc|description|the residence/i.test(s.title || ''); });
+  if (_lstDesc && !_hasLstSec) {
+    sections = [{ title: 'LISTING DESCRIPTION', content: _lstDesc, included: true }].concat(sections);
+  }
+  var included = sections.filter(function(s) { return s.included !== false; });
+  if (!included.length) { showToast('All sections are excluded. Include at least one section.', 5000); return; }
+
+  // Build the structured pkg object
+  var pkg = buildCampPkg(
+    included,
+    prop,
+    agentName.value || '',
+    {
+      listPrice: mlsForm.listPrice || prop.list_price || '',
+      beds:      mlsForm.beds      || '',
+      baths:     mlsForm.baths     || '',
+      sqft:      mlsForm.sqft      || '',
+      yearBuilt: mlsForm.yearBuilt || '',
+      features:  (mlsForm.features || []).filter(Boolean),
+    }
+  );
+
+  // Store in sessionStorage — campaign-print.html reads this on load
+  try {
+    sessionStorage.setItem('fos_campPkg', JSON.stringify(pkg));
+  } catch (e) {
+    alert('Could not store campaign data for print. Your browser may have storage restrictions.');
+    return;
+  }
+
+  // Open the print page — must be same origin (deployed alongside index.html)
+  var win = window.open('campaign-print.html', '_blank');
+  if (!win) {
+    showToast('Pop-up blocked — please allow pop-ups for this site and try again.', 5000);
+  }
+}
+
+
+
 
 
 function campCopyToClipboard() {

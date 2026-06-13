@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campaign Package — FORWARD</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* forward-campaign-package.css — embedded globally. Do NOT scope. */
+:root {
+  --fwd-navy:        #0A2342;
+  --fwd-navy-deep:   #071A33;
+  --fwd-gold:        #C8A96E;
+  --fwd-gold-soft:   #D8C39A;
+  --fwd-paper:       #F7F4EF;
+  --fwd-paper-warm:  #EFE9DF;
+  --fwd-page:        #FFFFFF;
+  --fwd-ink:         #2A323C;
+  --fwd-ink-soft:    #5A6470;
+  --fwd-rule:        rgba(10, 35, 66, 0.14);
+  --fwd-rule-gold:   rgba(200, 169, 110, 0.55);
+  --fwd-font-display: 'Cormorant Garamond', Georgia, serif;
+  --fwd-font-body:    'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+  --fwd-page-w:   880px;
+  --fwd-gutter:   96px;
+  --fwd-track:    0.28em;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var(--fwd-page); font-weight: 400; line-height: 1.7; }
+.fwd-page { position: relative; max-width: var(--fwd-page-w); margin: 0 auto; padding: 120px var(--fwd-gutter) 132px; background: var(--fwd-page); }
+.fwd-section-label { font-family: var(--fwd-font-body); font-weight: 500; font-size: 11px; letter-spacing: var(--fwd-track); text-transform: uppercase; color: var(--fwd-gold); }
+.fwd-page-number { font-family: var(--fwd-font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fwd-gold); }
+.fwd-runninghead { display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px; margin-bottom: 56px; border-bottom: 1px solid var(--fwd-rule); }
+.fwd-section-title { font-family: var(--fwd-font-display); font-weight: 500; font-size: 52px; line-height: 1.04; letter-spacing: 0.01em; color: var(--fwd-navy); }
+.fwd-gold-rule { width: 64px; height: 2px; background: var(--fwd-gold); border: 0; }
+.fwd-divider { background: var(--fwd-navy); color: var(--fwd-paper); padding: 60px var(--fwd-gutter); text-align: center; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
+.fwd-divider::before { content: ""; position: absolute; inset: 28px; border: 1px solid var(--fwd-rule-gold); pointer-events: none; }
+.fwd-divider__inner { position: relative; z-index: 1; max-width: var(--fwd-page-w); margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 26px; }
+.fwd-divider__index { font-family: var(--fwd-font-body); font-weight: 500; font-size: 11px; letter-spacing: var(--fwd-track); text-transform: uppercase; color: var(--fwd-gold); }
+.fwd-divider__title { font-family: var(--fwd-font-display); font-weight: 500; font-size: 64px; letter-spacing: 0.02em; color: var(--fwd-paper); }
+.fwd-divider__rule { width: 1px; height: 56px; background: linear-gradient(to bottom, transparent, var(--fwd-gold)); }
+.fwd-divider__rule-bottom { width: 56px; height: 2px; background: var(--fwd-gold); }
+.fwd-cover { position: relative; min-height: 100vh; background: var(--fwd-navy); color: var(--fwd-paper); padding: 64px; display: flex; flex-direction: column; overflow: hidden; }
+.fwd-cover__frame { position: absolute; inset: 28px; border: 1px solid var(--fwd-rule-gold); pointer-events: none; }
+.fwd-cover__top { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-start; }
+.fwd-cover__lockup-eyebrow { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: var(--fwd-track); text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 14px; }
+.fwd-cover__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 40px; letter-spacing: 0.42em; color: var(--fwd-paper); padding-left: 0.42em; }
+.fwd-cover__center { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 760px; }
+.fwd-cover__eyebrow { font-family: var(--fwd-font-body); font-weight: 500; font-size: 13px; letter-spacing: 0.42em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 40px; }
+.fwd-cover__rule-top { width: 80px; height: 2px; background: var(--fwd-gold); margin-bottom: 44px; }
+.fwd-cover__address { font-family: var(--fwd-font-display); font-weight: 500; font-size: 88px; line-height: 0.98; letter-spacing: 0.005em; color: var(--fwd-paper); }
+.fwd-cover__address em { font-style: italic; color: var(--fwd-gold-soft); }
+.fwd-cover__locale { margin-top: 26px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 16px; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(247,244,239,0.8); }
+.fwd-cover__rule-bottom { width: 100%; max-width: 520px; height: 1px; background: var(--fwd-rule-gold); margin-top: 54px; }
+.fwd-cover__bottom { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; }
+.fwd-cover__meta-label { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 8px; }
+.fwd-cover__meta-value { font-family: var(--fwd-font-display); font-weight: 500; font-size: 26px; color: var(--fwd-paper); }
+.fwd-cover__meta-sub { margin-top: 4px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 12px; letter-spacing: 0.06em; color: rgba(247,244,239,0.6); }
+.fwd-cover__seal { text-align: right; font-family: var(--fwd-font-body); font-weight: 400; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(247,244,239,0.55); }
+.fwd-letter { background: var(--fwd-page); }
+.fwd-letter__body { max-width: 600px; margin: 0 auto; }
+.fwd-letter__date { font-family: var(--fwd-font-body); font-weight: 400; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fwd-ink-soft); margin-bottom: 48px; }
+.fwd-letter__salutation { font-family: var(--fwd-font-body); font-weight: 500; font-size: 15px; letter-spacing: 0.01em; color: var(--fwd-navy); margin-bottom: 24px; }
+.fwd-letter .fwd-letter__lede { font-family: var(--fwd-font-body); font-weight: 400; font-size: 15px; line-height: 1.85; color: var(--fwd-navy); margin-bottom: 24px; }
+.fwd-letter p { font-size: 15px; line-height: 1.85; color: var(--fwd-ink); margin-bottom: 24px; }
+.fwd-letter__signoff { margin-top: 52px; padding-top: 38px; border-top: 1px solid var(--fwd-rule); }
+.fwd-letter__regards { font-family: var(--fwd-font-body); font-weight: 400; font-size: 14px; color: var(--fwd-ink-soft); margin-bottom: 16px; }
+.fwd-letter__signature { font-family: var(--fwd-font-body); font-weight: 600; font-size: 17px; color: var(--fwd-navy); letter-spacing: 0.03em; }
+.fwd-letter__signature-rule { width: 48px; height: 2px; background: var(--fwd-gold); margin: 14px 0 12px; }
+.fwd-letter__firm { font-family: var(--fwd-font-body); font-weight: 500; font-size: 11px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fwd-ink-soft); }
+.fwd-listing { background: var(--fwd-page); }
+.fwd-listing__spec { display: flex; flex-wrap: wrap; gap: 40px; padding-bottom: 44px; margin-bottom: 56px; border-bottom: 1px solid var(--fwd-rule); }
+.fwd-listing__spec-item { display: flex; flex-direction: column; gap: 4px; flex: 0 0 auto; }
+.fwd-listing__spec-value { font-family: var(--fwd-font-display); font-weight: 600; font-size: 28px; color: var(--fwd-navy); line-height: 1; white-space: nowrap; }
+.fwd-listing__spec-key { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fwd-gold); }
+.fwd-listing__statement { font-family: var(--fwd-font-display); font-weight: 500; font-size: 56px; line-height: 1.08; letter-spacing: 0.005em; color: var(--fwd-navy); margin-bottom: 12px; text-wrap: balance; }
+.fwd-listing__statement em { font-style: italic; color: var(--fwd-gold); }
+.fwd-listing__statement-rule { width: 64px; height: 2px; background: var(--fwd-gold); margin: 40px 0 48px; }
+.fwd-listing__columns { column-count: 2; column-gap: 52px; font-size: 14.5px; line-height: 1.82; color: var(--fwd-ink); }
+.fwd-listing__columns p { margin-bottom: 20px; break-inside: avoid-column; }
+.fwd-listing__columns p:first-child::first-letter { font-family: var(--fwd-font-display); font-weight: 600; font-size: 58px; line-height: 0.8; float: left; padding: 6px 12px 0 0; color: var(--fwd-navy); }
+.fwd-listing__closer { margin-top: 12px; font-family: var(--fwd-font-display); font-style: italic; font-weight: 500; font-size: 26px; line-height: 1.4; color: var(--fwd-navy); text-align: center; max-width: 640px; margin-left: auto; margin-right: auto; }
+.fwd-avatars { background: var(--fwd-page); }
+.fwd-avatars__grid { display: flex; flex-direction: column; gap: 40px; }
+.fwd-avatar-card { background: #FFFFFF; border: 1px solid var(--fwd-rule); border-top: 3px solid var(--fwd-gold); padding: 44px 48px 40px; box-shadow: 0 18px 44px -34px rgba(10,35,66,0.5); }
+.fwd-avatar-card__head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; padding-bottom: 26px; margin-bottom: 30px; border-bottom: 1px solid var(--fwd-rule); }
+.fwd-avatar-card__dossier { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 10px; }
+.fwd-avatar-card__name { font-family: var(--fwd-font-display); font-weight: 600; font-size: 32px; line-height: 1.05; color: var(--fwd-navy); }
+.fwd-avatar-card__meta { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 8px 22px; font-family: var(--fwd-font-body); font-weight: 400; font-size: 12.5px; color: var(--fwd-ink-soft); }
+.fwd-avatar-card__meta span strong { font-weight: 500; color: var(--fwd-ink); }
+.fwd-avatar-card__networth { flex-shrink: 0; text-align: right; }
+.fwd-avatar-card__networth-key { font-family: var(--fwd-font-body); font-weight: 500; font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 6px; }
+.fwd-avatar-card__networth-value { font-family: var(--fwd-font-display); font-weight: 600; font-size: 26px; color: var(--fwd-navy); white-space: nowrap; }
+.fwd-avatar-card__blocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-bottom: 34px; }
+.fwd-avatar-card__block-label { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fwd-navy); padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--fwd-rule-gold); }
+.fwd-avatar-card__block-text { font-size: 13px; line-height: 1.72; color: var(--fwd-ink); }
+.fwd-avatar-card__quote { position: relative; background: var(--fwd-paper); border-left: 3px solid var(--fwd-gold); padding: 26px 30px 26px 32px; }
+.fwd-avatar-card__quote-label { font-family: var(--fwd-font-body); font-weight: 600; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 12px; }
+.fwd-avatar-card__quote-text { font-family: var(--fwd-font-display); font-style: italic; font-weight: 500; font-size: 21px; line-height: 1.42; color: var(--fwd-navy); }
+.fwd-campaign { background: var(--fwd-page); }
+.fwd-campaign__timeline { position: relative; padding-left: 44px; }
+.fwd-campaign__timeline::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 1px; background: var(--fwd-rule-gold); }
+.fwd-campaign-phase { position: relative; padding-bottom: 52px; }
+.fwd-campaign-phase:last-child { padding-bottom: 0; }
+.fwd-campaign-phase::before { content: ""; position: absolute; left: -44px; top: 6px; width: 15px; height: 15px; border-radius: 50%; background: var(--fwd-page); border: 2px solid var(--fwd-gold); }
+.fwd-campaign-phase__when { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 8px; }
+.fwd-campaign-phase__title { font-family: var(--fwd-font-display); font-weight: 600; font-size: 30px; color: var(--fwd-navy); margin-bottom: 22px; }
+.fwd-campaign-phase__list { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+.fwd-campaign-phase__item { position: relative; padding-left: 30px; font-size: 13.5px; line-height: 1.66; color: var(--fwd-ink); }
+.fwd-campaign-phase__item::before { content: ""; position: absolute; left: 0; top: 9px; width: 7px; height: 7px; background: var(--fwd-gold); transform: rotate(45deg); }
+.fwd-campaign-phase__item strong { display: block; font-family: var(--fwd-font-body); font-weight: 600; font-size: 13.5px; color: var(--fwd-navy); margin-bottom: 2px; }
+.fwd-social { background: var(--fwd-page); }
+.fwd-social__grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; }
+.fwd-social-card { background: #FFFFFF; border: 1px solid var(--fwd-rule); box-shadow: 0 16px 40px -34px rgba(10,35,66,0.45); padding: 32px 34px 30px; display: flex; flex-direction: column; }
+.fwd-social-card--wide { grid-column: 1 / -1; }
+.fwd-social-card__head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-bottom: 18px; margin-bottom: 20px; border-bottom: 1px solid var(--fwd-rule); }
+.fwd-social-card__platform { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fwd-navy); display: inline-flex; align-items: center; gap: 10px; }
+.fwd-social-card__platform::before { content: ""; width: 18px; height: 2px; background: var(--fwd-gold); }
+.fwd-social-card__index { font-family: var(--fwd-font-display); font-weight: 600; font-size: 18px; color: var(--fwd-gold); }
+.fwd-social-card__title { font-family: var(--fwd-font-display); font-weight: 600; font-size: 22px; line-height: 1.2; color: var(--fwd-navy); margin-bottom: 16px; }
+.fwd-social-card__copy { font-size: 13px; line-height: 1.74; color: var(--fwd-ink); flex: 1; }
+.fwd-social-card__copy p { margin-bottom: 12px; }
+.fwd-social-card__copy p:last-child { margin-bottom: 0; }
+.fwd-social-card__lede { font-family: var(--fwd-font-display); font-style: italic; font-size: 18px; line-height: 1.45; color: var(--fwd-navy); }
+.fwd-social-card__facts { font-family: var(--fwd-font-body); font-weight: 500; font-size: 12px; letter-spacing: 0.04em; color: var(--fwd-ink-soft); }
+.fwd-social-card__stats { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 28px; font-size: 12.5px; }
+.fwd-social-card__stats li { display: flex; justify-content: space-between; gap: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--fwd-rule); }
+.fwd-social-card__stats .k { color: var(--fwd-ink-soft); }
+.fwd-social-card__stats .v { font-weight: 500; color: var(--fwd-navy); text-align: right; }
+.fwd-social-card__script-row { margin-bottom: 16px; }
+.fwd-social-card__script-cue { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 6px; }
+.fwd-social-card__tags { margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--fwd-rule); font-family: var(--fwd-font-body); font-weight: 400; font-size: 11px; letter-spacing: 0.03em; line-height: 1.9; color: var(--fwd-ink-soft); opacity: 0.85; }
+.fwd-flyer { background: var(--fwd-page); }
+.fwd-flyer__sheet { border: 1px solid var(--fwd-rule); border-top: 3px solid var(--fwd-gold); box-shadow: 0 18px 44px -34px rgba(10,35,66,0.5); padding: 52px 56px 46px; text-align: center; }
+.fwd-flyer__eyebrow { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 18px; }
+.fwd-flyer__headline { font-family: var(--fwd-font-display); font-weight: 500; font-size: 38px; line-height: 1.12; color: var(--fwd-navy); max-width: 620px; margin: 0 auto; text-wrap: balance; }
+.fwd-flyer__rule { width: 64px; height: 2px; background: var(--fwd-gold); margin: 26px auto 24px; }
+.fwd-flyer__address { font-family: var(--fwd-font-body); font-weight: 400; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-ink-soft); margin-bottom: 12px; }
+.fwd-flyer__price { font-family: var(--fwd-font-display); font-weight: 600; font-size: 30px; color: var(--fwd-navy); margin-bottom: 30px; }
+.fwd-flyer__specs { display: flex; justify-content: center; flex-wrap: wrap; border-top: 1px solid var(--fwd-rule); border-bottom: 1px solid var(--fwd-rule); padding: 22px 0; margin-bottom: 32px; }
+.fwd-flyer__spec { padding: 0 24px; border-right: 1px solid var(--fwd-rule); }
+.fwd-flyer__spec:last-child { border-right: 0; }
+.fwd-flyer__spec-value { display: block; font-family: var(--fwd-font-display); font-weight: 600; font-size: 24px; color: var(--fwd-navy); line-height: 1.1; }
+.fwd-flyer__spec-key { font-family: var(--fwd-font-body); font-weight: 500; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fwd-gold); }
+.fwd-flyer__body { column-count: 2; column-gap: 44px; text-align: left; font-size: 13.5px; line-height: 1.8; color: var(--fwd-ink); margin-bottom: 30px; }
+.fwd-flyer__body p { margin-bottom: 16px; break-inside: avoid; }
+.fwd-flyer__features { text-align: left; border-top: 1px solid var(--fwd-rule-gold); padding-top: 26px; }
+.fwd-flyer__features-label { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 16px; }
+.fwd-flyer__features-list { list-style: none; column-count: 2; column-gap: 44px; }
+.fwd-flyer__features-item { position: relative; padding-left: 22px; margin-bottom: 11px; font-size: 13px; line-height: 1.5; color: var(--fwd-ink); break-inside: avoid; }
+.fwd-flyer__features-item::before { content: ""; position: absolute; left: 0; top: 7px; width: 7px; height: 7px; background: var(--fwd-gold); transform: rotate(45deg); }
+.fwd-prep { background: var(--fwd-page); }
+.fwd-prep__intro { max-width: 600px; font-family: var(--fwd-font-display); font-weight: 400; font-size: 21px; line-height: 1.5; color: var(--fwd-navy); margin-bottom: 56px; }
+.fwd-prep__columns { column-count: 2; column-gap: 52px; }
+.fwd-prep-section { break-inside: avoid; margin-bottom: 40px; }
+.fwd-prep-section__header { font-family: var(--fwd-font-body); font-weight: 600; font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fwd-gold); padding-bottom: 12px; margin-bottom: 18px; border-bottom: 1px solid var(--fwd-rule-gold); }
+.fwd-prep-section__list { list-style: none; display: flex; flex-direction: column; gap: 13px; }
+.fwd-prep-section__item { position: relative; padding-left: 30px; font-size: 13px; line-height: 1.6; color: var(--fwd-ink); }
+.fwd-prep-section__item::before { content: ""; position: absolute; left: 0; top: 3px; width: 13px; height: 13px; border: 1.5px solid var(--fwd-gold); }
+.fwd-colophon { background: var(--fwd-navy); color: var(--fwd-paper); text-align: center; padding: 96px 64px; }
+.fwd-colophon__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 34px; letter-spacing: 0.4em; padding-left: 0.4em; margin-bottom: 20px; }
+.fwd-colophon__rule { width: 56px; height: 2px; background: var(--fwd-gold); margin: 0 auto 22px; }
+.fwd-colophon__line { font-family: var(--fwd-font-body); font-weight: 400; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(247,244,239,0.7); line-height: 2; }
+@media (max-width: 920px) {
+  :root { --fwd-gutter: 48px; }
+  .fwd-cover { padding: 40px; }
+  .fwd-cover__address { font-size: 60px; }
+  .fwd-listing__statement { font-size: 40px; }
+  .fwd-listing__columns, .fwd-prep__columns { column-count: 1; }
+  .fwd-avatar-card__blocks { grid-template-columns: 1fr; gap: 22px; }
+  .fwd-avatar-card__head { flex-direction: column; }
+  .fwd-avatar-card__networth { text-align: left; }
+  .fwd-social__grid { grid-template-columns: 1fr; }
+  .fwd-social-card__stats { grid-template-columns: 1fr; }
+}
+@media print {
+  @page          { margin: 0; }
+  @page fwdBleed   { margin: 0; }
+  @page fwdContent { margin: 11mm 17mm 11mm; }
+  html, body { background: var(--fwd-page); }
+  .fwd-cover, .fwd-divider, .fwd-colophon {
+    page: fwdBleed; min-height: 100vh;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .fwd-page {
+    page: fwdContent; max-width: none; margin: 0; padding: 0; background: var(--fwd-page);
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .fwd-divider, .fwd-page, .fwd-colophon { break-before: page; }
+  .fwd-avatar-card, .fwd-social-card, .fwd-prep-section, .fwd-campaign-phase,
+  .fwd-letter__signoff, .fwd-listing__statement, .fwd-listing__closer, .fwd-listing__spec { break-inside: avoid; }
+  .fwd-runninghead, .fwd-section-title, .fwd-campaign-phase__title,
+  .fwd-prep-section__header, .fwd-social-card__title { break-after: avoid; }
+  .fwd-runninghead { margin-top: 0; margin-bottom: 26px; padding-bottom: 14px; }
+  .fwd-letter__date { margin-bottom: 20px; }
+  .fwd-letter__salutation { margin-bottom: 20px; }
+  .fwd-letter .fwd-letter__lede { line-height: 1.62; margin-bottom: 16px; }
+  .fwd-letter p { line-height: 1.62; margin-bottom: 14px; }
+  .fwd-letter__signoff { margin-top: 26px; padding-top: 22px; }
+  .fwd-letter__regards { margin-bottom: 12px; }
+  .fwd-listing__spec { padding-bottom: 24px; margin-bottom: 28px; gap: 28px; }
+  .fwd-listing__statement { font-size: 40px; }
+  .fwd-listing__statement-rule { margin: 22px 0 26px; }
+  .fwd-listing__columns { font-size: 13px; line-height: 1.6; column-gap: 40px; }
+  .fwd-listing__columns p { margin-bottom: 12px; }
+  .fwd-listing__closer { font-size: 21px; margin-top: 18px; }
+  .fwd-avatars__grid { gap: 22px; }
+  .fwd-avatar-card { padding: 20px 28px 20px; box-shadow: none; }
+  .fwd-avatar-card__dossier { margin-bottom: 6px; }
+  .fwd-avatar-card__head { padding-bottom: 13px; margin-bottom: 14px; }
+  .fwd-avatar-card__meta { margin-top: 8px; }
+  .fwd-avatar-card__name { font-size: 25px; }
+  .fwd-avatar-card__blocks { gap: 20px; margin-bottom: 15px; }
+  .fwd-avatar-card__block-label { padding-bottom: 7px; margin-bottom: 10px; }
+  .fwd-avatar-card__block-text { font-size: 11.5px; line-height: 1.48; }
+  .fwd-avatar-card__quote { padding: 14px 20px; }
+  .fwd-avatar-card__quote-label { margin-bottom: 8px; }
+  .fwd-avatar-card__quote-text { font-size: 16px; line-height: 1.3; }
+  .fwd-social__grid { display: block; }
+  .fwd-social-card { display: block; padding: 22px 26px 20px; box-shadow: none; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid; }
+  .fwd-social-card__head { padding-bottom: 14px; margin-bottom: 16px; }
+  .fwd-social-card__title { font-size: 20px; margin-bottom: 12px; }
+  .fwd-social-card__copy { font-size: 12.5px; line-height: 1.6; }
+  .fwd-social-card__tags { margin-top: 16px; padding-top: 14px; }
+  .fwd-flyer__sheet { padding: 38px 44px 34px; }
+  .fwd-flyer__headline { font-size: 32px; }
+  .fwd-flyer__price { font-size: 26px; margin-bottom: 22px; }
+  .fwd-flyer__specs { padding: 16px 0; margin-bottom: 24px; }
+  .fwd-flyer__body { font-size: 12.5px; line-height: 1.7; margin-bottom: 24px; }
+  .fwd-flyer__body p { margin-bottom: 12px; }
+  .fwd-flyer__features-item { font-size: 12px; margin-bottom: 9px; }
+  .fwd-campaign-phase { padding-bottom: 30px; }
+  .fwd-campaign-phase__title { font-size: 26px; margin-bottom: 16px; }
+  .fwd-campaign-phase__list { gap: 12px; }
+  .fwd-prep__intro { font-size: 17px; line-height: 1.45; margin-bottom: 24px; }
+  .fwd-prep-section { margin-bottom: 18px; }
+  .fwd-prep-section__header { padding-bottom: 9px; margin-bottom: 13px; }
+  .fwd-prep-section__list { gap: 8px; }
+  .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
+}
+
+/* ── Listing prop badge (year + style, e.g. "1913 · Colonial Revival") ── */
+.fwd-listing__badge {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 36px;
+}
+.fwd-listing__badge-year-wrap { display: flex; flex-direction: column; gap: 4px; }
+.fwd-listing__badge-year {
+  font-family: var(--fwd-font-display);
+  font-weight: 600;
+  font-size: 42px;
+  line-height: 1;
+  color: var(--fwd-navy);
+  letter-spacing: 0.03em;
+}
+.fwd-listing__badge-year-label {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+.fwd-listing__badge-rule {
+  width: 1px;
+  height: 36px;
+  background: var(--fwd-rule-gold);
+}
+.fwd-listing__badge-style {
+  font-family: var(--fwd-font-body);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--fwd-gold);
+}
+@media print {
+  .fwd-listing__badge { margin-bottom: 20px; }
+  .fwd-listing__badge-year { font-size: 32px; }
+  .fwd-listing__badge-rule { height: 28px; }
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<!-- CampaignPackagePrint template — exact scaffold markup, section order fixed -->
+<script type="text/x-template" id="campaign-print-tpl">
+  <div class="fwd-doc">
+    <section class="fwd-cover" data-screen-label="Cover">
+      <div class="fwd-cover__frame"></div>
+      <header class="fwd-cover__top">
+        <div class="fwd-cover__lockup">
+          <div class="fwd-cover__wordmark">FORWARD</div>
+        </div>
+      </header>
+      <div class="fwd-cover__center">
+        <div class="fwd-cover__eyebrow">Campaign Package</div>
+        <div class="fwd-cover__rule-top"></div>
+        <h1 class="fwd-cover__address">{{ pkg.cover.address }}</h1>
+        <div class="fwd-cover__locale">{{ pkg.cover.locale }}</div>
+        <div class="fwd-cover__rule-bottom"></div>
+      </div>
+      <footer class="fwd-cover__bottom">
+        <div class="fwd-cover__agent">
+          <div class="fwd-cover__meta-label">Prepared by</div>
+          <div class="fwd-cover__meta-value">{{ pkg.cover.agentName }}</div>
+          <div class="fwd-cover__meta-sub">{{ pkg.cover.dateNote }}</div>
+        </div>
+        <div class="fwd-cover__seal">FORWARD<br />Corcoran McEnearney</div>
+      </footer>
+    </section>
+    <FwdDivider index="Section One" title="A Letter to the Seller" />
+    <section class="fwd-page fwd-letter" data-screen-label="Letter">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Letter to Seller</span><span class="fwd-page-number">02</span></div>
+      <div class="fwd-letter__body">
+        <p class="fwd-letter__date">{{ pkg.letter.date }}</p>
+        <p class="fwd-letter__salutation">Dear {{ pkg.letter.salutationName }},</p>
+        <p class="fwd-letter__lede">{{ pkg.letter.leadParagraph }}</p>
+        <p v-for="(para, i) in pkg.letter.paragraphs" :key="i">{{ para }}</p>
+        <div class="fwd-letter__signoff">
+          <p class="fwd-letter__regards">Warm regards,</p>
+          <p class="fwd-letter__signature">{{ pkg.letter.agentName }}</p>
+          <div class="fwd-letter__signature-rule"></div>
+          <p class="fwd-letter__firm">{{ pkg.letter.firm }}</p>
+        </div>
+      </div>
+    </section>
+    <FwdDivider index="Section Two" title="The Residence" />
+    <section class="fwd-page fwd-listing" data-screen-label="Listing">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Listing Description</span><span class="fwd-page-number">03</span></div>
+      <div class="fwd-listing__spec">
+        <div class="fwd-listing__spec-item" v-for="(s, i) in pkg.listing.specs" :key="i">
+          <span class="fwd-listing__spec-value">{{ s.value }}</span>
+          <span class="fwd-listing__spec-key">{{ s.key }}</span>
+        </div>
+      </div>
+
+      <p class="fwd-listing__statement" v-html="pkg.listing.statementHtml"></p>
+      <div class="fwd-listing__statement-rule"></div>
+      <div class="fwd-listing__columns">
+        <p v-for="(para, i) in pkg.listing.columns" :key="i">{{ para }}</p>
+      </div>
+      <p class="fwd-listing__closer">{{ pkg.listing.closer }}</p>
+    </section>
+    <FwdDivider index="Section Three" title="Buyer Profiles" />
+    <section class="fwd-page fwd-avatars" data-screen-label="Buyer Profiles">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Buyer Profiles</span><span class="fwd-page-number">04</span></div>
+      <div class="fwd-avatars__grid">
+        <article class="fwd-avatar-card" v-for="(b, i) in pkg.buyerProfiles" :key="i">
+          <header class="fwd-avatar-card__head">
+            <div>
+              <div class="fwd-avatar-card__dossier">{{ b.indexLabel }}</div>
+              <h3 class="fwd-avatar-card__name">{{ b.name }}</h3>
+              <div class="fwd-avatar-card__meta">
+                <span v-if="b.age"><strong>Age</strong> {{ b.age }}</span>
+                <span v-if="b.occupation"><strong>Occupation</strong> {{ b.occupation }}</span>
+              </div>
+            </div>
+            <div class="fwd-avatar-card__networth" v-if="b.netWorth">
+              <div class="fwd-avatar-card__networth-key">Net Worth</div>
+              <div class="fwd-avatar-card__networth-value">{{ b.netWorth }}</div>
+            </div>
+          </header>
+          <div class="fwd-avatar-card__blocks">
+            <div v-if="b.leavingBehind"><div class="fwd-avatar-card__block-label">Leaving Behind</div><p class="fwd-avatar-card__block-text">{{ b.leavingBehind }}</p></div>
+            <div v-if="b.movingToward"><div class="fwd-avatar-card__block-label">Moving Toward</div><p class="fwd-avatar-card__block-text">{{ b.movingToward }}</p></div>
+            <div v-if="b.afraidOf"><div class="fwd-avatar-card__block-label">Afraid Of</div><p class="fwd-avatar-card__block-text">{{ b.afraidOf }}</p></div>
+          </div>
+          <div class="fwd-avatar-card__quote" v-if="b.stopScrolling">
+            <div class="fwd-avatar-card__quote-label">Stop-Scrolling Sentence</div>
+            <p class="fwd-avatar-card__quote-text">{{ b.stopScrolling }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+    <FwdDivider index="Section Four" title="The 30-Day Campaign" />
+    <section class="fwd-page fwd-campaign" data-screen-label="Campaign">
+      <div class="fwd-runninghead"><span class="fwd-section-label">30-Day Campaign Plan</span><span class="fwd-page-number">05</span></div>
+      <div class="fwd-campaign__timeline">
+        <div class="fwd-campaign-phase" v-for="(phase, i) in pkg.campaign.phases" :key="i">
+          <div class="fwd-campaign-phase__when">{{ phase.when.replace(/ and /gi, ' & ') }}</div>
+          <h3 class="fwd-campaign-phase__title" v-if="phase.title">{{ phase.title }}</h3>
+          <ul class="fwd-campaign-phase__list">
+            <li class="fwd-campaign-phase__item" v-for="(item, j) in phase.items" :key="j">
+              <strong v-if="item.lead">{{ item.lead }}</strong>{{ item.text }}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <FwdDivider index="Section Five" title="Social Media Copy" />
+    <section class="fwd-page fwd-social" data-screen-label="Social">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Social Media Copy</span><span class="fwd-page-number">06</span></div>
+      <div class="fwd-social__grid">
+        <article v-for="(post, i) in pkg.social.posts" :key="i" class="fwd-social-card" :class="{ 'fwd-social-card--wide': post.wide }">
+          <div class="fwd-social-card__head">
+            <span class="fwd-social-card__platform">{{ post.platform }}</span>
+            <span class="fwd-social-card__index">{{ post.indexLabel }}</span>
+          </div>
+          <h3 v-if="post.title" class="fwd-social-card__title">{{ post.title }}</h3>
+          <div class="fwd-social-card__copy">
+            <ul v-if="post.layout === 'stats'" class="fwd-social-card__stats">
+              <li v-for="(stat, j) in post.stats" :key="j"><span class="k">{{ stat.k }}</span><span class="v">{{ stat.v }}</span></li>
+            </ul>
+            <template v-else>
+              <p v-for="(para, j) in post.paragraphs" :key="j" :class="{ 'fwd-social-card__facts': para.facts }">{{ para.text }}</p>
+            </template>
+          </div>
+          <div v-if="post.tags" class="fwd-social-card__tags">{{ post.tags }}</div>
+        </article>
+      </div>
+    </section>
+    <FwdDivider index="Section Six" title="TikTok Scripts" />
+    <section class="fwd-page fwd-social" data-screen-label="TikTok">
+      <div class="fwd-runninghead"><span class="fwd-section-label">TikTok Scripts</span><span class="fwd-page-number">07</span></div>
+      <div class="fwd-social__grid">
+        <article class="fwd-social-card" v-for="(script, i) in pkg.tiktok.scripts" :key="i">
+          <div class="fwd-social-card__head">
+            <span class="fwd-social-card__platform">{{ script.platform }}</span>
+            <span class="fwd-social-card__index">{{ script.indexLabel }}</span>
+          </div>
+          <div class="fwd-social-card__copy">
+            <div class="fwd-social-card__script-row" v-for="(row, j) in script.rows" :key="j">
+              <div v-if="row.cue" class="fwd-social-card__script-cue">{{ row.cue }}</div>
+              <p :class="{ 'fwd-social-card__lede': row.lede }">{{ row.text }}</p>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+    <FwdDivider index="Section Seven" title="Flyer Copy" />
+    <section class="fwd-page fwd-flyer" data-screen-label="Flyer">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Flyer Copy</span><span class="fwd-page-number">08</span></div>
+      <div class="fwd-flyer__sheet">
+        <div class="fwd-flyer__eyebrow">Property Flyer</div>
+        <h2 class="fwd-flyer__headline">{{ pkg.flyer.headline }}</h2>
+        <div class="fwd-flyer__rule"></div>
+        <div class="fwd-flyer__address">{{ pkg.flyer.address }}</div>
+        <div class="fwd-flyer__price">{{ pkg.flyer.price }}</div>
+        <div class="fwd-flyer__specs">
+          <div class="fwd-flyer__spec" v-for="(s, i) in pkg.flyer.specs" :key="i">
+            <span class="fwd-flyer__spec-value">{{ s.value }}</span>
+            <span class="fwd-flyer__spec-key">{{ s.key }}</span>
+          </div>
+        </div>
+        <div class="fwd-flyer__body">
+          <p v-for="(para, i) in pkg.flyer.body" :key="i">{{ para }}</p>
+        </div>
+        <div class="fwd-flyer__features" v-if="pkg.flyer.features && pkg.flyer.features.length">
+          <div class="fwd-flyer__features-label">Featured Details</div>
+          <ul class="fwd-flyer__features-list">
+            <li class="fwd-flyer__features-item" v-for="(f, i) in pkg.flyer.features" :key="i">{{ f }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <FwdDivider index="Section Eight" title="The LinkedIn Post" />
+    <section class="fwd-page fwd-social" data-screen-label="LinkedIn">
+      <div class="fwd-runninghead"><span class="fwd-section-label">LinkedIn Post</span><span class="fwd-page-number">09</span></div>
+      <div class="fwd-social__grid">
+        <article class="fwd-social-card fwd-social-card--wide">
+          <div class="fwd-social-card__head">
+            <span class="fwd-social-card__platform">{{ pkg.linkedin.platform }}</span>
+            <span class="fwd-social-card__index">01</span>
+          </div>
+          <h3 v-if="pkg.linkedin.title" class="fwd-social-card__title">{{ pkg.linkedin.title }}</h3>
+          <div class="fwd-social-card__copy">
+            <p v-for="(para, i) in pkg.linkedin.paragraphs" :key="i" :class="{ 'fwd-social-card__facts': para.facts }">{{ para.text }}</p>
+          </div>
+          <div v-if="pkg.linkedin.tags" class="fwd-social-card__tags">{{ pkg.linkedin.tags }}</div>
+        </article>
+      </div>
+    </section>
+    <FwdDivider index="Section Nine" title="Seller Preparation" />
+    <section class="fwd-page fwd-prep" data-screen-label="Prep">
+      <div class="fwd-runninghead"><span class="fwd-section-label">Seller Prep Guide</span><span class="fwd-page-number">10</span></div>
+      <p class="fwd-prep__intro">{{ pkg.prep.intro }}</p>
+      <div class="fwd-prep__columns">
+        <div class="fwd-prep-section" v-for="(sec, i) in pkg.prep.sections" :key="i">
+          <h3 class="fwd-prep-section__header">{{ sec.header }}</h3>
+          <ul class="fwd-prep-section__list">
+            <li class="fwd-prep-section__item" v-for="(item, j) in sec.items" :key="j">{{ item }}</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    <footer class="fwd-colophon">
+      <div class="fwd-colophon__wordmark">FORWARD</div>
+      <div class="fwd-colophon__rule"></div>
+      <div class="fwd-colophon__line">
+        Corcoran McEnearney<br />
+        {{ pkg.cover.agentName }} &nbsp;·&nbsp; Listing Agent<br />
+        {{ pkg.cover.dateNote }}
+      </div>
+    </footer>
+  </div>
+</script>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script>
+(function () {
+  'use strict';
+  var createApp = Vue.createApp, defineComponent = Vue.defineComponent, h = Vue.h, onMounted = Vue.onMounted;
+
+  var pkg = null;
+  try { var _r = sessionStorage.getItem('fos_campPkg'); if (_r) pkg = JSON.parse(_r); }
+  catch (e) { console.error('campaign-print: sessionStorage read failed', e); }
+
+  var FwdDivider = defineComponent({
+    name: 'FwdDivider',
+    props: { index: String, title: String },
+    render: function () {
+      var self = this;
+      return h('div', { class: 'fwd-divider' }, [
+        h('div', { class: 'fwd-divider__inner' }, [
+          h('span', { class: 'fwd-divider__index' }, self.index),
+          h('div',  { class: 'fwd-divider__rule' }),
+          h('h2',   { class: 'fwd-divider__title' }, self.title),
+          h('div',  { class: 'fwd-divider__rule-bottom' }),
+        ])
+      ]);
+    }
+  });
+
+  var CampaignPackagePrint = defineComponent({
+    name: 'CampaignPackagePrint',
+    template: '#campaign-print-tpl',
+    components: { FwdDivider: FwdDivider },
+    props: { pkg: { type: Object, required: true } },
+  });
+
+  createApp({
+    components: { CampaignPackagePrint: CampaignPackagePrint },
+    setup: function () {
+      onMounted(function () {
+        if (!pkg) return;
+        document.fonts.ready.then(function () {
+          setTimeout(function () { window.print(); }, 300);
+        });
+      });
+      return { pkg: pkg };
+    },
+    template: [
+      '<CampaignPackagePrint v-if="pkg" :pkg="pkg" />',
+      '<div v-else style="padding:80px 60px;font-family:sans-serif;color:#2A323C;text-align:center;">',
+        '<h2 style="font-size:28px;color:#0A2342;margin-bottom:16px;">No campaign data found</h2>',
+        '<p>Generate the campaign from FORWARD OS then click Generate &amp; Send PDF.</p>',
+      '</div>'
+    ].join('')
+  }).mount('#app');
+})();
+</script>
+</body>
+</html>
