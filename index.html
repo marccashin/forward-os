@@ -6202,8 +6202,8 @@ body {
                         <div>
                           <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--cream);line-height:1.2;margin-bottom:6px;">Seller Prep Guide</div>
                           <div @click.stop style="display:flex;gap:0;margin-bottom:2px;">
-                            <button @click="sellerPrepType='sfh'; campPrepEditVal = sellerPrepBuildTextSummary()" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);border-right:none;cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='sfh' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='sfh' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">SFH / Townhome</button>
-                            <button @click="sellerPrepType='condo'; campPrepEditVal = sellerPrepBuildTextSummary()" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='condo' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='condo' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">Condo / Co-op</button>
+                            <button @click="campSetPrepType('sfh')" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);border-right:none;cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='sfh' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='sfh' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">SFH / Townhome</button>
+                            <button @click="campSetPrepType('condo')" style="padding:3px 10px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;border:1px solid rgba(200,169,110,0.4);cursor:pointer;transition:all 0.13s;" :style="{background: sellerPrepType==='condo' ? 'var(--gold)' : 'transparent', color: sellerPrepType==='condo' ? 'var(--navy)' : 'rgba(200,169,110,0.6)'}">Condo / Co-op</button>
                           </div>
                           <div style="font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.3;max-width:400px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;"
                                :style="{color: campOpenSection==='__prep__' ? 'rgba(200,169,110,0.75)' : 'rgba(247,244,239,0.5)'}">
@@ -10193,6 +10193,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     campPipelineStep.value = 0;
     campGenerating.value = false;
   }
+}
+
+function campSetPrepType(type) {
+  sellerPrepType.value = type;
+  campPrepEditVal.value = sellerPrepBuildTextSummary();
 }
 
 function campOpenPreview() {
@@ -19175,7 +19180,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
