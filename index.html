@@ -10373,12 +10373,21 @@ function buildCampPkg(sections, prop, agName, mls) {
   var social = { posts: [] };
   if (socSec) {
     var stext = socSec.content || '';
-    var sblocks = stext.split(/\n(?=(?:\d+[\.\.\)]\s+[A-Z]|Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
+    // Split on newlines before numbered or platform headers
+    var sblocks = stext.split(/\n(?=(?:\(\d+\)\s+[A-Z]|\d+[.)\s]+[A-Z]|Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
+    // Fallback: inline "(N)" split when AI puts posts without line breaks
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/(?=\(\d+\)\s)/g).filter(function(s) { return s.trim(); });
+    }
+    // Fallback: split on "N. Platform" pattern anywhere
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/\s+(?=\d+[.)\s]+(?:\w+\s+)?(?:Instagram|Facebook|Story|Twitter|LinkedIn))/i).filter(function(s) { return s.trim(); });
+    }
     sblocks.forEach(function(block, idx) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      var hdrClean = hdr.replace(/^\d+[.)]\s+/, '');
+      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)\s*])\s*/, '').trim();
       var plat;
       var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
       if (_storyM) {

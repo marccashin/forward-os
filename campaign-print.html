@@ -392,7 +392,8 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       <div class="fwd-runninghead"><span class="fwd-section-label">30-Day Campaign Plan</span><span class="fwd-page-number">05</span></div>
       <div class="fwd-campaign__timeline">
         <div class="fwd-campaign-phase" v-for="(phase, i) in pkg.campaign.phases" :key="i">
-          <h3 class="fwd-campaign-phase__title">{{ phase.when }}{{ phase.title ? ' ' + phase.title : '' }}</h3>
+          <div class="fwd-campaign-phase__when">{{ phase.when.replace(/ and /gi, ' & ') }}</div>
+          <h3 class="fwd-campaign-phase__title" v-if="phase.title">{{ phase.title }}</h3>
           <ul class="fwd-campaign-phase__list">
             <li class="fwd-campaign-phase__item" v-for="(item, j) in phase.items" :key="j">
               <strong v-if="item.lead">{{ item.lead }}</strong>{{ item.text }}
