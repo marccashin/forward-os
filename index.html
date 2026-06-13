@@ -10723,18 +10723,37 @@ async function campExportPDF() {
     pkg.letter._skip = true;
   }
 
-  // Store in sessionStorage — campaign-print.html reads this on load
+  // POST pkg to headless-Chrome export function — no dialog, no browser chrome.
+  // Falls back to sessionStorage + new-tab if the function is unreachable.
+  showToast('Generating PDF…', 0); // persistent until dismissed
   try {
-    sessionStorage.setItem('fos_campPkg', JSON.stringify(pkg));
-  } catch (e) {
-    alert('Could not store campaign data for print. Your browser may have storage restrictions.');
-    return;
-  }
-
-  // Open the print page — must be same origin (deployed alongside index.html)
-  var win = window.open('campaign-print.html', '_blank');
-  if (!win) {
-    showToast('Pop-up blocked — please allow pop-ups for this site and try again.', 5000);
+    pkg._siteUrl = window.location.origin;
+    var resp = await fetch('/.netlify/functions/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pkg),
+    });
+    if (!resp.ok) { throw new Error('Function returned ' + resp.status); }
+    var blob = await resp.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    var _addr = (lstActiveProp.value && lstActiveProp.value.address) ? lstActiveProp.value.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-') : 'campaign';
+    a.download = 'campaign-package-' + _addr + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+    showToast('PDF downloaded!', 3000);
+  } catch (err) {
+    console.warn('export-pdf function failed, falling back to print page:', err);
+    // Fallback: sessionStorage + new tab (user still gets a PDF, just via dialog)
+    try { sessionStorage.setItem('fos_campPkg', JSON.stringify(pkg)); } catch (e) {}
+    var win = window.open('campaign-print.html', '_blank');
+    if (!win) {
+      showToast('Pop-up blocked — allow pop-ups and try again.', 5000);
+    } else {
+      showToast('PDF ready — use Print → Save as PDF in the new tab.', 6000);
+    }
   }
 }
 
