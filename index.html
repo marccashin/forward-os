@@ -10686,14 +10686,12 @@ async function campExportPDF() {
   // Override letter with user-edited value from preview panel
   if (_letterText && campLetterIncluded.value !== false && pkg.letter) {
     // Parse salutation out of edited letter text (first line "Dear X,")
-    var _ltLines = _letterText.split('
-');
+    var _ltLines = _letterText.split('\n');
     var _salLine = _ltLines[0].trim();
     var _salMatch = _salLine.match(/^Dear\s+(.+?),\s*$/i);
     if (_salMatch) {
       pkg.letter.salutationName = _salMatch[1];
-      pkg.letter.body = _ltLines.slice(1).join('
-').trim();
+      pkg.letter.body = _ltLines.slice(1).join('\n').trim();
     } else {
       pkg.letter.salutationName = '';
       pkg.letter.body = _letterText.trim();
