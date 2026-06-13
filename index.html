@@ -10351,6 +10351,7 @@ function buildCampPkg(sections, prop, agName, mls) {
       var hdr = stripMd(cl[0]);
       var wm  = hdr.match(/^(Pre-Market(?:\s+Phase)?|Weeks?\s*[\d\-& ]+(?:(?:and|&)\s+\d+)?|Days?\s*[\d\-]+|Ongoing(?:\s+\w+)?|Sustained(?:\s+\w+)?|Phase\s*\d|Month\s*\d)/i);
       var when  = wm ? wm[1].trim() : (campaign.phases.length === 0 ? '30-Day Campaign' : 'Phase ' + (campaign.phases.length + 1));
+      var title = '';
       var items = cl.slice(1).filter(function(l) { return l.trim() && l.trim() !== ':'; }).map(function(l) {
         var clean = l.replace(/^[\-\*\u2022\u00b7\u2713\u2714\u25b8\u25ba\u25c6\u25a1]+\s*/, '').trim();
         clean = stripMd(clean);
