@@ -10728,12 +10728,28 @@ async function campExportPDF() {
   showToast('Generating PDF…', 0); // persistent until dismissed
   try {
     pkg._siteUrl = window.location.origin;
-    var resp = await fetch('/.netlify/functions/export-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(pkg),
-    });
-    if (!resp.ok) { throw new Error('Function returned ' + resp.status); }
+    var pkgBody = JSON.stringify(pkg);
+
+    // Primary: Railway backend — no 10s timeout, full-bleed headless Chrome PDF
+    var resp = null;
+    try {
+      resp = await fetch(RAILWAY_URL + '/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: pkgBody,
+      });
+      if (!resp.ok) throw new Error('Railway /export-pdf returned ' + resp.status);
+    } catch (railwayErr) {
+      console.warn('Railway export-pdf failed, trying Netlify function:', railwayErr);
+      // Secondary: Netlify function (may time out on free plan cold starts)
+      resp = await fetch('/.netlify/functions/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: pkgBody,
+      });
+      if (!resp.ok) throw new Error('Netlify function returned ' + resp.status);
+    }
+
     var blob = await resp.blob();
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
@@ -10745,8 +10761,8 @@ async function campExportPDF() {
     setTimeout(function () { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
     showToast('PDF downloaded!', 3000);
   } catch (err) {
-    console.warn('export-pdf function failed, falling back to print page:', err);
-    // Fallback: sessionStorage + new tab (user still gets a PDF, just via dialog)
+    console.warn('All PDF export paths failed, falling back to print page:', err);
+    // Last resort: sessionStorage + new tab (user gets a PDF via browser print dialog)
     try { sessionStorage.setItem('fos_campPkg', JSON.stringify(pkg)); } catch (e) {}
     var win = window.open('campaign-print.html', '_blank');
     if (!win) {
