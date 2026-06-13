@@ -10382,51 +10382,58 @@ function buildCampPkg(sections, prop, agName, mls) {
   var social = { posts: [] };
   if (socSec) {
     var stext = socSec.content || '';
-    // Split on newlines before numbered or platform headers
-    var sblocks = stext.split(/\n(?=(?:\(\d+\)\s+[A-Z]|\d+[.)\s]+[A-Z]|Instagram|Facebook|Story|Twitter|LinkedIn|Post\s+\d))/i).filter(function(s) { return s.trim(); });
-    // Fallback: inline "(N)" split when AI puts posts without line breaks
+    // Split ONLY on true numbered headers "N. Title" or "N) Title"
+    // Avoids false splits on "1926 Ruxton Road" or "4.5 baths" etc.
+    var sblocks = stext.split(/\n(?=\d+[.)]\s)/i).filter(function(s) { return s.trim(); });
+    // Fallback: inline "(N)" split
     if (sblocks.length < 2) {
       sblocks = stext.split(/(?=\(\d+\)\s)/g).filter(function(s) { return s.trim(); });
     }
-    // Fallback: split on "N. Platform" pattern anywhere
+    // Fallback: platform name at line start
     if (sblocks.length < 2) {
-      sblocks = stext.split(/\s+(?=\d+[.)\s]+(?:\w+\s+)?(?:Instagram|Facebook|Story|Twitter|LinkedIn))/i).filter(function(s) { return s.trim(); });
+      sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Twitter|LinkedIn)\b)/i).filter(function(s) { return s.trim(); });
     }
     sblocks.forEach(function(block, idx) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)\s*])\s*/, '').trim();
+      // Strip "N." or "N)" or "(N)" number prefix
+      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
       var plat;
       var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
       if (_storyM) {
-        plat = 'Story · ' + _storyM[1].replace(/\s*\d+$/, '').trim();
+        plat = 'Instagram Story \u00b7 ' + _storyM[1].replace(/\s*\d+$/, '').trim();
       } else {
         var _netM = hdrClean.match(/^(.+?)\s+(Instagram|Facebook|Twitter|LinkedIn|TikTok)\b(.*)/i);
         if (_netM) {
           var _desc = (_netM[1] + (_netM[3] || '')).replace(/\s*Post\s*$/i, '').trim();
-          plat = _netM[2] + (_desc ? ' · ' + _desc : '');
+          plat = _netM[2] + (_desc ? ' \u00b7 ' + _desc : '');
         } else {
           var _startM = hdrClean.match(/^(Instagram|Facebook|Twitter|LinkedIn|TikTok)\s+(.+)/i);
           if (_startM) {
-            plat = _startM[1] + ' · ' + _startM[2].replace(/\s*Post\s*$/i, '').trim();
+            plat = _startM[1] + ' \u00b7 ' + _startM[2].replace(/\s*Post\s*$/i, '').trim();
           } else {
             plat = hdrClean.replace(/\s*Post\s*$/i, '').trim() || 'Social';
           }
         }
       }
-      var content = sl.slice(1).join('\n');
-      var sps = paras(content);
-      var tagLine = sps.find(function(p) { return /^#\w+/.test(p.trim()); }) || '';
-      var bodyPs  = sps.filter(function(p) { return !/^#\w+/.test(p.trim()); });
-      var title = (bodyPs.length > 1 && bodyPs[0].length < 120) ? bodyPs.shift() : '';
+      // Scan lines individually — hashtags found regardless of newline format
+      var contentLines = sl.slice(1);
+      var tagLine = contentLines.filter(function(l) { return /^#\w/.test(l.trim()); }).join(' ');
+      var bodyLines = contentLines.filter(function(l) { return l.trim() && !/^#\w/.test(l.trim()); });
+      // Try double-newline paragraph split; fall back to per-line for single-newline content
+      var bodyText = bodyLines.join('\n');
+      var bodyPs = paras(bodyText);
+      if (bodyPs.length <= 1 && bodyLines.length > 1) { bodyPs = bodyLines; }
+      // Title only if first para is a short hook (< 80 chars, not ending with ":")
+      var title = (bodyPs.length > 1 && bodyPs[0].length < 80 && !/:\s*$/.test(bodyPs[0])) ? bodyPs.shift() : '';
       social.posts.push({
         platform: plat,
         indexLabel: String(idx + 1).padStart(2, '0'),
         layout: 'copy',
         title: title,
         paragraphs: bodyPs.map(function(t, i) {
-          return { text: t, facts: i === bodyPs.length - 1 && /\$[\d,]+|bed|bath|sq ft/i.test(t) };
+          return { text: t, facts: i === bodyPs.length - 1 && /\$[\d,]+|\bbed\b|\bbath\b|sq\s*ft/i.test(t) };
         }),
         tags: tagLine,
       });
@@ -10436,6 +10443,8 @@ function buildCampPkg(sections, prop, agName, mls) {
       social.posts = [{ platform: 'Social Media', indexLabel: '01', layout: 'copy',
         title: sps2[0] || '', paragraphs: sps2.slice(1).map(function(t) { return { text: t }; }), tags: '' }];
     }
+  }
+
   }
 
   // ── TIKTOK ────────────────────────────────────────────────────────────────
