@@ -10730,6 +10730,11 @@ async function campExportPDF() {
     pkg.letter._skip = true;
   }
 
+  // Open fallback window NOW — synchronously in the user gesture chain.
+  // Browsers allow window.open() here; after an await they block it as a pop-up.
+  // If Railway succeeds we close it silently; if it fails we navigate it to campaign-print.html.
+  var _fallbackWin = window.open('', '_blank');
+
   // Show fullscreen overlay — user sees immediate feedback
   campPdfGenerating.value = true;
 
@@ -10788,6 +10793,7 @@ async function campExportPDF() {
     }
 
     campPdfGenerating.value = false;
+    if (_fallbackWin && !_fallbackWin.closed) _fallbackWin.close();
     showToast('PDF ready — check your Downloads.', 4000);
 
   } catch (err) {
@@ -10797,15 +10803,15 @@ async function campExportPDF() {
     // and @page { margin:0 } removes browser URL/date headers. One extra "Save as PDF" click.
     try {
       var _pkgForPrint = JSON.parse(JSON.stringify(pkg));
-      delete _pkgForPrint._siteUrl; // backend hint, not needed in print page
+      delete _pkgForPrint._siteUrl;
       sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
-      var _pwin = window.open('/campaign-print.html', '_blank');
-      showToast(
-        _pwin
-          ? 'PDF opening — in the print dialog, choose “Save as PDF”.'
-          : 'Could not open PDF. Please allow pop-ups for this site and try again.',
-        6000
-      );
+      if (_fallbackWin && !_fallbackWin.closed) {
+        _fallbackWin.location.href = '/campaign-print.html';
+        showToast('PDF opening — choose "Save as PDF" in the print dialog.', 6000);
+      } else {
+        // _fallbackWin was blocked — navigate current tab as last resort
+        window.location.href = '/campaign-print.html';
+      }
     } catch (_fbErr) {
       showToast('PDF export failed. Please try again.', 5000);
     }
