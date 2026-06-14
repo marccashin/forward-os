@@ -10509,6 +10509,10 @@ function buildCampPkg(sections, prop, agName, mls) {
     if (sblocks.length < 2) {
       sblocks = stext.split(/(?=\(\d+\)\s)/g).filter(function(s) { return s.trim(); });
     }
+    // Fallback: "Post N:" or "Post N -" headers (common AI output format)
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/\n(?=Post\s*\d+\s*[:\-])/i).filter(function(s) { return s.trim(); });
+    }
     // Fallback: platform name at line start
     if (sblocks.length < 2) {
       sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Twitter|LinkedIn)\b)/i).filter(function(s) { return s.trim(); });
@@ -10517,8 +10521,8 @@ function buildCampPkg(sections, prop, agName, mls) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      // Strip "N." or "N)" or "(N)" number prefix
-      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
+      // Strip "N." or "N)" or "(N)" or "Post N:" number prefix
+      var hdrClean = hdr.replace(/^(?:Post\s*\d+\s*[:\-]\s*|\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
       var plat;
       var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
       if (_storyM) {
