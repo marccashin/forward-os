@@ -2648,11 +2648,7 @@ body {
                   </div>
                 </template>
               </div>
-              <!-- New property banner (shown when previous description exists) -->
-              <div v-if="ldOutput && ldStarted" style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:10px 16px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
-                <span style="font-size:12px;color:#92400e;">Working on: <b>{{ ld.address || 'previous property' }}</b></span>
-                <button class="btn-sm" style="background:var(--navy);color:#fff;font-weight:700;white-space:nowrap;" @click="ldMessages=[];ldOutput='';ldStarted=false;ldInput='';ld.address='';">Start New Property</button>
-              </div>
+
               <!-- Input bar — desktop -->
               <div v-if="ldStarted && !isMobile" style="display:flex;gap:8px;padding-top:12px;border-top:1px solid #e5e7eb;margin-top:8px;">
                 <div style="flex:1;position:relative;">
