@@ -6069,6 +6069,12 @@ body {
             </div>
 
             <!-- Campaign Preview Modal -->
+            <!-- ── PDF Generating Overlay ── -->
+            <div v-if="campPdfGenerating" style="position:fixed;inset:0;z-index:9999;background:rgba(10,22,40,0.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+              <div style="width:52px;height:52px;border:3px solid rgba(200,169,110,0.25);border-top-color:var(--gold);border-radius:50%;animation:spin 0.9s linear infinite;"></div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">Generating PDF…</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:0.06em;">This takes about 15 seconds</div>
+            </div>
             <div v-if="campShowPreview" style="position:fixed;inset:0;background:rgba(10,35,66,0.55);z-index:9000;display:flex;align-items:stretch;justify-content:flex-end;" @click.self="campShowPreview=false">
               <div style="background:var(--cream);width:min(700px,100vw);display:flex;flex-direction:column;height:100%;overflow:hidden;box-shadow:-6px 0 32px rgba(10,35,66,.22);">
                 <!-- Panel header -->
@@ -9665,9 +9671,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campParsed = ref((function(){try{var d=window['localStorage'].getItem('fos_campSections');return d?JSON.parse(d):[];}catch(e){return [];}})());
     const campRawResult = ref(localStorage.getItem('fos_campSections') ? 'cached' : '');
     const campShowPreview = ref(false);
-    const campOpenSection = ref(0);
+    const campOpenSection = ref(null);
     const campRevOpen = ref(false);
     const campGenerating = ref(false);
+    const campPdfGenerating = ref(false);
     const campIncludes = reactive({ listing_remarks: true, cma: true, seller_net_sheet: true, seller_prep: true, mls_data: true });
     const campPipelineStep  = ref(0);
     let _campPipeTimer = null;
@@ -10502,6 +10509,10 @@ function buildCampPkg(sections, prop, agName, mls) {
     if (sblocks.length < 2) {
       sblocks = stext.split(/(?=\(\d+\)\s)/g).filter(function(s) { return s.trim(); });
     }
+    // Fallback: "Post N:" or "Post N -" headers (common AI output format)
+    if (sblocks.length < 2) {
+      sblocks = stext.split(/\n(?=Post\s*\d+\s*[:\-])/i).filter(function(s) { return s.trim(); });
+    }
     // Fallback: platform name at line start
     if (sblocks.length < 2) {
       sblocks = stext.split(/\n(?=(?:Instagram|Facebook|Twitter|LinkedIn)\b)/i).filter(function(s) { return s.trim(); });
@@ -10510,8 +10521,8 @@ function buildCampPkg(sections, prop, agName, mls) {
       var sl = lns(block);
       if (!sl.length) return;
       var hdr = sl[0];
-      // Strip "N." or "N)" or "(N)" number prefix
-      var hdrClean = hdr.replace(/^(?:\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
+      // Strip "N." or "N)" or "(N)" or "Post N:" number prefix
+      var hdrClean = hdr.replace(/^(?:Post\s*\d+\s*[:\-]\s*|\(\d+\)|\d+[.)]\s*)\s*/, '').trim();
       var plat;
       var _storyM = hdrClean.match(/(?:Instagram\s+)?Story\s+(.+)/i);
       if (_storyM) {
@@ -10723,18 +10734,85 @@ async function campExportPDF() {
     pkg.letter._skip = true;
   }
 
-  // Store in sessionStorage — campaign-print.html reads this on load
-  try {
-    sessionStorage.setItem('fos_campPkg', JSON.stringify(pkg));
-  } catch (e) {
-    alert('Could not store campaign data for print. Your browser may have storage restrictions.');
-    return;
+  // Show fullscreen overlay — user sees immediate feedback
+  campPdfGenerating.value = true;
+
+  var _addr = (lstActiveProp.value && lstActiveProp.value.address)
+    ? lstActiveProp.value.address.replace(/[^a-zA-Z0-9 ]/g, '').trim().replace(/\s+/g, '-')
+    : 'campaign';
+  var _filename = 'campaign-package-' + _addr + '.pdf';
+
+  // AbortSignal.timeout() not available in Safari <16 — use AbortController instead
+  function _makeSignal(ms) {
+    var ctrl = new AbortController();
+    setTimeout(function () { ctrl.abort(); }, ms);
+    return ctrl.signal;
   }
 
-  // Open the print page — must be same origin (deployed alongside index.html)
-  var win = window.open('campaign-print.html', '_blank');
-  if (!win) {
-    showToast('Pop-up blocked — please allow pop-ups for this site and try again.', 5000);
+  try {
+    pkg._siteUrl = window.location.origin;
+    var pkgBody = JSON.stringify(pkg);
+
+    // Primary: Railway backend — headless Playwright, no 10s limit, proper CSS rendering
+    var resp = null;
+    try {
+      resp = await fetch(RAILWAY_URL + '/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: pkgBody,
+        signal: _makeSignal(90000),
+      });
+      if (!resp.ok) throw new Error('Railway ' + resp.status);
+    } catch (railwayErr) {
+      console.warn('[PDF] Railway failed:', railwayErr.message || railwayErr);
+      // Secondary: Netlify function (may timeout on free plan cold starts)
+      resp = await fetch('/.netlify/functions/export-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: pkgBody,
+        signal: _makeSignal(30000),
+      });
+      if (!resp.ok) throw new Error('Netlify ' + resp.status);
+    }
+
+    var blob = await resp.blob();
+    var isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (isMobile && navigator.canShare && navigator.canShare({ files: [new File([blob], _filename, { type: 'application/pdf' })] })) {
+      // Mobile: Web Share API — agent can send directly to client via share sheet
+      var shareFile = new File([blob], _filename, { type: 'application/pdf' });
+      await navigator.share({ files: [shareFile], title: 'Campaign Package' });
+    } else {
+      // Desktop (or mobile without share support): download directly
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = _filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); document.body.removeChild(a); }, 2000);
+    }
+
+    campPdfGenerating.value = false;
+    showToast('PDF ready — check your Downloads.', 4000);
+
+  } catch (err) {
+    campPdfGenerating.value = false;
+    console.warn('[PDF] backend unavailable, opening print dialog:', err && err.message || err);
+    // Fallback: open campaign-print.html — @media print CSS handles navy backgrounds
+    // and @page { margin:0 } removes browser URL/date headers. One extra "Save as PDF" click.
+    try {
+      var _pkgForPrint = JSON.parse(JSON.stringify(pkg));
+      delete _pkgForPrint._siteUrl; // backend hint, not needed in print page
+      sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
+      var _pwin = window.open('/campaign-print.html', '_blank');
+      showToast(
+        _pwin
+          ? 'PDF opening — in the print dialog, choose “Save as PDF”.'
+          : 'Could not open PDF. Please allow pop-ups for this site and try again.',
+        6000
+      );
+    } catch (_fbErr) {
+      showToast('PDF export failed. Please try again.', 5000);
+    }
   }
 }
 
@@ -19180,7 +19258,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,

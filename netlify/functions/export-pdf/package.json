@@ -1,0 +1,10 @@
+{
+  "name": "export-pdf",
+  "version": "1.0.0",
+  "description": "Headless Chrome PDF export for FORWARD OS Campaign Package",
+  "main": "index.js",
+  "dependencies": {
+    "@sparticuz/chromium": "^123.0.1",
+    "puppeteer-core": "^22.6.0"
+  }
+}

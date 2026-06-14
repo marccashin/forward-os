@@ -36,30 +36,30 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
 .fwd-runninghead { display: flex; align-items: center; justify-content: space-between; padding-bottom: 18px; margin-bottom: 56px; border-bottom: 1px solid var(--fwd-rule); }
 .fwd-section-title { font-family: var(--fwd-font-display); font-weight: 500; font-size: 52px; line-height: 1.04; letter-spacing: 0.01em; color: var(--fwd-navy); }
 .fwd-gold-rule { width: 64px; height: 2px; background: var(--fwd-gold); border: 0; }
-.fwd-divider { background: var(--fwd-navy); color: var(--fwd-paper); padding: 60px var(--fwd-gutter); text-align: center; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
-.fwd-divider::before { content: ""; position: absolute; inset: 28px; border: 1px solid var(--fwd-rule-gold); pointer-events: none; }
+.fwd-divider { background: var(--fwd-page); color: var(--fwd-navy); padding: 60px var(--fwd-gutter); text-align: center; min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; }
+.fwd-divider::before { content: ""; position: absolute; inset: 28px; border: 1px solid rgba(10,35,66,0.15); pointer-events: none; }
 .fwd-divider__inner { position: relative; z-index: 1; max-width: var(--fwd-page-w); margin: 0 auto; display: flex; flex-direction: column; align-items: center; gap: 26px; }
 .fwd-divider__index { font-family: var(--fwd-font-body); font-weight: 500; font-size: 11px; letter-spacing: var(--fwd-track); text-transform: uppercase; color: var(--fwd-gold); }
-.fwd-divider__title { font-family: var(--fwd-font-display); font-weight: 500; font-size: 64px; letter-spacing: 0.02em; color: var(--fwd-paper); }
+.fwd-divider__title { font-family: var(--fwd-font-display); font-weight: 500; font-size: 64px; letter-spacing: 0.02em; color: var(--fwd-navy); }
 .fwd-divider__rule { width: 1px; height: 56px; background: linear-gradient(to bottom, transparent, var(--fwd-gold)); }
 .fwd-divider__rule-bottom { width: 56px; height: 2px; background: var(--fwd-gold); }
-.fwd-cover { position: relative; min-height: 100vh; background: var(--fwd-navy); color: var(--fwd-paper); padding: 64px; display: flex; flex-direction: column; overflow: hidden; }
+.fwd-cover { position: relative; min-height: 100vh; background: var(--fwd-page); color: var(--fwd-navy); padding: 64px; display: flex; flex-direction: column; overflow: hidden; }
 .fwd-cover__frame { position: absolute; inset: 28px; border: 1px solid var(--fwd-rule-gold); pointer-events: none; }
 .fwd-cover__top { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-start; }
 .fwd-cover__lockup-eyebrow { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: var(--fwd-track); text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 14px; }
-.fwd-cover__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 40px; letter-spacing: 0.42em; color: var(--fwd-paper); padding-left: 0.42em; }
+.fwd-cover__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 40px; letter-spacing: 0.42em; color: var(--fwd-navy); padding-left: 0.42em; }
 .fwd-cover__center { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; justify-content: center; max-width: 760px; }
 .fwd-cover__eyebrow { font-family: var(--fwd-font-body); font-weight: 500; font-size: 13px; letter-spacing: 0.42em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 40px; }
 .fwd-cover__rule-top { width: 80px; height: 2px; background: var(--fwd-gold); margin-bottom: 44px; }
-.fwd-cover__address { font-family: var(--fwd-font-display); font-weight: 500; font-size: 88px; line-height: 0.98; letter-spacing: 0.005em; color: var(--fwd-paper); }
+.fwd-cover__address { font-family: var(--fwd-font-display); font-weight: 500; font-size: 88px; line-height: 0.98; letter-spacing: 0.005em; color: var(--fwd-navy); }
 .fwd-cover__address em { font-style: italic; color: var(--fwd-gold-soft); }
-.fwd-cover__locale { margin-top: 26px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 16px; letter-spacing: 0.32em; text-transform: uppercase; color: rgba(247,244,239,0.8); }
+.fwd-cover__locale { margin-top: 26px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 16px; letter-spacing: 0.32em; text-transform: uppercase; color: var(--fwd-ink-soft); }
 .fwd-cover__rule-bottom { width: 100%; max-width: 520px; height: 1px; background: var(--fwd-rule-gold); margin-top: 54px; }
 .fwd-cover__bottom { position: relative; z-index: 2; display: flex; justify-content: space-between; align-items: flex-end; }
 .fwd-cover__meta-label { font-family: var(--fwd-font-body); font-weight: 500; font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 8px; }
-.fwd-cover__meta-value { font-family: var(--fwd-font-display); font-weight: 500; font-size: 26px; color: var(--fwd-paper); }
-.fwd-cover__meta-sub { margin-top: 4px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 12px; letter-spacing: 0.06em; color: rgba(247,244,239,0.6); }
-.fwd-cover__seal { text-align: right; font-family: var(--fwd-font-body); font-weight: 400; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(247,244,239,0.55); }
+.fwd-cover__meta-value { font-family: var(--fwd-font-display); font-weight: 500; font-size: 26px; color: var(--fwd-navy); }
+.fwd-cover__meta-sub { margin-top: 4px; font-family: var(--fwd-font-body); font-weight: 300; font-size: 12px; letter-spacing: 0.06em; color: var(--fwd-ink-soft); }
+.fwd-cover__seal { text-align: right; font-family: var(--fwd-font-body); font-weight: 400; font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-ink-soft); }
 .fwd-letter { background: var(--fwd-page); }
 .fwd-letter__body { max-width: 600px; margin: 0 auto; }
 .fwd-letter__date { font-family: var(--fwd-font-body); font-weight: 400; font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fwd-ink-soft); margin-bottom: 48px; }
@@ -160,10 +160,10 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
 .fwd-prep-section__list { list-style: none; display: flex; flex-direction: column; gap: 13px; }
 .fwd-prep-section__item { position: relative; padding-left: 30px; font-size: 13px; line-height: 1.6; color: var(--fwd-ink); }
 .fwd-prep-section__item::before { content: ""; position: absolute; left: 0; top: 3px; width: 13px; height: 13px; border: 1.5px solid var(--fwd-gold); }
-.fwd-colophon { background: var(--fwd-navy); color: var(--fwd-paper); text-align: center; padding: 96px 64px; }
-.fwd-colophon__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 34px; letter-spacing: 0.4em; padding-left: 0.4em; margin-bottom: 20px; }
+.fwd-colophon { background: var(--fwd-page); color: var(--fwd-navy); text-align: center; padding: 96px 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+.fwd-colophon__wordmark { font-family: var(--fwd-font-display); font-weight: 600; font-size: 34px; letter-spacing: 0.4em; padding-left: 0.4em; margin-bottom: 20px; color: var(--fwd-navy); }
 .fwd-colophon__rule { width: 56px; height: 2px; background: var(--fwd-gold); margin: 0 auto 22px; }
-.fwd-colophon__line { font-family: var(--fwd-font-body); font-weight: 400; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(247,244,239,0.7); line-height: 2; }
+.fwd-colophon__line { font-family: var(--fwd-font-body); font-weight: 400; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-ink-soft); line-height: 2; }
 @media (max-width: 920px) {
   :root { --fwd-gutter: 48px; }
   .fwd-cover { padding: 40px; }
@@ -181,7 +181,11 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   @page fwdBleed   { margin: 0; }
   @page fwdContent { margin: 11mm 17mm 11mm; }
   html, body { background: var(--fwd-page); }
-  .fwd-cover, .fwd-divider, .fwd-colophon {
+  .fwd-cover, .fwd-divider {
+    page: fwdBleed; min-height: 100vh;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .fwd-colophon {
     page: fwdBleed; min-height: 100vh;
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
@@ -190,7 +194,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   .fwd-divider, .fwd-page, .fwd-colophon { break-before: page; }
-  .fwd-avatar-card, .fwd-social-card, .fwd-prep-section, .fwd-campaign-phase,
+  .fwd-avatar-card, .fwd-campaign-phase,
   .fwd-letter__signoff, .fwd-listing__statement, .fwd-listing__closer, .fwd-listing__spec { break-inside: avoid; }
   .fwd-runninghead, .fwd-section-title, .fwd-campaign-phase__title,
   .fwd-prep-section__header, .fwd-social-card__title { break-after: avoid; }
@@ -220,7 +224,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-avatar-card__quote-label { margin-bottom: 8px; }
   .fwd-avatar-card__quote-text { font-size: 16px; line-height: 1.3; }
   .fwd-social__grid { display: block; }
-  .fwd-social-card { display: block; padding: 22px 26px 20px; box-shadow: none; margin-bottom: 20px; break-inside: avoid; page-break-inside: avoid; }
+  .fwd-social-card { display: block; padding: 18px 22px 16px; box-shadow: none; margin-bottom: 16px; break-inside: auto; page-break-inside: auto; }
   .fwd-social-card__head { padding-bottom: 14px; margin-bottom: 16px; }
   .fwd-social-card__title { font-size: 20px; margin-bottom: 12px; }
   .fwd-social-card__copy { font-size: 12.5px; line-height: 1.6; }
@@ -236,7 +240,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-campaign-phase__title { font-size: 26px; margin-bottom: 16px; }
   .fwd-campaign-phase__list { gap: 12px; }
   .fwd-prep__intro { font-size: 17px; line-height: 1.45; margin-bottom: 24px; }
-  .fwd-prep-section { margin-bottom: 18px; }
+  .fwd-prep-section { margin-bottom: 14px; break-inside: auto; }
   .fwd-prep-section__header { padding-bottom: 9px; margin-bottom: 13px; }
   .fwd-prep-section__list { gap: 8px; }
   .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
@@ -285,6 +289,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-listing__badge-rule { height: 28px; }
 }
 </style>
+<!-- html2pdf removed: server-side Playwright produces correct output -->
 </head>
 <body>
 <div id="app"></div>
@@ -348,6 +353,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
       </div>
       <p class="fwd-listing__closer">{{ pkg.listing.closer }}</p>
     </section>
+    <template v-if="pkg.buyerProfiles && pkg.buyerProfiles.length">
     <FwdDivider index="Section Three" title="Buyer Profiles" />
     <section class="fwd-page fwd-avatars" data-screen-label="Buyer Profiles">
       <div class="fwd-runninghead"><span class="fwd-section-label">Buyer Profiles</span><span class="fwd-page-number">04</span></div>
@@ -379,6 +385,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Four" title="The 30-Day Campaign" />
     <section class="fwd-page fwd-campaign" data-screen-label="Campaign">
       <div class="fwd-runninghead"><span class="fwd-section-label">30-Day Campaign Plan</span><span class="fwd-page-number">05</span></div>
@@ -394,6 +401,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </div>
       </div>
     </section>
+    <template v-if="pkg.social && pkg.social.posts && pkg.social.posts.length">
     <FwdDivider index="Section Five" title="Social Media Copy" />
     <section class="fwd-page fwd-social" data-screen-label="Social">
       <div class="fwd-runninghead"><span class="fwd-section-label">Social Media Copy</span><span class="fwd-page-number">06</span></div>
@@ -416,6 +424,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    <template v-if="pkg.tiktok && pkg.tiktok.scripts && pkg.tiktok.scripts.length">
     <FwdDivider index="Section Six" title="TikTok Scripts" />
     <section class="fwd-page fwd-social" data-screen-label="TikTok">
       <div class="fwd-runninghead"><span class="fwd-section-label">TikTok Scripts</span><span class="fwd-page-number">07</span></div>
@@ -434,6 +443,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Seven" title="Flyer Copy" />
     <section class="fwd-page fwd-flyer" data-screen-label="Flyer">
       <div class="fwd-runninghead"><span class="fwd-section-label">Flyer Copy</span><span class="fwd-page-number">08</span></div>
@@ -460,6 +470,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </div>
       </div>
     </section>
+    <template v-if="pkg.linkedin && pkg.linkedin.paragraphs && pkg.linkedin.paragraphs.length">
     <FwdDivider index="Section Eight" title="The LinkedIn Post" />
     <section class="fwd-page fwd-social" data-screen-label="LinkedIn">
       <div class="fwd-runninghead"><span class="fwd-section-label">LinkedIn Post</span><span class="fwd-page-number">09</span></div>
@@ -477,6 +488,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         </article>
       </div>
     </section>
+    </template>
     <FwdDivider index="Section Nine" title="Seller Preparation" />
     <section class="fwd-page fwd-prep" data-screen-label="Prep">
       <div class="fwd-runninghead"><span class="fwd-section-label">Seller Prep Guide</span><span class="fwd-page-number">10</span></div>
@@ -540,9 +552,13 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
     setup: function () {
       onMounted(function () {
         if (!pkg) return;
+        // Fallback path: server-side Playwright (Railway) generates the real PDF.
+        // This page is only reached if both Railway and Netlify fail.
+        // window.print() triggers browser native PDF — respects @media print CSS
+        // (backgrounds, page breaks) with no rasterization, better than html2pdf.js.
         document.fonts.ready.then(function () {
-          setTimeout(function () { window.print(); }, 300);
-        });
+          setTimeout(function () { window.print(); }, 500);
+        }).catch(function () { window.print(); });
       });
       return { pkg: pkg };
     },
