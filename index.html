@@ -10734,6 +10734,13 @@ async function campExportPDF() {
   // Browsers allow window.open() here; after an await they block it as a pop-up.
   // If Railway succeeds we close it silently; if it fails we navigate it to campaign-print.html.
   var _fallbackWin = window.open('', '_blank');
+  // Snap focus back so user sees the animation in this tab, not a blank tab
+  window.focus();
+  // Write a holding message so the blank tab isn't confusing if the user switches to it
+  if (_fallbackWin) {
+    _fallbackWin.document.write('<html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A1628;font-family:Montserrat,sans-serif;color:#C9A84C;letter-spacing:.15em;font-size:13px;text-transform:uppercase;}</style></head><body><span>Generating PDF…</span></body></html>');
+    _fallbackWin.document.close();
+  }
 
   // Show fullscreen overlay — user sees immediate feedback
   campPdfGenerating.value = true;
@@ -10807,6 +10814,7 @@ async function campExportPDF() {
       sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
       if (_fallbackWin && !_fallbackWin.closed) {
         _fallbackWin.location.href = '/campaign-print.html';
+        _fallbackWin.focus();
         showToast('PDF opening — choose "Save as PDF" in the print dialog.', 6000);
       } else {
         // _fallbackWin was blocked — navigate current tab as last resort
