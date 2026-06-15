@@ -16654,6 +16654,51 @@ const CHANGELOG = [
       }
     ]
   }
+,
+  {
+    id: 'v2026-06-04',
+    date: 'June 4, 2026',
+    title: 'Updates Feed, Voice Commands & Smarter Search',
+    summary: 'See new features each login, use voice for more tasks, and get smarter log activity search.',
+    updates: [
+      {
+        title: 'What\'s New Feed',
+        detail: 'You\'ll now see a \'What\'s New\' popup each time there are updates to the OS. Each update is expandable with plain-English details and best practices.\n\nBest practice: Read through each update when it appears — the tips help you get the most out of every new feature.'
+      },
+      {
+        title: '6 New Voice Commands',
+        detail: 'You can now use your voice to: add a property note, get a pipeline summary, log a showing, check a list price, get an open house prep checklist, and read back all saved offers for a property.\n\nBest practice: Start a session with \'pipeline summary\' to get a quick count of your active listings and buyers before diving in.'
+      },
+      {
+        title: 'Net Sheet Voice Navigation Fixed',
+        detail: 'Saying \'open net sheet for [address]\' now reliably opens the net sheet panel. Previously it would navigate to the listings grid without opening the panel.\n\nBest practice: Say the full address when opening a net sheet by voice for the most accurate match.'
+      },
+      {
+        title: 'Voice Address Recognition Improved',
+        detail: 'Fixed speech-to-text quirks where house numbers were misheard as times (e.g. \'11:11\' becomes \'1111\') or slashes appeared in addresses. Addresses are normalized automatically.\n\nBest practice: Speak addresses at a steady pace, pausing slightly between the number and street name.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-06-14',
+    date: 'June 14, 2026',
+    title: 'Campaign PDF Improvements & Design Refresh',
+    summary: 'Campaign PDFs generate reliably on all devices, social posts export correctly, and the design is cleaner.',
+    updates: [
+      {
+        title: 'Campaign PDF Works on All Devices',
+        detail: 'Fixed an issue where clicking \'Generate PDF\' would open a blank tab or get blocked as a popup on some browsers and phones. The PDF now generates in the background and downloads automatically.\n\nBest practice: Keep the main app tab open and in focus while the PDF generates — the animation will play while it works.'
+      },
+      {
+        title: 'Social Media Posts Export Correctly',
+        detail: 'Fixed a bug where all Instagram posts were collapsing into a single card in the PDF. Each post now gets its own page with the correct platform label.\n\nBest practice: Scroll through the PDF after generating to spot-check each post card before sending to a client.'
+      },
+      {
+        title: 'Cleaner PDF Design',
+        detail: 'The campaign PDF now uses a clean white background throughout — cover, dividers, and back page — with navy and gold text. The back page also fills the full page.\n\nBest practice: No action needed — all new PDFs use the updated design automatically.'
+      }
+    ]
+  }
 ];
 
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
