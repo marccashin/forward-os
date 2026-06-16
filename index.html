@@ -15683,31 +15683,45 @@ No markdown. Valid JSON only.`;
       } catch(e) { partnerModal.error = e.message; }
     }
     async function partnerReassign(newAgentName) {
-      if (!newAgentName) return;
-      partnerModal.reassigning = true;
-      partnerModal.reassignError = '';
+      if (!newAgentName || partnerModal.reassigning) return;
+      const table = partnerModal.dealType;
+      const dealId = partnerModal.dealId;
+      // Optimistic update — close immediately, save in background
+      const prevProp = table === 'properties'
+        ? (lstActiveProp.value && lstActiveProp.value.id === dealId ? lstActiveProp.value.agent_name : null)
+        : (byrActiveBuyer.value && byrActiveBuyer.value.id === dealId ? byrActiveBuyer.value.agent_name : null);
+      if (table === 'properties') {
+        const p = lstProperties.value.find(x => x.id === dealId);
+        if (p) p.agent_name = newAgentName;
+        if (lstActiveProp.value && lstActiveProp.value.id === dealId) lstActiveProp.value.agent_name = newAgentName;
+      } else {
+        const b = byrBuyers.value.find(x => x.id === dealId);
+        if (b) b.agent_name = newAgentName;
+        if (byrActiveBuyer.value && byrActiveBuyer.value.id === dealId) byrActiveBuyer.value.agent_name = newAgentName;
+      }
+      partnerModal.show = false;
+      showToast('Reassigned to ' + newAgentName, 2500);
+      // Persist to Supabase in background
       try {
-        const table = partnerModal.dealType; // 'properties' or 'buyers'
-        const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?id=eq.' + partnerModal.dealId, {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?id=eq.' + dealId, {
           method: 'PATCH',
           headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' },
           body: JSON.stringify({ agent_name: newAgentName })
         });
-        if (!res.ok) throw new Error('Failed to reassign');
-        // Update local state
+        if (!res.ok) throw new Error('save failed');
+      } catch(e) {
+        // Revert on failure
         if (table === 'properties') {
-          const p = lstProperties.value.find(x => x.id === partnerModal.dealId);
-          if (p) p.agent_name = newAgentName;
-          if (lstActiveProp.value && lstActiveProp.value.id === partnerModal.dealId) lstActiveProp.value.agent_name = newAgentName;
+          const p = lstProperties.value.find(x => x.id === dealId);
+          if (p && prevProp) p.agent_name = prevProp;
+          if (lstActiveProp.value && lstActiveProp.value.id === dealId && prevProp) lstActiveProp.value.agent_name = prevProp;
         } else {
-          const b = byrBuyers.value.find(x => x.id === partnerModal.dealId);
-          if (b) b.agent_name = newAgentName;
-          if (byrActiveBuyer.value && byrActiveBuyer.value.id === partnerModal.dealId) byrActiveBuyer.value.agent_name = newAgentName;
+          const b = byrBuyers.value.find(x => x.id === dealId);
+          if (b && prevProp) b.agent_name = prevProp;
+          if (byrActiveBuyer.value && byrActiveBuyer.value.id === dealId && prevProp) byrActiveBuyer.value.agent_name = prevProp;
         }
-        partnerModal.show = false;
-        showToast('Reassigned to ' + newAgentName, 2500);
-      } catch(e) { partnerModal.reassignError = 'Could not reassign — try again.'; }
-      partnerModal.reassigning = false;
+        showToast('Reassign failed — please try again.', 3500);
+      }
     }
     // ── End Deal Partners ──────────────────────────────────────
 
