@@ -3688,7 +3688,7 @@ body {
                     <span v-for="ca in ((byrActiveBuyer.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
                       {{ ca.split(' ')[0] }}
                     </span>
-                    <button v-if="isAdmin || byrActiveBuyer.agent_name === agentName" @click="partnerOpen('buyers', byrActiveBuyer)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
+                    <button v-if="isAdmin || byrActiveBuyer.agent_name === agentName || partnerGetCoAgents(byrActiveBuyer).includes(agentName)" @click="partnerOpen('buyers', byrActiveBuyer)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
                       + Partner
                     </button>
                   </div>
@@ -5331,7 +5331,7 @@ body {
               <span v-for="ca in ((lstActiveProp.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
                 {{ ca.split(' ')[0] }}
               </span>
-              <button v-if="isAdmin || lstActiveProp.agent_name === agentName" @click="partnerOpen('properties', lstActiveProp)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
+              <button v-if="isAdmin || lstActiveProp.agent_name === agentName || partnerGetCoAgents(lstActiveProp).includes(agentName)" @click="partnerOpen('properties', lstActiveProp)" style="display:inline-flex;align-items:center;gap:4px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;transition:border-color 0.13s,color 0.13s;" onmouseover="this.style.color='var(--navy)';this.style.borderColor='var(--navy)'" onmouseout="this.style.color='var(--gold-muted)';this.style.borderColor='var(--gold-muted)'">
                 + Partner
               </button>
             </div>
@@ -7064,6 +7064,22 @@ body {
 
           <div v-if="partnerModal.error" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;margin-bottom:10px;">{{ partnerModal.error }}</div>
           <div v-if="partnerModal.adding" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;text-align:center;">Adding partner…</div>
+
+          <!-- Reassign primary agent -->
+          <div style="margin-top:18px;border-top:1px solid var(--cream-dark);padding-top:16px;">
+            <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);margin-bottom:10px;">Reassign Primary Agent</div>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px;">
+              <button v-for="agent in AGENTS.filter(a => a !== (partnerModal.dealType==='properties' ? (lstActiveProp && lstActiveProp.agent_name) : (byrActiveBuyer && byrActiveBuyer.agent_name)))" :key="'r'+agent"
+                @click="partnerReassign(agent)" :disabled="partnerModal.reassigning"
+                style="padding:6px 14px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;background:var(--cream);border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);cursor:pointer;transition:border-color 0.13s,background 0.13s;"
+                onmouseover="this.style.borderColor='var(--gold)';this.style.background='rgba(200,169,110,0.08)'"
+                onmouseout="this.style.borderColor='var(--cream-dark)';this.style.background='var(--cream)'">
+                {{ agent }}
+              </button>
+            </div>
+            <div v-if="partnerModal.reassignError" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#dc2626;">{{ partnerModal.reassignError }}</div>
+            <div v-if="partnerModal.reassigning" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;">Reassigning…</div>
+          </div>
 
           <button class="btn-navy" @click="partnerModal.show=false" style="width:100%;min-height:44px;margin-top:4px;">Done</button>
         </div>
@@ -10221,7 +10237,7 @@ function campOpenPreview() {
   }
   var _lgreet = _fn1 ? ('Dear ' + _fn1 + (_fn2 ? ' and ' + _fn2 : '') + ',') : '';
   campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
-    'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (_lprop.agent_name || agentName.value || 'Marc Cashin');
+    'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (function(){var _pa=(_lprop.agent_name||agentName.value||'Marc Cashin');var _ca=((_lprop.subfolder_drive_ids&&_lprop.subfolder_drive_ids._co_agents)||[]);return _ca.length?[_pa].concat(_ca).join(' & '):_pa;})();
   campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
   campShowPreview.value = true;
   setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
@@ -10308,6 +10324,8 @@ function buildCampPkg(sections, prop, agName, mls) {
     return r;
   })(localeRaw);
   var agentN    = ((prop.agent_name || agName || 'Marc Cashin')).trim();
+  var _coAgts   = ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_agents) || []);
+  if (_coAgts.length) agentN = [agentN].concat(_coAgts).join(' & ');
   var today     = new Date();
   var dateStr   = today.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
   var sellerN   = ((prop.seller_name || prop.contact_name || '')).trim();
@@ -10879,7 +10897,7 @@ async function lstSubmitToPipeline() {
       const addrLines = doc.splitTextToSize(prop.address, W - 80);
       doc.text(addrLines, 40, y); y += addrLines.length * 16 + 4;
       doc.setFontSize(10); doc.setTextColor(...gray);
-      doc.text('Prepared by ' + agentName.value + '  ·  ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 40, y); y += 14;
+      doc.text('Prepared by ' + (function(){var _pp=prop.agent_name||agentName.value||'';var _cp=((prop.subfolder_drive_ids&&prop.subfolder_drive_ids._co_agents)||[]);return _cp.length?[_pp].concat(_cp).join(' & '):_pp;})() + '  ·  ' + new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }), 40, y); y += 14;
       doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(40, y, W - 40, y); y += 20;
       // ── Intro text ──
       doc.setFont('helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(55, 65, 81);      // intro text removed
@@ -15596,7 +15614,7 @@ No markdown. Valid JSON only.`;
     }
 
     // ── Deal Partners ─────────────────────────────────────────────
-    const partnerModal = reactive({ show:false, dealId:'', dealType:'', coAgents:[], adding:false, error:'' });
+    const partnerModal = reactive({ show:false, dealId:'', dealType:'', coAgents:[], adding:false, error:'', reassigning:false, reassignError:'' });
 
     function partnerGetCoAgents(record) {
       return ((record.subfolder_drive_ids || {})._co_agents) || [];
@@ -15663,6 +15681,33 @@ No markdown. Valid JSON only.`;
           if (byrActiveBuyer.value && byrActiveBuyer.value.id === partnerModal.dealId && byrActiveBuyer.value.subfolder_drive_ids) byrActiveBuyer.value.subfolder_drive_ids._co_agents = partnerModal.coAgents;
         }
       } catch(e) { partnerModal.error = e.message; }
+    }
+    async function partnerReassign(newAgentName) {
+      if (!newAgentName) return;
+      partnerModal.reassigning = true;
+      partnerModal.reassignError = '';
+      try {
+        const table = partnerModal.dealType; // 'properties' or 'buyers'
+        const res = await fetch(SUPABASE_URL + '/rest/v1/' + table + '?id=eq.' + partnerModal.dealId, {
+          method: 'PATCH',
+          headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ agent_name: newAgentName })
+        });
+        if (!res.ok) throw new Error('Failed to reassign');
+        // Update local state
+        if (table === 'properties') {
+          const p = lstProperties.value.find(x => x.id === partnerModal.dealId);
+          if (p) p.agent_name = newAgentName;
+          if (lstActiveProp.value && lstActiveProp.value.id === partnerModal.dealId) lstActiveProp.value.agent_name = newAgentName;
+        } else {
+          const b = byrBuyers.value.find(x => x.id === partnerModal.dealId);
+          if (b) b.agent_name = newAgentName;
+          if (byrActiveBuyer.value && byrActiveBuyer.value.id === partnerModal.dealId) byrActiveBuyer.value.agent_name = newAgentName;
+        }
+        partnerModal.show = false;
+        showToast('Reassigned to ' + newAgentName, 2500);
+      } catch(e) { partnerModal.reassignError = 'Could not reassign — try again.'; }
+      partnerModal.reassigning = false;
     }
     // ── End Deal Partners ──────────────────────────────────────
 
