@@ -215,10 +215,13 @@
       <span class="badge">Step 1</span>
     </div>
     <!-- ── Bright MLS Pull ── -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:#f0f4ff;border-radius:8px;border:1px solid #c5d3f5;">
-      <input type="text" id="mlsSearchInput" placeholder="Enter address or MLS # to pull from Bright MLS" style="flex:1;min-width:220px;padding:7px 10px;border:1px solid #c5d3f5;border-radius:6px;font-size:13px;">
-      <button onclick="pullFromMLS()" id="mlsPullBtn" style="padding:7px 18px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;">Pull from MLS</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:#f5f5f5;border-radius:8px;border:1px solid #ddd;opacity:0.6;pointer-events:none;">
+      <input type="text" id="mlsSearchInput" placeholder="Enter address or MLS # to pull from Bright MLS" disabled style="flex:1;min-width:220px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;background:#eee;color:#999;">
+      <button id="mlsPullBtn" disabled style="padding:7px 18px;background:#aaa;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:not-allowed;white-space:nowrap;">Pull from MLS</button>
       <span id="mlsPullStatus" style="font-size:12px;color:#666;white-space:nowrap;"></span>
+    </div>
+    <div style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:14px;">
+      ⏳ <strong>Bright MLS integration is pending.</strong> To add comps, copy and paste the data from the MLS into the Comparable Sales sections below.
     </div>
     <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
       <div class="field" style="grid-column:span 2;">
@@ -478,15 +481,93 @@
   </div>
 
   <!-- ── COMPARABLE SALES ── -->
+
+  <!-- ACTIVE LISTINGS -->
   <div class="card">
     <div class="card-title">
-      🏘️ Comparable Sales
-      <span class="badge">Step 3</span>
+      🟢 Active Listings
+      <span class="badge">Step 3a</span>
+      <span class="badge badge-gold" id="activeCountBadge">0</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400;">Informational — not used in value calculation</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add currently active listings for market context. These do not affect the adjusted value estimate.</div>
+    <div class="comps-wrapper">
+      <table class="comps-table" id="activeTable">
+        <thead>
+          <tr>
+            <th style="width:162px;">Address</th>
+            <th style="width:90px;">Date</th>
+            <th style="width:96px;">List Price</th>
+            <th style="width:72px;">Sq Ft</th>
+            <th style="width:80px;">Lot Size</th>
+            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:54px;">Bel Gr</th>
+            <th style="width:54px;">Garage</th>
+            <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
+            <th style="width:78px;">HOA/Mo</th>
+            <th style="width:112px;">Proximity</th>
+            <th style="width:60px;">DOM</th>
+            <th class="gold" style="width:64px;">$/SqFt</th>
+          </tr>
+        </thead>
+        <tbody id="activeBody">
+          <!-- rows inserted by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;">
+      <button class="btn-navy" onclick="addActiveComp()" id="addActiveBtn">+ Add Active Listing</button>
+    </div>
+  </div>
+
+  <!-- PENDING SALES -->
+  <div class="card">
+    <div class="card-title">
+      🟡 Pending Sales
+      <span class="badge">Step 3b</span>
+      <span class="badge badge-gold" id="pendingCountBadge">0</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--muted);font-weight:400;">Informational — not used in value calculation</span>
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Add homes under contract for market context. These do not affect the adjusted value estimate.</div>
+    <div class="comps-wrapper">
+      <table class="comps-table" id="pendingTable">
+        <thead>
+          <tr>
+            <th style="width:162px;">Address</th>
+            <th style="width:90px;">Date</th>
+            <th style="width:96px;">List Price</th>
+            <th style="width:72px;">Sq Ft</th>
+            <th style="width:80px;">Lot Size</th>
+            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:54px;">Bel Gr</th>
+            <th style="width:54px;">Garage</th>
+            <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
+            <th style="width:78px;">HOA/Mo</th>
+            <th style="width:112px;">Proximity</th>
+            <th style="width:60px;">DOM</th>
+            <th class="gold" style="width:64px;">$/SqFt</th>
+          </tr>
+        </thead>
+        <tbody id="pendingBody">
+          <!-- rows inserted by JS -->
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;">
+      <button class="btn-navy" onclick="addPendingComp()" id="addPendingBtn">+ Add Pending Sale</button>
+    </div>
+  </div>
+
+  <!-- CLOSED SALES -->
+  <div class="card">
+    <div class="card-title">
+      🔵 Closed Sales
+      <span class="badge">Step 3c</span>
       <span class="badge badge-gold" id="compCountBadge">0 of 6</span>
-      <button onclick="findComps()" id="findCompsBtn" style="margin-left:auto;padding:5px 14px;background:#1a3a5c;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">Find Comps from MLS</button>
+      <button id="findCompsBtn" disabled style="margin-left:auto;padding:5px 14px;background:#aaa;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;opacity:0.6;">Find Comps from MLS</button>
       <span id="findCompsStatus" style="font-size:12px;color:#666;margin-left:6px;"></span>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 comparable sales. All adjustments are calculated automatically.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 closed sales. All adjustments are calculated automatically and feed the value estimate.</div>
     <!-- Condition Grade Reference -->
     <details style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);list-style:none;display:flex;align-items:center;gap:8px;">
@@ -523,6 +604,7 @@
             <th style="width:90px;">Sold Date</th>
             <th style="width:96px;">Sale Price</th>
             <th style="width:72px;">Sq Ft</th>
+            <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
             <th style="width:54px;">Garage</th>
@@ -542,7 +624,7 @@
       </table>
     </div>
     <div style="margin-top:12px;display:flex;gap:10px;">
-      <button class="btn-navy" onclick="addComp()" id="addCompBtn">+ Add Comp</button>
+      <button class="btn-navy" onclick="addComp()" id="addCompBtn">+ Add Closed Sale</button>
     </div>
   </div>
 
@@ -614,8 +696,11 @@
 
 <script>
 // ── STATE ──
-let comps = [];
+let comps = [];       // closed sales (backward compat alias)
+let activeComps = [];  // active listings (informational)
+let pendingComps = []; // pending sales (informational)
 const MAX_COMPS = 6;
+const MAX_INFO_COMPS = 10;
 const _URL_ADDRESS = localStorage.getItem('fos_cma_address') || '';
 
 // ── SUPABASE SYNC ──
@@ -797,6 +882,19 @@ function clearPrefill() {
 }
 
 // ── COMPS TABLE ──
+
+// Helper: build remove button td
+function _removeBtn(fn) {
+  const td = document.createElement('td');
+  const btn = document.createElement('button');
+  btn.textContent = '✕';
+  btn.style.cssText = 'background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 6px;';
+  btn.onclick = fn;
+  td.appendChild(btn);
+  return td;
+}
+
+// ── CLOSED SALES ──
 function buildCompsTable() {
   const tbody = document.getElementById('compsBody');
   tbody.innerHTML = '';
@@ -815,6 +913,7 @@ function buildCompRow(i) {
     <td data-label="Sold Date"><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
     <td data-label="Sale Price"><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
     <td data-label="Sq Ft"><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
+    <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="compChange(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
     <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
@@ -827,19 +926,13 @@ function buildCompRow(i) {
     <td class="calc" data-label="Net Adj" id="c${i}_netAdj">—</td>
     <td class="calc" data-label="Adj Price" id="c${i}_adjPrice">—</td>
   `;
-  const removeTd = document.createElement('td');
-  const btn = document.createElement('button');
-  btn.textContent = '✕';
-  btn.style.cssText = 'background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 6px;';
-  btn.onclick = () => removeComp(i);
-  removeTd.appendChild(btn);
-  tr.appendChild(removeTd);
+  tr.appendChild(_removeBtn(() => removeComp(i)));
   return tr;
 }
 
 function addComp() {
   if (comps.length >= MAX_COMPS) return;
-  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' });
+  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' });
   buildCompsTable();
   recalcAll();
 }
@@ -852,6 +945,86 @@ function removeComp(i) {
 
 function compChange(i, field, val) {
   comps[i][field] = val;
+}
+
+// ── ACTIVE LISTINGS ──
+function buildActiveTable() {
+  const tbody = document.getElementById('activeBody');
+  tbody.innerHTML = '';
+  activeComps.forEach((_, i) => tbody.appendChild(buildInfoRow('active', i)));
+  document.getElementById('activeCountBadge').textContent = activeComps.length || '0';
+  document.getElementById('addActiveBtn').style.display = activeComps.length >= MAX_INFO_COMPS ? 'none' : '';
+}
+
+// ── PENDING SALES ──
+function buildPendingTable() {
+  const tbody = document.getElementById('pendingBody');
+  tbody.innerHTML = '';
+  pendingComps.forEach((_, i) => tbody.appendChild(buildInfoRow('pending', i)));
+  document.getElementById('pendingCountBadge').textContent = pendingComps.length || '0';
+  document.getElementById('addPendingBtn').style.display = pendingComps.length >= MAX_INFO_COMPS ? 'none' : '';
+}
+
+// Shared row builder for Active and Pending (informational — no adj columns)
+function buildInfoRow(type, i) {
+  const arr = type === 'active' ? activeComps : pendingComps;
+  const c = arr[i];
+  const condOpts = ['A+','A','B','C','D'].map(v => `<option value="${v}"${c.condition===v?' selected':''}>${v}</option>`).join('');
+  const prefix = type === 'active' ? 'ac' : 'pc';
+  const tr = document.createElement('tr');
+  tr.id = prefix + '-row-' + i;
+  tr.innerHTML = `
+    <td data-label="Address"><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="${prefix}Change(${i},'address',this.value)" /></td>
+    <td data-label="Date"><input type="text" value="${c.date||''}" placeholder="YYYY-MM-DD" onchange="${prefix}Change(${i},'date',this.value)" /></td>
+    <td data-label="List Price"><input type="number" value="${c.listPrice||''}" placeholder="350000" min="0" step="1000" oninput="${prefix}Change(${i},'listPrice',+this.value);${prefix}RecalcPsf(${i})" /></td>
+    <td data-label="Sq Ft"><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="${prefix}Change(${i},'gla',+this.value);${prefix}RecalcPsf(${i})" /></td>
+    <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="${prefix}Change(${i},'lotSize',this.value)" /></td>
+    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'beds',+this.value)" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'fullBaths',+this.value)" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'halfBaths',+this.value)" /></div></td>
+    <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'below',+this.value)" /></td>
+    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
+    <td data-label="Condition"><select onchange="${prefix}Change(${i},'condition',this.value)">${condOpts}</select></td>
+    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'hoaMonthly',+this.value)" /></td>
+    <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="${prefix}Change(${i},'proximity',this.value)" /></td>
+    <td data-label="DOM"><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="${prefix}Change(${i},'dom',+this.value)" /></td>
+    <td class="calc" data-label="$/SqFt" id="${prefix}${i}_psf">—</td>
+  `;
+  tr.appendChild(_removeBtn(() => { arr.splice(i, 1); type === 'active' ? buildActiveTable() : buildPendingTable(); _scheduleAutoSave(); }));
+  // compute initial psf
+  setTimeout(() => {
+    const psf = c.gla > 0 && c.listPrice > 0 ? (c.listPrice / c.gla).toFixed(0) : null;
+    const el = document.getElementById(prefix + i + '_psf');
+    if (el) el.textContent = psf ? '$' + psf : '—';
+  }, 0);
+  return tr;
+}
+
+function acChange(i, field, val)  { activeComps[i][field] = val; _scheduleAutoSave(); }
+function pcChange(i, field, val)  { pendingComps[i][field] = val; _scheduleAutoSave(); }
+
+function acRecalcPsf(i) {
+  const c = activeComps[i];
+  const psf = c.gla > 0 && c.listPrice > 0 ? (c.listPrice / c.gla).toFixed(0) : null;
+  const el = document.getElementById('ac' + i + '_psf');
+  if (el) el.textContent = psf ? '$' + psf : '—';
+  _scheduleAutoSave();
+}
+function pcRecalcPsf(i) {
+  const c = pendingComps[i];
+  const psf = c.gla > 0 && c.listPrice > 0 ? (c.listPrice / c.gla).toFixed(0) : null;
+  const el = document.getElementById('pc' + i + '_psf');
+  if (el) el.textContent = psf ? '$' + psf : '—';
+  _scheduleAutoSave();
+}
+
+function addActiveComp() {
+  if (activeComps.length >= MAX_INFO_COMPS) return;
+  activeComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+  buildActiveTable();
+}
+function addPendingComp() {
+  if (pendingComps.length >= MAX_INFO_COMPS) return;
+  pendingComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+  buildPendingTable();
 }
 
 // ── CALCULATIONS ──
@@ -1028,6 +1201,8 @@ function _buildDraft() {
       agentName: getVal('s_agentName'), notes: getVal('s_notes')
     },
     comps,
+    activeComps,
+    pendingComps,
     adjustments: {
       gla: getVal('adj_gla'), below: getVal('adj_below'), bedroom: getVal('adj_bedroom'),
       bath: getVal('adj_bath'), halfbath: getVal('adj_halfbath'), garage: getVal('adj_garage'),
@@ -1056,6 +1231,8 @@ function _applyDraft(draft) {
     sa('condC', a.condC); sa('condD', a.condD);
   }
   if (draft.comps && draft.comps.length) { comps = draft.comps; buildCompsTable(); }
+  if (draft.activeComps && draft.activeComps.length) { activeComps = draft.activeComps; buildActiveTable(); }
+  if (draft.pendingComps && draft.pendingComps.length) { pendingComps = draft.pendingComps; buildPendingTable(); }
   if (draft.agentNotes) { const el = document.getElementById('agentNotes'); if (el) el.value = draft.agentNotes; }
   if (draft.agentPriceOverride) { const el = document.getElementById('agentPriceOverride'); if (el) { el.value = draft.agentPriceOverride; updateOverrideDisplay(); } }
   recalcAll();
@@ -1096,7 +1273,7 @@ function _buildCmaSummary() {
   const range    = document.getElementById('vListPrice')?.textContent || '—';
   const narrative = getVal('agentNotes') || '';
 
-  const compLines = comps
+  const compLines = comps  // closed sales only
     .filter(c => c.address && c.salePrice)
     .map(c => {
       const adjPx = c._adj ? '$' + Math.round(c._adj.adjusted).toLocaleString('en-US') : '';
