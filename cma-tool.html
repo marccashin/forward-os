@@ -1690,7 +1690,131 @@ function _fillPDFDoc(doc) {
   pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr + (agentName ? '  |  Agent: ' + agentName : ''));
 
   // ════════════════════════════════════════
-  // PAGE 3 — ADJUSTMENT GRID
+  // PAGE 3 — MARKET CONTEXT (Active + Pending)
+  // ════════════════════════════════════════
+  const validActive  = activeComps.filter(c => c.address || parseFloat(c.listPrice) > 0);
+  const validPending = pendingComps.filter(c => c.address || parseFloat(c.listPrice) > 0);
+
+  if (validActive.length > 0 || validPending.length > 0) {
+    doc.addPage();
+    pageHeader('Market Context \u2014 Active & Pending');
+    y = 95;
+
+    doc.setFont('times', 'normal');
+    doc.setFontSize(20);
+    doc.setTextColor(...NAVY);
+    doc.text(subAddr || 'Subject Property', ML, y);
+    y += 20;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(...GRAY);
+    const ctxNote = 'Active listings establish the competitive price ceiling \u2014 what buyers can purchase today. Pending sales are the most current market signal, confirming where deals are closing now. Neither category is adjusted or used in the value estimate; they provide essential market context that brackets the recommended list price.';
+    const ctxLines = doc.splitTextToSize(ctxNote, CW);
+    doc.text(ctxLines, ML, y);
+    y += ctxLines.length * 11 + 16;
+
+    // ── Draw one market context table (active or pending) ──
+    function drawContextTable(items, titleText, titleColor, dateLabel) {
+      if (!items.length) return;
+
+      // Section title
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(...titleColor);
+      doc.text(titleText, ML, y);
+      doc.setDrawColor(...titleColor);
+      doc.setLineWidth(0.6);
+      doc.line(ML, y + 4, W - MR, y + 4);
+      y += 18;
+
+      const ctxCols   = ['#', 'ADDRESS', dateLabel.toUpperCase(), 'LIST PRICE', 'SQ FT', 'LOT SIZE', '$/SQFT', 'BEDS/BATHS', 'PROXIMITY'];
+      const ctxWidths = [15, 110, 60, 68, 50, 58, 46, 72, 65];
+
+      // Table header row
+      doc.setFillColor(...NAVY);
+      doc.rect(ML, y, CW, 15, 'F');
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(6.5);
+      doc.setTextColor(...WHITE);
+      let hx = ML + 4;
+      ctxCols.forEach((h, i) => { doc.text(h, hx, y + 10); hx += ctxWidths[i]; });
+      y += 15;
+
+      // Data rows
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      items.forEach((c, ci) => {
+        if (y > 705) {
+          pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr);
+          doc.addPage();
+          pageHeader('Market Context (cont.)');
+          y = 95;
+        }
+        const price = parseFloat(c.listPrice) || 0;
+        const gla   = parseFloat(c.gla) || 0;
+        const psf   = gla > 0 && price > 0 ? Math.round(price / gla) : 0;
+        const hb    = c.halfBaths && c.halfBaths !== '0' ? '/' + c.halfBaths + 'hb' : '';
+        const rowData = [
+          String(ci + 1),
+          (c.address || '\u2014').slice(0, 22),
+          c.date || '\u2014',
+          price ? '$' + price.toLocaleString('en-US') : '\u2014',
+          gla   ? gla.toLocaleString() + ' sqft' : '\u2014',
+          c.lotSize || '\u2014',
+          psf   ? '$' + psf : '\u2014',
+          (c.beds || '\u2014') + 'bd/' + (c.fullBaths || '\u2014') + 'fb' + hb,
+          c.proximity || '\u2014'
+        ];
+        doc.setFillColor(ci % 2 === 0 ? 255 : 249, ci % 2 === 0 ? 255 : 249, ci % 2 === 0 ? 255 : 252);
+        doc.rect(ML, y, CW, 15, 'F');
+        doc.setDrawColor(220, 220, 225);
+        doc.setLineWidth(0.2);
+        doc.line(ML, y + 15, ML + CW, y + 15);
+        doc.setTextColor(...NAVY);
+        let rx = ML + 4;
+        rowData.forEach((cell, i) => { doc.text(String(cell), rx, y + 10); rx += ctxWidths[i]; });
+        y += 15;
+      });
+      y += 20;
+    }
+
+    const CTX_GREEN = [22, 163, 74];
+    const CTX_AMBER = [161, 98, 7];
+    if (validActive.length)  drawContextTable(validActive,  'ACTIVE LISTINGS \u2014 COMPETITIVE MARKET',  CTX_GREEN, 'Date');
+    if (validPending.length) drawContextTable(validPending, 'PENDING SALES \u2014 CURRENT MARKET SIGNAL', CTX_AMBER, 'Contract Date');
+
+    // Context callout box
+    if (validActive.length && validPending.length) {
+      const activePsfs  = validActive.filter(c => parseFloat(c.gla) > 0 && parseFloat(c.listPrice) > 0).map(c => Math.round(parseFloat(c.listPrice)/parseFloat(c.gla)));
+      const pendingPsfs = validPending.filter(c => parseFloat(c.gla) > 0 && parseFloat(c.listPrice) > 0).map(c => Math.round(parseFloat(c.listPrice)/parseFloat(c.gla)));
+      const activePsfAvg  = activePsfs.length  ? Math.round(activePsfs.reduce((a,b)=>a+b,0)/activePsfs.length)   : 0;
+      const pendingPsfAvg = pendingPsfs.length ? Math.round(pendingPsfs.reduce((a,b)=>a+b,0)/pendingPsfs.length) : 0;
+      if (activePsfAvg > 0 || pendingPsfAvg > 0) {
+        doc.setFillColor(248, 249, 252);
+        doc.setDrawColor(200, 210, 230);
+        doc.setLineWidth(0.5);
+        doc.roundedRect(ML, y, CW, 34, 3, 3, 'FD');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(7.5);
+        doc.setTextColor(...NAVY);
+        doc.text('Market Context Summary', ML + 10, y + 13);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(60, 65, 80);
+        const summParts = [];
+        if (activePsfAvg)  summParts.push('Active listings avg $' + activePsfAvg + '/sqft (' + validActive.length + ' listing' + (validActive.length !== 1 ? 's' : '') + ')');
+        if (pendingPsfAvg) summParts.push('Pending sales avg $' + pendingPsfAvg + '/sqft (' + validPending.length + ' sale' + (validPending.length !== 1 ? 's' : '') + ')');
+        doc.text(summParts.join('   |   '), ML + 10, y + 26);
+        y += 42;
+      }
+    }
+
+    pageFooter('FORWARD Real Estate | Corcoran McEnearney', 'Confidential \u2014 ' + dateStr + (agentName ? '  |  Agent: ' + agentName : ''));
+  }
+
+  // ════════════════════════════════════════
+  // PAGE 4 (or 3) — ADJUSTMENT GRID
   // ════════════════════════════════════════
   doc.addPage();
   pageHeader('Adjustment Grid');
