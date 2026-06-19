@@ -7659,6 +7659,8 @@ async function _loadCampaignFonts(doc) {
 
 // ── Constants ──────────────────────────────────────────────
 const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations','Concierge'];
+const AGENT_ALIASES = { 'Ash McGowan': 'Ashling McGowan' }; // normalize nicknames to canonical names
+function normalizeAgentName(n) { return AGENT_ALIASES[n] || n; }
 const LISTING_PRESENTATIONS = {
   'Marc Cashin':    'https://www.canva.com/design/DAHECgtXhJc/edit',
   'Ashling McGowan':'https://www.canva.com/design/DAHEC0x1ja8/edit',
@@ -8382,7 +8384,7 @@ async function pushLib(item) {
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
 const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
-        const ADMIN_AGENTS = ['Marc Cashin', 'Ash McGowan', 'Ashling McGowan', 'Operations', 'Concierge']; // can see all agents' files
+        const ADMIN_AGENTS = ['Marc Cashin', 'Ashling McGowan', 'Operations', 'Concierge']; // can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
@@ -8439,8 +8441,11 @@ function getAllAgentsPropFiles() {
 createApp({
   setup() {
     // Auth
-    const loggedIn  = ref(!!localStorage.getItem('fos_agent'));
-    const agentName = ref(localStorage.getItem('fos_agent')||'');
+    const _rawFosAgent = localStorage.getItem('fos_agent')||'';
+    const _normFosAgent = normalizeAgentName(_rawFosAgent);
+    if (_normFosAgent !== _rawFosAgent && _rawFosAgent) localStorage.setItem('fos_agent', _normFosAgent);
+    const loggedIn  = ref(!!_normFosAgent);
+    const agentName = ref(_normFosAgent);
     const loginAgent = ref('');
     const loginCode  = ref('');
     const loginError = ref('');
@@ -10748,6 +10753,18 @@ async function campExportPDF() {
     pkg.letter._skip = true;
   }
 
+  // Open fallback window NOW — synchronously in the user gesture chain.
+  // Browsers allow window.open() here; after an await they block it as a pop-up.
+  // If Railway succeeds we close it silently; if it fails we navigate it to campaign-print.html.
+  var _fallbackWin = window.open('', '_blank');
+  // Snap focus back so user sees the animation in this tab, not a blank tab
+  window.focus();
+  // Write a holding message so the blank tab isn't confusing if user switches to it
+  if (_fallbackWin) {
+    _fallbackWin.document.write('<html><head><style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0A1628;font-family:Montserrat,sans-serif;color:#C9A84C;letter-spacing:.15em;font-size:13px;text-transform:uppercase;}</style></head><body><span>Generating PDF…</span></body></html>');
+    _fallbackWin.document.close();
+  }
+
   // Show fullscreen overlay — user sees immediate feedback
   campPdfGenerating.value = true;
 
@@ -10806,6 +10823,7 @@ async function campExportPDF() {
     }
 
     campPdfGenerating.value = false;
+    if (_fallbackWin && !_fallbackWin.closed) _fallbackWin.close();
     showToast('PDF ready — check your Downloads.', 4000);
 
   } catch (err) {
@@ -10815,15 +10833,16 @@ async function campExportPDF() {
     // and @page { margin:0 } removes browser URL/date headers. One extra "Save as PDF" click.
     try {
       var _pkgForPrint = JSON.parse(JSON.stringify(pkg));
-      delete _pkgForPrint._siteUrl; // backend hint, not needed in print page
+      delete _pkgForPrint._siteUrl;
       sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
-      var _pwin = window.open('/campaign-print.html', '_blank');
-      showToast(
-        _pwin
-          ? 'PDF opening — in the print dialog, choose “Save as PDF”.'
-          : 'Could not open PDF. Please allow pop-ups for this site and try again.',
-        6000
-      );
+      if (_fallbackWin && !_fallbackWin.closed) {
+        _fallbackWin.location.href = '/campaign-print.html';
+        _fallbackWin.focus();
+        showToast('PDF opening — choose "Save as PDF" in the print dialog.', 6000);
+      } else {
+        // _fallbackWin was blocked — navigate current tab as last resort
+        window.location.href = '/campaign-print.html';
+      }
     } catch (_fbErr) {
       showToast('PDF export failed. Please try again.', 5000);
     }
