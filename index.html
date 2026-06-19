@@ -8438,7 +8438,9 @@ createApp({
   setup() {
     // Auth
     const loggedIn  = ref(!!localStorage.getItem('fos_agent'));
-    const agentName = ref((localStorage.getItem('fos_agent')||'').replace('Ash McGowan','Ashling McGowan'));
+    const AGENT_ALIASES = { 'Ash McGowan': 'Ashling McGowan' };
+    const normalizeAgent = name => AGENT_ALIASES[name] || name;
+    const agentName = ref(normalizeAgent(localStorage.getItem('fos_agent')||''));
     const loginAgent = ref('');
     const loginCode  = ref('');
     const loginError = ref('');
@@ -8853,7 +8855,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstGroupedByAgent = computed(() => {
       const map = {};
       for (const p of lstProperties.value) {
-        const name = p.agent_name || 'Unknown';
+        const name = normalizeAgent(p.agent_name || 'Unknown');
         if (!map[name]) map[name] = { name, props: [], _open: true };
         map[name].props.push(p);
       }
@@ -8864,7 +8866,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const byrGroupedByAgent = computed(() => {
       const map = {};
       for (const b of byrBuyers.value) {
-        const name = b.agent_name || 'Unknown';
+        const name = normalizeAgent(b.agent_name || 'Unknown');
         if (!map[name]) map[name] = { name, buyers: [], _open: true };
         map[name].buyers.push(b);
       }
@@ -11373,7 +11375,7 @@ async function lstSubmitToPipeline() {
         const bFiles = (buyers||[]).map(b=>({id:b.id,address:b.buyer_name,createdAt:b.created_at,resources:buyerAssetMap[b.id]||[],agent_name:b.agent_name,drive_folder_id:b.drive_folder_id,subfolder_drive_ids:b.subfolder_drive_ids,buyer_id:b.id,recordType:'buyer'}));
         const pFiles = (props||[]).map(p=>({id:p.id,address:p.address,createdAt:p.created_at,resources:propAssetMap[p.id]||[],agent_name:p.agent_name,drive_folder_id:p.drive_folder_id,subfolder_drive_ids:p.subfolder_drive_ids,property_id:p.id,recordType:'property'}));
         const all = [...bFiles,...pFiles].sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-        propFiles.value = all.filter(f => f.agent_name === agentName.value);
+        propFiles.value = all.filter(f => normalizeAgent(f.agent_name) === agentName.value);
         allAgentFiles.value = AGENTS.map(name=>({agent:name,files:all.filter(f=>f.agent_name===name)})).filter(g=>g.files.length>0||g.agent===ADMIN_AGENT);
       } catch(e) { console.error('loadPropFiles:',e); propFiles.value=[]; allAgentFiles.value=[]; }
     }
