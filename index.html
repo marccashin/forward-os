@@ -7052,7 +7052,7 @@ body {
           <!-- Add partner -->
           <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:8px;">Add a Partner</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            <button v-for="agent in ['Marc Cashin','Ash McGowan','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey']" :key="agent"
+            <button v-for="agent in ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey']" :key="agent"
               v-if="!partnerModal.coAgents.includes(agent) && agent !== (partnerModal.dealType==='properties' ? (lstActiveProp && lstActiveProp.agent_name) : (byrActiveBuyer && byrActiveBuyer.agent_name))"
               @click="partnerAdd(agent)"
               :disabled="partnerModal.adding"
@@ -7725,7 +7725,6 @@ const supaRest = {
 // ── Agent Email Mapping ─────────────────────────────────────────────────
 const AGENT_EMAILS = {
   'Marc Cashin':    'marc.cashin@corcoranmce.com',
-  'Ash McGowan':    'ash.mcgowan@corcoranmce.com',
   'Ashling McGowan':'ash.mcgowan@corcoranmce.com',
   'Niki Lang':      'niki.lang@corcoranmce.com',
   'Cesar Rivera':   'cesar.rivera@corcoranmce.com',
@@ -7734,7 +7733,6 @@ const AGENT_EMAILS = {
 };
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
-  'Ash McGowan':    '202.779.6263',
   'Ashling McGowan':'202.779.6263',
   'Niki Lang':      '202.905.8828',
   'Cesar Rivera':   '202.878.2897',
@@ -7745,7 +7743,7 @@ const AGENT_WEBSITE = 'www.FwrdRealEstate.com';
 
 const AGENT_BIOS = {
   'Marc Cashin':     'Marc Cashin is a luxury real estate specialist with FORWARD | Corcoran McEnearney, focused on the DC Metro market including Capitol Hill, Navy Yard, Del Ray, Old Town Alexandria, and Northern Virginia. Known for market intelligence, negotiating precision, and a concierge approach to client service, Marc has guided buyers through some of the DMV\'s most competitive transactions.\n\nHis approach is straightforward: every client receives the same level of preparation, market analysis, and honest counsel — from first showing through final signature. He brings data to every offer and is committed to winning on the right terms, not just the highest number.\n\nFORWARD | Corcoran McEnearney\n202.900.3126 · marc.cashin@corcoranmce.com\nwww.FwrdRealEstate.com',
-  'Ash McGowan':     'Ashling McGowan is a buyer\'s specialist with FORWARD | Corcoran McEnearney, with deep expertise across Capitol Hill, Navy Yard, and the Maryland suburbs. Her clients value her responsiveness, her market read, and her ability to move quickly when the right home appears.\n\nFORWARD | Corcoran McEnearney\n202.779.6263 · ash.mcgowan@corcoranmce.com\nwww.FwrdRealEstate.com',
+  'Ashling McGowan': 'Ashling McGowan is a buyer\'s specialist with FORWARD | Corcoran McEnearney, with deep expertise across Capitol Hill, Navy Yard, and the Maryland suburbs. Her clients value her responsiveness, her market read, and her ability to move quickly when the right home appears.\n\nFORWARD | Corcoran McEnearney\n202.779.6263 · ash.mcgowan@corcoranmce.com\nwww.FwrdRealEstate.com',
   'Ashling McGowan': 'Ashling McGowan is a buyer\'s specialist with FORWARD | Corcoran McEnearney, with deep expertise across Capitol Hill, Navy Yard, and the Maryland suburbs. Her clients value her responsiveness, her market read, and her ability to move quickly when the right home appears.\n\nFORWARD | Corcoran McEnearney\n202.779.6263 · ash.mcgowan@corcoranmce.com\nwww.FwrdRealEstate.com',
   'Niki Lang':       'Niki Lang is a licensed real estate professional with FORWARD | Corcoran McEnearney, specializing in buyer representation across the DC Metro area. Known for her thorough preparation and clear communication, Niki guides clients through every step of the buying process with precision and care.\n\nFORWARD | Corcoran McEnearney\n202.905.8828 · niki.lang@corcoranmce.com\nwww.FwrdRealEstate.com',
   'Cesar Rivera':    'Cesar Rivera is a luxury real estate professional with FORWARD | Corcoran McEnearney, focused on buyer representation across Northern Virginia and the greater DMV market. Bilingual in English and Spanish, Cesar brings a global perspective and a disciplined, client-first approach to every transaction.\n\nFORWARD | Corcoran McEnearney\n202.878.2897 · cesar.rivera@corcoranmce.com\nwww.FwrdRealEstate.com',
@@ -8382,7 +8380,7 @@ async function pushLib(item) {
 // ── Client Files helpers (agent-namespaced) ─────────────
 // Each property file: { id, address, createdAt, resources: [{ id, type, label, data, savedAt }] }
 const ADMIN_AGENT = 'Marc Cashin';  // Admin/owner
-        const ADMIN_AGENTS = ['Marc Cashin', 'Ash McGowan', 'Ashling McGowan', 'Operations', 'Concierge']; // can see all agents' files
+        const ADMIN_AGENTS = ['Marc Cashin', 'Ashling McGowan', 'Operations', 'Concierge']; // can see all agents' files
 function agentKeyFor(base, name) { return base + '_' + name.replace(/\s+/g,'_'); }
 function getPropFiles()     { try { return JSON.parse(localStorage.getItem(agentKey('fos_props'))||'[]'); } catch { return []; } }
 function getPropFilesFor(name) { try { return JSON.parse(localStorage.getItem(agentKeyFor('fos_props', name))||'[]'); } catch { return []; } }
@@ -8440,7 +8438,7 @@ createApp({
   setup() {
     // Auth
     const loggedIn  = ref(!!localStorage.getItem('fos_agent'));
-    const agentName = ref(localStorage.getItem('fos_agent')||'');
+    const agentName = ref((localStorage.getItem('fos_agent')||'').replace('Ash McGowan','Ashling McGowan'));
     const loginAgent = ref('');
     const loginCode  = ref('');
     const loginError = ref('');
