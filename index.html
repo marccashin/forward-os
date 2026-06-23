@@ -15613,8 +15613,8 @@ No markdown. Valid JSON only.`;
       byrCreating.value = true;
       try {
         const _bCrRes = await fetch(RAILWAY_URL + '/create-buyer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ buyer_name: byrNewName.value.trim(), agent_name: agentName.value, agent_email: AGENT_EMAILS[agentName.value]||'', email: byrNewEmail.value.trim()||'', phone: byrNewPhone.value.trim()||'', status:'active' }) });
-        if (!_bCrRes.ok) { const _e = await _bCrRes.text().catch(()=>_bCrRes.statusText); throw new Error(_e || 'Server returned '+_bCrRes.status); }
-        if (!_bCrRes.ok) { const _e = await _bCrRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server error creating buyer'); }
+        if (_bCrRes.status === 409) { const _e = await _bCrRes.json().catch(()=>{}); showToast(_e?.detail || 'A buyer with that name already exists in your list.', 4000); byrCreating.value = false; return; }
+        if (!_bCrRes.ok) { const _e = await _bCrRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server returned '+_bCrRes.status); }
         const buyer = await _bCrRes.json();
         // Auto-create a linked client file folder for this buyer
         refreshPropFiles();
