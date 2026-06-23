@@ -9859,6 +9859,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
 
+        // Duplicate guard: check if this address already exists for this agent
+        const _dupCheck = await fetch(SUPABASE_URL + '/rest/v1/properties?agent_name=eq.' + encodeURIComponent(agentName.value) + '&address=eq.' + encodeURIComponent(lstNormalizeAddress(lstNewAddress.value)) + '&select=id', { headers: supaRest.headers() });
+        const _dupData = _dupCheck.ok ? await _dupCheck.json() : [];
+        if (_dupData.length > 0) { lstCreateError.value = 'A property at this address already exists in your list.'; lstCreating.value = false; return; }
+
         // Create property directly via Supabase REST (Railway deployment is stale)
         const _insertBody = {
           address:     lstNormalizeAddress(lstNewAddress.value),
