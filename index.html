@@ -13085,7 +13085,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       doc.setFontSize(10);
       doc.setTextColor(...navy);
       doc.text(ns.closingDate || '—', 56, y);
-      doc.text(jurText, 300, y);
+      const jurLines = doc.splitTextToSize(jurText, W - 340);
+      doc.text(jurLines, 300, y);
       y += 22;
 
       // ── Sale Price hero ──
