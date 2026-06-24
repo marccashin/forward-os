@@ -2434,6 +2434,28 @@ body {
 
           </div>
 
+
+          <!-- Webhook Errors Dashboard Card (Marc/Operations only) -->
+          <div v-if="(agentName === 'Marc Cashin' || agentName === 'Operations') && webhookErrors.length > 0" style="margin-bottom:20px;background:var(--white);border:2px solid #ef4444;border-radius:2px;padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;">⚠️</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#dc2626;">Unmatched Webhook Events</span>
+                <span style="background:#ef4444;color:#fff;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;padding:2px 7px;border-radius:99px;">{{ webhookErrors.length }}</span>
+              </div>
+              <span @click="go('admin-training')" style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Manage →</span>
+            </div>
+            <div v-for="err in webhookErrors.slice(0,3)" :key="err.id" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cream-mid);">
+              <div>
+                <span style="background:#fee2e2;color:#dc2626;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:1px 6px;border-radius:99px;margin-right:6px;">{{ err.record_type }}</span>
+                <span style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ err.contact_name }}</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;margin-left:6px;">via {{ err.fub_agent || 'Unknown' }}</span>
+              </div>
+              <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;">{{ new Date(err.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</span>
+            </div>
+            <div v-if="webhookErrors.length > 3" style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;margin-top:8px;text-align:center;">+ {{ webhookErrors.length - 3 }} more — go to Training Admin to resolve</div>
+          </div>
+
           <!-- FUB Reminder Modal -->
           <!-- ── OS Updates Modal ──────────────────────────────────────────── -->
           <div v-if="updatesModal.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.88);z-index:9600;display:flex;align-items:flex-end;justify-content:center;padding:0;" @click.self="dismissUpdates()">
@@ -18378,6 +18400,7 @@ async function dismissUpdates() {
       if (v === 'prop-files') loadPropFiles();
       if (v === 'dashboard')  loadTaskFeed();
       if (v === 'admin-training' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
+      if (v === 'dashboard' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
       if (v === 'archive') archFetchAll();
       // Auto-populate buyer tools from active buyer profile
       if (byrActiveBuyer.value) {
