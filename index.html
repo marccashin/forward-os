@@ -2829,7 +2829,7 @@ body {
 
               <!-- Jurisdiction (auto-detected, still editable) -->
               <div class="form-row"><label>Jurisdiction <span style="font-weight:400;color:#9ca3af;font-size:10px;">(auto-detected from address)</span></label>
-                <select v-model="ns.jurisdiction">
+                <select v-model="ns.jurisdiction" @change="ns.salePrice && ns.closingDate ? calcNetSheet() : null">
                   <option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option>
                 </select>
               </div>
@@ -5753,7 +5753,7 @@ body {
                   <div v-if="ns.unit!==undefined" class="form-row" style="margin-top:8px;max-width:160px;"><label>Unit # <span style="font-weight:400;opacity:0.55;font-size:9px;">(optional)</span></label><input v-model="ns.unit" type="text" placeholder="e.g. 7E"/></div>
                   <div class="form-row"><label>Closing Date</label><input v-model="ns.closingDate" type="date"/></div>
                   <div class="form-row"><label>Jurisdiction</label>
-                    <select v-model="ns.jurisdiction"><option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option></select>
+                    <select v-model="ns.jurisdiction" @change="ns.salePrice && ns.closingDate ? calcNetSheet() : null"><option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option></select>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showLoans=!ns._showLoans">{{ ns._showLoans ? '▼' : '▶' }} Loan Payoffs</div>
                   <div v-if="ns._showLoans" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -12701,7 +12701,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         ns.jurisdiction = 'va-nova';
       } else if (/\bva\b|virginia/.test(a)) {
         ns.jurisdiction = 'va-other';
-      } else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b|\bpotomac\b|\bgaithersburg\b|\bgermantown\b/.test(a)) {
+      } else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) {
         ns.jurisdiction = 'md-montgomery';
       } else if (/\bmd\b|maryland/.test(a)) {
         ns.jurisdiction = 'md-other';
@@ -13318,7 +13318,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (/\bdc\b|washington\s*,?\s*d\.?c|district of columbia/.test(a)) ctc.jurisdiction = 'dc';
       else if (/\barlington\b|\bfairfax\b|\bloudoun\b|\bprince william\b|\balexandria\b/.test(a)) ctc.jurisdiction = 'va-nova';
       else if (/\bva\b|virginia/.test(a)) ctc.jurisdiction = 'va-other';
-      else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b|\bpotomac\b/.test(a)) ctc.jurisdiction = 'md-montgomery';
+      else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b/.test(a)) ctc.jurisdiction = 'md-montgomery';
       else if (/\bprince george\b|\bbowie\b|\bcollege park\b|\bupper marlboro\b/.test(a)) ctc.jurisdiction = 'md-pgcounty';
       else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-other';
     }
