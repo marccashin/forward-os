@@ -2434,6 +2434,28 @@ body {
 
           </div>
 
+
+          <!-- Webhook Errors Dashboard Card (Marc/Operations only) -->
+          <div v-if="(agentName === 'Marc Cashin' || agentName === 'Operations') && webhookErrors.length > 0" style="margin-bottom:20px;background:var(--white);border:2px solid #ef4444;border-radius:2px;padding:16px 20px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:15px;">⚠️</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#dc2626;">Unmatched Webhook Events</span>
+                <span style="background:#ef4444;color:#fff;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;padding:2px 7px;border-radius:99px;">{{ webhookErrors.length }}</span>
+              </div>
+              <span @click="go('admin-training')" style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Manage →</span>
+            </div>
+            <div v-for="err in webhookErrors.slice(0,3)" :key="err.id" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cream-mid);">
+              <div>
+                <span style="background:#fee2e2;color:#dc2626;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:1px 6px;border-radius:99px;margin-right:6px;">{{ err.record_type }}</span>
+                <span style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ err.contact_name }}</span>
+                <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;margin-left:6px;">via {{ err.fub_agent || 'Unknown' }}</span>
+              </div>
+              <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;">{{ new Date(err.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric'}) }}</span>
+            </div>
+            <div v-if="webhookErrors.length > 3" style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;margin-top:8px;text-align:center;">+ {{ webhookErrors.length - 3 }} more — go to Training Admin to resolve</div>
+          </div>
+
           <!-- FUB Reminder Modal -->
           <!-- ── OS Updates Modal ──────────────────────────────────────────── -->
           <div v-if="updatesModal.show" style="position:fixed;inset:0;background:rgba(10,35,66,0.88);z-index:9600;display:flex;align-items:flex-end;justify-content:center;padding:0;" @click.self="dismissUpdates()">
@@ -6668,6 +6690,48 @@ body {
 
               <!-- Custom entries list -->
 
+
+
+          <!-- Webhook Errors Admin -->
+          <div v-if="agentName === 'Marc Cashin' || agentName === 'Operations'" class="card" style="margin-top:16px;border-top:3px solid #ef4444;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:16px;font-weight:600;color:var(--navy);">⚠️ Unmatched Webhook Events</h3>
+              <span v-if="webhookErrors.length" style="background:#ef4444;color:#fff;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;padding:2px 8px;border-radius:99px;">{{ webhookErrors.length }} pending</span>
+            </div>
+            <p style="font-family:'Cormorant Garamond',serif;margin:0 0 16px;font-size:13px;color:#6b7280;">FUB sent these contacts but the agent name wasn't recognized. Assign to the correct agent and create the record.</p>
+
+            <div v-if="webhookErrorsLoading" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">Loading...</div>
+
+            <div v-else-if="webhookErrors.length === 0" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;text-align:center;padding:20px 0;">No unmatched events — all clear.</div>
+
+            <div v-else>
+              <div v-for="err in webhookErrors" :key="err.id" style="border:1px solid #fca5a5;border-radius:6px;padding:14px;margin-bottom:10px;background:#fff5f5;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="background:#fee2e2;color:#dc2626;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;padding:2px 8px;border-radius:99px;">{{ err.record_type }}</span>
+                  <span style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:600;color:var(--navy);">{{ err.contact_name }}</span>
+                  <span style="font-family:'Montserrat',sans-serif;font-size:9px;color:#9ca3af;margin-left:auto;">{{ new Date(err.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:9px;color:#6b7280;margin-bottom:4px;" v-if="err.email || err.phone">
+                  <span v-if="err.email">{{ err.email }}</span><span v-if="err.email && err.phone"> · </span><span v-if="err.phone">{{ err.phone }}</span>
+                </div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:9px;color:#6b7280;margin-bottom:12px;">
+                  FUB agent: <strong>{{ err.fub_agent || 'Unknown' }}</strong>
+                  <span v-if="err.address && err.record_type === 'seller'"> · Address: <strong>{{ err.address }}</strong></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <select v-model="webhookErrorAgents[err.id]" style="flex:1;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:8px 10px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+                    <option value="" disabled>Select correct agent...</option>
+                    <option v-for="a in FORWARD_AGENTS" :key="a" :value="a">{{ a }}</option>
+                  </select>
+                  <button @click="resolveWebhookError(err)" :disabled="!webhookErrorAgents[err.id] || webhookErrorResolving[err.id]" style="background:var(--navy);color:var(--gold);border:none;border-radius:2px;padding:8px 16px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap;opacity:1;" :style="{opacity:(!webhookErrorAgents[err.id]||webhookErrorResolving[err.id])?0.45:1}">
+                    {{ webhookErrorResolving[err.id] ? 'Creating...' : 'Create Record' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button @click="loadWebhookErrors" style="margin-top:8px;background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:5px 14px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">↻ Refresh</button>
+          </div>
             </div>
           </div>
         </template>
@@ -7731,6 +7795,7 @@ const AGENT_EMAILS = {
   'Charlotte Lee':  'charlotte.lee@corcoranmce.com',
   'Shannon Casey':  'shannon.casey@corcoranmce.com',
 };
+    const FORWARD_AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey'];
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
   'Ashling McGowan':'202.779.6263',
@@ -9859,6 +9924,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
 
+        // Duplicate guard: check if this address already exists for this agent
+        const _dupCheck = await fetch(SUPABASE_URL + '/rest/v1/properties?agent_name=eq.' + encodeURIComponent(agentName.value) + '&address=eq.' + encodeURIComponent(lstNormalizeAddress(lstNewAddress.value)) + '&select=id', { headers: supaRest.headers() });
+        const _dupData = _dupCheck.ok ? await _dupCheck.json() : [];
+        if (_dupData.length > 0) { showToast('A property at this address already exists in your list.', 4000); lstCreating.value = false; return; }
+
         // Create property directly via Supabase REST (Railway deployment is stale)
         const _insertBody = {
           address:     lstNormalizeAddress(lstNewAddress.value),
@@ -11329,6 +11399,7 @@ async function lstSubmitToPipeline() {
         fubReminderCheckAndShow();
         checkForUpdates();
         atLoadEntries(); // Load training docs on page refresh for already-logged-in users
+        if (agentName.value === 'Marc Cashin' || agentName.value === 'Operations') loadWebhookErrors();
 
         // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
         if (!apiKeySet.value && agentName.value) {
@@ -15613,8 +15684,8 @@ No markdown. Valid JSON only.`;
       byrCreating.value = true;
       try {
         const _bCrRes = await fetch(RAILWAY_URL + '/create-buyer', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ buyer_name: byrNewName.value.trim(), agent_name: agentName.value, agent_email: AGENT_EMAILS[agentName.value]||'', email: byrNewEmail.value.trim()||'', phone: byrNewPhone.value.trim()||'', status:'active' }) });
-        if (!_bCrRes.ok) { const _e = await _bCrRes.text().catch(()=>_bCrRes.statusText); throw new Error(_e || 'Server returned '+_bCrRes.status); }
-        if (!_bCrRes.ok) { const _e = await _bCrRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server error creating buyer'); }
+        if (_bCrRes.status === 409) { const _e = await _bCrRes.json().catch(()=>{}); showToast(_e?.detail || 'A buyer with that name already exists in your list.', 4000); byrCreating.value = false; return; }
+        if (!_bCrRes.ok) { const _e = await _bCrRes.json().catch(()=>{}); throw new Error(_e?.detail || 'Server returned '+_bCrRes.status); }
         const buyer = await _bCrRes.json();
         // Auto-create a linked client file folder for this buyer
         refreshPropFiles();
@@ -16316,6 +16387,11 @@ No markdown. Valid JSON only.`;
     // == Training Admin (Marc-only) ==
     const AT_KEY = 'fos_training_custom'; // global, not per-agent — shared across all agents via voice
     const atEntries = ref([]);
+    // Webhook error admin
+    const webhookErrors        = ref([]);
+    const webhookErrorsLoading = ref(false);
+    const webhookErrorAgents   = ref({});
+    const webhookErrorResolving = ref({});
     const atNewSection = ref('Foundation & Vision');
     const atNewTitle   = ref('');
     const atNewDesc    = ref('');
@@ -16334,6 +16410,37 @@ No markdown. Valid JSON only.`;
           }
         } catch(e) { console.warn('Supabase background sync failed:', e); }
       })();
+    }
+
+    async function loadWebhookErrors() {
+      webhookErrorsLoading.value = true;
+      try {
+        const rows = await supaRest.select('webhook_errors', 'select=*&status=eq.pending&order=created_at.desc');
+        webhookErrors.value = rows || [];
+        (rows || []).forEach(r => { if (webhookErrorAgents.value[r.id] === undefined) webhookErrorAgents.value[r.id] = ''; });
+      } catch(e) { console.error('loadWebhookErrors failed:', e); }
+      finally { webhookErrorsLoading.value = false; }
+    }
+
+    async function resolveWebhookError(err) {
+      const agent = webhookErrorAgents.value[err.id];
+      if (!agent) return;
+      webhookErrorResolving.value[err.id] = true;
+      try {
+        const res = await fetch(RAILWAY_URL + '/resolve-webhook-error', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ error_id: err.id, agent_name: agent }),
+        });
+        if (res.ok) {
+          webhookErrors.value = webhookErrors.value.filter(e => e.id !== err.id);
+          showToast('✅ Record created for ' + err.contact_name, 4000);
+        } else {
+          const body = await res.json().catch(() => ({}));
+          showToast(body.detail || 'Error resolving record', 5000);
+        }
+      } catch(e) { showToast('Network error — could not resolve.', 5000); }
+      finally { webhookErrorResolving.value[err.id] = false; }
     }
 
     async function atLoadEntries() {
@@ -18292,6 +18399,8 @@ async function dismissUpdates() {
       if (v === 'buyer-package') byrFetchBuyers();
       if (v === 'prop-files') loadPropFiles();
       if (v === 'dashboard')  loadTaskFeed();
+      if (v === 'admin-training' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
+      if (v === 'dashboard' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
       if (v === 'archive') archFetchAll();
       // Auto-populate buyer tools from active buyer profile
       if (byrActiveBuyer.value) {
