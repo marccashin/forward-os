@@ -10221,7 +10221,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (campIncludes.seller_prep && lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
   if (campIncludes.mls_data && lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
 
-  const sellerNameLine = prop.seller_name ? '\nSELLER: ' + prop.seller_name + ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) ? ' & ' + prop.subfolder_drive_ids._co_seller : '') : '';
+  const _coSeller = (prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '';
+  const sellerNameLine = prop.seller_name ? '\nSELLER (full name' + (_coSeller ? 's, two people' : ', single person — do NOT split into two names') + '): ' + prop.seller_name + (_coSeller ? ' & ' + _coSeller : '') : '';
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + sellerNameLine + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
