@@ -2081,6 +2081,9 @@ body {
   .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
 }
 
+
+@keyframes fos-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.fos-stream-cursor::after { content:'\25ae'; display:inline-block; animation:fos-blink 0.7s step-end infinite; margin-left:1px; font-size:0.85em; opacity:0.7; }
 </style>
 </head>
 <body>
@@ -6057,7 +6060,7 @@ body {
                       <div v-if="!moChatMessages.length" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#9ca3af;font-style:italic;text-align:center;padding:12px 0;">
                         Ask a follow-up question — e.g. "If I remove the inspection contingency on Offer 2, does it become stronger?"
                       </div>
-                      <div v-for="(msg,i) in moChatMessages" :key="i" :class="['mo-chat-bubble', msg.role]">{{ msg.text }}</div>
+                      <div v-for="(msg,i) in moChatMessages" :key="i" :class="['mo-chat-bubble', msg.role, {'fos-stream-cursor': msg.streaming}]">{{ msg.text }}</div>
                       <div v-if="moChatLoading" class="mo-chat-bubble ai" style="padding:6px 12px;">
                         <span class="mo-chat-typing"><span></span><span></span><span></span></span>
                       </div>
@@ -8194,6 +8197,49 @@ async function claudeChat(messages, system = null) {
   return d.content[0].text;
 }
 
+async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens = 16000) {
+  const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
+  if (!key) throw new Error('No Claude API key set.');
+  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const body = { model, max_tokens: maxTokens, stream: true, messages: [{ role: 'user', content: userPrompt }] };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = `API error ${res.status}`;
+    try { const e = await res.json(); msg = e.error?.message || msg; } catch {}
+    throw new Error(msg);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          fullText += evt.delta.text;
+          if (onChunk) onChunk(evt.delta.text, fullText);
+        }
+      } catch {}
+    }
+  }
+  return fullText;
+}
+
+
 // ── Claude Vision API (for business card parsing) ─────────────────────────
 async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
@@ -9572,8 +9618,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       moChatMessages.value.push({ role: 'agent', text: q });
       moChatInput.value = '';
       moChatLoading.value = true;
+      const aiMsgIdx = moChatMessages.value.length;
+      moChatMessages.value.push({ role: 'ai', text: '', streaming: true });
       try {
-        const history = moChatMessages.value.slice(0,-1).map(m => ({
+        const history = moChatMessages.value.slice(0, -2).map(m => ({
           role: m.role === 'agent' ? 'user' : 'assistant', content: m.text
         }));
         const offers = [];
@@ -9582,7 +9630,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           if (o && Object.keys(o).length) offers.push({ offer_number: n, offer_data: { ...o } });
         }
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 60000);
+        const timer = setTimeout(() => ctrl.abort(), 120000);
         let res;
         try { res = await fetch(`${RAILWAY_URL}/api/chat-offers`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -9593,11 +9641,32 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             list_price: lstActiveProp.value?.list_price || '',
           }), signal: ctrl.signal,
         }); } finally { clearTimeout(timer); }
-        const json = await res.json();
-        if (!res.ok) throw new Error(json.detail || 'Error');
-        moChatMessages.value.push({ role: 'ai', text: json.answer });
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          throw new Error(errJson.detail || `Server error ${res.status}`);
+        }
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop();
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6).trim();
+            if (data === '[DONE]') continue;
+            try {
+              const evt = JSON.parse(data);
+              if (evt.text) moChatMessages.value[aiMsgIdx].text += evt.text;
+            } catch {}
+          }
+        }
+        moChatMessages.value[aiMsgIdx].streaming = false;
       } catch(e) {
-        moChatMessages.value.push({ role: 'ai', text: 'Sorry, something went wrong: ' + e.message });
+        moChatMessages.value[aiMsgIdx] = { role: 'ai', text: 'Something went wrong — the offer advisor couldn\'t respond right now. Try asking again.' };
       } finally {
         moChatLoading.value = false;
       }
