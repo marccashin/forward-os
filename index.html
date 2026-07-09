@@ -17183,7 +17183,24 @@ const CHANGELOG = [
         detail: 'The campaign PDF now uses a clean white background throughout — cover, dividers, and back page — with navy and gold text. The back page also fills the full page.\n\nBest practice: No action needed — all new PDFs use the updated design automatically.'
       }
     ]
+  },
+  {
+    id: 'v2026-07-08',
+    date: 'July 8, 2026',
+    title: 'Platform Activity Log & Reliability Fixes',
+    summary: 'Admins can now see a full audit trail of platform activity. Buyer duplicates from FUB syncs are prevented automatically.',
+    updates: [
+      {
+        title: 'Audit Log for Admins',
+        detail: 'Marc and Operations can now view a full log of platform activity — logins, buyers added or deleted, properties created, and more. Find it in the sidebar under Audit Log or on the admin dashboard.\n\nBest practice: Check the audit log if you ever need to trace when a record was created or who made a change.'
+      },
+      {
+        title: 'Buyer Duplicates From FUB Syncs Fixed',
+        detail: 'A race condition was causing FUB to create 2–3 duplicate buyer records when multiple contacts were synced at the same time. This is now fixed — each sync is processed one at a time so duplicates cannot form.\n\nBest practice: If you notice any remaining duplicates from before July 8, let Marc know and they can be cleaned up manually.'
+      }
+    ]
   }
+
 ];
 
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
