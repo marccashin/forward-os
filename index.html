@@ -2081,6 +2081,9 @@ body {
   .fwd-prep-section__item { font-size: 12.5px; line-height: 1.5; }
 }
 
+
+@keyframes fos-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.fos-stream-cursor::after { content:'\25ae'; display:inline-block; animation:fos-blink 0.7s step-end infinite; margin-left:1px; font-size:0.85em; opacity:0.7; }
 </style>
 </head>
 <body>
@@ -2206,6 +2209,9 @@ body {
         <div class="nav-item" :class="{active:view==='archive'}" @click="go('archive')">
           <svg class="nav-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
           Archive
+        </div>
+        <div class="nav-item" :class="{active:view==='audit-log'}" @click="go('audit-log')" v-if="agentName === 'Marc Cashin' || agentName === 'Operations'" style="color:var(--gold-muted);">
+          <span class="nav-icon">📋</span> Audit Log
         </div>
 
         <div class="nav-item" :class="{active:view==='settings'}" @click="go('settings')">
@@ -2428,6 +2434,13 @@ body {
               <div>
                 <div class="admin-tile-label">Training Library</div>
                 <div class="admin-tile-sub">{{ atEntries.length }} entr{{ atEntries.length === 1 ? 'y' : 'ies' }}</div>
+              </div>
+              <div class="admin-tile-arrow">→</div>
+            </div>
+            <div class="admin-tile" @click="go('audit-log')" v-if="agentName === 'Marc Cashin' || agentName === 'Operations'">
+              <div>
+                <div class="admin-tile-label">Audit Log</div>
+                <div class="admin-tile-sub">Activity &amp; access history</div>
               </div>
               <div class="admin-tile-arrow">→</div>
             </div>
@@ -6543,6 +6556,74 @@ body {
 
         <!-- ── Admin: Training Library (Marc only) ──────────────────────── -->
         <!-- ============ ARCHIVE ============ -->
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- AUDIT LOG VIEW                                                  -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <template v-else-if="view==='audit-log' && (agentName === 'Marc Cashin' || agentName === 'Operations')">
+          <div style="max-width:900px;margin:0 auto;padding:0 0 40px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+              <div>
+                <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:4px;">Admin</div>
+                <h2 style="font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:var(--navy);margin:0;">Audit Log</h2>
+              </div>
+              <button @click="auditLoad()" :disabled="auditLoading" style="display:flex;align-items:center;gap:6px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;" :style="{opacity:auditLoading?0.5:1}">
+                <span v-if="auditLoading" class="spinner" style="width:10px;height:10px;border-width:1.5px;"></span>
+                <span v-else>↻</span> Refresh
+              </button>
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+              <select v-model="auditFilterAgent" @change="auditLoad()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:8px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;min-width:160px;">
+                <option value="">All agents</option>
+                <option v-for="a in auditAgents" :value="a">{{ a }}</option>
+              </select>
+              <select v-model="auditFilterAction" @change="auditLoad()" style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:8px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;min-width:180px;">
+                <option value="">All actions</option>
+                <option value="agent.login">agent.login</option>
+                <option value="agent.logout">agent.logout</option>
+                <option value="buyer.create">buyer.create</option>
+                <option value="buyer.delete">buyer.delete</option>
+                <option value="buyer.archive">buyer.archive</option>
+                <option value="buyer.dup_skipped">buyer.dup_skipped</option>
+                <option value="property.create">property.create</option>
+                <option value="property.delete">property.delete</option>
+              </select>
+            </div>
+            <div v-if="auditLoading" style="text-align:center;padding:40px;color:#aaa;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;">Loading…</div>
+            <div v-else-if="!auditRows.length" style="text-align:center;padding:40px;font-family:'Cormorant Garamond',serif;font-size:15px;color:#aaa;">No entries found.</div>
+            <div v-else style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;">
+              <table style="width:100%;border-collapse:collapse;font-family:'Montserrat',sans-serif;font-size:9px;">
+                <thead>
+                  <tr style="background:var(--navy);color:var(--gold);">
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">When</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Agent</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Action</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Record</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Source</th>
+                    <th style="padding:10px 14px;text-align:left;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Detail</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(row, i) in auditRows" :key="row.id" :style="{background: i%2===0 ? 'var(--white)' : 'var(--cream)'}">
+                    <td style="padding:9px 14px;color:#6b7280;white-space:nowrap;">{{ auditFmtDate(row.created_at) }}</td>
+                    <td style="padding:9px 14px;font-weight:600;color:var(--navy);">{{ row.agent_name || '—' }}</td>
+                    <td style="padding:9px 14px;">
+                      <span :style="auditActionStyle(row.action)" style="display:inline-block;padding:2px 8px;border-radius:99px;font-size:8px;font-weight:700;letter-spacing:0.08em;">{{ row.action }}</span>
+                    </td>
+                    <td style="padding:9px 14px;color:var(--navy);">{{ row.entity_name || '—' }}<span v-if="row.entity_type" style="color:#9ca3af;margin-left:4px;">({{ row.entity_type }})</span></td>
+                    <td style="padding:9px 14px;color:#9ca3af;">{{ row.source || '—' }}</td>
+                    <td style="padding:9px 14px;color:#6b7280;font-size:8px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ auditDetailStr(row.detail) }}</td>
+                  </tr>
+                </tbody>
+              </table>
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--cream-mid);background:var(--cream);">
+                <span style="font-family:'Montserrat',sans-serif;font-size:8px;color:#9ca3af;">Showing {{ auditRows.length }} entries</span>
+                <button v-if="auditRows.length >= auditLimit" @click="auditLimit+=200;auditLoad()" style="background:none;border:1px solid var(--cream-dark);border-radius:2px;padding:6px 14px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--navy);cursor:pointer;">Load more</button>
+              </div>
+            </div>
+          </div>
+        </template>
+
         <template v-else-if="view==='archive'">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;">
             <div>
@@ -7051,7 +7132,7 @@ body {
       <div style="font-size:12px;font-weight:700;color:rgba(247,244,239,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Question</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);font-style:italic;margin-bottom:12px;padding:10px 12px;background:#f9fafb;border-radius:10px;line-height:1.5;">"{{ voiceModal.answerQuestion }}"</div>
       <div style="overflow-y:auto;max-height:min(440px,55vh);padding-right:4px;margin-bottom:12px;">
-        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.replace(/\[SOURCE:[^\]]*\]/g,'').trim() }}</div>
+        <div :class="{'fos-stream-cursor': voiceModal.streaming}" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.replace(/\[SOURCE:[^\]]*\]/g,'').trim() }}</div>
         <div v-if="voiceModal.answerText.match(/\[SOURCE:([^\]]*?)\]/)" style="font-size:11px;color:rgba(247,244,239,0.5);background:rgba(255,255,255,0.06);border:1px solid rgba(200,169,110,0.15);border-radius:4px;padding:6px 10px;margin-top:10px;display:flex;align-items:center;gap:6px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(200,169,110,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>{{ voiceModal.answerText.match(/\[SOURCE:([^\]]*?)\]/)?.[1]?.trim() || '' }}</div>
       </div>
       <div style="display:flex;gap:10px;">
@@ -7116,7 +7197,7 @@ body {
           <!-- Add partner -->
           <div style="font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);font-family:'Montserrat',sans-serif;margin-bottom:8px;">Add a Partner</div>
           <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            <button v-for="agent in ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey']" :key="agent"
+            <button v-for="agent in ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee']" :key="agent"
               v-if="!partnerModal.coAgents.includes(agent) && agent !== (partnerModal.dealType==='properties' ? (lstActiveProp && lstActiveProp.agent_name) : (byrActiveBuyer && byrActiveBuyer.agent_name))"
               @click="partnerAdd(agent)"
               :disabled="partnerModal.adding"
@@ -7722,14 +7803,13 @@ async function _loadCampaignFonts(doc) {
 
 
 // ── Constants ──────────────────────────────────────────────
-const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey','Operations','Concierge'];
+const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Operations','Concierge'];
 const LISTING_PRESENTATIONS = {
   'Marc Cashin':    'https://www.canva.com/design/DAHECgtXhJc/edit',
   'Ashling McGowan':'https://www.canva.com/design/DAHEC0x1ja8/edit',
   'Niki Lang':      'https://www.canva.com/design/DAHEC2uBYwc/edit',
   'Cesar Rivera':   'https://www.canva.com/design/DAHECx4jFMs/edit',
   'Charlotte Lee':  'https://www.canva.com/design/DAHECzMRm6M/edit',
-  'Shannon Casey':  'https://www.canva.com/design/DAHEC8v24nY/edit',
 };
 const ACCESS_CODE = 'forward2026';
 
@@ -7793,16 +7873,14 @@ const AGENT_EMAILS = {
   'Niki Lang':      'niki.lang@corcoranmce.com',
   'Cesar Rivera':   'cesar.rivera@corcoranmce.com',
   'Charlotte Lee':  'charlotte.lee@corcoranmce.com',
-  'Shannon Casey':  'shannon.casey@corcoranmce.com',
 };
-const FORWARD_AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Shannon Casey'];
+const FORWARD_AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee'];
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
   'Ashling McGowan':'202.779.6263',
   'Niki Lang':      '202.905.8828',
   'Cesar Rivera':   '202.878.2897',
   'Charlotte Lee':  '202.258.6608',
-  'Shannon Casey':  '540.222.2119',
 };
 const AGENT_WEBSITE = 'www.FwrdRealEstate.com';
 
@@ -7813,7 +7891,6 @@ const AGENT_BIOS = {
   'Niki Lang':       'Niki Lang is a licensed real estate professional with FORWARD | Corcoran McEnearney, specializing in buyer representation across the DC Metro area. Known for her thorough preparation and clear communication, Niki guides clients through every step of the buying process with precision and care.\n\nFORWARD | Corcoran McEnearney\n202.905.8828 · niki.lang@corcoranmce.com\nwww.FwrdRealEstate.com',
   'Cesar Rivera':    'Cesar Rivera is a luxury real estate professional with FORWARD | Corcoran McEnearney, focused on buyer representation across Northern Virginia and the greater DMV market. Bilingual in English and Spanish, Cesar brings a global perspective and a disciplined, client-first approach to every transaction.\n\nFORWARD | Corcoran McEnearney\n202.878.2897 · cesar.rivera@corcoranmce.com\nwww.FwrdRealEstate.com',
   'Charlotte Lee':   'Charlotte Lee is a real estate professional with FORWARD | Corcoran McEnearney, specializing in buyer representation across DC and Northern Virginia. Charlotte is known for her attention to detail, her calm presence in competitive situations, and her ability to find opportunities others miss.\n\nFORWARD | Corcoran McEnearney\n202.258.6608 · charlotte.lee@corcoranmce.com\nwww.FwrdRealEstate.com',
-  'Shannon Casey':   'Shannon Casey is a licensed real estate professional with FORWARD | Corcoran McEnearney, working with buyers and sellers across Northern Virginia and the Shenandoah Valley corridor. Shannon\'s clients appreciate her market knowledge, her work ethic, and her commitment to making the buying process clear and stress-free.\n\nFORWARD | Corcoran McEnearney\n540.222.2119 · shannon.casey@corcoranmce.com\nwww.FwrdRealEstate.com',
 };
 
 const FORWARD_TRUSTED_PARTNERS = `MORTGAGE & FINANCING
@@ -8193,6 +8270,50 @@ async function claudeChat(messages, system = null) {
   const d = await res.json();
   return d.content[0].text;
 }
+
+// ── Claude Vision API (for business card parsing) ─────────────────────────
+async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens = 16000) {
+  const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
+  if (!key) throw new Error('No Claude API key set.');
+  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const body = { model, max_tokens: maxTokens, stream: true, messages: [{ role: 'user', content: userPrompt }] };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = `API error ${res.status}`;
+    try { const e = await res.json(); msg = e.error?.message || msg; } catch {}
+    throw new Error(msg);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let fullText = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+          fullText += evt.delta.text;
+          if (onChunk) onChunk(evt.delta.text, fullText);
+        }
+      } catch {}
+    }
+  }
+  return fullText;
+}
+
 
 // ── Claude Vision API (for business card parsing) ─────────────────────────
 async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
@@ -10221,8 +10342,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (campIncludes.seller_prep && lstNotes.seller_prep && lstNotes.seller_prep.trim()) supplementalCtx += '\n\nSELLER PREP CHECKLIST (saved):\n' + lstNotes.seller_prep.trim();
   if (campIncludes.mls_data && lstNotes.mls_data && lstNotes.mls_data.trim()) supplementalCtx += '\n\nMLS DATA (saved):\n' + lstNotes.mls_data.trim();
 
-  const _coSeller = (prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) || '';
-  const sellerNameLine = prop.seller_name ? '\nSELLER (full name' + (_coSeller ? 's, two people' : ', single person — do NOT split into two names') + '): ' + prop.seller_name + (_coSeller ? ' & ' + _coSeller : '') : '';
+  const sellerNameLine = prop.seller_name ? '\nSELLER: ' + prop.seller_name + ((prop.subfolder_drive_ids && prop.subfolder_drive_ids._co_seller) ? ' & ' + prop.subfolder_drive_ids._co_seller : '') : '';
   const prompt = 'You are a luxury real estate marketing expert for FORWARD | Corcoran McEnearney.\n\nPROPERTY: ' + prop.address + '\nAGENT: ' + (prop.agent_name || '') + sellerNameLine + '\n\nLISTING DESCRIPTION - USE THIS VERBATIM, DO NOT REWRITE:\n' + listingDesc + supplementalCtx + (special ? '\n\nSPECIAL INSTRUCTIONS: ' + special : '') + formatRules + '\n\nGenerate each section. Be specific to this property. Start each with its ---SECTION: NAME--- marker exactly.\n\n' + sectionList.join('\n\n');
 
   try {
@@ -13169,7 +13289,104 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
       return doc;
     }
+    function nsRecalcSilent() {
+      // Recalculate breakdown without triggering PDF download
+      const price = Number(String(ns.salePrice).replace(/[^0-9.]/g, ''));
+      if (!price || !ns.closingDate) return;
+      const items = [];
+      const j = ns.jurisdiction;
+      // Transfer tax
+      let transferTax = 0, transferLabel = '';
+      if (j === 'dc') {
+        const ftb = ns.firstTimeHomebuyerDC === 'yes';
+        let rate = (ftb && price < 400000) ? 0.00725 : (price < 400000 ? 0.011 : 0.0145);
+        transferTax = Math.round(price * rate);
+        transferLabel = ftb && price < 400000 ? 'DC Transfer Tax — First-Time Buyer (0.725%)' : `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
+      } else if (j === 'va-nova') { transferTax = Math.round(price * 0.003); transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)'; }
+      else if (j === 'va-other') { transferTax = Math.round(price * 0.001); transferLabel = 'VA Grantor Tax (0.1%)'; }
+      else if (j === 'md-montgomery') {
+        let recTax = price <= 500000 ? price * 0.0089 : (500000 * 0.0089) + ((price - 500000) * 0.01408);
+        transferTax = Math.round((price * 0.015 + recTax) * 0.5);
+        transferLabel = 'MD Transfer & Recordation — Seller’s Half';
+      } else if (j === 'md-other') { transferTax = Math.round(price * 0.025 * 0.5); transferLabel = 'MD Transfer & Recordation — Seller’s Half'; }
+      if (transferTax) items.push({ label: transferLabel, amount: transferTax });
+      // Settlement fee
+      let settlementFee = 1215;
+      if (j === 'va-nova' || j === 'va-other') settlementFee = 1315;
+      else if (j === 'md-montgomery' || j === 'md-other') settlementFee = 670;
+      items.push({ label: 'Settlement & Title Charges (est.)', amount: settlementFee });
+      // Loans
+      const l1 = Number(ns.loan1) || 0; if (l1 > 0) items.push({ label: '1st Loan Payoff', amount: l1 });
+      const l2 = Number(ns.loan2) || 0; if (l2 > 0) items.push({ label: '2nd Loan Payoff', amount: l2 });
+      // Seller comp
+      const sellerVal = Number(String(ns.sellerCompVal).replace(/[^0-9.]/g, '')) || 0;
+      if (sellerVal > 0) {
+        const sc = ns.sellerCompMode === 'pct' ? Math.round(price * sellerVal / 100) : sellerVal;
+        items.push({ label: `Seller’s Agent (${sellerVal}${ns.sellerCompMode === 'pct' ? '%' : ' flat'})`, amount: sc });
+      }
+      const buyerVal = Number(String(ns.buyerCompVal).replace(/[^0-9.]/g, '')) || 0;
+      if (buyerVal > 0) {
+        const bc = ns.buyerCompMode === 'pct' ? Math.round(price * buyerVal / 100) : buyerVal;
+        items.push({ label: `Buyer’s Agent (${buyerVal}${ns.buyerCompMode === 'pct' ? '%' : ' flat'})`, amount: bc });
+      }
+      const tf = Number(ns.transactionFee) || 0; if (tf > 0) items.push({ label: 'Transaction Fee', amount: tf });
+      const conVal = Number(String(ns.concessionVal).replace(/[^0-9.]/g, '')) || 0;
+      if (conVal > 0) {
+        const cv = ns.concessionMode === 'pct' ? Math.round(price * conVal / 100) : conVal;
+        items.push({ label: 'Seller Concession', amount: cv });
+      }
+      // HOA
+      const hoaAmt = Number(ns.hoaAmount) || 0;
+      if (hoaAmt > 0) {
+        const hoaMonthly = ns.hoaFreq === 'monthly' ? hoaAmt : (ns.hoaFreq === 'quarterly' ? hoaAmt / 3 : hoaAmt / 12);
+        let hoaTotal = 0;
+        if (ns.hoaPaidCurrent !== 'yes') hoaTotal += hoaMonthly;
+        hoaTotal += (Number(ns.hoaResaleCert) || 0) + (Number(ns.hoaTransferFee) || 0);
+        if (hoaTotal > 0) items.push({ label: 'HOA Dues & Fees', amount: Math.round(hoaTotal) });
+      }
+      // Property tax proration (duplicate of calcNetSheet logic)
+      const annualTax = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
+      if (annualTax > 0) {
+        const halfTax = annualTax / 2;
+        const dp = ns.closingDate.split('-');
+        const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
+        const msDay = 86400000;
+        let propTaxTotal = 0;
+        let h1Start, h1End, h2Start, h2End;
+        if (j === 'dc') {
+          const yr = cd.getMonth() >= 9 ? cd.getFullYear() : cd.getFullYear() - 1;
+          h1Start = new Date(yr, 9, 1); h1End = new Date(yr + 1, 2, 31);
+          h2Start = new Date(yr + 1, 3, 1); h2End = new Date(yr + 1, 8, 30);
+        } else {
+          const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
+          h1Start = new Date(yr, 6, 1); h1End = new Date(yr, 11, 31);
+          h2Start = new Date(yr + 1, 0, 1); h2End = new Date(yr + 1, 5, 30);
+        }
+        const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
+        const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
+        const sellerThrough = new Date(cd.getTime() - msDay);
+        if (j === 'dc') {
+          if (sellerThrough >= h2Start && sellerThrough <= h2End) {
+            propTaxTotal = Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
+          } else if (sellerThrough >= h1Start && sellerThrough <= h1End) {
+            propTaxTotal = Math.round(halfTax * (Math.round((sellerThrough - h1Start) / msDay) + 1) / h1Days * 100) / 100;
+          }
+        } else {
+          if (sellerThrough >= h1End) propTaxTotal += halfTax;
+          else if (sellerThrough >= h1Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h1Start) / msDay) + 1) / h1Days * 100) / 100;
+          if (sellerThrough >= h2End) propTaxTotal += halfTax;
+          else if (sellerThrough >= h2Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
+        }
+        if (propTaxTotal > 0) items.push({ label: 'Prorated Property Taxes', amount: Math.round(propTaxTotal * 100) / 100 });
+      }
+      const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
+      const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
+      ns.breakdown = items;
+      ns.result = Math.round((price - totalCosts) * 100) / 100;
+    }
     function nsDownloadPDF() {
+      if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
+      nsRecalcSilent();
       const doc = nsGeneratePDFDoc();
       if (!doc) { showToast('Calculate the net sheet first.', 3000); return; }
       openPDFBlob(doc.output('blob'), 'Seller-Net-Sheet.pdf');
@@ -16394,6 +16611,63 @@ No markdown. Valid JSON only.`;
     const webhookErrorsLoading = ref(false);
     const webhookErrorAgents   = ref({});
     const webhookErrorResolving = ref({});
+
+    // ── Audit log state ───────────────────────────────────────────────────
+    const auditRows        = ref([]);
+    const auditLoading     = ref(false);
+    const auditFilterAgent = ref('');
+    const auditFilterAction = ref('');
+    const auditLimit       = ref(200);
+    const auditAgents      = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Operations','Concierge'];
+
+    async function auditLoad() {
+      auditLoading.value = true;
+      try {
+        let url = RAILWAY_URL + '/admin/audit-log?limit=' + auditLimit.value;
+        if (auditFilterAgent.value) url += '&agent_name=' + encodeURIComponent(auditFilterAgent.value);
+        if (auditFilterAction.value) url += '&action=' + encodeURIComponent(auditFilterAction.value);
+        const res = await fetch(url);
+        auditRows.value = res.ok ? await res.json() : [];
+      } catch(e) { showToast('Could not load audit log.', 3000); }
+      auditLoading.value = false;
+    }
+
+    function auditFmtDate(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+        + ' ' + d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit', hour12:true });
+    }
+
+    function auditActionStyle(action) {
+      const map = {
+        'agent.login':        'background:#dcfce7;color:#166534;',
+        'agent.logout':       'background:#f3f4f6;color:#374151;',
+        'buyer.create':       'background:#dbeafe;color:#1e40af;',
+        'buyer.delete':       'background:#fee2e2;color:#991b1b;',
+        'buyer.archive':      'background:#fef3c7;color:#92400e;',
+        'buyer.dup_skipped':  'background:#ede9fe;color:#5b21b6;',
+        'property.create':    'background:#d1fae5;color:#065f46;',
+        'property.delete':    'background:#fee2e2;color:#991b1b;',
+      };
+      return map[action] || 'background:#f3f4f6;color:#374151;';
+    }
+
+    function auditDetailStr(detail) {
+      if (!detail || Object.keys(detail).length === 0) return '—';
+      return Object.entries(detail).map(([k,v]) => k + ': ' + v).join(', ');
+    }
+
+    async function auditLogEvent(action, detail = {}) {
+      try {
+        await supaRest.insert('audit_log', {
+          action,
+          agent_name: agentName.value || null,
+          source: 'frontend',
+          detail: detail || {}
+        });
+      } catch(e) { /* non-fatal */ }
+    }
     const atNewSection = ref('Foundation & Vision');
     const atNewTitle   = ref('');
     const atNewDesc    = ref('');
@@ -16713,7 +16987,8 @@ const voiceModal = reactive({
   pendingAnswer: false,
   answerQuestion: '',
   answerText: '',
-  kbSourceFiles: []
+  kbSourceFiles: [],
+  streaming: false
 });
 
 let _voiceRecognition = null;
@@ -18402,6 +18677,7 @@ async function dismissUpdates() {
       if (v === 'prop-files') loadPropFiles();
       if (v === 'dashboard')  loadTaskFeed();
       if (v === 'admin-training' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
+      if (v === 'audit-log') auditLoad();
       if (v === 'dashboard' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
       if (v === 'archive') archFetchAll();
       // Auto-populate buyer tools from active buyer profile
@@ -18482,6 +18758,8 @@ async function dismissUpdates() {
       loggedIn.value = true;
       bw.name = loginAgent.value;
       jl.agent = loginAgent.value;
+      // Audit: log login
+      nextTick(() => auditLogEvent('agent.login', { ip_hint: navigator.platform }));
       // Reset property file navigation state before refreshing
       adminViewAgent.value = null;
       activePropFile.value = null;
@@ -19381,10 +19659,15 @@ ${trainingContent}
 
 ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
-        const answer = await claude(question, system);
-        voiceModal.answerText = answer;
+        voiceModal.answerText = '';
         voiceModal.phase = 'answer';
+        voiceModal.streaming = true;
+        await claudeStream(question, system, (chunk, full) => {
+          voiceModal.answerText = full;
+        });
+        voiceModal.streaming = false;
       } catch(e) {
+        voiceModal.streaming = false;
         voiceModal.phase = 'error';
         voiceModal.errorMsg = 'Could not get an answer: ' + (e.message || 'Unknown error');
         console.error('Voice ask error:', e);
@@ -19480,7 +19763,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
-      isAdmin, lstGroupedByAgent, byrGroupedByAgent, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress, newPropSellerName,
+      isAdmin, lstGroupedByAgent, byrGroupedByAgent,
+      auditRows, auditLoading, auditFilterAgent, auditFilterAction, auditLimit, auditAgents, auditLoad, auditFmtDate, auditActionStyle, auditDetailStr, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress, newPropSellerName,
       showSaveToProp, saveToPropData, saveToPropSelected, saveToPropNewAddr,
       refreshPropFiles, createPropFile, removePropFile, openPropFile, closePropFile,
       removeResource, viewResourceLink, sendResourceToClient, openSaveToPropModal, confirmSaveToProp, cancelSaveToProp,
