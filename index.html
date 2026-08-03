@@ -7132,6 +7132,15 @@ body {
       <div style="font-size:12px;font-weight:700;color:rgba(247,244,239,0.6);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Your Question</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);font-style:italic;margin-bottom:12px;padding:10px 12px;background:#f9fafb;border-radius:10px;line-height:1.5;">"{{ voiceModal.answerQuestion }}"</div>
       <div style="overflow-y:auto;max-height:min(300px,42vh);padding-right:4px;margin-bottom:10px;">
+        <!-- Loading dots when streaming but no text yet -->
+        <div v-if="voiceModal.streaming && !voiceModal.answerText.trim()" style="display:flex;align-items:center;gap:6px;padding:12px 0;">
+          <span style="font-size:12px;color:rgba(247,244,239,0.5);font-style:italic;">Searching training docs</span>
+          <span style="display:flex;gap:3px;align-items:center;">
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDotBounce 1.2s ease-in-out infinite;"></span>
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDotBounce 1.2s ease-in-out 0.2s infinite;"></span>
+            <span style="width:5px;height:5px;border-radius:50%;background:var(--gold);display:inline-block;animation:aiDotBounce 1.2s ease-in-out 0.4s infinite;"></span>
+          </span>
+        </div>
         <div :class="{'fos-stream-cursor': voiceModal.streaming}" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--cream);line-height:1.75;white-space:pre-line;">{{ voiceModal.answerText.replace(/\[SOURCE:[^\]]*\]/g,'').trim() }}</div>
         <div v-if="voiceModal.answerText.match(/\[SOURCE:([^\]]*?)\]/)" style="font-size:11px;color:rgba(247,244,239,0.5);background:rgba(255,255,255,0.06);border:1px solid rgba(200,169,110,0.15);border-radius:4px;padding:6px 10px;margin-top:10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(200,169,110,0.7)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
