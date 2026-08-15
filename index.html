@@ -2922,8 +2922,8 @@ body {
                 <div v-if="ns._showTax">
                   <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div>
-                  <div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
-                  <div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
+                  <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
+                  <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
                 </div>
               </div>
 
@@ -5794,7 +5794,7 @@ body {
                     <div class="form-row"><label>Did seller pay current period?</label><select v-model="ns.hoaPaidCurrent"><option value="no">No</option><option value="yes">Yes</option></select></div>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showTax=!ns._showTax">{{ ns._showTax ? '▼' : '▶' }} Property Taxes</div>
-                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
+                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
                   <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:14px;">Calculate</button>
@@ -12924,6 +12924,26 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // MD
       return { mode:'split', h1Label:'1st Half (Jul–Dec)', h1Due:'Sep 30', h2Label:'2nd Half (Jan–Jun)', h2Due:'Dec 31' };
     });
+    // Which half-year installments can legitimately be collected at closing?
+    // A half is collectible only if the seller owned the property during part of it.
+    // If the period begins on/after the closing date it is entirely the buyer's — never collect it.
+    const nsTaxHalfApplies = computed(() => {
+      const annual = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
+      if (!annual || !ns.closingDate) return { h1:false, h2:false };
+      const dp = ns.closingDate.split('-');
+      const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
+      if (isNaN(cd.getTime())) return { h1:false, h2:false };
+      const sellerThrough = new Date(cd.getTime() - 86400000);
+      let h1Start, h2Start;
+      if (ns.jurisdiction === 'dc') {
+        const yr = cd.getMonth() >= 9 ? cd.getFullYear() : cd.getFullYear() - 1;
+        h1Start = new Date(yr, 9, 1); h2Start = new Date(yr + 1, 3, 1);
+      } else {
+        const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
+        h1Start = new Date(yr, 6, 1); h2Start = new Date(yr + 1, 0, 1);
+      }
+      return { h1: h1Start <= sellerThrough, h2: h2Start <= sellerThrough };
+    });
     function nsFmt(v) {
       const n = Number(v) || 0;
       const hasCents = Math.abs(n) % 1 > 0.001;
@@ -13110,8 +13130,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
         if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
         // Unpaid half-year installments — collected in full at closing (KVS practice)
-        if (ns.nsTaxH1Paid === 'no') items.push({ label:'Property Tax Collection — 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
-        if (ns.nsTaxH2Paid === 'no') items.push({ label:'Property Tax Collection — 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection — 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection — 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
       }
 
       // ── 8. Other Costs ──
@@ -13396,8 +13416,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           else if (sellerThrough >= h2Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
         }
         if (propTaxTotal > 0) items.push({ label: 'Prorated Property Taxes', amount: Math.round(propTaxTotal * 100) / 100 });
-        if (ns.nsTaxH1Paid === 'no') items.push({ label: 'Property Tax Collection — 1st Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
-        if (ns.nsTaxH2Paid === 'no') items.push({ label: 'Property Tax Collection — 2nd Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label: 'Property Tax Collection — 1st Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label: 'Property Tax Collection — 2nd Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
       }
       const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
       const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
@@ -19819,7 +19839,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, nsDetectJurisdiction, nsTaxPeriods, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)
