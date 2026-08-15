@@ -2922,6 +2922,8 @@ body {
                 <div v-if="ns._showTax">
                   <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div>
+                  <div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
+                  <div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
                 </div>
               </div>
 
@@ -5792,7 +5794,7 @@ body {
                     <div class="form-row"><label>Did seller pay current period?</label><select v-model="ns.hoaPaidCurrent"><option value="no">No</option><option value="yes">Yes</option></select></div>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showTax=!ns._showTax">{{ ns._showTax ? '▼' : '▶' }} Property Taxes</div>
-                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div></div>
+                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
                   <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:14px;">Calculate</button>
@@ -12819,7 +12821,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       sellerCompMode:'pct', sellerCompVal:'', buyerCompMode:'pct', buyerCompVal:'', transactionFee:'',
       concessionMode:'pct', concessionVal:'',
       hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no', hoaResaleCert:250, hoaTransferFee:250,
-      propTaxAnnual:'',
+      propTaxAnnual:'', nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
       otherCosts:'',
       result:null, breakdown:[],
       _showLoans:false, _showComp:false, _showConcession:false, _showHOA:false, _showTax:false, _showOther:false,
@@ -13107,6 +13109,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         }
 
         if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
+        // Unpaid half-year installments — collected in full at closing (KVS practice)
+        if (ns.nsTaxH1Paid === 'no') items.push({ label:'Property Tax Collection — 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH2Paid === 'no') items.push({ label:'Property Tax Collection — 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
       }
 
       // ── 8. Other Costs ──
@@ -13391,6 +13396,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           else if (sellerThrough >= h2Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
         }
         if (propTaxTotal > 0) items.push({ label: 'Prorated Property Taxes', amount: Math.round(propTaxTotal * 100) / 100 });
+        if (ns.nsTaxH1Paid === 'no') items.push({ label: 'Property Tax Collection — 1st Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
+        if (ns.nsTaxH2Paid === 'no') items.push({ label: 'Property Tax Collection — 2nd Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
       }
       const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
       const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
@@ -17214,6 +17221,22 @@ const CHANGELOG = [
         detail: 'A race condition was causing FUB to create 2–3 duplicate buyer records when multiple contacts were synced at the same time. This is now fixed — each sync is processed one at a time so duplicates cannot form.\n\nBest practice: If you notice any remaining duplicates from before July 8, let Marc know and they can be cleaned up manually.'
       }
     ]
+  },
+  {
+    id: 'v2026-08-15',
+    date: 'August 15, 2026',
+    title: 'Net Sheet Tax Toggles & Voice Training',
+    summary: 'The net sheet can now collect unpaid property tax installments at closing, and the voice assistant lets you fix your question, open the source doc, and ask follow-ups.',
+    updates: [
+      {
+        title: 'Net Sheet: Collect Unpaid Property Tax Installments',
+        detail: 'Once you enter an annual property tax amount, two new dropdowns appear asking whether the seller has already paid each half-year installment. Mark one as unpaid and the net sheet adds the full half-year bill as its own line item, on top of the normal proration — the same way title collects it at the table. The period labels follow the jurisdiction automatically: Maryland and Virginia show Jul–Dec and Jan–Jun, DC shows Oct–Mar and Apr–Sep.\n\nHow to use: Open the Property Taxes section, enter the annual tax, then answer "Has seller paid 1st half?" and "Has seller paid 2nd half?" Both default to "Yes — paid," so nothing changes on your existing net sheets unless you tell it otherwise.\n\nBest practice: Pull the seller\'s most recent tax bill before you send a net sheet. A missed installment can swing net proceeds by thousands, and it is much easier to flag it now than to explain it at the table.'
+      },
+      {
+        title: 'Voice Assistant: Edit Your Question, Open Sources, Ask Follow-Ups',
+        detail: 'Three improvements to the voice assistant. The transcript on the review screen is now editable, so you can fix a misheard word instead of re-recording the whole thing. Answers that cite a training document now include an "Open doc" link that takes you straight to the source. And once an answer finishes, a follow-up box lets you keep the conversation going without starting over.\n\nHow to use: After recording, tap the transcript to correct anything before you continue. On the answer screen, tap "Open doc" to read the source, or type into the "Ask a follow-up" box and press enter.\n\nBest practice: Always skim the transcript before parsing. Fixing one wrong word up front is far faster than re-recording, and it keeps the answer accurate.'
+      }
+    ]
   }
 
 ];
@@ -18929,6 +18952,7 @@ async function dismissUpdates() {
             address:'', unit:'', salePrice:'', closingDate:'', firstTimeHomebuyerDC:'no',
             loan1:'', loan2:'', sellerCompVal:'', buyerCompVal:'', transactionFee:'',
             concessionVal:'', hoaAmount:'', propTaxAnnual:'', otherCosts:'',
+            nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
             _showHOA:false, _showTax:false, _showOther:false,
