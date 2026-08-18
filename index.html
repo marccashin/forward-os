@@ -2911,6 +2911,10 @@ body {
                   <div class="form-row" style="margin-bottom:10px;"><label>Did seller pay the current period's dues?</label>
                     <select v-model="ns.hoaPaidCurrent"><option value="no">No</option><option value="yes">Yes</option></select>
                   </div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:10px;">
+                    <div class="form-row"><label>Resale Certificate</label><input :value="ns.hoaResaleCert" type="text" inputmode="numeric" placeholder="$0" @input="nsCurrencyInput($event,'hoaResaleCert')" @blur="nsCurrencyBlur($event,'hoaResaleCert')" @focus="nsCurrencyFocus($event,'hoaResaleCert')"/></div>
+                    <div class="form-row"><label>Transfer Fee</label><input :value="ns.hoaTransferFee" type="text" inputmode="numeric" placeholder="$0" @input="nsCurrencyInput($event,'hoaTransferFee')" @blur="nsCurrencyBlur($event,'hoaTransferFee')" @focus="nsCurrencyFocus($event,'hoaTransferFee')"/></div>
+                  </div>
                 </div>
               </div>
 
@@ -2920,7 +2924,7 @@ body {
                   {{ ns._showTax ? '▼' : '▶' }} Property Taxes
                 </div>
                 <div v-if="ns._showTax">
-                  <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
+                  <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;"><span v-if="ns.jurisdiction === 'dc' && ns.propTaxAnnual && !nsTaxHalfApplies.h1 && !nsTaxHalfApplies.h2" style="display:block;color:#b45309;margin-bottom:6px;">This installment is not due yet, so the buyer pays the full bill at its due date. Only the seller's share through closing is prorated - nothing is collected at settlement.</span>Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div>
                   <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
                   <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
@@ -5792,6 +5796,10 @@ body {
                       <div class="form-row"><label>Amount</label><input :value="ns.hoaAmount" type="text" inputmode="numeric" placeholder="Amount" @input="nsCurrencyInput($event,'hoaAmount')" @blur="nsCurrencyBlur($event,'hoaAmount')" @focus="nsCurrencyFocus($event,'hoaAmount')"/></div>
                     </div>
                     <div class="form-row"><label>Did seller pay current period?</label><select v-model="ns.hoaPaidCurrent"><option value="no">No</option><option value="yes">Yes</option></select></div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+                      <div class="form-row"><label>Resale Certificate</label><input :value="ns.hoaResaleCert" type="text" inputmode="numeric" placeholder="$0" @input="nsCurrencyInput($event,'hoaResaleCert')" @blur="nsCurrencyBlur($event,'hoaResaleCert')" @focus="nsCurrencyFocus($event,'hoaResaleCert')"/></div>
+                      <div class="form-row"><label>Transfer Fee</label><input :value="ns.hoaTransferFee" type="text" inputmode="numeric" placeholder="$0" @input="nsCurrencyInput($event,'hoaTransferFee')" @blur="nsCurrencyBlur($event,'hoaTransferFee')" @focus="nsCurrencyFocus($event,'hoaTransferFee')"/></div>
+                    </div>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showTax=!ns._showTax">{{ ns._showTax ? '▼' : '▶' }} Property Taxes</div>
                   <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
@@ -12820,7 +12828,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       loan1:'', loan2:'',
       sellerCompMode:'pct', sellerCompVal:'', buyerCompMode:'pct', buyerCompVal:'', transactionFee:'',
       concessionMode:'pct', concessionVal:'',
-      hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no', hoaResaleCert:250, hoaTransferFee:250,
+      hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no', hoaResaleCert:'', hoaTransferFee:'',
       propTaxAnnual:'', nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
       otherCosts:'',
       result:null, breakdown:[],
@@ -12934,20 +12942,95 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
       if (isNaN(cd.getTime())) return { h1:false, h2:false };
       const sellerThrough = new Date(cd.getTime() - 86400000);
-      let h1Start, h2Start;
+      // DC: only the half containing the closing date can be collected, and only
+      // once its due date has passed. Before then the bill is not payable and the
+      // buyer pays it, so there is no paid/unpaid question to ask.
       if (ns.jurisdiction === 'dc') {
-        const yr = cd.getMonth() >= 9 ? cd.getFullYear() : cd.getFullYear() - 1;
-        h1Start = new Date(yr, 9, 1); h2Start = new Date(yr + 1, 3, 1);
-      } else {
-        const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-        h1Start = new Date(yr, 6, 1); h2Start = new Date(yr + 1, 0, 1);
+        const p = nsDCTaxPeriod(cd);
+        const payable = cd >= p.due;
+        return { h1: payable && p.half === 1, h2: payable && p.half === 2 };
       }
+      const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
+      const h1Start = new Date(yr, 6, 1);      // Jul 1
+      const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
       return { h1: h1Start <= sellerThrough, h2: h2Start <= sellerThrough };
     });
     function nsFmt(v) {
       const n = Number(v) || 0;
       const hasCents = Math.abs(n) % 1 > 0.001;
       return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: hasCents ? 2 : 0, maximumFractionDigits: hasCents ? 2 : 0 });
+    }
+
+    // -- Net sheet date / proration helpers -------------------------------
+    function nsParseDate(s) {
+      if (!s) return null;
+      const p = String(s).split('-');
+      if (p.length !== 3) return null;
+      const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+    function nsDaysInclusive(a, b) { return Math.round((b - a) / 86400000) + 1; }
+    function nsRound2(n) { return Math.round(n * 100) / 100; }
+    // DC real property tax: fiscal year Oct 1 - Sep 30, billed in two halves.
+    //   1st half  Oct 1 - Mar 31   DUE Mar 31
+    //   2nd half  Apr 1 - Sep 30   DUE Sep 15
+    // Verified against DC OTR published due dates and KVS Title (TitleCapture), Aug 2026.
+    function nsDCTaxPeriod(cd) {
+      const y = cd.getFullYear(), m = cd.getMonth();
+      if (m >= 9) return { half:1, start:new Date(y, 9, 1),     end:new Date(y + 1, 2, 31), due:new Date(y + 1, 2, 31) };
+      if (m <= 2) return { half:1, start:new Date(y - 1, 9, 1), end:new Date(y, 2, 31),     due:new Date(y, 2, 31) };
+      return            { half:2, start:new Date(y, 3, 1),     end:new Date(y, 8, 30),     due:new Date(y, 8, 15) };
+    }
+    // DC tax lines. The closing day belongs to the seller (KVS convention).
+    //   Closing BEFORE the installment due date: the buyer will pay the whole
+    //     bill later, so the seller only credits the buyer for days owned.
+    //     There is nothing to collect at settlement.
+    //   Closing ON/AFTER the due date: the bill is payable now. Collect it in
+    //     full if unpaid; if already paid nothing is owed at settlement.
+    // The two are mutually exclusive - never both.
+    function nsDCTaxItems(annualTax, cd, nsRef) {
+      const out = [];
+      if (!(annualTax > 0) || !cd) return out;
+      const p = nsDCTaxPeriod(cd);
+      const paidFlag = p.half === 1 ? nsRef.nsTaxH1Paid : nsRef.nsTaxH2Paid;
+      if (cd < p.due) {
+        const amt = nsRound2(annualTax / 365 * nsDaysInclusive(p.start, cd));
+        if (amt > 0) out.push({ label:'Prorated Property Taxes', amount:amt });
+      } else if (paidFlag === 'no') {
+        out.push({ label:'Property Tax Collection - ' + (p.half === 1 ? '1st' : '2nd') + ' Half (unpaid)', amount:nsRound2(annualTax / 2) });
+      }
+      return out;
+    }
+    // HOA / condo dues proration. Closing day belongs to the seller.
+    //   Seller paid the current period -> buyer reimburses the remaining days
+    //     (a CREDIT to the seller, carried as a negative amount).
+    //   Seller has not paid           -> seller owes the days they held (debit).
+    // Resale certificate and transfer fee are separate, agent-entered charges.
+    function nsHoaItems(nsRef, cd) {
+      const out = [];
+      const amt = Number(String(nsRef.hoaAmount).replace(/[^0-9.]/g, '')) || 0;
+      if (amt > 0 && cd) {
+        const y = cd.getFullYear(), m = cd.getMonth();
+        let ps, pe;
+        if (nsRef.hoaFreq === 'quarterly') { const q = Math.floor(m / 3); ps = new Date(y, q * 3, 1); pe = new Date(y, q * 3 + 3, 0); }
+        else if (nsRef.hoaFreq === 'annual') { ps = new Date(y, 0, 1); pe = new Date(y, 11, 31); }
+        else { ps = new Date(y, m, 1); pe = new Date(y, m + 1, 0); }
+        const totalDays = nsDaysInclusive(ps, pe);
+        const sellerDays = nsDaysInclusive(ps, cd);
+        const buyerDays = totalDays - sellerDays;
+        if (nsRef.hoaPaidCurrent === 'yes') {
+          const credit = nsRound2(amt * buyerDays / totalDays);
+          if (credit > 0) out.push({ label:'HOA Dues - Buyer Reimbursement', amount:-credit });
+        } else {
+          const debit = nsRound2(amt * sellerDays / totalDays);
+          if (debit > 0) out.push({ label:'HOA Dues (prorated)', amount:debit });
+        }
+      }
+      const cert = Number(String(nsRef.hoaResaleCert).replace(/[^0-9.]/g, '')) || 0;
+      if (cert > 0) out.push({ label:'HOA Resale Certificate', amount:cert });
+      const xfer = Number(String(nsRef.hoaTransferFee).replace(/[^0-9.]/g, '')) || 0;
+      if (xfer > 0) out.push({ label:'HOA Transfer Fee', amount:xfer });
+      return out;
     }
     // Currency input: format with commas on blur, strip on focus
     function nsCurrencyBlur(e, field) {
@@ -13050,70 +13133,29 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         items.push({ label:cl, amount:concession });
       }
 
-      // ── 6. HOA / Condo Dues ──
-      let hoaTotal = 0;
-      const hoaAmt = Number(ns.hoaAmount) || 0;
-      if (hoaAmt > 0 && ns.closingDate) {
-        // Prorate if seller hasn't paid current period
-        if (ns.hoaPaidCurrent === 'no') {
-          const hdp = ns.closingDate.split('-');
-          const cd = new Date(Number(hdp[0]), Number(hdp[1]) - 1, Number(hdp[2]));
-          const dayInPeriod = cd.getDate();
-          const daysInMonth = new Date(cd.getFullYear(), cd.getMonth() + 1, 0).getDate();
-          if (ns.hoaFreq === 'monthly') {
-            hoaTotal = Math.round(hoaAmt * dayInPeriod / daysInMonth);
-          } else if (ns.hoaFreq === 'quarterly') {
-            const qMonth = cd.getMonth() % 3;
-            const totalDaysQ = 91; // approx
-            hoaTotal = Math.round(hoaAmt * (qMonth * 30 + dayInPeriod) / totalDaysQ);
-          } else { hoaTotal = hoaAmt; }
-        }
-      }
-      // HOA proration only (resale cert & transfer fee excluded to match KVS)
-      if (hoaTotal > 0) items.push({ label:'HOA Dues (prorated)', amount:hoaTotal });
+      // -- 6. HOA / Condo Dues --
+      nsHoaItems(ns, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
 
-      // ── 7. Prorated Property Taxes (matches KVS approach) ──
-      // Annual tax auto-split into equal halves, prorated through day BEFORE closing.
-      // DC: taxes paid semi-annually → only prorate the CURRENT half (prior half already paid).
-      // MD/VA: full fiscal year prorated at closing (both halves settled).
+      // -- 7. Property Taxes --
+      // DC is due-date driven (see nsDCTaxItems). MD/VA logic is unchanged.
       const annualTax = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
       if (annualTax > 0 && ns.closingDate) {
-        const halfTax = annualTax / 2;
-        const dp = ns.closingDate.split('-');
-        const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
-        const msDay = 86400000;
-        let propTaxTotal = 0;
-        let h1Start, h1End, h2Start, h2End;
         if (j === 'dc') {
-          const yr = cd.getMonth() >= 9 ? cd.getFullYear() : cd.getFullYear() - 1;
-          h1Start = new Date(yr, 9, 1);      // Oct 1
-          h1End = new Date(yr + 1, 2, 31);   // Mar 31
-          h2Start = new Date(yr + 1, 3, 1);  // Apr 1
-          h2End = new Date(yr + 1, 8, 30);   // Sep 30
+          nsDCTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
         } else {
+          const halfTax = annualTax / 2;
+          const dp = ns.closingDate.split('-');
+          const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
+          const msDay = 86400000;
+          let propTaxTotal = 0;
           const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-          h1Start = new Date(yr, 6, 1);      // Jul 1
-          h1End = new Date(yr, 11, 31);      // Dec 31
-          h2Start = new Date(yr + 1, 0, 1);  // Jan 1
-          h2End = new Date(yr + 1, 5, 30);   // Jun 30
-        }
-        const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
-        const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
-        const sellerThrough = new Date(cd.getTime() - msDay);
-
-        if (j === 'dc') {
-          // DC: only prorate the half-year period the closing falls within
-          if (sellerThrough >= h2Start && sellerThrough <= h2End) {
-            // Closing in H2 (Apr–Sep) → prorate H2 only
-            const daysOccupied = Math.round((sellerThrough - h2Start) / msDay) + 1;
-            propTaxTotal = Math.round(halfTax * daysOccupied / h2Days * 100) / 100;
-          } else if (sellerThrough >= h1Start && sellerThrough <= h1End) {
-            // Closing in H1 (Oct–Mar) → prorate H1 only
-            const daysOccupied = Math.round((sellerThrough - h1Start) / msDay) + 1;
-            propTaxTotal = Math.round(halfTax * daysOccupied / h1Days * 100) / 100;
-          }
-        } else {
-          // MD/VA: full fiscal year settled at closing — include both halves
+          const h1Start = new Date(yr, 6, 1);      // Jul 1
+          const h1End = new Date(yr, 11, 31);      // Dec 31
+          const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
+          const h2End = new Date(yr + 1, 5, 30);   // Jun 30
+          const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
+          const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
+          const sellerThrough = new Date(cd.getTime() - msDay);
           if (sellerThrough >= h1End) {
             propTaxTotal += halfTax;
           } else if (sellerThrough >= h1Start) {
@@ -13126,15 +13168,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             const daysOccupied = Math.round((sellerThrough - h2Start) / msDay) + 1;
             propTaxTotal += Math.round(halfTax * daysOccupied / h2Days * 100) / 100;
           }
+          if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
+          if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+          if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
         }
-
-        if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
-        // Unpaid half-year installments — collected in full at closing (KVS practice)
-        if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection — 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
-        if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection — 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
       }
 
-      // ── 8. Other Costs ──
+            // ── 8. Other Costs ──
       const other = Number(ns.otherCosts) || 0;
       if (other > 0) items.push({ label:'Other Costs (repairs, warranty, etc.)', amount:other });
 
@@ -13281,8 +13321,14 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         doc.setTextColor(...gray);
         doc.text(items[i].label, 56, y);
         doc.setFont('helvetica', 'bold');
-        doc.setTextColor(...red);
-        doc.text('- ' + nsFmt(items[i].amount), W - 56, y, { align:'right' });
+        const lineAmt = items[i].amount;
+        if (lineAmt < 0) {
+          doc.setTextColor(22, 163, 74);
+          doc.text('+ ' + nsFmt(-lineAmt), W - 56, y, { align:'right' });
+        } else {
+          doc.setTextColor(...red);
+          doc.text('- ' + nsFmt(lineAmt), W - 56, y, { align:'right' });
+        }
         y += 26;
       }
 
@@ -13373,53 +13419,47 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const cv = ns.concessionMode === 'pct' ? Math.round(price * conVal / 100) : conVal;
         items.push({ label: 'Seller Concession', amount: cv });
       }
-      // HOA
-      const hoaAmt = Number(ns.hoaAmount) || 0;
-      if (hoaAmt > 0) {
-        const hoaMonthly = ns.hoaFreq === 'monthly' ? hoaAmt : (ns.hoaFreq === 'quarterly' ? hoaAmt / 3 : hoaAmt / 12);
-        let hoaTotal = 0;
-        if (ns.hoaPaidCurrent !== 'yes') hoaTotal += hoaMonthly;
-        hoaTotal += (Number(ns.hoaResaleCert) || 0) + (Number(ns.hoaTransferFee) || 0);
-        if (hoaTotal > 0) items.push({ label: 'HOA Dues & Fees', amount: Math.round(hoaTotal) });
-      }
-      // Property tax proration (duplicate of calcNetSheet logic)
+      // HOA -- shared helper, identical to calcNetSheet
+      nsHoaItems(ns, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
+      // Property taxes -- shared helper, identical to calcNetSheet
+      // DC is due-date driven (see nsDCTaxItems). MD/VA logic is unchanged.
       const annualTax = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
-      if (annualTax > 0) {
-        const halfTax = annualTax / 2;
-        const dp = ns.closingDate.split('-');
-        const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
-        const msDay = 86400000;
-        let propTaxTotal = 0;
-        let h1Start, h1End, h2Start, h2End;
+      if (annualTax > 0 && ns.closingDate) {
         if (j === 'dc') {
-          const yr = cd.getMonth() >= 9 ? cd.getFullYear() : cd.getFullYear() - 1;
-          h1Start = new Date(yr, 9, 1); h1End = new Date(yr + 1, 2, 31);
-          h2Start = new Date(yr + 1, 3, 1); h2End = new Date(yr + 1, 8, 30);
+          nsDCTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
         } else {
+          const halfTax = annualTax / 2;
+          const dp = ns.closingDate.split('-');
+          const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
+          const msDay = 86400000;
+          let propTaxTotal = 0;
           const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-          h1Start = new Date(yr, 6, 1); h1End = new Date(yr, 11, 31);
-          h2Start = new Date(yr + 1, 0, 1); h2End = new Date(yr + 1, 5, 30);
-        }
-        const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
-        const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
-        const sellerThrough = new Date(cd.getTime() - msDay);
-        if (j === 'dc') {
-          if (sellerThrough >= h2Start && sellerThrough <= h2End) {
-            propTaxTotal = Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
-          } else if (sellerThrough >= h1Start && sellerThrough <= h1End) {
-            propTaxTotal = Math.round(halfTax * (Math.round((sellerThrough - h1Start) / msDay) + 1) / h1Days * 100) / 100;
+          const h1Start = new Date(yr, 6, 1);      // Jul 1
+          const h1End = new Date(yr, 11, 31);      // Dec 31
+          const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
+          const h2End = new Date(yr + 1, 5, 30);   // Jun 30
+          const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
+          const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
+          const sellerThrough = new Date(cd.getTime() - msDay);
+          if (sellerThrough >= h1End) {
+            propTaxTotal += halfTax;
+          } else if (sellerThrough >= h1Start) {
+            const daysOccupied = Math.round((sellerThrough - h1Start) / msDay) + 1;
+            propTaxTotal += Math.round(halfTax * daysOccupied / h1Days * 100) / 100;
           }
-        } else {
-          if (sellerThrough >= h1End) propTaxTotal += halfTax;
-          else if (sellerThrough >= h1Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h1Start) / msDay) + 1) / h1Days * 100) / 100;
-          if (sellerThrough >= h2End) propTaxTotal += halfTax;
-          else if (sellerThrough >= h2Start) propTaxTotal += Math.round(halfTax * (Math.round((sellerThrough - h2Start) / msDay) + 1) / h2Days * 100) / 100;
+          if (sellerThrough >= h2End) {
+            propTaxTotal += halfTax;
+          } else if (sellerThrough >= h2Start) {
+            const daysOccupied = Math.round((sellerThrough - h2Start) / msDay) + 1;
+            propTaxTotal += Math.round(halfTax * daysOccupied / h2Days * 100) / 100;
+          }
+          if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
+          if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+          if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
         }
-        if (propTaxTotal > 0) items.push({ label: 'Prorated Property Taxes', amount: Math.round(propTaxTotal * 100) / 100 });
-        if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label: 'Property Tax Collection — 1st Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
-        if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label: 'Property Tax Collection — 2nd Half (unpaid)', amount: Math.round(halfTax * 100) / 100 });
       }
-      const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
+
+            const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
       const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
       ns.breakdown = items;
       ns.result = Math.round((price - totalCosts) * 100) / 100;
@@ -13443,7 +13483,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
       nsSaving.value = true;
       try {
-        const textSummary = ns.breakdown.map(b => b.label + ': ' + nsFmt(b.amount)).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
+        const textSummary = ns.breakdown.map(b => b.label + ': ' + (b.amount < 0 ? '+' + nsFmt(-b.amount) + ' (credit)' : '-' + nsFmt(b.amount))).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
         const pdfData = nsGetPDFBase64();
         const saved = await saveToPropertyFromTool('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummary, pdfData);
         if (saved) {
@@ -17257,7 +17297,28 @@ const CHANGELOG = [
         detail: 'Three improvements to the voice assistant. The transcript on the review screen is now editable, so you can fix a misheard word instead of re-recording the whole thing. Answers that cite a training document now include an "Open doc" link that takes you straight to the source. And once an answer finishes, a follow-up box lets you keep the conversation going without starting over.\n\nHow to use: After recording, tap the transcript to correct anything before you continue. On the answer screen, tap "Open doc" to read the source, or type into the "Ask a follow-up" box and press enter.\n\nBest practice: Always skim the transcript before parsing. Fixing one wrong word up front is far faster than re-recording, and it keeps the answer accurate.'
       }
     ]
+  },
+  {
+    id: 'v2026-08-18',
+    date: 'August 18, 2026',
+    title: 'Net Sheet: DC Property Taxes & HOA Dues Corrected',
+    summary: 'DC tax prorations now follow the actual installment due dates, and HOA dues are prorated properly with real resale certificate and transfer fee fields.',
+    updates: [
+      {
+        title: 'DC Property Taxes Now Follow the Real Due Dates',
+        detail: 'DC bills property tax in two halves: Oct 1 - Mar 31 is due March 31, and Apr 1 - Sep 30 is due September 15. The net sheet now uses those dates.\n\nIf your closing falls BEFORE the installment is due, the buyer pays the whole bill later, so the sheet simply prorates the seller\u2019s share through closing and collects nothing. If your closing falls ON or AFTER the due date, you get the "Has seller paid?" question: answer Yes and nothing is charged, answer No and the full installment is collected. You will never see both a proration and a collection on the same sheet again \u2014 that combination was double-charging the seller.\n\nHow to use: Nothing changes in how you fill the form. Enter the annual tax and the closing date, and the sheet decides. If the installment is not due yet, a note explains why no paid/unpaid question appears.\n\nBest practice: These figures now tie out to the KVS Title sheet for the same deal. If a number looks off, check the annual tax amount first \u2014 that is almost always the difference.'
+      },
+      {
+        title: 'HOA Dues: Real Proration, Real Fees',
+        detail: 'HOA dues were being handled incorrectly. If you marked the current period as paid, the dues amount you entered was thrown away entirely, and every sheet quietly added $500 of resale certificate and transfer fee charges that no one could see or change. Annual and quarterly dues were also being divided down to a single month.\n\nNow: if the seller has paid the current period, the buyer reimburses them for the days after closing and it shows as a green credit. If the seller has not paid, they are charged only for the days they held. Resale Certificate and Transfer Fee are now their own fields, starting empty \u2014 enter the real amounts from the condo docs.\n\nHow to use: Open the HOA section of the net sheet. Fill in the dues amount and frequency, answer the paid question, and add the resale certificate and transfer fee if the association charges them.\n\nBest practice: Pull the actual resale package cost from the condo documents rather than estimating. It is often the largest single HOA line on the sheet.'
+      },
+      {
+        title: 'The Number On Screen Now Matches the PDF',
+        detail: 'The net sheet had two separate calculators \u2014 one behind the Calculate button and one behind the PDF download \u2014 and they did not always agree. On some deals the figure you quoted from the screen was not the figure that printed.\n\nBoth now run the same code, so the on-screen total and the PDF total are always identical.\n\nHow to use: No change. Calculate, then download.\n\nBest practice: The HOA and tax fields now clear properly when you reset the tool, so start a new deal with Clear Form rather than typing over the last one.'
+      }
+    ]
   }
+
 
 ];
 
@@ -18971,7 +19032,8 @@ async function dismissUpdates() {
           Object.assign(ns, {
             address:'', unit:'', salePrice:'', closingDate:'', firstTimeHomebuyerDC:'no',
             loan1:'', loan2:'', sellerCompVal:'', buyerCompVal:'', transactionFee:'',
-            concessionVal:'', hoaAmount:'', propTaxAnnual:'', otherCosts:'',
+            concessionVal:'', hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no',
+            hoaResaleCert:'', hoaTransferFee:'', propTaxAnnual:'', otherCosts:'',
             nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
