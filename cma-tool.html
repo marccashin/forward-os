@@ -2391,7 +2391,7 @@ async function findComps() {
     if (files.length > 12) { status.textContent = 'Up to 12 PDFs at a time.'; status.style.color = '#c0392b'; return; }
 
     status.style.color = '#1a3a5c';
-    status.textContent = 'Reading ' + files.length + ' sheet' + (files.length > 1 ? 's' : '') + '. This takes a few seconds.';
+    status.textContent = 'Reading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '. A file with several properties takes longer.';
 
     var fd = new FormData();
     files.forEach(function (f) { fd.append('files', f, f.name); });
@@ -2412,15 +2412,22 @@ async function findComps() {
   };
 
   // ══ 3. REVIEW MODAL ══
+  function isSubjectAddr(r) {
+    var subj = norm((document.getElementById('s_address') || {}).value || '');
+    return subj && r.ok && norm(r.address) === subj;
+  }
+
   function routeOf(r) {
     if (!r.ok) return 'error';
+    if (isSubjectAddr(r)) return 'subject';
     if (r.status === 'closed')  return 'closed';
     if (r.status === 'pending') return 'pending';
     if (r.status === 'active')  return 'active';
     return 'skip';
   }
   var TAGS = { closed:['Closed sale','t-closed'], pending:['Pending','t-pending'],
-               active:['Active listing','t-active'], skip:['Not a comp','t-skip'], error:['Could not read','t-skip'] };
+               active:['Active listing','t-active'], skip:['Not a comp','t-skip'],
+               subject:['Your subject property','t-subject'], error:['Could not read','t-skip'] };
 
   function showImportModal() {
     var subjHasAddress = (document.getElementById('s_address').value || '').trim();
@@ -2429,8 +2436,9 @@ async function findComps() {
       var route = routeOf(r), tag = TAGS[route];
       var addr = r.ok ? [r.address, r.city, r.state].filter(Boolean).join(', ') : r.file;
       var note = '';
-      if (route === 'skip')  note = 'This sheet is marked "' + esc(r.status_raw || 'off market') + '", so it is not an active, pending or closed comp. Tick it only if you want it anyway.';
-      if (route === 'error') note = esc(r.error || '');
+      if (route === 'skip')    note = 'This sheet is marked "' + esc(r.status_raw || 'off market') + '", so it is not an active, pending or closed comp. Tick it only if you want it anyway.';
+      if (route === 'subject') note = 'This is the property you are valuing, so it is not a comp. It stays out unless you tick it.';
+      if (route === 'error')   note = esc(r.error || '');
       return '' +
         '<div class="imp-row">' +
           '<input type="checkbox" id="imp' + i + '" ' + (route === 'closed' || route === 'pending' || route === 'active' ? 'checked' : '') +
@@ -2448,7 +2456,10 @@ async function findComps() {
     }).join('') || '<div style="padding:20px;color:#64748b;">Nothing to import.</div>';
 
     var good = parsed.filter(function (r) { return r.ok; }).length;
-    document.getElementById('impSummary').textContent = good + ' of ' + parsed.length + ' sheets read successfully';
+    var files = {}; parsed.forEach(function (r) { files[r.file] = 1; });
+    var nf = Object.keys(files).length;
+    document.getElementById('impSummary').textContent =
+      good + ' propert' + (good === 1 ? 'y' : 'ies') + ' found in ' + nf + ' file' + (nf === 1 ? '' : 's');
     document.getElementById('cmaImportModal').style.display = 'flex';
   }
 
@@ -2476,6 +2487,7 @@ async function findComps() {
       if (!box || !box.checked || !r.ok) return;
 
       var route = routeOf(r);
+      if (route === 'subject') { applySubject(r); return; }
       var target = route === 'closed' ? comps : route === 'pending' ? pendingComps : activeComps;
       var cap    = target === comps ? MAX_COMPS : MAX_INFO_COMPS;
 
