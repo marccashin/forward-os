@@ -2319,7 +2319,7 @@ async function findComps() {
 
   // ── which fields the agent must always supply themselves ──
   var AGENT_ONLY_SUBJECT = ['s_condition'];
-  var AGENT_ONLY_COMP    = ['condition', 'proximity'];
+  var AGENT_ONLY_COMP    = ['condition'];
 
   var LABEL_TO_FIELD = {
     'Address':'address', 'Sold Date':'soldDate', 'Date':'date',
@@ -2539,9 +2539,45 @@ async function findComps() {
 
   function norm(a) { return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
+  function fullAddr(r) {
+    return [r.address, r.city, [r.state, r.zip].filter(Boolean).join(' ')]
+             .filter(Boolean).join(', ');
+  }
+  function subjectFullAddr() {
+    var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); };
+    var a = g('s_address');
+    if (!a) return '';
+    return [a, g('s_city'), [g('s_state'), g('s_zip')].filter(Boolean).join(' ')]
+             .filter(Boolean).join(', ');
+  }
+
+  // Straight-line miles, which is what an appraiser reports. Best effort:
+  // if the lookup fails the field simply stays an agent field.
+  async function fillProximity(pairs) {
+    var subj = subjectFullAddr();
+    if (!subj || !pairs.length) return;
+    try {
+      var resp = await fetch('/.netlify/functions/cma-proximity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: subj, comps: pairs.map(function (p) { return p.addr; }) })
+      });
+      var data = await resp.json();
+      var d = (data && data.distances) || [];
+      var n = 0;
+      pairs.forEach(function (p, i) {
+        if (!d[i]) return;
+        p.row.proximity = d[i];
+        p.row._src = p.row._src || {};
+        p.row._src.proximity = 'mls';
+        n++;
+      });
+      if (n) { buildCompsTable(); buildActiveTable(); buildPendingTable(); recalcAll(); }
+    } catch (e) { /* leave proximity to the agent */ }
+  }
+
   window.cmaApplyImport = function () {
     var subjIdx = (document.querySelector('input[name="impSubject"]:checked') || {}).value;
-    var added = 0, skipped = [];
+    var added = 0, skipped = [], prox = [];
 
     parsed.forEach(function (r, i) {
       if (String(i) === String(subjIdx)) { applySubject(r); return; }
@@ -2580,6 +2616,8 @@ async function findComps() {
         row._src[rowField] = srcFor(r, rowField);
       });
       AGENT_ONLY_COMP.forEach(function (f) { row._src[f] = 'needs'; });
+      if (!row.proximity) row._src.proximity = 'needs';
+      if (fullAddr(r)) prox.push({ row: row, addr: fullAddr(r) });
 
       if (existing === -1) { target.push(row); added++; }
     });
@@ -2593,6 +2631,7 @@ async function findComps() {
       (skipped.length ? ' Skipped: ' + skipped.join('; ') + '.' : '') +
       ' Now fill in the orange boxes.';
     setTimeout(paintAll, 30);
+    fillProximity(prox).then(function () { setTimeout(paintAll, 30); });
   };
 
   function applySubject(r) {
