@@ -214,15 +214,32 @@
       🏠 Subject Property
       <span class="badge">Step 1</span>
     </div>
-    <!-- ── Bright MLS Pull ── -->
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 14px;background:#f5f5f5;border-radius:8px;border:1px solid #ddd;opacity:0.6;pointer-events:none;">
-      <input type="text" id="mlsSearchInput" placeholder="Enter address or MLS # to pull from Bright MLS" disabled style="flex:1;min-width:220px;padding:7px 10px;border:1px solid #ccc;border-radius:6px;font-size:13px;background:#eee;color:#999;">
-      <button id="mlsPullBtn" disabled style="padding:7px 18px;background:#aaa;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:600;cursor:not-allowed;white-space:nowrap;">Pull from MLS</button>
-      <span id="mlsPullStatus" style="font-size:12px;color:#666;white-space:nowrap;"></span>
+    <!-- ── MLS PDF Import ── -->
+    <div id="pdfDrop" onclick="cmaPickPDFs()" style="margin-bottom:10px;">
+      <div style="font-size:22px;line-height:1;margin-bottom:6px;">📄</div>
+      <div style="font-weight:700;font-size:14px;color:#1a3a5c;">Add properties from MLS PDFs</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px;">
+        Click here, or drag in your MLS sheets. Add the subject property and up to 12 comps at once.
+        We read each sheet and work out whether it is active, pending or sold.
+      </div>
+      <input type="file" id="pdfFileInput" accept="application/pdf" multiple
+             style="display:none;" onchange="cmaUploadPDFs(this.files)">
     </div>
-    <div style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:14px;">
-      ⏳ <strong>Bright MLS integration is pending.</strong> To add comps, copy and paste the data from the MLS into the Comparable Sales sections below.
+    <div id="pdfStatus" style="font-size:12.5px;margin-bottom:10px;min-height:16px;"></div>
+    <div id="pdfProgress" style="display:none;margin-bottom:14px;padding:14px 16px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fbff;">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div class="pdf-spin"></div>
+        <div style="flex:1;min-width:0;">
+          <div id="pdfStage" style="font-weight:700;font-size:13.5px;color:#1a3a5c;">Uploading your sheets</div>
+          <div id="pdfSub" style="font-size:12px;color:#64748b;margin-top:2px;">Hang tight, this usually takes under a minute.</div>
+        </div>
+        <div id="pdfTimer" style="font-size:12px;color:#94a3b8;font-variant-numeric:tabular-nums;">0s</div>
+      </div>
+      <div style="height:5px;background:#e3ebf5;border-radius:99px;margin-top:11px;overflow:hidden;">
+        <div id="pdfBar" style="height:100%;width:6%;background:linear-gradient(90deg,#1a3a5c,#c9a227);border-radius:99px;transition:width .7s ease;"></div>
+      </div>
     </div>
+    <div id="needsBanner" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:14px;"></div>
     <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
       <div class="field" style="grid-column:span 2;">
         <label>Property Address</label>
@@ -2243,5 +2260,416 @@ async function findComps() {
   }
 }
 </script>
+<!-- ══ MLS PDF IMPORT ══ Added Sep 2026. Self-contained: wraps the existing
+     render functions instead of modifying them, so the CMA tool behaves
+     exactly as before if anything here fails. Does not touch exportPDF. -->
+<style>
+  .f-mls    { background:#f0f7ff !important; }
+  .f-needs  { background:#fffbeb !important; box-shadow:inset 0 0 0 2px #f59e0b; }
+  .f-check  { background:#fff7ed !important; box-shadow:inset 0 0 0 2px #fdba74; }
+  .f-mls input, .f-mls select,
+  .f-needs input, .f-needs select,
+  .f-check input, .f-check select { background:transparent !important; }
+  .fieldflag { display:block;font-size:10px;font-weight:700;margin-top:2px;letter-spacing:.02em; }
+  .fieldflag.needs { color:#b45309; }
+  .fieldflag.check { color:#c2620a; }
+  .fieldflag.mls   { color:#2563eb; }
+  #pdfDrop { border:2px dashed #c7d2e0;border-radius:10px;padding:18px;text-align:center;
+             background:#fbfdff;cursor:pointer;transition:.15s; }
+  #pdfDrop:hover, #pdfDrop.over { border-color:#1a3a5c;background:#f0f6ff; }
+  #pdfDrop.busy { opacity:.5;pointer-events:none; }
+  .pdf-spin { width:22px;height:22px;flex:none;border:3px solid #dbe3ee;border-top-color:#c9a227;
+              border-radius:50%;animation:pdfspin .8s linear infinite; }
+  @keyframes pdfspin { to { transform:rotate(360deg); } }
+  #cmaImportModal { position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;
+                    display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 14px; }
+  #cmaImportModal .box { background:#fff;border-radius:12px;max-width:860px;width:100%;
+                         box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden; }
+  .imp-row { display:flex;gap:12px;align-items:flex-start;padding:12px 18px;border-top:1px solid #eef1f5; }
+  .imp-tag { font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap; }
+  .t-closed  { background:#dbeafe;color:#1e40af; }
+  .t-pending { background:#fef3c7;color:#92400e; }
+  .t-active  { background:#dcfce7;color:#166534; }
+  .t-skip    { background:#f1f5f9;color:#64748b; }
+  .t-subject { background:#1a3a5c;color:#fff; }
+</style>
+
+<div id="cmaImportModal">
+  <div class="box">
+    <div style="background:#1a3a5c;color:#fff;padding:16px 20px;font-weight:700;font-size:15px;">
+      Review before adding
+      <div style="font-weight:400;font-size:12px;opacity:.85;margin-top:3px;">
+        Nothing is added to your CMA until you press Add below.
+      </div>
+    </div>
+    <div id="impList" style="max-height:52vh;overflow:auto;"></div>
+    <div style="padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end;align-items:center;">
+      <span id="impSummary" style="font-size:12px;color:#64748b;margin-right:auto;"></span>
+      <button onclick="cmaCloseImport()" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;font-size:13px;cursor:pointer;">Cancel</button>
+      <button onclick="cmaApplyImport()" style="padding:9px 20px;border:none;background:#c9a227;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Add to CMA</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* eslint-disable */
+(function () {
+  var BACKEND = 'https://forward-command-center-production.up.railway.app';
+  var parsed = [];
+
+  // ── which fields the agent must always supply themselves ──
+  var AGENT_ONLY_SUBJECT = ['s_condition'];
+  var AGENT_ONLY_COMP    = ['condition'];
+
+  var LABEL_TO_FIELD = {
+    'Address':'address', 'Sold Date':'soldDate', 'Date':'date',
+    'Sale Price':'salePrice', 'List Price':'listPrice', 'Sq Ft':'gla',
+    'Lot Size':'lotSize', 'Bd / Fb / Hb':'beds', 'Bel Gr':'below',
+    'Garage':'garageSpaces', 'Condition':'condition', 'HOA/Mo':'hoaMonthly',
+    'Concess.':'concessions', 'Proximity':'proximity', 'DOM':'dom'
+  };
+
+  function esc(v) { return String(v == null ? '' : v).replace(/[<>&"]/g, function (c) {
+    return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]; }); }
+
+  // ══ 1. HIGHLIGHTING ══
+  function paintRow(tr, src) {
+    if (!tr) return;
+    Array.prototype.forEach.call(tr.querySelectorAll('td[data-label]'), function (td) {
+      var field = LABEL_TO_FIELD[td.getAttribute('data-label')];
+      if (!field) return;
+      td.classList.remove('f-mls', 'f-needs', 'f-check');
+      var old = td.querySelector('.fieldflag'); if (old) old.remove();
+      var state = AGENT_ONLY_COMP.indexOf(field) > -1 ? 'needs' : (src || {})[field];
+      if (!state) return;
+      if (state === 'mls')       { td.classList.add('f-mls'); }
+      else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS</span>'); }
+      else if (state === 'needs'){ td.classList.add('f-needs'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN</span>'); }
+    });
+  }
+
+  function paintAll() {
+    try {
+      (comps || []).forEach(function (c, i) { paintRow(document.getElementById('comp-row-' + i), c._src); });
+      var ab = document.getElementById('activeBody'), pb = document.getElementById('pendingBody');
+      if (ab) Array.prototype.forEach.call(ab.children, function (tr, i) { paintRow(tr, (activeComps[i] || {})._src); });
+      if (pb) Array.prototype.forEach.call(pb.children, function (tr, i) { paintRow(tr, (pendingComps[i] || {})._src); });
+      paintSubject();
+      updateNeedsCount();
+    } catch (e) { /* highlighting must never break the tool */ }
+  }
+  window._cmaPaintAll = paintAll;
+
+  var subjectSrc = {};
+  function paintSubject() {
+    Object.keys(subjectSrc).forEach(function (id) {
+      var el = document.getElementById(id); if (!el) return;
+      var w = el.closest('.field'); if (!w) return;
+      w.classList.remove('f-mls', 'f-needs', 'f-check');
+      var old = w.querySelector('.fieldflag'); if (old) old.remove();
+      var s = subjectSrc[id];
+      if (s === 'mls')        w.classList.add('f-mls');
+      else if (s === 'check') { w.classList.add('f-check'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS</span>'); }
+      else if (s === 'needs') { w.classList.add('f-needs'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN</span>'); }
+    });
+  }
+
+  function updateNeedsCount() {
+    var n = 0;
+    Object.keys(subjectSrc).forEach(function (k) { if (subjectSrc[k] === 'needs' || subjectSrc[k] === 'check') n++; });
+    [comps, activeComps, pendingComps].forEach(function (arr) {
+      (arr || []).forEach(function (c) {
+        if (!c._src) return;
+        AGENT_ONLY_COMP.forEach(function (f) { if (!c[f] || c[f] === 'C') n++; });
+        Object.keys(c._src).forEach(function (f) { if (c._src[f] === 'check') n++; });
+      });
+    });
+    var el = document.getElementById('needsBanner');
+    if (!el) return;
+    el.style.display = n ? '' : 'none';
+    el.innerHTML = '<strong>' + n + ' field' + (n === 1 ? '' : 's') + ' need your input.</strong> ' +
+      'Orange boxes are yours to fill in or double-check. Blue came straight from the MLS sheet.';
+  }
+
+  // wrap the existing renderers so highlighting survives every redraw
+  ['buildCompsTable', 'buildActiveTable', 'buildPendingTable'].forEach(function (fn) {
+    if (typeof window[fn] !== 'function') return;
+    var orig = window[fn];
+    window[fn] = function () { var r = orig.apply(this, arguments); setTimeout(paintAll, 0); return r; };
+  });
+
+  // ══ 2. UPLOAD ══
+  window.cmaPickPDFs = function () { document.getElementById('pdfFileInput').click(); };
+
+  // ── progress panel ──
+  var progTimer = null, progT0 = 0, progStep = 0;
+  var STAGES = [
+    ['Uploading your sheets',      'Sending the files over. This part is quick.'],
+    ['Reading the pages',          'Pulling the text out of each PDF.'],
+    ['Finding the properties',     'One file can hold several listings, so we check every page.'],
+    ['Pulling the details',        'Beds, baths, square footage, lot size, prices and dates.'],
+    ['Sorting active, pending and sold', 'Working out where each property belongs.'],
+    ['Almost there',               'Putting the review list together.']
+  ];
+  function progStart(nFiles) {
+    var drop = document.getElementById('pdfDrop');
+    var panel = document.getElementById('pdfProgress');
+    if (drop) drop.classList.add('busy');
+    if (panel) panel.style.display = '';
+    progT0 = Date.now(); progStep = 0;
+    setStage(0);
+    var expected = Math.max(14, 9 * nFiles);   // rough seconds
+    clearInterval(progTimer);
+    progTimer = setInterval(function () {
+      var el = (Date.now() - progT0) / 1000;
+      var t = document.getElementById('pdfTimer'); if (t) t.textContent = Math.round(el) + 's';
+      var pct = Math.min(94, 6 + (el / expected) * 88);
+      var bar = document.getElementById('pdfBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
+      var want = Math.min(STAGES.length - 1, Math.floor((pct / 94) * STAGES.length));
+      if (want !== progStep) { progStep = want; setStage(want); }
+    }, 400);
+  }
+  function setStage(i) {
+    var a = document.getElementById('pdfStage'), b = document.getElementById('pdfSub');
+    if (a) a.textContent = STAGES[i][0];
+    if (b) b.textContent = STAGES[i][1];
+  }
+  function progStop() {
+    clearInterval(progTimer); progTimer = null;
+    var bar = document.getElementById('pdfBar'); if (bar) bar.style.width = '100%';
+    var drop = document.getElementById('pdfDrop'); if (drop) drop.classList.remove('busy');
+    setTimeout(function () {
+      var p = document.getElementById('pdfProgress');
+      if (p) { p.style.display = 'none'; if (bar) bar.style.width = '6%'; }
+    }, 450);
+  }
+
+  window.cmaUploadPDFs = async function (fileList) {
+    var files = Array.prototype.slice.call(fileList || []).filter(function (f) { return /\.pdf$/i.test(f.name); });
+    var status = document.getElementById('pdfStatus');
+    if (!files.length) { status.textContent = 'Please choose PDF files.'; status.style.color = '#c0392b'; return; }
+    if (files.length > 12) { status.textContent = 'Up to 12 PDFs at a time.'; status.style.color = '#c0392b'; return; }
+
+    status.textContent = '';
+    progStart(files.length);
+
+    var fd = new FormData();
+    files.forEach(function (f) { fd.append('files', f, f.name); });
+
+    try {
+      var resp = await fetch(BACKEND + '/api/cma/parse-listings', { method: 'POST', body: fd });
+      var data = await resp.json();
+      if (!resp.ok || !data.success) throw new Error((data && data.detail) || 'Upload failed');
+      parsed = data.results || [];
+      progStop();
+      status.textContent = '';
+      showImportModal();
+    } catch (err) {
+      progStop();
+      status.style.color = '#c0392b';
+      status.textContent = 'Could not read those files: ' + err.message;
+    } finally {
+      var inp = document.getElementById('pdfFileInput'); if (inp) inp.value = '';
+    }
+  };
+
+  // ══ 3. REVIEW MODAL ══
+  function isSubjectAddr(r) {
+    var subj = norm((document.getElementById('s_address') || {}).value || '');
+    return subj && r.ok && norm(r.address) === subj;
+  }
+
+  function routeOf(r) {
+    if (!r.ok) return 'error';
+    if (isSubjectAddr(r)) return 'subject';
+    if (r.status === 'closed')  return 'closed';
+    if (r.status === 'pending') return 'pending';
+    if (r.status === 'active')  return 'active';
+    return 'skip';
+  }
+  var TAGS = { closed:['Closed sale','t-closed'], pending:['Pending','t-pending'],
+               active:['Active listing','t-active'], skip:['Not a comp','t-skip'],
+               subject:['Your subject property','t-subject'], error:['Could not read','t-skip'] };
+
+  function showImportModal() {
+    var subjHasAddress = (document.getElementById('s_address').value || '').trim();
+    var list = document.getElementById('impList');
+    list.innerHTML = parsed.map(function (r, i) {
+      var route = routeOf(r), tag = TAGS[route];
+      var addr = r.ok ? [r.address, r.city, r.state].filter(Boolean).join(', ') : r.file;
+      var note = '';
+      if (route === 'skip')    note = 'This sheet is marked "' + esc(r.status_raw || 'off market') + '", so it is not an active, pending or closed comp. Tick it only if you want it anyway.';
+      if (route === 'subject') note = 'This is the property you are valuing, so it is not a comp. It stays out unless you tick it.';
+      if (route === 'error')   note = esc(r.error || '');
+      return '' +
+        '<div class="imp-row">' +
+          '<input type="checkbox" id="imp' + i + '" ' + (route === 'closed' || route === 'pending' || route === 'active' ? 'checked' : '') +
+            (route === 'error' ? ' disabled' : '') + ' style="margin-top:3px;width:17px;height:17px;">' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-weight:600;font-size:13px;">' + esc(addr || r.file) + '</div>' +
+            '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + esc(r.file) + '</div>' +
+            (note ? '<div style="font-size:12px;color:#b45309;margin-top:5px;">' + note + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            '<span class="imp-tag ' + tag[1] + '">' + tag[0] + '</span>' +
+            (r.ok && !subjHasAddress ? '<div style="margin-top:6px;font-size:11px;"><label><input type="radio" name="impSubject" value="' + i + '"> use as subject</label></div>' : '') +
+          '</div>' +
+        '</div>';
+    }).join('') || '<div style="padding:20px;color:#64748b;">Nothing to import.</div>';
+
+    var good = parsed.filter(function (r) { return r.ok; }).length;
+    var files = {}; parsed.forEach(function (r) { files[r.file] = 1; });
+    var nf = Object.keys(files).length;
+    document.getElementById('impSummary').textContent =
+      good + ' propert' + (good === 1 ? 'y' : 'ies') + ' found in ' + nf + ' file' + (nf === 1 ? '' : 's');
+    document.getElementById('cmaImportModal').style.display = 'flex';
+  }
+
+  window.cmaCloseImport = function () { document.getElementById('cmaImportModal').style.display = 'none'; };
+
+  // ══ 4. APPLY ══
+  function srcFor(r, field) {
+    var f = r.flags || {};
+    if (field === 'gla'          && f.gla_needs_check)     return 'check';
+    if (field === 'lotSize'      && f.lot_estimated)       return 'check';
+    if (field === 'garageSpaces' && f.parking_unknown)     return 'check';
+    if (field === 'below'        && f.below_grade_unclear) return 'check';
+    return 'mls';
+  }
+
+  function norm(a) { return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+
+  function fullAddr(r) {
+    return [r.address, r.city, [r.state, r.zip].filter(Boolean).join(' ')]
+             .filter(Boolean).join(', ');
+  }
+  function subjectFullAddr() {
+    var g = function (id) { return ((document.getElementById(id) || {}).value || '').trim(); };
+    var a = g('s_address');
+    if (!a) return '';
+    return [a, g('s_city'), [g('s_state'), g('s_zip')].filter(Boolean).join(' ')]
+             .filter(Boolean).join(', ');
+  }
+
+  // Straight-line miles, which is what an appraiser reports. Best effort:
+  // if the lookup fails the field simply stays an agent field.
+  async function fillProximity(pairs) {
+    var subj = subjectFullAddr();
+    if (!subj || !pairs.length) return;
+    try {
+      var resp = await fetch('/.netlify/functions/cma-proximity', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: subj, comps: pairs.map(function (p) { return p.addr; }) })
+      });
+      var data = await resp.json();
+      var d = (data && data.distances) || [];
+      var n = 0;
+      pairs.forEach(function (p, i) {
+        if (!d[i]) return;
+        p.row.proximity = d[i];
+        p.row._src = p.row._src || {};
+        p.row._src.proximity = 'mls';
+        n++;
+      });
+      if (n) { buildCompsTable(); buildActiveTable(); buildPendingTable(); recalcAll(); }
+    } catch (e) { /* leave proximity to the agent */ }
+  }
+
+  window.cmaApplyImport = function () {
+    var subjIdx = (document.querySelector('input[name="impSubject"]:checked') || {}).value;
+    var added = 0, skipped = [], prox = [];
+
+    parsed.forEach(function (r, i) {
+      if (String(i) === String(subjIdx)) { applySubject(r); return; }
+      var box = document.getElementById('imp' + i);
+      if (!box || !box.checked || !r.ok) return;
+
+      var route = routeOf(r);
+      if (route === 'subject') { applySubject(r); return; }
+      var target = route === 'closed' ? comps : route === 'pending' ? pendingComps : activeComps;
+      var cap    = target === comps ? MAX_COMPS : MAX_INFO_COMPS;
+
+      var existing = target.findIndex(function (c) { return norm(c.address) && norm(c.address) === norm(r.address); });
+      if (existing === -1 && target.length >= cap) {
+        skipped.push(r.address + ' (section is full)');
+        return;
+      }
+
+      var row = existing > -1 ? target[existing] : (target === comps
+        ? { address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' }
+        : { address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+
+      row._src = row._src || {};
+      var map = target === comps
+        ? { address:'address', soldDate:'soldDate', salePrice:'salePrice', gla:'gla', lotSize:'lotSize',
+            beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
+            garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom',
+            concessions:'concessions' }
+        : { address:'address', date:'listDate', listPrice:'listPrice', gla:'gla', lotSize:'lotSize',
+            beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
+            garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom' };
+
+      Object.keys(map).forEach(function (rowField) {
+        var v = r[map[rowField]];
+        if (v === undefined || v === null || v === '') return;
+        row[rowField] = String(v);
+        row._src[rowField] = srcFor(r, rowField);
+      });
+      AGENT_ONLY_COMP.forEach(function (f) { row._src[f] = 'needs'; });
+      if (!row.proximity) row._src.proximity = 'needs';
+      if (fullAddr(r)) prox.push({ row: row, addr: fullAddr(r) });
+
+      if (existing === -1) { target.push(row); added++; }
+    });
+
+    buildCompsTable(); buildActiveTable(); buildPendingTable(); recalcAll();
+    cmaCloseImport();
+
+    var st = document.getElementById('pdfStatus');
+    st.style.color = '#1a7a4a';
+    st.textContent = 'Added ' + added + ' propert' + (added === 1 ? 'y' : 'ies') + '.' +
+      (skipped.length ? ' Skipped: ' + skipped.join('; ') + '.' : '') +
+      ' Now fill in the orange boxes.';
+    setTimeout(paintAll, 30);
+    fillProximity(prox).then(function () { setTimeout(paintAll, 30); });
+  };
+
+  function applySubject(r) {
+    var map = { s_address:'address', s_city:'city', s_state:'state', s_zip:'zip',
+                s_propType:'propType', s_beds:'beds', s_fullBaths:'fullBaths', s_halfBaths:'halfBaths',
+                s_gla:'gla', s_below:'below', s_yearBuilt:'yearBuilt',
+                s_parkingSpaces:'garageSpaces', s_hoaMonthly:'hoaMonthly', s_condoFee:'condoFee',
+                s_lotSize:'lotSize' };
+    Object.keys(map).forEach(function (id) {
+      var v = r[map[id]];
+      if (v === undefined || v === null || v === '') return;
+      var el = document.getElementById(id); if (!el) return;
+      if (el.tagName === 'SELECT') {
+        var ok = Array.prototype.some.call(el.options, function (o) { return o.value === String(v); });
+        if (!ok) return;
+      }
+      el.value = String(v);
+      subjectSrc[id] = srcFor(r, map[id] === 'garageSpaces' ? 'garageSpaces' : map[id]);
+    });
+    AGENT_ONLY_SUBJECT.forEach(function (id) { subjectSrc[id] = 'needs'; });
+    if (typeof recalcAll === 'function') recalcAll();
+  }
+
+  // ══ 5. DRAG AND DROP ══
+  document.addEventListener('DOMContentLoaded', function () {
+    var drop = document.getElementById('pdfDrop');
+    if (!drop) return;
+    ['dragenter', 'dragover'].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add('over'); });
+    });
+    ['dragleave', 'drop'].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove('over'); });
+    });
+    drop.addEventListener('drop', function (ev) { cmaUploadPDFs(ev.dataTransfer.files); });
+    setTimeout(paintAll, 200);
+  });
+})();
+</script>
+
 </body>
 </html>
