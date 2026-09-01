@@ -226,6 +226,19 @@
              style="display:none;" onchange="cmaUploadPDFs(this.files)">
     </div>
     <div id="pdfStatus" style="font-size:12.5px;margin-bottom:10px;min-height:16px;"></div>
+    <div id="pdfProgress" style="display:none;margin-bottom:14px;padding:14px 16px;border:1px solid #dbe3ee;border-radius:10px;background:#f8fbff;">
+      <div style="display:flex;align-items:center;gap:11px;">
+        <div class="pdf-spin"></div>
+        <div style="flex:1;min-width:0;">
+          <div id="pdfStage" style="font-weight:700;font-size:13.5px;color:#1a3a5c;">Uploading your sheets</div>
+          <div id="pdfSub" style="font-size:12px;color:#64748b;margin-top:2px;">Hang tight, this usually takes under a minute.</div>
+        </div>
+        <div id="pdfTimer" style="font-size:12px;color:#94a3b8;font-variant-numeric:tabular-nums;">0s</div>
+      </div>
+      <div style="height:5px;background:#e3ebf5;border-radius:99px;margin-top:11px;overflow:hidden;">
+        <div id="pdfBar" style="height:100%;width:6%;background:linear-gradient(90deg,#1a3a5c,#c9a227);border-radius:99px;transition:width .7s ease;"></div>
+      </div>
+    </div>
     <div id="needsBanner" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:14px;"></div>
     <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
       <div class="field" style="grid-column:span 2;">
@@ -2264,6 +2277,10 @@ async function findComps() {
   #pdfDrop { border:2px dashed #c7d2e0;border-radius:10px;padding:18px;text-align:center;
              background:#fbfdff;cursor:pointer;transition:.15s; }
   #pdfDrop:hover, #pdfDrop.over { border-color:#1a3a5c;background:#f0f6ff; }
+  #pdfDrop.busy { opacity:.5;pointer-events:none; }
+  .pdf-spin { width:22px;height:22px;flex:none;border:3px solid #dbe3ee;border-top-color:#c9a227;
+              border-radius:50%;animation:pdfspin .8s linear infinite; }
+  @keyframes pdfspin { to { transform:rotate(360deg); } }
   #cmaImportModal { position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;
                     display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:28px 14px; }
   #cmaImportModal .box { background:#fff;border-radius:12px;max-width:860px;width:100%;
@@ -2302,7 +2319,7 @@ async function findComps() {
 
   // ── which fields the agent must always supply themselves ──
   var AGENT_ONLY_SUBJECT = ['s_condition'];
-  var AGENT_ONLY_COMP    = ['condition', 'concessions', 'proximity'];
+  var AGENT_ONLY_COMP    = ['condition', 'proximity'];
 
   var LABEL_TO_FIELD = {
     'Address':'address', 'Sold Date':'soldDate', 'Date':'date',
@@ -2384,14 +2401,57 @@ async function findComps() {
   // ══ 2. UPLOAD ══
   window.cmaPickPDFs = function () { document.getElementById('pdfFileInput').click(); };
 
+  // ── progress panel ──
+  var progTimer = null, progT0 = 0, progStep = 0;
+  var STAGES = [
+    ['Uploading your sheets',      'Sending the files over. This part is quick.'],
+    ['Reading the pages',          'Pulling the text out of each PDF.'],
+    ['Finding the properties',     'One file can hold several listings, so we check every page.'],
+    ['Pulling the details',        'Beds, baths, square footage, lot size, prices and dates.'],
+    ['Sorting active, pending and sold', 'Working out where each property belongs.'],
+    ['Almost there',               'Putting the review list together.']
+  ];
+  function progStart(nFiles) {
+    var drop = document.getElementById('pdfDrop');
+    var panel = document.getElementById('pdfProgress');
+    if (drop) drop.classList.add('busy');
+    if (panel) panel.style.display = '';
+    progT0 = Date.now(); progStep = 0;
+    setStage(0);
+    var expected = Math.max(14, 9 * nFiles);   // rough seconds
+    clearInterval(progTimer);
+    progTimer = setInterval(function () {
+      var el = (Date.now() - progT0) / 1000;
+      var t = document.getElementById('pdfTimer'); if (t) t.textContent = Math.round(el) + 's';
+      var pct = Math.min(94, 6 + (el / expected) * 88);
+      var bar = document.getElementById('pdfBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
+      var want = Math.min(STAGES.length - 1, Math.floor((pct / 94) * STAGES.length));
+      if (want !== progStep) { progStep = want; setStage(want); }
+    }, 400);
+  }
+  function setStage(i) {
+    var a = document.getElementById('pdfStage'), b = document.getElementById('pdfSub');
+    if (a) a.textContent = STAGES[i][0];
+    if (b) b.textContent = STAGES[i][1];
+  }
+  function progStop() {
+    clearInterval(progTimer); progTimer = null;
+    var bar = document.getElementById('pdfBar'); if (bar) bar.style.width = '100%';
+    var drop = document.getElementById('pdfDrop'); if (drop) drop.classList.remove('busy');
+    setTimeout(function () {
+      var p = document.getElementById('pdfProgress');
+      if (p) { p.style.display = 'none'; if (bar) bar.style.width = '6%'; }
+    }, 450);
+  }
+
   window.cmaUploadPDFs = async function (fileList) {
     var files = Array.prototype.slice.call(fileList || []).filter(function (f) { return /\.pdf$/i.test(f.name); });
     var status = document.getElementById('pdfStatus');
     if (!files.length) { status.textContent = 'Please choose PDF files.'; status.style.color = '#c0392b'; return; }
     if (files.length > 12) { status.textContent = 'Up to 12 PDFs at a time.'; status.style.color = '#c0392b'; return; }
 
-    status.style.color = '#1a3a5c';
-    status.textContent = 'Reading ' + files.length + ' file' + (files.length > 1 ? 's' : '') + '. A file with several properties takes longer.';
+    status.textContent = '';
+    progStart(files.length);
 
     var fd = new FormData();
     files.forEach(function (f) { fd.append('files', f, f.name); });
@@ -2401,9 +2461,11 @@ async function findComps() {
       var data = await resp.json();
       if (!resp.ok || !data.success) throw new Error((data && data.detail) || 'Upload failed');
       parsed = data.results || [];
+      progStop();
       status.textContent = '';
       showImportModal();
     } catch (err) {
+      progStop();
       status.style.color = '#c0392b';
       status.textContent = 'Could not read those files: ' + err.message;
     } finally {
@@ -2468,7 +2530,7 @@ async function findComps() {
   // ══ 4. APPLY ══
   function srcFor(r, field) {
     var f = r.flags || {};
-    if (field === 'gla'          && f.gla_from_assessor)   return 'check';
+    if (field === 'gla'          && f.gla_needs_check)     return 'check';
     if (field === 'lotSize'      && f.lot_estimated)       return 'check';
     if (field === 'garageSpaces' && f.parking_unknown)     return 'check';
     if (field === 'below'        && f.below_grade_unclear) return 'check';
@@ -2505,7 +2567,8 @@ async function findComps() {
       var map = target === comps
         ? { address:'address', soldDate:'soldDate', salePrice:'salePrice', gla:'gla', lotSize:'lotSize',
             beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
-            garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom' }
+            garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom',
+            concessions:'concessions' }
         : { address:'address', date:'listDate', listPrice:'listPrice', gla:'gla', lotSize:'lotSize',
             beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
             garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom' };
