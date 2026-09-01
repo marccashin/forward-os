@@ -8889,7 +8889,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         mp.loading = false;
         await mpGenerate();
       } catch(e) {
-        mp.error = e.message || 'Generation failed. Check your API key in Settings.';
+        mp.error = e.message || 'Meeting prep couldn\'t start right now. Try again in a moment, or let Operations know if it keeps happening.';
         console.error('Meeting Prep mpStart error:', e);
         mp.loading = false; mp.researchStatus = '';
       }
@@ -8951,7 +8951,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         mp.brief = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
         if (!mp.brief) throw new Error('Could not generate brief. Please try again.');
       } catch(e) {
-        mp.error = e.message || 'Generation failed. Check your API key in Settings.';
+        mp.error = e.message || 'Your brief couldn\'t be generated right now. Try again in a moment, or let Operations know if it keeps happening.';
         console.error('Meeting Prep error:', e);
       }
       mp.loading = false; mp.researchStatus = '';
@@ -9741,7 +9741,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (!res.ok) throw new Error(json.detail || 'Error');
         moChatMessages.value.push({ role: 'ai', text: json.answer });
       } catch(e) {
-        moChatMessages.value.push({ role: 'ai', text: 'Sorry, something went wrong: ' + e.message });
+        moChatMessages.value.push({ role: 'ai', text: 'Something went wrong — the offer advisor couldn\'t respond right now. Try asking again.' });
       } finally {
         moChatLoading.value = false;
       }
@@ -10419,7 +10419,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     campOpenPreview();
   } catch(e) {
-    showToast('Generation failed: ' + (e.message || 'Check your API key in Settings.'), 6000);
+    showToast('Campaign generation failed — something went wrong on our end. Try again in a moment, or let Operations know if it keeps happening.', 6000);
     console.error('campGenerate error:', e);
   } finally {
     if (_campPipeTimer) { clearInterval(_campPipeTimer); _campPipeTimer = null; }
@@ -11053,7 +11053,7 @@ async function campExportPDF() {
         window.location.href = '/campaign-print.html';
       }
     } catch (_fbErr) {
-      showToast('PDF export failed. Please try again.', 5000);
+      showToast('PDF couldn\'t be exported right now — try refreshing the page. If it keeps failing, let Operations know.', 5000);
     }
   }
 }
