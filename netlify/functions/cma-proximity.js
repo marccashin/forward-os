@@ -50,17 +50,32 @@ exports.handler = async function (event) {
   const BASE = 'https://maps.googleapis.com/maps/api';
   const cache = new Map();
 
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+  // Google throttles bursts, so geocode one at a time and retry a throttled
+  // call rather than dropping it. Firing these in parallel silently lost
+  // roughly half the results.
   async function geocode(addr) {
     const k = addr.toLowerCase().replace(/\s+/g, ' ').trim();
     if (cache.has(k)) return cache.get(k);
     let out = null;
-    try {
-      const r = await fetch(`${BASE}/geocode/json?address=${encodeURIComponent(addr)}&key=${KEY}`);
-      const d = await r.json();
-      if (d.status === 'OK' && d.results && d.results.length) {
-        out = d.results[0].geometry.location; // { lat, lng }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await fetch(`${BASE}/geocode/json?address=${encodeURIComponent(addr)}&key=${KEY}`);
+        const d = await r.json();
+        if (d.status === 'OK' && d.results && d.results.length) {
+          out = d.results[0].geometry.location; // { lat, lng }
+          break;
+        }
+        if (d.status === 'OVER_QUERY_LIMIT' || d.status === 'UNKNOWN_ERROR') {
+          await sleep(300 * (attempt + 1));
+          continue;
+        }
+        break; // ZERO_RESULTS / REQUEST_DENIED: retrying will not help
+      } catch (e) {
+        await sleep(200);
       }
-    } catch (e) { /* leave null */ }
+    }
     cache.set(k, out);
     return out;
   }
@@ -74,7 +89,10 @@ exports.handler = async function (event) {
       };
     }
 
-    const points = await Promise.all(comps.map(c => (c && c.trim() ? geocode(c.trim()) : null)));
+    const points = [];
+    for (const c of comps) {
+      points.push(c && c.trim() ? await geocode(c.trim()) : null);
+    }
     const distances = points.map(p => (p ? fmt(haversine(origin, p)) : null));
 
     return { statusCode: 200, headers: hdrs, body: JSON.stringify({ distances }) };
