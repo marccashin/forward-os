@@ -17317,6 +17317,26 @@ const CHANGELOG = [
         detail: 'The net sheet had two separate calculators \u2014 one behind the Calculate button and one behind the PDF download \u2014 and they did not always agree. On some deals the figure you quoted from the screen was not the figure that printed.\n\nBoth now run the same code, so the on-screen total and the PDF total are always identical.\n\nHow to use: No change. Calculate, then download.\n\nBest practice: The HOA and tax fields now clear properly when you reset the tool, so start a new deal with Clear Form rather than typing over the last one.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-01',
+    date: 'September 1, 2026',
+    title: 'CMA: Build Comps From MLS PDFs',
+    summary: 'Drop your Bright MLS sheets into the CMA and the subject property and every comp fill themselves in. Condition is the only thing left for you to judge.',
+    updates: [
+      {
+        title: 'Add Properties From MLS PDFs',
+        detail: 'The greyed-out "Pull from MLS" box at the top of the CMA is gone. In its place is a drop area: click it, or drag your Bright MLS sheets straight in. One file can hold as many properties as you exported, and you can add up to twelve at once.\n\nA review screen appears before anything is added. Every property is listed with a tag telling you what it is: Closed sale, Pending, Active listing, Not a comp, or Your subject property. Untick anything you do not want. Nothing touches your CMA until you press Add.\n\nProperties route themselves. Sold comps land in Closed Sales, active listings in Active, under contract in Pending. Canceled, expired and withdrawn sheets are flagged as not comps and stay out unless you tick them. If a sheet is the property you are valuing, it is recognised and kept out of your own comp set.\n\nHow to use: Export Agent Full from Bright MLS as a PDF, subject and comps together in one file if you like. Drop it in, check the review screen, press Add to CMA.\n\nBest practice: Export the subject property in the same file as the comps. The tool matches it to your address, keeps it out of the comp tables, and uses it to measure how far away every comp is.'
+      },
+      {
+        title: 'What Fills In, And What Is Still Yours',
+        detail: 'Address, dates, list and sale prices, square footage, lot size, beds, baths, below grade finished space, garage spaces, HOA dues converted to monthly, days on market, seller concessions and distance from the subject all fill themselves.\n\nTwo kinds of highlighting tell you where to look. Orange marked YOU FILL IN is a judgement call the MLS cannot make for you. Orange marked CHECK THIS is a number Bright itself flagged as soft, such as square footage labelled Estimated, or a figure that disagrees with the assessor on the same sheet. A counter at the top tells you how many fields still want your attention.\n\nCondition is never filled automatically. Bright\'s condition field is agent-entered and unreliable, and condition feeds your adjustment grid directly, so it stays your call on every row.\n\nHow to use: After importing, work down the orange boxes. Set condition on each comp, then check anything marked CHECK THIS against the sheet.\n\nBest practice: Sale price for a closed comp is pulled from Close Price, not list price. If a number ever looks wrong, open the sheet and check it. The tool reads what Bright printed, and Bright is sometimes wrong.'
+      },
+      {
+        title: 'Only Real MLS Sheets Are Accepted',
+        detail: 'If you upload something that is not an MLS listing report, such as a spreadsheet a seller sent you or a scanned flyer, the tool refuses it and imports nothing rather than half-reading it.\n\nA partly-read comp is more dangerous than a rejected one, because a row with a real price and missing beds still looks correct at a glance.\n\nHow to use: Nothing to do. If a file is refused you will see why on the review screen.\n\nBest practice: Export straight from Bright MLS. Sheets a client emails you, or anything printed to PDF from a spreadsheet, will be turned away.'
+      }
+    ]
   }
 
 
