@@ -19421,7 +19421,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           }
           const effectiveSystem = ldDistances.value
             ? LD_SYSTEM + '\n\nVERIFIED DISTANCE DATA (real driving distances — use ONLY these, do not estimate or fabricate any mileages):\n' + ldDistances.value
-            : LD_SYSTEM;
+            : LD_SYSTEM + '\n\nNO VERIFIED DISTANCE DATA IS AVAILABLE for this property. The distance lookup did not return results. Therefore you MUST NOT state any distance, mileage, drive time, walk time, or number of blocks to anything, and you MUST NOT write the closing bullet list of amenity distances. This overrides the instruction above to bullet point how far away amenities are. You may still name a neighborhood, landmark, school or amenity by name, but never how far away it is or how long it takes to get there. Do not guess, approximate, or use vague proximity words such as steps from, moments from, or just minutes away.';
           reply = await claudeChat(apiMessages, effectiveSystem);
 
           // Check if this response contains the final listing description
