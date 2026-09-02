@@ -12815,12 +12815,76 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function sellerPrepPDF() { openPDFBlob(sellerPrepBuildPDFBlob(), 'Seller-Prep-Guide.pdf'); }
 
     // -- Seller Net Sheet (accurate DC/MD/VA rates per KVS Title, SMART Settlements)
+    // Maryland transfer + recordation, FY2026.
+    // Source: MD Dept of Legislative Services, "Local Tax Rates in Maryland"
+    //   dls.maryland.gov/pubs/prod/NoPblTabPDF/2026CountyLocalTaxRates.pdf
+    // transfer = county transfer tax. rec = recordation, dollars per $500.
+    // State transfer tax of 0.5% is added for every county. Seller customarily
+    // pays half of the combined total on a residential resale.
+    const MD_STATE_TRANSFER = 0.005;
+    const MD_RATES = {
+      'md-allegany':      { label:'Allegany',         transfer:0.005,  rec:3.50 },
+      'md-annearundel':   { label:'Anne Arundel',     transfer:0.010,  rec:3.50, surcharge1m:0.005 },
+      'md-baltimorecity': { label:'Baltimore City',   transfer:0.015,  rec:5.00 },
+      'md-baltimoreco':   { label:'Baltimore County', transfer:0.015,  rec:2.50 },
+      'md-calvert':       { label:'Calvert',          transfer:0.000,  rec:5.00 },
+      'md-caroline':      { label:'Caroline',         transfer:0.005,  rec:5.00 },
+      'md-carroll':       { label:'Carroll',          transfer:0.000,  rec:6.50 },
+      'md-cecil':         { label:'Cecil',            transfer:0.005,  rec:4.10 },
+      'md-charles':       { label:'Charles',          transfer:0.005,  rec:7.00 },
+      'md-dorchester':    { label:'Dorchester',       transfer:0.0075, rec:5.00 },
+      'md-frederick':     { label:'Frederick',        transfer:0.000,  rec:7.00 },
+      'md-garrett':       { label:'Garrett',          transfer:0.010,  rec:3.50 },
+      'md-harford':       { label:'Harford',          transfer:0.010,  rec:3.30 },
+      'md-howard':        { label:'Howard',           transfer:0.0125, rec:2.50 },
+      'md-kent':          { label:'Kent',             transfer:0.005,  rec:3.30 },
+      'md-pgcounty':      { label:"Prince George's",  transfer:0.014,  rec:2.75 },
+      'md-queenannes':    { label:"Queen Anne's",     transfer:0.005,  rec:4.95 },
+      'md-stmarys':       { label:"St. Mary's",       transfer:0.010,  rec:4.00 },
+      'md-somerset':      { label:'Somerset',         transfer:0.000,  rec:3.30 },
+      'md-talbot':        { label:'Talbot',           transfer:0.010,  rec:6.00 },
+      'md-washington':    { label:'Washington',       transfer:0.005,  rec:3.80 },
+      'md-wicomico':      { label:'Wicomico',         transfer:0.000,  rec:3.50 },
+      'md-worcester':     { label:'Worcester',        transfer:0.005,  rec:3.30 }
+    };
+    function nsMDTransfer(price, jur) {
+      const r = MD_RATES[jur];
+      if (!r) return null;
+      let t = r.transfer;
+      if (r.surcharge1m && price >= 1000000) t += r.surcharge1m;
+      const total = price * (MD_STATE_TRANSFER + t) + (price / 500) * r.rec;
+      return { amount: Math.round(total * 0.5),
+               label: 'MD Transfer & Recordation \u2014 Seller\u2019s Half (' + r.label + ')' };
+    }
     const NS_JURISDICTIONS = [
       { value:'dc',             label:'Washington, DC' },
       { value:'va-nova',        label:'Virginia — Northern Virginia (Arlington, Fairfax, Loudoun, Prince William, Alexandria)' },
       { value:'va-other',       label:'Virginia — Other Counties' },
       { value:'md-montgomery',  label:'Maryland — Montgomery County' },
-      { value:'md-other',       label:'Maryland — Other Counties' },
+      { value:'md-pgcounty', label:"Maryland \u2014 Prince George's County" },
+      { value:'md-baltimoreco', label:"Maryland \u2014 Baltimore County" },
+      { value:'md-baltimorecity', label:"Maryland \u2014 Baltimore City" },
+      { value:'md-howard', label:"Maryland \u2014 Howard County" },
+      { value:'md-annearundel', label:"Maryland \u2014 Anne Arundel County" },
+      { value:'md-frederick', label:"Maryland \u2014 Frederick County" },
+      { value:'md-charles', label:"Maryland \u2014 Charles County" },
+      { value:'md-harford', label:"Maryland \u2014 Harford County" },
+      { value:'md-carroll', label:"Maryland \u2014 Carroll County" },
+      { value:'md-calvert', label:"Maryland \u2014 Calvert County" },
+      { value:'md-stmarys', label:"Maryland \u2014 St. Mary's County" },
+      { value:'md-washington', label:"Maryland \u2014 Washington County" },
+      { value:'md-cecil', label:"Maryland \u2014 Cecil County" },
+      { value:'md-queenannes', label:"Maryland \u2014 Queen Anne's County" },
+      { value:'md-talbot', label:"Maryland \u2014 Talbot County" },
+      { value:'md-kent', label:"Maryland \u2014 Kent County" },
+      { value:'md-caroline', label:"Maryland \u2014 Caroline County" },
+      { value:'md-dorchester', label:"Maryland \u2014 Dorchester County" },
+      { value:'md-allegany', label:"Maryland \u2014 Allegany County" },
+      { value:'md-garrett', label:"Maryland \u2014 Garrett County" },
+      { value:'md-somerset', label:"Maryland \u2014 Somerset County" },
+      { value:'md-wicomico', label:"Maryland \u2014 Wicomico County" },
+      { value:'md-worcester', label:"Maryland \u2014 Worcester County" },
+      { value:'md-other',       label:'Maryland \u2014 Other county (blended estimate)' },
     ];
     const ns = reactive({
       address:'', unit:'', salePrice:'', jurisdiction:'dc', closingDate:'',
@@ -13102,10 +13166,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (j === 'md-montgomery') {
         let recTax = 0;
         if (price <= 500000) { recTax = price * 0.0089; }
-        else { recTax = (500000 * 0.0089) + ((price - 500000) * 0.01408); }
+        else { recTax = (500000 * 0.0089) + ((price - 500000) * 0.0135); }
         const totalTransfer = price * 0.015;
         transferTax = Math.round((totalTransfer + recTax) * 0.5);
         transferLabel = 'MD Transfer & Recordation — Seller’s Half';
+      } else if (MD_RATES[j]) {
+        const _md = nsMDTransfer(price, j);
+        transferTax = _md.amount; transferLabel = _md.label;
       } else if (j === 'md-other') {
         // MD Other counties: State transfer 0.5% + avg county transfer ~1.5% + recordation ~0.5% = ~2.5% total, seller pays half
         const totalAll = price * 0.025;
@@ -13120,7 +13187,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // MD: $550 release admin + $70 tracking + $50 wire = $670
       let settlementFee = 1215;
       if (j === 'va-nova' || j === 'va-other') settlementFee = 1315;
-      else if (j === 'md-montgomery' || j === 'md-other') settlementFee = 670;
+      else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
       items.push({ label:'Settlement & Title Charges (est.)', amount:settlementFee });
 
       // ── 3. Loan Payoffs ──
@@ -13414,15 +13481,16 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (j === 'va-nova') { transferTax = Math.round(price * 0.003); transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)'; }
       else if (j === 'va-other') { transferTax = Math.round(price * 0.001); transferLabel = 'VA Grantor Tax (0.1%)'; }
       else if (j === 'md-montgomery') {
-        let recTax = price <= 500000 ? price * 0.0089 : (500000 * 0.0089) + ((price - 500000) * 0.01408);
+        let recTax = price <= 500000 ? price * 0.0089 : (500000 * 0.0089) + ((price - 500000) * 0.0135);
         transferTax = Math.round((price * 0.015 + recTax) * 0.5);
         transferLabel = 'MD Transfer & Recordation — Seller’s Half';
-      } else if (j === 'md-other') { transferTax = Math.round(price * 0.025 * 0.5); transferLabel = 'MD Transfer & Recordation — Seller’s Half'; }
+      } else if (MD_RATES[j]) { const _md = nsMDTransfer(price, j); transferTax = _md.amount; transferLabel = _md.label; }
+      else if (j === 'md-other') { transferTax = Math.round(price * 0.025 * 0.5); transferLabel = 'MD Transfer & Recordation — Seller’s Half'; }
       if (transferTax) items.push({ label: transferLabel, amount: transferTax });
       // Settlement fee
       let settlementFee = 1215;
       if (j === 'va-nova' || j === 'va-other') settlementFee = 1315;
-      else if (j === 'md-montgomery' || j === 'md-other') settlementFee = 670;
+      else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
       items.push({ label: 'Settlement & Title Charges (est.)', amount: settlementFee });
       // Loans
       const l1 = Number(ns.loan1) || 0; if (l1 > 0) items.push({ label: '1st Loan Payoff', amount: l1 });
