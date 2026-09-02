@@ -12950,6 +12950,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const payable = cd >= p.due;
         return { h1: payable && p.half === 1, h2: payable && p.half === 2 };
       }
+      // VA prorates on the calendar year and never collects an installment,
+      // so there is no paid/unpaid question to ask.
+      if (ns.jurisdiction === 'va-nova' || ns.jurisdiction === 'va-other') {
+        return { h1:false, h2:false };
+      }
       const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
       const h1Start = new Date(yr, 6, 1);      // Jul 1
       const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
@@ -12999,6 +13004,24 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (paidFlag === 'no') {
         out.push({ label:'Property Tax Collection - ' + (p.half === 1 ? '1st' : '2nd') + ' Half (unpaid)', amount:nsRound2(annualTax / 2) });
       }
+      return out;
+    }
+    // Virginia real property tax is assessed on the CALENDAR year, Jan 1 - Dec 31.
+    // The code previously ran VA through a Jul 1 - Jun 30 fiscal year, which
+    // overcharged Jan-Jun closings and, worse, UNDERCHARGED Jul-Dec closings by
+    // thousands, handing the seller a net that was too high.
+    //
+    // Same accrual convention as DC: annual / 365 x days held, closing day to
+    // the seller. No collection line: VA installment due dates vary by locality
+    // (Fairfax Jul 28 / Dec 5, Arlington Jun 15 / Oct 5) and va-nova still
+    // bundles five jurisdictions, so there is no reliable due date to gate on.
+    // Proration alone is the defensible figure until that evidence exists.
+    function nsVATaxItems(annualTax, cd) {
+      const out = [];
+      if (!(annualTax > 0) || !cd) return out;
+      const yearStart = new Date(cd.getFullYear(), 0, 1);
+      const amt = nsRound2(annualTax / 365 * nsDaysInclusive(yearStart, cd));
+      if (amt > 0) out.push({ label:'Prorated Property Taxes', amount:amt });
       return out;
     }
     // HOA / condo dues proration. Closing day belongs to the seller.
@@ -13142,6 +13165,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (annualTax > 0 && ns.closingDate) {
         if (j === 'dc') {
           nsDCTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
+        } else if (j === 'va-nova' || j === 'va-other') {
+          nsVATaxItems(annualTax, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
         } else {
           const halfTax = annualTax / 2;
           const dp = ns.closingDate.split('-');
@@ -13427,6 +13452,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (annualTax > 0 && ns.closingDate) {
         if (j === 'dc') {
           nsDCTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
+        } else if (j === 'va-nova' || j === 'va-other') {
+          nsVATaxItems(annualTax, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
         } else {
           const halfTax = annualTax / 2;
           const dp = ns.closingDate.split('-');
