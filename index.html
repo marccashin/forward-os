@@ -6164,6 +6164,15 @@ body {
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
                         @blur="$event.target.style.borderColor='var(--cream-mid)'"
                         placeholder="Type or paste content…"></textarea>
+                      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;">
+                        <button @click="campSaveNow('letter', 'letter')"
+                          :disabled="campSaveState==='saving'"
+                          style="padding:11px 26px;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;"
+                          :style="{background: campSavedFlash==='letter' ? 'var(--gold)' : 'var(--navy)', color: campSavedFlash==='letter' ? 'var(--navy)' : 'var(--gold)', opacity: campSaveState==='saving' ? 0.6 : 1}">
+                          {{ campSavedFlash==='letter' ? '✓ Saved' : (campSaveState==='saving' ? 'Saving…' : 'Save Letter') }}
+                        </button>
+                        <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);">Also saves on its own as you type</span>
+                      </div>
                     </div>
                     <div v-else-if="!campLetterIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
@@ -6200,6 +6209,15 @@ body {
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
                         @blur="$event.target.style.borderColor='var(--cream-mid)'"
                         placeholder="Listing description…"></textarea>
+                      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;">
+                        <button @click="campSaveNow('listing', 'listing')"
+                          :disabled="campSaveState==='saving'"
+                          style="padding:11px 26px;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;"
+                          :style="{background: campSavedFlash==='listing' ? 'var(--gold)' : 'var(--navy)', color: campSavedFlash==='listing' ? 'var(--navy)' : 'var(--gold)', opacity: campSaveState==='saving' ? 0.6 : 1}">
+                          {{ campSavedFlash==='listing' ? '✓ Saved' : (campSaveState==='saving' ? 'Saving…' : 'Save Description') }}
+                        </button>
+                        <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);">Also saves on its own as you type</span>
+                      </div>
                     </div>
                     <div v-else-if="!campLdIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
@@ -6241,6 +6259,15 @@ body {
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
                         @blur="$event.target.style.borderColor='var(--cream-mid)'"
                         placeholder="Type or paste content for this section…"></textarea>
+                      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;">
+                        <button @click="campSaveNow('sections', 'section-'+idx)"
+                          :disabled="campSaveState==='saving'"
+                          style="padding:11px 26px;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;"
+                          :style="{background: campSavedFlash==='section-'+idx ? 'var(--gold)' : 'var(--navy)', color: campSavedFlash==='section-'+idx ? 'var(--navy)' : 'var(--gold)', opacity: campSaveState==='saving' ? 0.6 : 1}">
+                          {{ campSavedFlash==='section-'+idx ? '✓ Saved' : (campSaveState==='saving' ? 'Saving…' : 'Save Section') }}
+                        </button>
+                        <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);">Also saves on its own as you type</span>
+                      </div>
                     </div>
                     <div v-else-if="!section.included" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
@@ -6281,6 +6308,15 @@ body {
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
                         @blur="$event.target.style.borderColor='var(--cream-mid)'"
                         placeholder="Type or paste content…"></textarea>
+                      <div style="display:flex;align-items:center;gap:12px;margin-top:14px;">
+                        <button @click="campSaveNow('prep', 'prep')"
+                          :disabled="campSaveState==='saving'"
+                          style="padding:11px 26px;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;"
+                          :style="{background: campSavedFlash==='prep' ? 'var(--gold)' : 'var(--navy)', color: campSavedFlash==='prep' ? 'var(--navy)' : 'var(--gold)', opacity: campSaveState==='saving' ? 0.6 : 1}">
+                          {{ campSavedFlash==='prep' ? '✓ Saved' : (campSaveState==='saving' ? 'Saving…' : 'Save Prep Guide') }}
+                        </button>
+                        <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);">Also saves on its own as you type</span>
+                      </div>
                     </div>
                     <div v-else-if="!campPrepIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
@@ -9895,6 +9931,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campSections = reactive({ buyerAvatars: true, socialMedia: true, tiktok: true, linkedin: true, flyerCopy: true, campaignPlan: true });
     const campParsed = ref([]);
     const campSaveState = ref('');
+    const campSavedFlash = ref('');
     const campRawResult = ref('');
     const campShowPreview = ref(false);
     const campOpenSection = ref(null);
@@ -10550,6 +10587,29 @@ function campQueueSave(kind) {
   campSaveState.value = 'saving';
   if (_campSaveTimer) clearTimeout(_campSaveTimer);
   _campSaveTimer = setTimeout(function () { _campSaveTimer = null; campSaveSections(); }, 900);
+}
+
+// Explicit Save. Autosave still runs, but an agent should never have to trust
+// an invisible process with work they just typed.
+async function campSaveNow(kind, tag) {
+  if (_campSaveTimer) { clearTimeout(_campSaveTimer); _campSaveTimer = null; }
+  delete _campPending[kind];
+  campSaveState.value = 'saving';
+  var ok;
+  if (kind === 'listing') {
+    try { await campLdSave(); ok = true; } catch (e) { console.warn('listing save failed:', e); ok = false; }
+  } else {
+    ok = await campSaveOne(kind, true);
+  }
+  campSaveState.value = ok ? 'saved' : 'error';
+  if (ok) {
+    var t = tag || kind;
+    campSavedFlash.value = t;
+    setTimeout(function () { if (campSavedFlash.value === t) campSavedFlash.value = ''; }, 2200);
+    setTimeout(function () { if (campSaveState.value === 'saved') campSaveState.value = ''; }, 2500);
+  } else {
+    showToast('Could not save. Check your connection and try again.', 6000);
+  }
 }
 
 async function campClosePreview() {
@@ -20250,7 +20310,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSaveSections, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
