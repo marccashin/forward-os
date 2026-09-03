@@ -6116,15 +6116,19 @@ body {
               <div style="font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);">Generating PDF…</div>
               <div style="font-family:'Montserrat',sans-serif;font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:0.06em;">This takes about 15 seconds</div>
             </div>
-            <div v-if="campShowPreview" style="position:fixed;inset:0;background:rgba(10,35,66,0.55);z-index:9000;display:flex;align-items:stretch;justify-content:flex-end;" @click.self="campShowPreview=false">
+            <div v-if="campShowPreview" style="position:fixed;inset:0;background:rgba(10,35,66,0.55);z-index:9000;display:flex;align-items:stretch;justify-content:flex-end;" @click.self="campClosePreview()">
               <div style="background:var(--cream);width:min(700px,100vw);display:flex;flex-direction:column;height:100%;overflow:hidden;box-shadow:-6px 0 32px rgba(10,35,66,.22);">
                 <!-- Panel header -->
                 <div style="padding:20px 26px 18px;border-bottom:1px solid var(--cream-mid);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:var(--navy);">
                   <div>
                     <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--cream);letter-spacing:0.02em;">Campaign Package</div>
                     <div style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-top:4px;">{{ lstActiveProp.address }} · {{ campParsed.length + (lstNotes.listing_remarks ? 1 : 0) + 2 }} sections · click any section to edit</div>
+                    <div v-if="campSaveState" style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;margin-top:5px;"
+                         :style="{color: campSaveState==='error' ? '#e07a5f' : 'rgba(200,169,110,0.85)'}">
+                      {{ campSaveState==='saving' ? 'Saving…' : (campSaveState==='saved' ? '✓ Saved' : 'Save failed — check connection') }}
+                    </div>
                   </div>
-                  <button @click="campShowPreview=false" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
+                  <button @click="campClosePreview()" style="background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.3);color:var(--gold-muted);width:30px;height:30px;border-radius:2px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;">✕</button>
                 </div>
                 <div style="flex:1;overflow-y:auto;overscroll-behavior:contain;padding:20px 24px;display:flex;flex-direction:column;gap:12px;">
                   <div style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
@@ -6219,7 +6223,7 @@ body {
                       </div>
                       <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;margin-left:16px;">
                         <label @click.stop style="display:flex;align-items:center;gap:5px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:rgba(200,169,110,0.55);cursor:pointer;white-space:nowrap;">
-                          <input type="checkbox" v-model="section.included" style="cursor:pointer;accent-color:var(--gold);"> Include
+                          <input type="checkbox" v-model="section.included" @change="campQueueSave()" style="cursor:pointer;accent-color:var(--gold);"> Include
                         </label>
                         <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;padding:7px 14px;border-radius:1px;transition:all 0.15s;white-space:nowrap;"
                              :style="{background: campOpenSection===idx ? 'var(--gold)' : 'rgba(200,169,110,0.18)', color: campOpenSection===idx ? 'var(--navy)' : 'var(--gold)', border: '1px solid rgba(200,169,110,0.4)'}">
@@ -6231,7 +6235,7 @@ body {
                     <div v-if="campOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
                       <textarea v-model="section.content" class="camp-section-ta"
-                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';campQueueSave();}"
                         style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
                         :style="{height: Math.max(180, (section.content||'a').split('\n').length * 25 + 60) + 'px'}"
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
@@ -6285,7 +6289,7 @@ body {
                 <div style="padding:16px 24px;border-top:1px solid var(--cream-mid);display:flex;gap:10px;flex-shrink:0;background:var(--cream);">
                   <button @click="campApproveAndSend()" style="flex:1;padding:13px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">Approve &amp; Send to Seller</button>
                   <button @click="campCopyToClipboard()" style="padding:13px 18px;background:var(--white);border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Copy All</button>
-                  <button @click="campShowPreview=false" style="padding:13px 18px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Close</button>
+                  <button @click="campClosePreview()" style="padding:13px 18px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Close</button>
                 </div>
               </div>
             </div>
@@ -9889,8 +9893,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campVideoDays = ref(7);
     const campSpecialInstructions = ref('');
     const campSections = reactive({ buyerAvatars: true, socialMedia: true, tiktok: true, linkedin: true, flyerCopy: true, campaignPlan: true });
-    const campParsed = ref((function(){try{var d=window['localStorage'].getItem('fos_campSections');return d?JSON.parse(d):[];}catch(e){return [];}})());
-    const campRawResult = ref(localStorage.getItem('fos_campSections') ? 'cached' : '');
+    const campParsed = ref([]);
+    const campSaveState = ref('');
+    const campRawResult = ref('');
     const campShowPreview = ref(false);
     const campOpenSection = ref(null);
     const campRevOpen = ref(false);
@@ -10151,8 +10156,16 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             campRawResult.value = 'cached';
           } catch(e) { campParsed.value = []; campRawResult.value = ''; }
         } else {
-          campParsed.value = [];
-          campRawResult.value = '';
+          var _lk = 'fos_campSections_' + prop.id;
+          var _lv = null;
+          try { _lv = localStorage.getItem(_lk); } catch (e) {}
+          if (_lv) {
+            try { campParsed.value = JSON.parse(_lv); campRawResult.value = 'cached'; }
+            catch (e) { campParsed.value = []; campRawResult.value = ''; }
+          } else {
+            campParsed.value = [];
+            campRawResult.value = '';
+          }
         }
       } catch {}
       // Load revision requests
@@ -10403,7 +10416,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
     campParsed.value = parsed;
-    try { localStorage.setItem('fos_campSections', JSON.stringify(parsed)); } catch(e) {}
+    _campLastSaved = JSON.stringify(parsed);
+    if (lstActiveProp.value && lstActiveProp.value.id) {
+      try { localStorage.setItem('fos_campSections_' + lstActiveProp.value.id, _campLastSaved); } catch(e) {}
+    }
     // Persist to Supabase so campaign survives device/browser changes
     if (lstActiveProp.value && lstActiveProp.value.id) {
       try {
@@ -10457,21 +10473,53 @@ function campOpenPreview() {
   setTimeout(function(){document.querySelectorAll('.camp-section-ta').forEach(function(ta){ta.style.height='auto';ta.style.height=Math.max(180,ta.scrollHeight)+'px';});},150);
 }
 
-async function campApproveAndSend() {
-  campShowPreview.value = false;
-  // Re-save campaign sections to Supabase (captures any edits made in review panel)
-  if (lstActiveProp.value && lstActiveProp.value.id && campParsed.value && campParsed.value.length) {
-    try {
-      await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
-        method: 'DELETE', headers: supaRest.headers()
-      });
-      await supaRest.insert('property_notes', {
-        property_id: lstActiveProp.value.id,
-        subfolder: 'campaign_sections',
-        content: JSON.stringify(campParsed.value)
-      });
-    } catch(e) { console.warn('campaign_sections re-save failed:', e); }
+// Campaign section autosave. Edits in the review panel persist on their own,
+// independent of Approve & Send. Debounced so typing does not hammer Supabase.
+var _campSaveTimer = null;
+var _campLastSaved = '';
+
+async function campSaveSections(force) {
+  if (!lstActiveProp.value || !lstActiveProp.value.id) return;
+  if (!campParsed.value || !campParsed.value.length) return;
+  var pid = lstActiveProp.value.id;
+  var payload = JSON.stringify(campParsed.value);
+  if (!force && payload === _campLastSaved) { campSaveState.value = ''; return; }
+  campSaveState.value = 'saving';
+  try { localStorage.setItem('fos_campSections_' + pid, payload); } catch (e) {}
+  try {
+    await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.campaign_sections', {
+      method: 'DELETE', headers: supaRest.headers()
+    });
+    await supaRest.insert('property_notes', {
+      property_id: pid,
+      subfolder: 'campaign_sections',
+      content: payload
+    });
+    _campLastSaved = payload;
+    campSaveState.value = 'saved';
+    setTimeout(function () { if (campSaveState.value === 'saved') campSaveState.value = ''; }, 2500);
+  } catch (e) {
+    console.warn('campaign_sections save failed:', e);
+    campSaveState.value = 'error';
   }
+}
+
+function campQueueSave() {
+  campSaveState.value = 'saving';
+  if (_campSaveTimer) clearTimeout(_campSaveTimer);
+  _campSaveTimer = setTimeout(function () { _campSaveTimer = null; campSaveSections(); }, 900);
+}
+
+async function campClosePreview() {
+  if (_campSaveTimer) { clearTimeout(_campSaveTimer); _campSaveTimer = null; }
+  campShowPreview.value = false;
+  await campSaveSections();
+}
+
+async function campApproveAndSend() {
+  if (_campSaveTimer) { clearTimeout(_campSaveTimer); _campSaveTimer = null; }
+  campShowPreview.value = false;
+  await campSaveSections(true);
   await new Promise(r => setTimeout(r, 200));
   await campExportPDF();
 }
@@ -10962,6 +11010,19 @@ async function campExportPDF() {
     pkg.letter._skip = true;
   }
 
+  // Stash the print package BEFORE opening the tab. A tab opened with
+  // window.open() receives a one-time COPY of the opener's sessionStorage taken
+  // at open time; writes made afterwards never reach it. Writing here means the
+  // copy the child tab inherits already contains the package. localStorage is
+  // mirrored as a belt-and-braces path since it is shared live across tabs.
+  try {
+    var _pkgEarly = JSON.parse(JSON.stringify(pkg));
+    delete _pkgEarly._siteUrl;
+    var _pkgEarlyStr = JSON.stringify(_pkgEarly);
+    sessionStorage.setItem('fos_campPkg', _pkgEarlyStr);
+    try { localStorage.setItem('fos_campPkg', _pkgEarlyStr); } catch (e) {}
+  } catch (e) { console.warn('[PDF] could not stash print package', e); }
+
   // Open fallback window NOW — synchronously in the user gesture chain.
   // Browsers allow window.open() here; after an await they block it as a pop-up.
   // If Railway succeeds we close it silently; if it fails we navigate it to campaign-print.html.
@@ -10993,26 +11054,21 @@ async function campExportPDF() {
     pkg._siteUrl = window.location.origin;
     var pkgBody = JSON.stringify(pkg);
 
-    // Primary: Railway backend — headless Playwright, no 10s limit, proper CSS rendering
-    var resp = null;
-    try {
-      resp = await fetch(RAILWAY_URL + '/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: pkgBody,
-        signal: _makeSignal(90000),
-      });
-      if (!resp.ok) throw new Error('Railway ' + resp.status);
-    } catch (railwayErr) {
-      console.warn('[PDF] Railway failed:', railwayErr.message || railwayErr);
-      // Secondary: Netlify function (may timeout on free plan cold starts)
-      resp = await fetch('/.netlify/functions/export-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: pkgBody,
-        signal: _makeSignal(30000),
-      });
-      if (!resp.ok) throw new Error('Netlify ' + resp.status);
+    // Railway backend — headless Chromium, no serverless timeout ceiling.
+    // This is the only automated path. The Netlify function that used to sit
+    // here was removed: its bundled Chromium could not launch (libnspr4.so) and
+    // the free-plan 10s cutoff could not fit a cold browser start anyway, so it
+    // only ever burned four seconds and hid the real error.
+    var resp = await fetch(RAILWAY_URL + '/export-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: pkgBody,
+      signal: _makeSignal(120000),
+    });
+    if (!resp.ok) {
+      var _detail = '';
+      try { _detail = (await resp.text()).slice(0, 200); } catch (e) {}
+      throw new Error('PDF service returned ' + resp.status + (_detail ? ' — ' + _detail : ''));
     }
 
     var blob = await resp.blob();
@@ -11043,17 +11099,24 @@ async function campExportPDF() {
     try {
       var _pkgForPrint = JSON.parse(JSON.stringify(pkg));
       delete _pkgForPrint._siteUrl;
-      sessionStorage.setItem('fos_campPkg', JSON.stringify(_pkgForPrint));
+      var _pkgForPrintStr = JSON.stringify(_pkgForPrint);
+      // Refresh both stores in case the package changed after the tab opened.
+      sessionStorage.setItem('fos_campPkg', _pkgForPrintStr);
+      try { localStorage.setItem('fos_campPkg', _pkgForPrintStr); } catch (e) {}
+      // Write straight into the child tab's own storage where the browser allows
+      // it. Same origin, so this is permitted in Chrome, Edge and Firefox.
+      try { if (_fallbackWin && !_fallbackWin.closed) _fallbackWin.sessionStorage.setItem('fos_campPkg', _pkgForPrintStr); } catch (e) {}
       if (_fallbackWin && !_fallbackWin.closed) {
         _fallbackWin.location.href = '/campaign-print.html';
         _fallbackWin.focus();
-        showToast('PDF opening — choose "Save as PDF" in the print dialog.', 6000);
+        showToast('PDF service unavailable. Opening the print view instead — choose "Save as PDF" in the dialog. Your campaign is saved.', 9000);
       } else {
         // _fallbackWin was blocked — navigate current tab as last resort
         window.location.href = '/campaign-print.html';
       }
     } catch (_fbErr) {
-      showToast('PDF export failed. Please try again.', 5000);
+      console.error('[PDF] fallback also failed:', _fbErr);
+      showToast('PDF could not be generated and the print view could not open. Your campaign is saved on the listing — tell Operations the PDF service is down.', 10000);
     }
   }
 }
@@ -17364,6 +17427,26 @@ const CHANGELOG = [
         detail: 'If you upload something that is not an MLS listing report, such as a spreadsheet a seller sent you or a scanned flyer, the tool refuses it and imports nothing rather than half-reading it.\n\nA partly-read comp is more dangerous than a rejected one, because a row with a real price and missing beds still looks correct at a glance.\n\nHow to use: Nothing to do. If a file is refused you will see why on the review screen.\n\nBest practice: Export straight from Bright MLS. Sheets a client emails you, or anything printed to PDF from a spreadsheet, will be turned away.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-03',
+    date: 'September 3, 2026',
+    title: 'Campaign Edits Now Save Themselves',
+    summary: 'Edits you make to campaign sections save on their own as you type, and the campaign PDF generates reliably again.',
+    updates: [
+      {
+        title: 'Your Campaign Edits Save Automatically',
+        detail: 'Open any campaign section, change the wording, and it saves on its own about a second after you stop typing. The Include checkboxes save the same way. A small note under the panel title tells you when it is saving and when it has saved. Previously an edit only survived if you went on to click Approve and Send, so anyone who edited a section and closed the panel lost the change. Best practice: watch for the tick before you close the panel. If you see a red save warning you have lost connection, so stay on the page until it clears.'
+      },
+      {
+        title: 'Campaign PDF Generation Fixed',
+        detail: 'The campaign PDF is now rendered on the FORWARD server rather than on your own device, so it comes out identical whether you are on a laptop, a desktop or your phone, and it downloads on its own. If the PDF service is ever down you will be told so plainly instead of seeing a screen that suggests your campaign was missing. How to use: nothing changes for you. Click Approve and Send to Seller as usual, and allow up to twenty seconds for the file to arrive.'
+      },
+      {
+        title: 'Editing No Longer Means Regenerating',
+        detail: 'Because edits now persist on their own, you never need to regenerate a whole campaign to correct one or two sections. Regenerating still replaces every section with fresh AI content, so use it only when you genuinely want to start the campaign over.'
+      }
+    ]
   }
 
 
@@ -20030,7 +20113,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSaveSections, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep, lstPersonaExists,
