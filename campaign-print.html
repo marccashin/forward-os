@@ -320,8 +320,8 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
         <div class="fwd-cover__seal">FORWARD<br />Corcoran McEnearney</div>
       </footer>
     </section>
-    <FwdDivider index="Section One" title="A Letter to the Seller" />
-    <section class="fwd-page fwd-letter" data-screen-label="Letter">
+    <FwdDivider v-if="!pkg.letter._skip" index="Section One" title="A Letter to the Seller" />
+    <section v-if="!pkg.letter._skip" class="fwd-page fwd-letter" data-screen-label="Letter">
       <div class="fwd-runninghead"><span class="fwd-section-label">Letter to Seller</span><span class="fwd-page-number">02</span></div>
       <div class="fwd-letter__body">
         <p class="fwd-letter__date">{{ pkg.letter.date }}</p>
