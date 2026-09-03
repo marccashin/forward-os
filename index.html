@@ -6158,7 +6158,7 @@ body {
                     <div v-if="campOpenSection==='__letter__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
                       <textarea v-model="campLetterEditVal" class="camp-section-ta"
-                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';campQueueSave('letter');}"
                         style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
                         :style="{height: Math.max(180, (campLetterEditVal||'a').split('\n').length * 25 + 60) + 'px'}"
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
@@ -6275,7 +6275,7 @@ body {
                     <div v-if="campOpenSection==='__prep__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
                       <textarea v-model="campPrepEditVal" class="camp-section-ta"
-                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';}"
+                        @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';campQueueSave('prep');}"
                         style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
                         :style="{height: Math.max(180, (campPrepEditVal||'a').split('\n').length * 25 + 60) + 'px'}"
                         @focus="$event.target.style.borderColor='var(--gold-muted)'"
@@ -9887,7 +9887,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
     });
     const lstActiveFiles = ref([]);
-    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'' });
+    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'', campaign_letter:'' });
     const campBrokersOpenDays = ref(10);
     const campPhotoDays = ref(7);
     const campVideoDays = ref(7);
@@ -10416,7 +10416,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
     campParsed.value = parsed;
-    _campLastSaved = JSON.stringify(parsed);
+    _campLastSaved.sections = JSON.stringify(parsed);
     if (lstActiveProp.value && lstActiveProp.value.id) {
       try { localStorage.setItem('fos_campSections_' + lstActiveProp.value.id, _campLastSaved); } catch(e) {}
     }
@@ -10447,6 +10447,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 function campSetPrepType(type) {
   sellerPrepType.value = type;
   campPrepEditVal.value = sellerPrepBuildTextSummary();
+  campQueueSave('prep');
 }
 
 function campOpenPreview() {
@@ -10466,7 +10467,11 @@ function campOpenPreview() {
     _fn1 = _lsn.split(/\s+/)[0] || '';
   }
   var _lgreet = _fn1 ? ('Dear ' + _fn1 + (_fn2 ? ' and ' + _fn2 : '') + ',') : '';
-  campLetterEditVal.value = (_lgreet ? _lgreet + '\n\n' : '') +
+  // A saved letter always wins. This line used to overwrite the agent's edited
+  // letter with boilerplate every single time the panel opened, which silently
+  // discarded the edit before it could reach the PDF.
+  var _savedLetter = (lstNotes && lstNotes.campaign_letter && lstNotes.campaign_letter.trim()) || '';
+  campLetterEditVal.value = _savedLetter || (_lgreet ? _lgreet + '\n\n' : '') +
     'It has been a privilege preparing this campaign package for ' + (_lprop.address || 'your property') + '. What follows is a comprehensive, multi-channel marketing strategy built specifically around your property, its history, its architecture, and the buyers who will recognize its true value.\n\nEvery element of this package has been designed to attract serious, qualified buyers. The buyer profiles identify exactly who is looking for a property like yours and what motivates them to act; the listing description positions your home at the highest level of the market; and the social, video, and advertising materials are ready to deploy across every relevant platform.\n\nThe 30-day campaign plan gives you full visibility into every step, from the pre-market teaser and broker open through the sustained digital campaign and private showing events. Nothing is left to chance.\n\nI am committed to representing this property with the same level of care and precision that has gone into every detail of the home itself. Please reach out with any questions as we move toward launch.\n\nWarm regards,\n' + (function(){var _pa=(_lprop.agent_name||agentName.value||'Marc Cashin');var _ca=((_lprop.subfolder_drive_ids&&_lprop.subfolder_drive_ids._co_agents)||[]);return _ca.length?[_pa].concat(_ca).join(' & '):_pa;})();
   campPrepEditVal.value = (lstNotes && lstNotes.seller_prep && lstNotes.seller_prep.trim()) || sellerPrepBuildTextSummary();
   campShowPreview.value = true;
@@ -10475,36 +10480,73 @@ function campOpenPreview() {
 
 // Campaign section autosave. Edits in the review panel persist on their own,
 // independent of Approve & Send. Debounced so typing does not hammer Supabase.
+// The review panel holds THREE independently edited things, not one:
+//   sections — the AI-generated blocks, held in campParsed
+//   letter   — Letter to Seller, held in campLetterEditVal
+//   prep     — Seller Prep Guide, held in campPrepEditVal
+// (The listing description has always saved itself through campLdSave.)
+// All three are debounced through the same queue so one indicator covers them.
 var _campSaveTimer = null;
-var _campLastSaved = '';
+var _campPending = {};
+var _campLastSaved = { sections: '', letter: '', prep: '' };
 
-async function campSaveSections(force) {
-  if (!lstActiveProp.value || !lstActiveProp.value.id) return;
-  if (!campParsed.value || !campParsed.value.length) return;
+function campEditorPayload(kind) {
+  if (kind === 'letter') return (campLetterEditVal.value || '').trim();
+  if (kind === 'prep')   return (campPrepEditVal.value || '').trim();
+  return (campParsed.value && campParsed.value.length) ? JSON.stringify(campParsed.value) : '';
+}
+
+async function campSaveOne(kind, force) {
+  if (!lstActiveProp.value || !lstActiveProp.value.id) return true;
   var pid = lstActiveProp.value.id;
-  var payload = JSON.stringify(campParsed.value);
-  if (!force && payload === _campLastSaved) { campSaveState.value = ''; return; }
-  campSaveState.value = 'saving';
-  try { localStorage.setItem('fos_campSections_' + pid, payload); } catch (e) {}
+  var payload = campEditorPayload(kind);
+  if (!payload) return true;
+  if (!force && payload === _campLastSaved[kind]) return true;
+
+  var subfolder = kind === 'letter' ? 'campaign_letter'
+                : kind === 'prep'   ? 'seller_prep'
+                : 'campaign_sections';
+
+  // Keep the in-memory note in step so reopening the panel reads the edit back.
+  if (kind === 'letter') lstNotes.campaign_letter = payload;
+  if (kind === 'prep')   lstNotes.seller_prep = payload;
+  if (kind === 'sections') {
+    try { localStorage.setItem('fos_campSections_' + pid, payload); } catch (e) {}
+  }
+
   try {
-    await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.campaign_sections', {
+    await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.' + subfolder, {
       method: 'DELETE', headers: supaRest.headers()
     });
     await supaRest.insert('property_notes', {
       property_id: pid,
-      subfolder: 'campaign_sections',
+      subfolder: subfolder,
       content: payload
     });
-    _campLastSaved = payload;
-    campSaveState.value = 'saved';
-    setTimeout(function () { if (campSaveState.value === 'saved') campSaveState.value = ''; }, 2500);
+    _campLastSaved[kind] = payload;
+    return true;
   } catch (e) {
-    console.warn('campaign_sections save failed:', e);
-    campSaveState.value = 'error';
+    console.warn('campaign save failed (' + kind + '):', e);
+    return false;
   }
 }
 
-function campQueueSave() {
+async function campSaveSections(force) {
+  var kinds = force ? ['sections', 'letter', 'prep'] : Object.keys(_campPending);
+  if (!kinds.length) { campSaveState.value = ''; return; }
+  _campPending = {};
+  campSaveState.value = 'saving';
+  var ok = true;
+  for (var i = 0; i < kinds.length; i++) {
+    var r = await campSaveOne(kinds[i], force);
+    if (!r) ok = false;
+  }
+  campSaveState.value = ok ? 'saved' : 'error';
+  if (ok) setTimeout(function () { if (campSaveState.value === 'saved') campSaveState.value = ''; }, 2500);
+}
+
+function campQueueSave(kind) {
+  _campPending[kind || 'sections'] = true;
   campSaveState.value = 'saving';
   if (_campSaveTimer) clearTimeout(_campSaveTimer);
   _campSaveTimer = setTimeout(function () { _campSaveTimer = null; campSaveSections(); }, 900);
@@ -10881,7 +10923,9 @@ function buildCampPkg(sections, prop, agName, mls) {
     var flines = lns(ftext);
     var headline = (fps.find(function(p) { return p.length < 120 && !/^\$[\d,]/.test(p) && !/\bbed\b|\bbath\b/i.test(p); }) || fps[0] || street).replace(/^(?:Headline|Tagline|Title)\s*[:\-]\s*/i, '').trim();
     var features = flines.filter(function(l) { return /^[\-\*\•·✓✔▸►◆□]/.test(l); }).map(function(l) { return stripMd(l.replace(/^[\-\*\•·✓✔▸►◆□\s]+/, '')); }).filter(Boolean);
-    var bodyPs   = fps.filter(function(p) { return p !== headline && !/^#\w+/.test(p) && !/^[\-\*\•]/.test(p.trim()); }).slice(0, 3).map(stripMd);
+    // No slice here. Truncating to three paragraphs silently dropped any agent
+    // edit made further down the flyer copy.
+    var bodyPs   = fps.filter(function(p) { return p !== headline && !/^#\w+/.test(p) && !/^[\-\*\•]/.test(p.trim()); }).map(stripMd);
     flyer = { headline: headline, address: street + ', ' + locale, price: price, specs: specs.slice(0, 5), body: bodyPs, features: features.slice(0, 8) };
   } else {
     var mfeat = (mls.features || []).filter(Boolean);
@@ -17504,7 +17548,7 @@ const CHANGELOG = [
     updates: [
       {
         title: 'Your Campaign Edits Save Automatically',
-        detail: 'Open any campaign section, change the wording, and it saves on its own about a second after you stop typing. The Include checkboxes save the same way. A small note under the panel title tells you when it is saving and when it has saved. Previously an edit only survived if you went on to click Approve and Send, so anyone who edited a section and closed the panel lost the change. Best practice: watch for the tick before you close the panel. If you see a red save warning you have lost connection, so stay on the page until it clears.'
+        detail: 'Open any campaign section, change the wording, and it saves on its own about a second after you stop typing. This covers all four editors in the review panel: the AI sections, the Letter to Seller, the Seller Prep Guide and the listing description. The Include checkboxes save the same way. A small note under the panel title tells you when it is saving and when it has saved. Previously an edit only survived if you went on to click Approve and Send, so anyone who edited a section and closed the panel lost the change. The Letter to Seller was worse: it was rebuilt from the standard template every time the panel opened, so an edited letter was replaced with boilerplate before it ever reached the PDF. Best practice: watch for the tick before you close the panel. If you see a red save warning you have lost connection, so stay on the page until it clears.'
       },
       {
         title: 'Campaign PDF Generation Fixed',
