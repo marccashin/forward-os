@@ -10987,6 +10987,46 @@ function buildCampPkg(sections, prop, agName, mls) {
            linkedin: linkedin, prep: prep };
 }
 
+// Fold an agent-edited letter into the package.
+//
+// This used to assign the edited text to pkg.letter.body. campaign-print.html
+// renders pkg.letter.leadParagraph and pkg.letter.paragraphs and has never read
+// .body, so every edited Letter to Seller was written to a field nothing
+// displays and the boilerplate printed instead. Because the default letter and
+// the panel's starting text are near-identical, an unedited letter looked
+// correct, which is why this survived.
+function campApplyLetterOverride(pkg, letterText, included) {
+  if (!pkg || !pkg.letter) return pkg;
+  if (!included) { pkg.letter._skip = true; return pkg; }
+  var txt = (letterText || '').trim();
+  if (!txt) return pkg;
+
+  // Pull "Dear X," off the front if the agent kept it.
+  var salutation = null;
+  var m = txt.match(/^Dear\s+(.+?),\s*(?:\n|$)/i);
+  if (m) {
+    salutation = m[1].trim();
+    txt = txt.slice(m[0].length).trim();
+  }
+
+  var ps = txt.split(/\n{2,}/)
+              .map(function (x) { return x.replace(/^\n+|\n+$/g, '').trim(); })
+              .filter(Boolean);
+
+  // The template prints its own "Warm regards / name / firm" block, so drop a
+  // sign-off the agent typed rather than printing it twice.
+  var si = ps.findIndex(function (x) { return /^(warm regards|sincerely|best regards|kind regards|regards)\b/i.test(x); });
+  if (si > 0) ps = ps.slice(0, si);
+
+  if (!ps.length) return pkg;
+
+  if (salutation !== null) pkg.letter.salutationName = salutation;
+  pkg.letter.leadParagraph = ps[0];
+  pkg.letter.paragraphs = ps.slice(1);
+  delete pkg.letter.body;
+  return pkg;
+}
+
 async function campExportPDF() {
   var sections = campParsed.value;
   if (!sections || !sections.length) {
@@ -11036,23 +11076,8 @@ async function campExportPDF() {
     }
   );
 
-  // Override letter with user-edited value from preview panel
-  if (_letterText && campLetterIncluded.value !== false && pkg.letter) {
-    // Parse salutation out of edited letter text (first line "Dear X,")
-    var _ltLines = _letterText.split('\n');
-    var _salLine = _ltLines[0].trim();
-    var _salMatch = _salLine.match(/^Dear\s+(.+?),\s*$/i);
-    if (_salMatch) {
-      pkg.letter.salutationName = _salMatch[1];
-      pkg.letter.body = _ltLines.slice(1).join('\n').trim();
-    } else {
-      pkg.letter.salutationName = '';
-      pkg.letter.body = _letterText.trim();
-    }
-  }
-  if (campLetterIncluded.value === false && pkg.letter) {
-    pkg.letter._skip = true;
-  }
+  // Override letter with the user-edited value from the preview panel.
+  campApplyLetterOverride(pkg, _letterText, campLetterIncluded.value !== false);
 
   // Stash the print package BEFORE opening the tab. A tab opened with
   // window.open() receives a one-time COPY of the opener's sessionStorage taken
