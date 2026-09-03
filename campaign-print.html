@@ -520,9 +520,19 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   'use strict';
   var createApp = Vue.createApp, defineComponent = Vue.defineComponent, h = Vue.h, onMounted = Vue.onMounted;
 
+  // Read order matters. sessionStorage is what the headless renderer injects via
+  // evaluateOnNewDocument / add_init_script, so it wins. A tab opened with
+  // window.open() only ever gets a COPY of the opener's sessionStorage taken at
+  // open time, so localStorage is the reliable path for the manual fallback.
   var pkg = null;
   try { var _r = sessionStorage.getItem('fos_campPkg'); if (_r) pkg = JSON.parse(_r); }
   catch (e) { console.error('campaign-print: sessionStorage read failed', e); }
+  if (!pkg) {
+    try { var _l = localStorage.getItem('fos_campPkg'); if (_l) pkg = JSON.parse(_l); }
+    catch (e) { console.error('campaign-print: localStorage read failed', e); }
+  }
+  // Consume the handoff copy so a later visit cannot render a stale campaign.
+  try { localStorage.removeItem('fos_campPkg'); } catch (e) {}
 
   var FwdDivider = defineComponent({
     name: 'FwdDivider',
@@ -565,8 +575,9 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
     template: [
       '<CampaignPackagePrint v-if="pkg" :pkg="pkg" />',
       '<div v-else style="padding:80px 60px;font-family:sans-serif;color:#2A323C;text-align:center;">',
-        '<h2 style="font-size:28px;color:#0A2342;margin-bottom:16px;">No campaign data found</h2>',
-        '<p>Generate the campaign from FORWARD OS then click Generate &amp; Send PDF.</p>',
+        '<h2 style="font-size:28px;color:#0A2342;margin-bottom:16px;">Could not load the campaign for printing</h2>',
+        '<p>Your campaign is safe and still saved on the listing. This page did not receive it.</p>',
+        '<p style="margin-top:14px;">Close this tab, go back to the listing and click Approve &amp; Send again. If it happens twice, tell Operations the PDF service is down.</p>',
       '</div>'
     ].join('')
   }).mount('#app');
