@@ -2804,7 +2804,7 @@ body {
                 <span style="display:inline-flex;align-items:center;vertical-align:middle;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> Fill by Voice
               </button>
             </div>
-            <div v-if="ns.salePrice||ns.address" class="voice-prefill-badge">✦ Voice pre-filled · Review before generating</div>
+            <div v-if="ns._voicePrefill" class="voice-prefill-badge">✦ Voice pre-filled · Review before generating</div>
             <!-- Results open directly as PDF in a new window -->
             <div v-if="ns.result!==null" class="card" style="margin-bottom:16px;border:2px solid var(--navy);text-align:center;padding:20px;">
               <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:8px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
@@ -5747,7 +5747,7 @@ body {
                       <a v-if="lstSubfolderFiles('seller_net_sheet')[0]?.drive_link" :href="lstSubfolderFiles('seller_net_sheet')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg> View PDF →</a>
                     </div>
                   </div>
-                  <div v-if="ns.salePrice||ns.address" class="voice-prefill-badge" style="margin-bottom:10px;">✦ Voice pre-filled · Review before generating</div>
+                  <div v-if="ns._voicePrefill" class="voice-prefill-badge" style="margin-bottom:10px;">✦ Voice pre-filled · Review before generating</div>
                   <div v-if="ns.result!==null" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-bottom:14px;text-align:center;">
                     <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">Estimated Net Proceeds: {{ nsFmt(ns.result) }}</div>
                     <div style="display:flex;gap:8px;justify-content:center;margin-top:10px;flex-wrap:wrap;align-items:center;">
@@ -10076,9 +10076,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     function lstOpenTool(key) {
-      // Auto-fill net sheet address from active property when opening the tool
-      if (key === 'netsheet' && lstActiveProp.value && !ns.address) {
-        ns.address = lstActiveProp.value.address || '';
+      // Net sheet form belongs to ONE property. `ns` is a single shared object, so
+      // without this the last deal's address, price and figures follow the agent
+      // into every other listing. Reset and re-fill whenever the property changes.
+      if (key === 'netsheet' && lstActiveProp.value) {
+        if (ns._propId !== lstActiveProp.value.id) {
+          resetToolForm('net-sheet');
+          ns._propId = lstActiveProp.value.id;
+          ns.address = lstActiveProp.value.address || '';
+          if (lstActiveProp.value.unit) ns.unit = lstActiveProp.value.unit;
+          nsDetectJurisdiction();
+        }
       }
       // MLS always accessible; others require at least one saved MLS file
       if (key === 'mlsdata') {
@@ -10179,11 +10187,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         lstActiveFiles.value = await supaRest.select('property_assets', `select=*&property_id=eq.${prop.id}&order=created_at.desc`);
       } catch { lstActiveFiles.value = []; }
+      // Clear FIRST. If the fetch below fails, the previous property's notes must
+      // not survive on screen - that is how one deal's net sheet ended up showing
+      // on every other seller card.
+      Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
       // Fetch notes
       try {
         const notes = await supaRest.select('property_notes', `select=*&property_id=eq.${prop.id}`);
-        // Reset
-        Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
         notes.forEach(n => { if (n.subfolder && lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || ''; });
         // Restore campaign sections for this property
         const campNote = notes.find(n => n.subfolder === 'campaign_sections');
@@ -13087,6 +13097,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no', hoaResaleCert:'', hoaTransferFee:'',
       propTaxAnnual:'', nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
       otherCosts:'',
+      _propId:null, _voicePrefill:false,
       result:null, breakdown:[],
       _showLoans:false, _showComp:false, _showConcession:false, _showHOA:false, _showTax:false, _showOther:false,
       _suggestions:[],
@@ -17645,6 +17656,23 @@ const CHANGELOG = [
       }
     ]
   }
+,
+  {
+    id: 'v2026-09-08',
+    date: 'September 8, 2026',
+    title: 'Net Sheets Stay With Their Own Property',
+    summary: 'A net sheet run on one listing was appearing on every other seller card. Fixed.',
+    updates: [
+      {
+        title: 'Net Sheets No Longer Carry Over Between Listings',
+        detail: 'If you ran a net sheet on one property, that address and those figures could follow you into every other listing you opened \u2014 and a saved net sheet could show on seller cards it never belonged to.\n\nThe net sheet now belongs to the property you opened it from. Switch listings and the form resets and re-fills with that property\u2019s address and jurisdiction.\n\nHow to use: No change. Open a listing, open its net sheet, and what you see is that deal only.\n\nBest practice: If a net sheet ever looks like it has the wrong address, refresh the page before trusting the numbers, and let Marc know.'
+      },
+      {
+        title: 'The "Voice pre-filled" Tag Now Means What It Says',
+        detail: 'The gold \u201cVoice pre-filled \u00b7 Review before generating\u201d tag was appearing on any net sheet with an address in it, even when the voice assistant had never touched it.\n\nIt now appears only when the voice assistant actually filled the form.\n\nHow to use: When you see the tag, review the fields before generating. When you do not, the figures are yours.'
+      }
+    ]
+  }
 
 
 ];
@@ -18642,6 +18670,7 @@ async function voiceApplyFields() {
     if (tool === 'net-sheet') {
       view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
       nextTick(() => { lpOpen('netsheet');
+        ns._voicePrefill = true;
         if (val(f.address))       ns.address        = f.address;
         if (num(f.salePrice))     ns.salePrice      = num(f.salePrice);
         if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction;
@@ -19361,6 +19390,8 @@ async function dismissUpdates() {
             loan1:'', loan2:'', sellerCompVal:'', buyerCompVal:'', transactionFee:'',
             concessionVal:'', hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no',
             hoaResaleCert:'', hoaTransferFee:'', propTaxAnnual:'', otherCosts:'',
+            _propId:null, _voicePrefill:false,
+            jurisdiction:'dc', sellerCompMode:'pct', buyerCompMode:'pct', concessionMode:'pct',
             nsTaxH1Paid:'yes', nsTaxH2Paid:'yes',
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
@@ -20024,6 +20055,7 @@ Requirements: Open with a strong positioning statement (NOT "My name is" or "Wit
         view.value = 'just-listed'; sidebarOpen.value = false; window.scrollTo(0,0);
         if (tool === 'net-sheet') {
           nextTick(() => { lpOpen('netsheet');
+            ns._voicePrefill = true;
             if (val2(f.address))      ns.address       = f.address;
             if (num(f.salePrice))     ns.salePrice     = num(f.salePrice);
             if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction;
