@@ -2842,8 +2842,13 @@ body {
 
               <!-- Jurisdiction (auto-detected, still editable) -->
               <div class="form-row"><label>Jurisdiction <span style="font-weight:400;color:#9ca3af;font-size:10px;">(auto-detected from address)</span></label>
+                <select v-model="nsStateSel" >
+                  <option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option>
+                </select>
+              </div>
+              <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
                 <select v-model="ns.jurisdiction" >
-                  <option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option>
+                  <option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
 
@@ -2926,7 +2931,7 @@ body {
                 <div v-if="ns._showTax">
                   <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;"><span v-if="ns.jurisdiction === 'dc' && ns.propTaxAnnual && !nsTaxHalfApplies.h1 && !nsTaxHalfApplies.h2" style="display:block;color:#b45309;margin-bottom:6px;">This installment is not due yet, so the buyer pays the full bill at its due date. Only the seller's share through closing is prorated - nothing is collected at settlement.</span>Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div>
-                  <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
+                  <div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;">Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid \u2014 confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
                   <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
                 </div>
               </div>
@@ -5772,7 +5777,10 @@ body {
                   <div v-if="ns.unit!==undefined" class="form-row" style="margin-top:8px;max-width:160px;"><label>Unit # <span style="font-weight:400;opacity:0.55;font-size:9px;">(optional)</span></label><input v-model="ns.unit" type="text" placeholder="e.g. 7E"/></div>
                   <div class="form-row"><label>Closing Date</label><input v-model="ns.closingDate" type="date"/></div>
                   <div class="form-row"><label>Jurisdiction</label>
-                    <select v-model="ns.jurisdiction" ><option v-for="jur in NS_JURISDICTIONS" :key="jur.value" :value="jur.value">{{ jur.label }}</option></select>
+                    <select v-model="nsStateSel" ><option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option></select>
+                  </div>
+                  <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
+                    <select v-model="ns.jurisdiction" ><option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option></select>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showLoans=!ns._showLoans">{{ ns._showLoans ? '▼' : '▶' }} Loan Payoffs</div>
                   <div v-if="ns._showLoans" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -5802,7 +5810,7 @@ body {
                     </div>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showTax=!ns._showTax">{{ ns._showTax ? '▼' : '▶' }} Property Taxes</div>
-                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
+                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;">Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid \u2014 confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : 'Jul–Dec' }})</label><select v-model="ns.nsTaxH1Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : 'Jan–Jun' }})</label><select v-model="ns.nsTaxH2Paid"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
                   <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:14px;">Calculate</button>
@@ -13202,6 +13210,34 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // Which half-year installments can legitimately be collected at closing?
     // A half is collectible only if the seller owned the property during part of it.
     // If the period begins on/after the closing date it is entirely the buyer's — never collect it.
+    const NS_STATES = [
+      { value:'dc',       label:'Washington, DC' },
+      { value:'va-nova',  label:'Virginia \u2014 Northern Virginia (Arlington, Fairfax, Loudoun, Prince William, Alexandria)' },
+      { value:'va-other', label:'Virginia \u2014 Other Counties' },
+      { value:'md',       label:'Maryland' },
+    ];
+    const MD_PINNED = ['md-montgomery', 'md-pgcounty', 'md-baltimoreco', 'md-howard'];
+    const MD_COUNTY_OPTIONS = (function () {
+      const md = NS_JURISDICTIONS.filter(function (j) { return j.value.indexOf('md-') === 0; })
+        .map(function (j) { return { value:j.value, label:j.label.replace(/^Maryland\s*[\u2014-]\s*/, '') }; });
+      const pinned = MD_PINNED.map(function (v) {
+        return md.filter(function (m) { return m.value === v; })[0];
+      }).filter(Boolean);
+      const fallback = md.filter(function (m) { return m.value === 'md-other'; });
+      const rest = md.filter(function (m) {
+        return MD_PINNED.indexOf(m.value) < 0 && m.value !== 'md-other';
+      }).sort(function (a, b) { return a.label.localeCompare(b.label); });
+      return pinned.concat(rest, fallback);
+    })();
+    // Reads/writes ns.jurisdiction. Choosing Maryland lands on Montgomery, FORWARD's
+    // primary MD jurisdiction, rather than leaving the county unset.
+    const nsStateSel = computed({
+      get() { return (ns.jurisdiction && ns.jurisdiction.indexOf('md-') === 0) ? 'md' : ns.jurisdiction; },
+      set(v) {
+        if (v === 'md') { if (String(ns.jurisdiction).indexOf('md-') !== 0) ns.jurisdiction = 'md-montgomery'; }
+        else ns.jurisdiction = v;
+      }
+    });
     const nsTaxHalfApplies = computed(() => {
       const annual = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
       if (!annual || !ns.closingDate) return { h1:false, h2:false };
@@ -13222,10 +13258,28 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (ns.jurisdiction === 'va-nova' || ns.jurisdiction === 'va-other') {
         return { h1:false, h2:false };
       }
-      const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-      const h1Start = new Date(yr, 6, 1);      // Jul 1
-      const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
-      return { h1: h1Start <= sellerThrough, h2: h2Start <= sellerThrough };
+      // Maryland: offer the paid/unpaid question for any half the seller owned part of.
+      const mdP = nsMDTaxPeriods(sellerThrough);
+      return { h1: mdP[0].start <= sellerThrough, h2: mdP[1].start <= sellerThrough };
+    });
+    // True when a Maryland closing lands on/before the due date of the half it sits
+    // in AND that half is still marked paid - the combination that silently flips a
+    // seller cost into a credit.
+    const nsMDUnpaidLikely = computed(() => {
+      const j = ns.jurisdiction;
+      if (!(j && j.indexOf('md-') === 0)) return false;
+      if (!ns.propTaxAnnual || !ns.closingDate) return false;
+      const cd = nsParseDate(ns.closingDate);
+      if (!cd) return false;
+      const st = nsMDSellerThrough(cd);
+      const ps = nsMDTaxPeriods(st);
+      for (let i = 0; i < ps.length; i++) {
+        const p = ps[i];
+        if (p.start > st || st > p.end) continue;          // not the half we are closing inside
+        const paid = (p.half === 1 ? ns.nsTaxH1Paid : ns.nsTaxH2Paid) !== 'no';
+        if (paid && cd <= p.due) return true;
+      }
+      return false;
     });
     function nsFmt(v) {
       const n = Number(v) || 0;
@@ -13271,6 +13325,51 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (paidFlag === 'no') {
         out.push({ label:'Property Tax Collection - ' + (p.half === 1 ? '1st' : '2nd') + ' Half (unpaid)', amount:nsRound2(annualTax / 2) });
       }
+      return out;
+    }
+    // Maryland real property tax. Fiscal year Jul 1 - Jun 30, billed in two halves:
+    //   1st half Jul 1 - Dec 31 (due Sep 30), 2nd half Jan 1 - Jun 30 (due Dec 31).
+    // Conventions taken from an EXECUTED Universal Title ALTA - file 43-2026-10055,
+    // 1926 Ruxton Rd, settlement 09/22/2026, annual 25,146.72:
+    //   * the CLOSING DAY belongs to the BUYER. DC and VA give it to the seller;
+    //     each jurisdiction follows the title company that actually settles there.
+    //   * prorate on halfBill / days-in-that-half, NOT annual/365.
+    //   * an unpaid half is debited to the seller IN FULL, and the buyer credits
+    //     back their own days. Net seller cost = the seller's days, counted once.
+    // MD does NOT gate on the due date: that ALTA collected the 1st half on 09/22,
+    // eight days BEFORE the Sep 30 due date. The paid/unpaid answer is the control,
+    // which is why the DC due-date gate is deliberately not copied here.
+    // The fiscal year is chosen from the seller's last owned day, not the closing
+    // date, so a closing on Jul 1 still settles the year the seller actually held.
+    function nsMDTaxPeriods(sellerThrough) {
+      const yr = sellerThrough.getMonth() >= 6 ? sellerThrough.getFullYear() : sellerThrough.getFullYear() - 1;
+      return [
+        { half:1, start:new Date(yr, 6, 1),     end:new Date(yr, 11, 31),    due:new Date(yr, 8, 30)  },
+        { half:2, start:new Date(yr + 1, 0, 1), end:new Date(yr + 1, 5, 30), due:new Date(yr, 11, 31) }
+      ];
+    }
+    function nsMDSellerThrough(cd) { return new Date(cd.getTime() - 86400000); }
+    function nsMDTaxItems(annualTax, cd, nsRef) {
+      const out = [];
+      if (!(annualTax > 0) || !cd) return out;
+      const halfBill = nsRound2(annualTax / 2);
+      const sellerThrough = nsMDSellerThrough(cd);
+      nsMDTaxPeriods(sellerThrough).forEach(function (p) {
+        if (p.start > sellerThrough) return;            // entirely the buyer's - no line either way
+        const halfDays   = nsDaysInclusive(p.start, p.end);
+        const lastOwned  = sellerThrough < p.end ? sellerThrough : p.end;
+        const sellerDays = nsDaysInclusive(p.start, lastOwned);
+        const buyerDays  = halfDays - sellerDays;
+        const ord  = p.half === 1 ? '1st' : '2nd';
+        const paid = (p.half === 1 ? nsRef.nsTaxH1Paid : nsRef.nsTaxH2Paid) !== 'no';
+        if (!paid) {
+          out.push({ label:'Property Tax Collection - ' + ord + ' Half (unpaid)', amount:halfBill });
+        }
+        if (buyerDays > 0) {
+          out.push({ label:'Property Tax Proration - ' + ord + ' Half (buyer share)',
+                     amount:-nsRound2(halfBill * buyerDays / halfDays) });
+        }
+      });
       return out;
     }
     // Virginia real property tax is assessed on the CALENDAR year, Jan 1 - Dec 31.
@@ -13438,34 +13537,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         } else if (j === 'va-nova' || j === 'va-other') {
           nsVATaxItems(annualTax, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
         } else {
-          const halfTax = annualTax / 2;
-          const dp = ns.closingDate.split('-');
-          const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
-          const msDay = 86400000;
-          let propTaxTotal = 0;
-          const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-          const h1Start = new Date(yr, 6, 1);      // Jul 1
-          const h1End = new Date(yr, 11, 31);      // Dec 31
-          const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
-          const h2End = new Date(yr + 1, 5, 30);   // Jun 30
-          const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
-          const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
-          const sellerThrough = new Date(cd.getTime() - msDay);
-          if (sellerThrough >= h1End) {
-            propTaxTotal += halfTax;
-          } else if (sellerThrough >= h1Start) {
-            const daysOccupied = Math.round((sellerThrough - h1Start) / msDay) + 1;
-            propTaxTotal += Math.round(halfTax * daysOccupied / h1Days * 100) / 100;
-          }
-          if (sellerThrough >= h2End) {
-            propTaxTotal += halfTax;
-          } else if (sellerThrough >= h2Start) {
-            const daysOccupied = Math.round((sellerThrough - h2Start) / msDay) + 1;
-            propTaxTotal += Math.round(halfTax * daysOccupied / h2Days * 100) / 100;
-          }
-          if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
-          if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
-          if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+          nsMDTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
         }
       }
 
@@ -13726,34 +13798,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         } else if (j === 'va-nova' || j === 'va-other') {
           nsVATaxItems(annualTax, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
         } else {
-          const halfTax = annualTax / 2;
-          const dp = ns.closingDate.split('-');
-          const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
-          const msDay = 86400000;
-          let propTaxTotal = 0;
-          const yr = cd.getMonth() >= 6 ? cd.getFullYear() : cd.getFullYear() - 1;
-          const h1Start = new Date(yr, 6, 1);      // Jul 1
-          const h1End = new Date(yr, 11, 31);      // Dec 31
-          const h2Start = new Date(yr + 1, 0, 1);  // Jan 1
-          const h2End = new Date(yr + 1, 5, 30);   // Jun 30
-          const h1Days = Math.round((h1End - h1Start) / msDay) + 1;
-          const h2Days = Math.round((h2End - h2Start) / msDay) + 1;
-          const sellerThrough = new Date(cd.getTime() - msDay);
-          if (sellerThrough >= h1End) {
-            propTaxTotal += halfTax;
-          } else if (sellerThrough >= h1Start) {
-            const daysOccupied = Math.round((sellerThrough - h1Start) / msDay) + 1;
-            propTaxTotal += Math.round(halfTax * daysOccupied / h1Days * 100) / 100;
-          }
-          if (sellerThrough >= h2End) {
-            propTaxTotal += halfTax;
-          } else if (sellerThrough >= h2Start) {
-            const daysOccupied = Math.round((sellerThrough - h2Start) / msDay) + 1;
-            propTaxTotal += Math.round(halfTax * daysOccupied / h2Days * 100) / 100;
-          }
-          if (propTaxTotal > 0) items.push({ label:'Prorated Property Taxes', amount:Math.round(propTaxTotal * 100) / 100 });
-          if (ns.nsTaxH1Paid === 'no' && h1Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 1st Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
-          if (ns.nsTaxH2Paid === 'no' && h2Start <= sellerThrough) items.push({ label:'Property Tax Collection \u2014 2nd Half (unpaid)', amount:Math.round(halfTax * 100) / 100 });
+          nsMDTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
         }
       }
 
@@ -17673,6 +17718,23 @@ const CHANGELOG = [
       }
     ]
   }
+,
+  {
+    id: 'v2026-09-09',
+    date: 'September 9, 2026',
+    title: 'Maryland Net Sheets Corrected, and a Shorter Location Picker',
+    summary: 'Maryland property taxes were being charged to the seller twice. Fixed against an executed settlement statement. The jurisdiction dropdown is now two fields instead of twenty-eight.',
+    updates: [
+      {
+        title: 'Maryland Property Taxes Were Double-Charging the Seller',
+        detail: 'When a Maryland half-year tax bill was marked unpaid, the sheet deducted the seller\u2019s prorated share AND the full half-year bill, with nothing credited back from the buyer. On a $2M Baltimore County deal that overstated the seller\u2019s tax cost by $12,573 \u2014 one entire half-year bill.\n\nMaryland now settles the way title actually does: the unpaid half is charged in full and the buyer credits back the days they will own. Net cost to the seller is their own days, counted once. A half already paid shows only the buyer\u2019s reimbursement.\n\nHow to use: Enter the annual tax and answer the paid/unpaid question honestly for each half. That answer now drives everything.\n\nBest practice: Maryland bills the 1st half by Sep 30 and the 2nd by Dec 31. If your closing is before the due date the bill is usually still unpaid \u2014 an amber note will remind you. Check the tax bill rather than leaving it on the default.'
+      },
+      {
+        title: 'Location Picker: Pick the State, Then the County',
+        detail: 'Maryland has 23 counties and they are genuinely different \u2014 nearly $9,200 apart in seller transfer and recordation tax on a $1M sale \u2014 so the rates have to be there. Scrolling all of them in one list did not.\n\nThere are now two fields. Pick Washington DC, Virginia or Maryland; a County field appears only for Maryland, starting on Montgomery with Prince George\u2019s, Baltimore County and Howard pinned to the top and the rest alphabetical.\n\nHow to use: Jurisdiction is still auto-detected from the address. Check the County field on Maryland deals before you calculate.\n\nBest practice: If you are not certain of the county, \u201cOther county (blended estimate)\u201d is at the bottom of the list and is labelled that way on purpose.'
+      }
+    ]
+  }
 
 
 ];
@@ -20260,7 +20322,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)
