@@ -2643,6 +2643,7 @@ body {
                   <h3 style="margin:0;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
                   <button v-if="ldStarted" @click="ldMessages=[];ldOutput='';ldStarted=false;ldInput='';ld.address='';ldConvPropId=null;" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
                 </div>
+                <div v-if="ldOutput" :style="{fontSize:'11px',fontFamily:'Montserrat,sans-serif',fontWeight:600,letterSpacing:'.04em',marginBottom:'8px',padding:'6px 10px',borderRadius:'6px',background: ldCharCount > 4000 ? '#fef2f2' : '#f0fdf4',border: ldCharCount > 4000 ? '1px solid #fecaca' : '1px solid #bbf7d0',color: ldCharCount > 4000 ? '#b91c1c' : '#166534'}">{{ ldCharCount.toLocaleString() }} / 4,000 characters<span v-if="ldCharCount > 4000"> \u2014 over the MLS limit by {{ (ldCharCount - 4000).toLocaleString() }}. Ask for a shorter version before pasting.</span></div>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span><span v-if="ldSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
                 </button>
@@ -12099,6 +12100,9 @@ async function lstSubmitToPipeline() {
     const ldInput    = ref('');
     const ldLoading  = ref(false);
     const ldOutput   = ref('');
+    // MLS caps listing remarks at 4,000 characters.
+    const LD_CHAR_LIMIT = 4000;
+    const ldCharCount = computed(() => (ldOutput.value || '').length);
     const ldStarted  = ref(false);
     const ldConvPropId = ref(null); // tracks which property owns the active conversation
     const ldSaving   = ref(false);
@@ -12443,7 +12447,8 @@ CONVERSATION FLOW (follow this exactly):
    - If YES: ask them to paste the personas, then write the listing description using those personas.
    - If NO: using the property details provided plus any information you can find online about the property and neighborhood, create 5 detailed buyer personas. Each persona should have: a name, age, occupation, household situation, what they value in a home, why THIS specific property fits them, and what emotional hook will compel them to tour it. Present all 5 personas clearly, then write the listing description tailored to attract all of them.
 6. Before writing the description, use any information you can find online about the property and neighborhood to fill in details. Do not guess or fabricate specs.
-7. When writing the final description, include a last paragraph with local amenities and bullet points. If a VERIFIED DISTANCE DATA section is appended to this prompt, use ONLY those exact distances — do not estimate or fabricate any mileages. If no VERIFIED DISTANCE DATA section is present, name the amenities using general proximity language only (e.g., "steps from", "minutes away", "within easy reach") — never invent specific distances.
+7. HARD LIMIT: the finished listing description must be 4,000 characters or fewer, including spaces, punctuation and the amenity bullets. This is an MLS field limit and is not negotiable. Count the characters before you return it. If a draft runs long, tighten the prose rather than dropping the amenity paragraph or the bullets. Everything else about how you write stays exactly the same.
+8. When writing the final description, include a last paragraph with local amenities and bullet points. If a VERIFIED DISTANCE DATA section is appended to this prompt, use ONLY those exact distances — do not estimate or fabricate any mileages. If no VERIFIED DISTANCE DATA section is present, name the amenities using general proximity language only (e.g., "steps from", "minutes away", "within easy reach") — never invent specific distances.
 
 Always stay in character. Be professional, warm, and efficient. Ask one question at a time unless instructed otherwise above. Wait for the agent's response before moving to the next step. When you are ready to present the final listing description, begin your response with [FWRD_DESC_START] on its own line, then ONLY the listing description text, then [FWRD_DESC_END] on its own line. Absolutely nothing before [FWRD_DESC_START] or after [FWRD_DESC_END].`;
     // Keep ld reactive for backward compatibility with save
@@ -17800,6 +17805,10 @@ const CHANGELOG = [
         detail: 'Virginia bills twice a year in arrears \u2014 the 1st installment covers Jan\u2013Jun, the 2nd Jul\u2013Dec. The net sheet used to charge the seller for every day they owned the property that year, whether or not they had already paid the bill.\n\nOn a September closing that meant charging the seller again for a January\u2013June bill they had almost certainly already paid \u2014 roughly half a year of tax, overstating their costs.\n\nEach half now has its own paid/unpaid question, defaulting off the calendar. Unpaid means the seller credits the buyer for the days they owned. Paid means the buyer reimburses the seller for the days they will own, shown as a green credit.\n\nHow to use: Enter the annual tax and check both questions before calculating.\n\nBest practice: NoVA deadlines differ \u2014 Loudoun Jun 5 / Dec 7, Arlington Jun 15 / Oct 5, Alexandria Jun 16 / Nov 15, Prince William Jul 15 / Dec 7, Fairfax Jul 28 / Dec 5. The default waits for the latest of those before assuming a bill is paid, so on an early-summer closing it may say unpaid when your county has already collected. Check the bill.'
       },
       {
+        title: 'Listing Descriptions Are Now Capped at 4,000 Characters',
+        detail: 'Bright caps listing remarks at 4,000 characters. The writer had no limit, so a long description could be rejected or silently cut when you pasted it into the MLS.\n\nThe writer now works to a 4,000 character ceiling, and a counter appears above the Save button showing the exact count. If a draft goes over it turns red and tells you by how much.\n\nHow to use: Check the counter before you copy. If it is red, ask the writer for a shorter version \u2014 it will tighten the prose rather than drop the amenity bullets.\n\nBest practice: Nothing is ever cut automatically. A description is your seller\u2019s marketing copy and truncating it mid-sentence would be worse than telling you to trim it.'
+      },
+      {
         title: 'Location Picker: Pick the State, Then the County',
         detail: 'Maryland has 23 counties and they are genuinely different \u2014 nearly $9,200 apart in seller transfer and recordation tax on a $1M sale \u2014 so the rates have to be there. Scrolling all of them in one list did not.\n\nThere are now two fields. Pick Washington DC, Virginia or Maryland; a County field appears only for Maryland, starting on Montgomery with Prince George\u2019s, Baltimore County and Howard pinned to the top and the rest alphabetical.\n\nHow to use: Jurisdiction is still auto-detected from the address. Check the County field on Maryland deals before you calculate.\n\nBest practice: If you are not certain of the county, \u201cOther county (blended estimate)\u201d is at the bottom of the list and is labelled that way on purpose.'
       }
@@ -20386,7 +20395,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
       // Listing Desc (Chat)
-      ld, ldMessages, ldInput, ldLoading, ldOutput, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
+      ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
