@@ -4376,6 +4376,24 @@ body {
             <div v-if="osgStep===1">
               <div class="card">
                 <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Subject Property</h3>
+
+                <!-- The subject's own MLS sheet fills the fields below and reads the offer facts.
+                     Offer Strategy reader only (/api/osg/parse-subject), separate from the CMA builder. -->
+                <label
+                  :style="{display:'block',border:'2px dashed '+(osgSheetDrag?'var(--gold)':'#d1d5db'),background:osgSheetDrag?'#fffbeb':'#fafafa',borderRadius:'10px',padding:'18px 16px',textAlign:'center',cursor:'pointer',marginBottom:'14px'}"
+                  @dragover.prevent="osgSheetDrag=true" @dragenter.prevent="osgSheetDrag=true"
+                  @dragleave.prevent="osgSheetDrag=false"
+                  @drop.prevent="osgSheetDrag=false; osgUploadSubject($event.dataTransfer.files)">
+                  <input type="file" accept="application/pdf" style="display:none;"
+                         @change="osgUploadSubject($event.target.files); $event.target.value=''">
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);">
+                    <template v-if="osgSheetBusy">Reading the listing sheet <span class="fwd-thinking" style="color:var(--navy);display:inline-flex;"><span></span><span></span><span></span></span></template><template v-else>Drop this home's MLS sheet here, or click to choose</template>
+                  </div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:4px;">The Bright MLS Agent Full PDF for the home you are writing the offer on. The fields below fill themselves. You can still type them in.</div>
+                </label>
+                <div v-if="osgSheetError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#dc2626;">{{ osgSheetError }}</div>
+                <div v-if="osgSheetWarn" style="font-family:'Cormorant Garamond',serif;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e;font-weight:600;">{{ osgSheetWarn }}</div>
+                <div v-if="osgSheetStatus" style="font-family:'Cormorant Garamond',serif;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;line-height:1.5;">{{ osgSheetStatus }}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
                   <div class="form-row" style="grid-column:1/-1;"><label>Property Address *</label><input v-model="osgAddress" type="text" placeholder="123 Main St, Arlington VA 22201"></div>
                   <div class="form-row"><label>List Price *</label><input :value="osgListPrice" type="text" inputmode="numeric" placeholder="750,000"
@@ -4393,6 +4411,25 @@ body {
                   <div class="form-row"><label>Bed / Bath</label><input v-model="osgBedBath" type="text" placeholder="4 bed / 3 bath"></div>
                   <div class="form-row"><label>Year Built</label><input v-model="osgYearBuilt" type="text" inputmode="numeric" placeholder="1985"></div>
                 </div>
+                <!-- What the subject sheet says beyond the fields above. Goes into the strategy. -->
+                <div v-if="osgSheet" style="margin-top:16px;border-top:1px solid #e5e7eb;padding-top:14px;">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+                    <h4 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:700;color:var(--navy);">Also read from the listing sheet</h4>
+                    <button type="button" @click="osgSheetClear" style="background:none;border:none;color:#9ca3af;font-size:12px;cursor:pointer;text-decoration:underline;padding:0;">Remove sheet</button>
+                  </div>
+                  <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:4px 0 10px;">These go into the strategy with your comps. Every item was matched to the sheet.</p>
+                  <div v-if="!osgSheetMatches" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-bottom:10px;font-size:13px;color:#dc2626;">The address above no longer matches this sheet ({{ osgSheetAddr }}), so none of this will be used. Put the address back, or remove the sheet.</div>
+                  <div :style="{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 16px',fontSize:'13px',opacity:osgSheetMatches?1:0.45}">
+                    <div v-for="f in osgSheetFacts" :key="f.label" :style="{gridColumn:f.wide?'1/-1':'auto'}"><span style="color:#9ca3af;">{{ f.label }}:</span> <span :style="{color:f.warn?'#b45309':'var(--navy)',fontWeight:f.warn?700:500}">{{ f.value }}</span></div>
+                  </div>
+                  <div v-if="osgSheet.offerNotes && osgSheet.offerNotes.length" :style="{marginTop:'12px',opacity:osgSheetMatches?1:0.45}">
+                    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">From the remarks, word for word</div>
+                    <div v-for="(n, ni) in osgSheet.offerNotes" :key="ni" style="font-size:13px;line-height:1.5;margin-bottom:6px;">
+                      <span :style="{fontSize:'10px',fontWeight:700,letterSpacing:'.04em',padding:'1px 6px',borderRadius:'4px',marginRight:'6px',background:n.source==='agent'?'#fef3c7':'#eef2ff',color:n.source==='agent'?'#92400e':'#3730a3'}">{{ n.source === 'agent' ? 'AGENT ONLY' : 'PUBLIC' }}</span>"{{ n.quote }}"
+                    </div>
+                    <div style="font-size:11px;color:#9ca3af;">The strategy is told to keep Agent Only remarks out of the sections that go to your buyer. Read the buyer PDF before you send it.</div>
+                  </div>
+                </div>
                 <button class="btn-gold" @click="osgGoToComps" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:16px;padding:12px;font-size:14px;">
                   Upload MLS Comps
                 </button>
@@ -4406,7 +4443,7 @@ body {
               <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
                 <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Import Comps from MLS</h3>
                 <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;line-height:1.55;">
-                  Drop in Bright MLS sheets and the comps fill themselves. Same reader the CMA builder uses. Nothing is estimated. Whatever the sheet does not print stays blank for you to fill in.
+                  Drop in Bright MLS sheets and the comps fill themselves. Nothing is estimated. Whatever the sheet does not print stays blank for you to fill in.
                 </p>
 
                 <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
@@ -16326,6 +16363,13 @@ No markdown. No preamble. Valid JSON only.`;
     const osgResult = ref(null);
     const osgSaving = ref(false);
     const osgSaved = ref(false);
+    // Step 1 subject MLS sheet (osgUploadSubject). Every one is cleared in osgReset.
+    const osgSheet = ref(null);        // verified subject object from /api/osg/parse-subject
+    const osgSheetBusy = ref(false);
+    const osgSheetError = ref('');
+    const osgSheetStatus = ref('');
+    const osgSheetWarn = ref('');
+    const osgSheetDrag = ref(false);
 
     // ── Listing market edit ──────────────────────────────────────────────
     // Tracks which listing card is currently showing the DC/MD/VA picker.
@@ -16353,8 +16397,10 @@ No markdown. No preamble. Valid JSON only.`;
     }
 
     // ── Offer Strategy: MLS comp import ────────────────────────────────
-    // Calls the SAME backend the CMA builder uses (/api/cma/parse-listings)
-    // so there is one MLS parser, not two that can drift apart.
+    // Offer Strategy's OWN comp reader (/api/osg/parse-comps, osg_mls.py on the
+    // backend). Kept completely separate from the CMA builder's
+    // /api/cma/parse-listings so a change to one tool can never change the
+    // other (Marc, Sept 21 2026). Do not point this back at the CMA endpoint.
     const osgPdfBusy = ref(false);
     const osgPdfError = ref('');
     const osgPdfStatus = ref('');
@@ -16424,7 +16470,10 @@ No markdown. No preamble. Valid JSON only.`;
     // is a sold comp; everything else is shown unticked with the reason.
     function osgRoute(r) {
       if (!r || !r.ok) return 'error';
-      if (osgNorm(r.address) && osgNorm(r.address) === osgNorm(osgAddress.value)) return 'subject';
+      // Match the street alone OR the full address: agents type either, and a
+      // sheet-filled Step 1 holds the full one.
+      if (osgNorm(r.address) && (osgNorm(r.address) === osgNorm(osgAddress.value) ||
+          osgNorm(osgFullAddr(r)) === osgNorm(osgAddress.value))) return 'subject';
       if (r.status === 'closed') return 'closed';
       if (r.status === 'pending') return 'pending';
       if (r.status === 'active') return 'active';
@@ -16457,7 +16506,7 @@ No markdown. No preamble. Valid JSON only.`;
       try {
         const fd = new FormData();
         files.forEach(f => fd.append('files', f, f.name));
-        const resp = await fetch(RAILWAY_URL + '/api/cma/parse-listings', { method: 'POST', body: fd });
+        const resp = await fetch(RAILWAY_URL + '/api/osg/parse-comps', { method: 'POST', body: fd });
         const data = await resp.json();
         if (!resp.ok || !data.success) throw new Error((data && data.detail) || 'Upload failed');
         const rows = data.results || [];
@@ -16522,6 +16571,172 @@ No markdown. No preamble. Valid JSON only.`;
         (skipped.length ? '. Skipped: ' + skipped.join('; ') : '') + '.';
     }
 
+    // ── Offer Strategy Step 1: the subject's own MLS sheet ──────────────
+    // Offer Strategy's own reader (/api/osg/parse-subject), never the CMA
+    // builder's. The server has already matched every value to its label on
+    // the sheet; anything it could not match comes back in data.unverified
+    // and is never filled in. No backtick literals in this block on purpose.
+    const OSG_SHEET_LABELS = {
+      listPrice: 'list price', originalListPrice: 'original price', previousListPrice: 'previous list price',
+      dom: 'DOM', cdom: 'CDOM', beds: 'bedrooms', fullBaths: 'full baths', halfBaths: 'half baths',
+      gla: 'square footage', glaSource: 'square footage source', yearBuilt: 'year built',
+      annualTax: 'annual tax', taxYear: 'tax year', taxAssessedValue: 'tax assessed value',
+      hoaFee: 'HOA fee', hoaFrequency: 'HOA fee frequency', condoFee: 'condo fee', condoFrequency: 'condo fee frequency',
+      status_raw: 'status', mlsNumber: 'MLS number', address: 'address', city: 'city', state: 'state', zip: 'zip',
+      county: 'county', structureType: 'structure type', ownership: 'ownership', lotSizeText: 'lot size',
+      listDate: 'list date', saleType: 'sale type', possession: 'possession', garage: 'parking',
+      basement: 'basement', waterSource: 'water', sewer: 'sewer', heating: 'heating', cooling: 'cooling',
+      floodZone: 'flood zone', inclusions: 'inclusions', exclusions: 'exclusions'
+    };
+
+    // One list of facts, used by BOTH the panel on screen and the prompt, so
+    // the agent sees exactly what the strategy is told.
+    function osgSheetFactRows(s) {
+      if (!s) return [];
+      const out = [];
+      const add = function (label, value, extra) {
+        if (value) out.push(Object.assign({ label: label, value: String(value) }, extra || {}));
+      };
+      add('Status on the sheet', s.status_raw, { warn: !!s.status && s.status !== 'active' });
+      add('MLS #', s.mlsNumber);
+      const cur = osgNum(s.listPrice), orig = osgNum(s.originalListPrice), prev = osgNum(s.previousListPrice);
+      if (orig && cur && orig !== cur) {
+        const steps = [orig];
+        if (prev && prev !== orig && prev !== cur) steps.push(prev);
+        steps.push(cur);
+        add('Price history', steps.map(function (v) { return fmtDollar(v); }).join(' to '), { wide: true });
+        if (cur < orig) add('Reduced', fmtDollar(orig - cur) + ' (' + ((orig - cur) / orig * 100).toFixed(1) + '%) below the original price', { warn: true, wide: true });
+        else add('Raised', fmtDollar(cur - orig) + ' above the original price', { wide: true });
+      } else if (orig && cur) {
+        add('Original price', fmtDollar(orig) + ', no change');
+      }
+      const dom = osgNum(s.dom), cdom = osgNum(s.cdom);
+      const relisted = dom !== null && cdom !== null && cdom > dom;
+      if (s.dom || s.cdom) add('DOM / CDOM', (s.dom || '?') + ' / ' + (s.cdom || '?') + (relisted ? ' (relisted: CDOM is higher)' : ''), { warn: relisted });
+      add('Listed', s.listDate);
+      add('Sale type', s.saleType, { warn: !!s.saleType && !/^standard$/i.test(s.saleType) });
+      add('Ownership', s.ownership);
+      add('Possession', s.possession);
+      if (s.glaSource && /estimat/i.test(s.glaSource)) add('Square footage', 'labelled Estimated on the sheet', { warn: true });
+      add('Lot', s.lotSizeText);
+      add('Parking', s.garage);
+      add('Basement', s.basement);
+      add('Water / sewer', [s.waterSource, s.sewer].filter(Boolean).join(' / '));
+      add('Heating / cooling', [s.heating, s.cooling].filter(Boolean).join(' / '));
+      add('Flood zone', s.floodZone);
+      if (s.hoaFee) add('HOA fee', fmtDollar(s.hoaFee) + (s.hoaFrequency ? ' / ' + s.hoaFrequency : ''));
+      if (s.condoFee) add('Condo fee', fmtDollar(s.condoFee) + (s.condoFrequency ? ' / ' + s.condoFrequency : ''));
+      if (s.annualTax) add('Annual tax', fmtDollar(s.annualTax) + (s.taxYear ? ' (' + s.taxYear + ')' : ''));
+      if (s.taxAssessedValue) add('Tax assessed value', fmtDollar(s.taxAssessedValue));
+      add('Inclusions', s.inclusions, { wide: true });
+      add('Exclusions', s.exclusions, { wide: true });
+      return out;
+    }
+    const osgSheetFacts = computed(() => osgSheetFactRows(osgSheet.value));
+    const osgSheetAddr = computed(() => osgSheet.value ? osgFullAddr(osgSheet.value) : '');
+    // The sheet only counts while the address above is still the sheet's.
+    // Typing a different address switches it off rather than letting one
+    // home's facts steer another home's offer.
+    const osgSheetMatches = computed(() => {
+      const s = osgSheet.value;
+      if (!s) return false;
+      const a = osgNorm(osgAddress.value), st = osgNorm(s.address);
+      return !!a && !!st && (a === osgNorm(osgFullAddr(s)) || a.indexOf(st) === 0);
+    });
+
+    // Appended to the SUBJECT PROPERTY block of both the analysis prompt and
+    // the chat prompt. Empty when there is no sheet or it no longer matches,
+    // so without a sheet both prompts are exactly what they were.
+    function osgSheetText() {
+      const s = osgSheet.value;
+      if (!s || !osgSheetMatches.value) return '';
+      const lines = osgSheetFacts.value.map(function (f) { return '- ' + f.label + ': ' + f.value; });
+      const notes = (s.offerNotes || []).map(function (n) {
+        return '- [' + (n.source === 'agent' ? 'AGENT-ONLY' : 'PUBLIC') + '] "' + n.quote + '"';
+      });
+      return '\n\nLISTING SHEET FACTS (read from this property\'s own MLS sheet, every item matched to the sheet):\n' +
+        (lines.length ? lines.join('\n') : '- nothing beyond the fields above') +
+        (notes.length ? '\n\nLISTING REMARKS (quoted word for word from the sheet):\n' + notes.join('\n') : '') +
+        '\n\nHOW TO USE THE LISTING SHEET:\n' +
+        '- Price reductions and a long DOM or CDOM are negotiating leverage. A new listing with few days on market is not. Weigh them in the offer price and terms.\n' +
+        '- If the status on the sheet is not Active, say so at the top of talkingPoints.\n' +
+        '- A loan type the seller or association cannot accept, a seller credit on offer, a possession or rent-back request, an offer deadline, or an as-is sale must be reflected in offerStructure.\n' +
+        '- If the sheet prints a well, septic or private sewer, address the matching inspection in offerStructure.\n' +
+        '- The tax assessed value is not market value. Do not value the property off it.\n' +
+        '- Remarks are the listing agent\'s own words, not verified facts. Treat a condition claim as a claim.\n' +
+        '- AGENT-ONLY remarks are confidential between agents. Use them to shape the strategy, but never quote them, describe them as remarks, or name them as a source in valuationReasoning, offerStructure, escalationClause or appraisalGapNote, because those sections can be sent to the buyer. You may refer to them directly in talkingPoints and justinNote.';
+    }
+
+    async function osgUploadSubject(fileList) {
+      const files = Array.from(fileList || []);
+      osgSheetError.value = ''; osgSheetStatus.value = ''; osgSheetWarn.value = '';
+      if (!files.length) return;
+      if (files.length > 1) { osgSheetError.value = 'Drop one sheet here: the one for the home you are writing the offer on. Comps go in Step 2.'; return; }
+      const f = files[0];
+      if (!/\.pdf$/i.test(f.name)) { osgSheetError.value = 'Choose the PDF exported from Bright MLS.'; return; }
+      osgSheetBusy.value = true;
+      try {
+        const fd = new FormData();
+        fd.append('file', f, f.name);
+        const resp = await fetch(RAILWAY_URL + '/api/osg/parse-subject', { method: 'POST', body: fd });
+        let data = null;
+        try { data = await resp.json(); } catch (e) { data = null; }
+        if (!resp.ok || !data || !data.success) throw new Error((data && data.detail) || ('the server answered ' + resp.status));
+        if (!data.ok) osgSheetError.value = (data.error || 'Could not read this sheet.') + ' Nothing was filled in.';
+        else osgApplySubject(data, f.name);
+      } catch (e) {
+        osgSheetError.value = 'Could not read that sheet: ' + e.message + '. Nothing was filled in.';
+      }
+      osgSheetBusy.value = false;
+    }
+
+    // Sheet wins over what was typed, and every replacement is said out loud.
+    function osgApplySubject(data, fileName) {
+      const s = data.subject || {};
+      const unv = data.unverified || [];
+      const replaced = [], notOnSheet = [], notes = [];
+      const same = function (a, b) {
+        return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, '') === String(b || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      };
+      function put(label, keys, target, val) {
+        if (!val) { if (!keys.some(function (k) { return unv.indexOf(k) > -1; })) notOnSheet.push(label); return; }
+        const was = String(target.value || '').trim();
+        if (was && !same(was, val)) replaced.push(label + ' (was ' + was + ')');
+        target.value = val;
+      }
+      const num = function (v) { const n = osgNum(v); return n ? n.toLocaleString('en-US') : ''; };
+      put('Property Address', ['address'], osgAddress, osgFullAddr(s));
+      put('List Price', ['listPrice'], osgListPrice, num(s.listPrice));
+      put('Days on Market', ['dom'], osgDOM, s.dom || '');
+      const typeMap = { 'Single Family': 'Single Family', 'Condo': 'Condo', 'Townhouse': 'Townhome', 'Multi-Family': 'Multi-family' };
+      if (typeMap[s.propType]) put('Property Type', [], osgPropType, typeMap[s.propType]);
+      else if (s.propType) notes.push('The sheet lists this as ' + s.propType + ', which is not one of the choices, so Property Type was left as it was');
+      else notOnSheet.push('Property Type');
+      put('Sq Ft', ['gla'], osgSqFt, num(s.gla));
+      const baths = s.fullBaths
+        ? (s.halfBaths && s.halfBaths !== '0' ? s.fullBaths + ' full, ' + s.halfBaths + ' half bath' : s.fullBaths + ' bath')
+        : '';
+      put('Bed / Bath', ['beds', 'fullBaths', 'halfBaths'], osgBedBath, [s.beds ? s.beds + ' bed' : '', baths].filter(Boolean).join(' / '));
+      put('Year Built', ['yearBuilt'], osgYearBuilt, s.yearBuilt || '');
+      osgSheet.value = s;
+      const left = unv.map(function (k) { return OSG_SHEET_LABELS[k] || k; });
+      const msg = ['Filled in from ' + fileName + '.'];
+      if (replaced.length) msg.push('Replaced what was typed: ' + replaced.join('; ') + '.');
+      if (notOnSheet.length) msg.push('Not on the sheet, left as it was: ' + notOnSheet.join(', ') + '.');
+      notes.forEach(function (n) { msg.push(n + '.'); });
+      if (left.length) msg.push('Left out because they could not be matched to the sheet: ' + left.join(', ') + '. Check these by eye.');
+      if (data.dropped_notes) msg.push(data.dropped_notes + ' remark line' + (data.dropped_notes === 1 ? ' was' : 's were') + ' left out: not found word for word on the sheet, or holding lockbox, contact or compensation details.');
+      osgSheetStatus.value = msg.join(' ');
+      osgSheetWarn.value = (s.status && s.status !== 'active')
+        ? 'This sheet shows the property as ' + (s.status_raw || s.status) + ', not Active. Check you have the latest sheet before writing an offer.'
+        : '';
+    }
+
+    function osgSheetClear() {
+      osgSheet.value = null; osgSheetError.value = ''; osgSheetWarn.value = '';
+      osgSheetStatus.value = 'Sheet removed. The fields above keep what was filled in, and the strategy will not use the sheet.';
+    }
+
     // Step 1 -> Step 2. Comps come only from MLS sheets or the agent's own
     // entry. The AI comp search was removed: it had no search tool and
     // returned invented comparables.
@@ -16564,6 +16779,7 @@ DOM: ${osgDOM.value || 'Unknown'}
 Type: ${osgPropType.value}
 Sq Ft: ${osgSqFt.value || 'Unknown'}
 Bed/Bath: ${osgBedBath.value || 'Unknown'}
+Year Built: ${osgYearBuilt.value || 'Unknown'}${osgSheetText()}
 
 COMPARABLE SALES:
 ${compsStr}
@@ -16730,7 +16946,8 @@ No markdown. Valid JSON only.`;
           'You wrote the offer strategy below. The agent is now asking for a correction, or asking a question about it.\n\n' +
           'SUBJECT PROPERTY:\nAddress: ' + osgAddress.value + '\nList Price: ' + osgListPrice.value +
           '\nDOM: ' + (osgDOM.value || 'Unknown') + '\nType: ' + osgPropType.value +
-          '\nSq Ft: ' + (osgSqFt.value || 'Unknown') + '\nBed/Bath: ' + (osgBedBath.value || 'Unknown') + '\n\n' +
+          '\nSq Ft: ' + (osgSqFt.value || 'Unknown') + '\nBed/Bath: ' + (osgBedBath.value || 'Unknown') +
+          '\nYear Built: ' + (osgYearBuilt.value || 'Unknown') + osgSheetText() + '\n\n' +
           'COMPARABLE SALES (these are the ONLY comps that exist):\n' + osgCompsText() + '\n\n' +
           'OFFER PARAMETERS:\nCompetition: ' + osgCompetition.value + '\nFinancing: ' + osgFinancing.value +
           '\nFORWARD Financial Team: ' + (osgJustin.value === 'yes' ? 'Yes' : 'No') +
@@ -16992,6 +17209,8 @@ No markdown. Valid JSON only.`;
       Object.keys(osgNewComp).forEach(k => osgNewComp[k] = '');
       osgPdfBusy.value = false; osgPdfError.value = ''; osgPdfStatus.value = '';
       osgPdfDrag.value = false; osgImportRows.value = []; osgImportPick.value = [];
+      osgSheet.value = null; osgSheetBusy.value = false; osgSheetError.value = '';
+      osgSheetStatus.value = ''; osgSheetWarn.value = ''; osgSheetDrag.value = false;
       osgChatMsgs.value = []; osgChatInput.value = ''; osgChatBusy.value = false; osgChatError.value = '';
       osgPrevResult.value = null; osgEditKey.value = ''; osgEditTouched.value = false;
       Object.assign(osgBuyerInc, { values:true, appraisal:true, comps:true, reasoning:true, structure:true, escalation:true });
@@ -18715,6 +18934,24 @@ const CHANGELOG = [
       {
         title: 'Market Reports Now Update Themselves Every Month',
         detail: 'The Market Reports in the Listing Package now carry FORWARD-branded reports rebuilt every month from Corcoran McEnearney\'s StatPak, for six regions: Washington DC, Montgomery County, Prince George\'s County, Northern Virginia, Loudoun County and the Virginia Countryside. Prince George\'s is new.\n\nEach region shows which month of data it covers, with its Instagram graphic and caption beside it, ready to post.\n\nHow to use: Open Market Reports in the Listing Package and click a region to open its report. Use the Instagram graphic and caption links under it for social.\n\nBest practice: Check the Data through line before you share a report, and say the month when you quote a number to a client.'
+      }
+    ]
+  }
+
+,
+  {
+    id: 'v2026-09-22',
+    date: 'September 22, 2026',
+    title: 'Offer Strategy Reads the Listing Sheet for You',
+    summary: 'Drop the MLS sheet for the home your buyer wants and the Offer Strategy Generator fills in the property details and reads the facts that shape an offer: price cuts, days on market, sale type, possession, and what the remarks say about financing, credits and deadlines.',
+    updates: [
+      {
+        title: 'Drop the Listing Sheet on Step 1',
+        detail: 'Step 1 of the Offer Strategy Generator now has a drop zone for the Bright MLS sheet of the home you are writing the offer on. It fills in the address, list price, days on market, property type, square footage, beds and baths, and year built. If you had already typed something different, it tells you what it replaced.\n\nIt also reads the parts of the sheet that should shape the offer: the original price and every reduction, DOM against CDOM (a higher CDOM means the home was relisted), sale type, possession, HOA or condo fee, taxes and assessed value, water and sewer, and sentences from the remarks about loan types the seller or association will not accept, seller credits, offer deadlines, rent-backs and as-is sales. Remarks are quoted word for word and marked Agent Only or Public. All of it goes into the strategy.\n\nEvery figure is checked against the sheet before it is used. Anything that cannot be matched is left blank and listed for you, never guessed. Lockbox details, phone numbers and owner names are never read in.\n\nYear Built now reaches the strategy too. It was on the form before but was never sent.\n\nHow to use: In Bright, open the listing, choose Print, then Agent Full, then Save as PDF, and drop that one PDF on Step 1. Check the filled fields, then continue to comps as before.\n\nBest practice: Read the Agent Only lines yourself before you send the buyer version. The strategy is told to keep them out of the sections your buyer sees, but you are the final check.'
+      },
+      {
+        title: 'Offer Strategy and the CMA Builder Now Read Sheets Separately',
+        detail: 'The Offer Strategy Generator now has its own MLS reader for comps, separate from the one in the CMA builder. Comps come in exactly as they did yesterday. The difference is that a change made to one tool can no longer change the other.\n\nHow to use: Nothing to do. Drop comp sheets into Step 2 as before.\n\nBest practice: If a comp ever reads differently in the two tools after a future update, tell Marc which one looks wrong.'
       }
     ]
   }
@@ -21349,6 +21586,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fmtComma, fmtDollar,
       // Offer Strategy Generator
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
+      osgSheet, osgSheetBusy, osgSheetError, osgSheetStatus, osgSheetWarn, osgSheetDrag,
+      osgSheetFacts, osgSheetMatches, osgSheetAddr, osgUploadSubject, osgSheetClear,
       osgComps, osgAddingComp, osgNewComp,
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
