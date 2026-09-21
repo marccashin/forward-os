@@ -5453,7 +5453,11 @@ body {
                     <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                     <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                        <span class="market-badge">{{ prop.market || 'DC' }}</span>
+                        <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ prop.market || 'DC' }}</span>
+                        <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
+                          <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:prop.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
+                          <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
+                        </span>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
 
                           <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
@@ -5498,7 +5502,11 @@ body {
                 <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                 <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                    <span class="market-badge">{{ prop.market || 'DC' }}</span>
+                    <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ prop.market || 'DC' }}</span>
+                    <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
+                      <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:prop.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
+                      <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
+                    </span>
                     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
 
                       <span v-if="prop.status==='running'" class="spinner" style="margin:0;display:block;"></span>
@@ -5559,7 +5567,7 @@ body {
             </div>
             <!-- Meta -->
             <div class="prop-detail-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span>{{ lstActiveProp.agent_name || agentName }} · {{ lstActiveProp.market || 'DC' }} · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
+              <span>{{ lstActiveProp.agent_name || agentName }} · <template v-if="!lstMarketEditId || lstMarketEditId!==lstActiveProp.id">{{ lstActiveProp.market || 'DC' }}<span title="Change jurisdiction" style="cursor:pointer;margin-left:4px;opacity:0.5;font-size:9px;" @click.stop="lstMarketEditId=lstActiveProp.id">edit</span></template><template v-else><span style="display:inline-flex;gap:3px;align-items:center;" @click.stop><button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(lstActiveProp,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:lstActiveProp.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button><button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button></span></template> · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
               <!-- Co-agent chips -->
               <span v-for="ca in ((lstActiveProp.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
                 {{ ca.split(' ')[0] }}
@@ -10281,6 +10289,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           ns.address = lstActiveProp.value.address || '';
           if (lstActiveProp.value.unit) ns.unit = lstActiveProp.value.unit;
           nsDetectJurisdiction();
+          // If the agent explicitly set the market on this listing, use it to
+          // confirm or override what the address regex found. For MD and VA the
+          // regex is kept for the sub-jurisdiction (county / nova vs other),
+          // overriding only when the regex returned a mismatched state.
+          const _mkt = (lstActiveProp.value.market || '').toUpperCase();
+          if (_mkt === 'DC') {
+            ns.jurisdiction = 'dc';
+          } else if (_mkt === 'MD' && ns.jurisdiction && !ns.jurisdiction.startsWith('md-')) {
+            ns.jurisdiction = 'md-other';
+          } else if (_mkt === 'VA' && ns.jurisdiction && !ns.jurisdiction.startsWith('va-')) {
+            ns.jurisdiction = 'va-nova';
+          }
         }
       }
       // MLS always accessible; others require at least one saved MLS file
@@ -16221,6 +16241,31 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaving = ref(false);
     const osgSaved = ref(false);
 
+    // ── Listing market edit ──────────────────────────────────────────────
+    // Tracks which listing card is currently showing the DC/MD/VA picker.
+    // Uses prop.id so only one card is open at a time across the whole grid.
+    const lstMarketEditId = ref(null);
+
+    async function lstSetMarket(prop, val) {
+      lstMarketEditId.value = null;
+      if (prop.market === val) return;
+      prop.market = val;           // optimistic update, agent sees it immediately
+      if (!prop.id) return;
+      try {
+        await fetch(RAILWAY_URL + '/properties/' + prop.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fields: { market: val } })
+        });
+        // If this is the currently open listing, keep lstActiveProp in sync
+        if (lstActiveProp.value && lstActiveProp.value.id === prop.id) {
+          lstActiveProp.value.market = val;
+        }
+      } catch (e) {
+        console.warn('Market update failed:', e);
+      }
+    }
+
     // ── Offer Strategy: MLS comp import ────────────────────────────────
     // Calls the SAME backend the CMA builder uses (/api/cma/parse-listings)
     // so there is one MLS parser, not two that can drift apart.
@@ -21092,6 +21137,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
       osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps, osgNorm,
+      lstMarketEditId, lstSetMarket,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
