@@ -18090,15 +18090,10 @@ No markdown. Valid JSON only.`;
     async function mktLoadLinks() {
       mktLoadError.value = '';
       try {
-        const rows = await supaRest.select('property_notes',
-          'select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links&order=updated_at.desc&limit=1');
-        marketReportLinks.value = (rows && rows[0] && rows[0].content) ? JSON.parse(rows[0].content) : {};
+        marketReportLinks.value = (await osSettingGet('market_report_links')) || {};
         // Non-fatal: without the run record the links still work, just unlabelled.
-        try {
-          const m = await supaRest.select('property_notes',
-            'select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.market_reports&order=updated_at.desc&limit=1');
-          mktMeta.value = (m && m[0] && m[0].content) ? JSON.parse(m[0].content) : null;
-        } catch (e) { console.warn('market report meta:', e); mktMeta.value = null; }
+        try { mktMeta.value = await osSettingGet('market_reports_meta'); }
+        catch (e) { console.warn('market report meta:', e); mktMeta.value = null; }
       } catch(e) {
         console.warn('mktLoadLinks:', e);
         mktLoadError.value = 'Could not load the market report links. ' + e.message;
@@ -18111,20 +18106,9 @@ No markdown. Valid JSON only.`;
     async function mktSaveLinks() {
       mktSaving.value = true;
       try {
-        const payload = JSON.stringify(mktEditLinks.value);
-        const rows = await supaRest.insert('property_notes', {
-          property_id: '00000000-0000-0000-0000-000000000001', subfolder: 'links',
-          content: payload, updated_by: agentName.value
-        });
+        await osSettingPut('market_report_links', { ...mktEditLinks.value });
         marketReportLinks.value = { ...mktEditLinks.value };
         mktEditMode.value = false;
-        const newId = rows && rows[0] && rows[0].id;
-        if (newId) {
-          try {
-            await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links&id=neq.' + newId,
-              { method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' } });
-          } catch (e) { console.warn('mkt cleanup (non-fatal):', e); }
-        }
         showGoldToast('Market report links updated');
       } catch(e) { showToast('Not saved: ' + e.message + '. Your existing links are unchanged.', 6000); }
       finally { mktSaving.value = false; }
@@ -18136,7 +18120,6 @@ No markdown. Valid JSON only.`;
     // new Loom needs no deploy. Writes are insert-new-then-delete-old, never
     // delete-then-insert, so a failed save cannot wipe the list. Load always
     // reads the newest row, so a failed cleanup is harmless.
-    const OSV_NOTE_ID  = '00000000-0000-0000-0000-000000000001';
     const osvVideos    = ref([]);
     const osvLoading   = ref(false);
     const osvLoadError = ref('');
@@ -18151,31 +18134,40 @@ No markdown. Valid JSON only.`;
       const m = /loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/.exec(url || '');
       return m ? 'https://www.loom.com/embed/' + m[1] : '';
     }
+    // ── App-wide settings (Supabase table os_settings: key -> jsonb value) ──
+    // Tutorial videos, market report links and the monthly market report run
+    // record live here. They used to be written to property_notes under a
+    // placeholder property id, which the property_notes foreign key rejects, so
+    // those saves never worked. One row per key, replaced atomically on save.
+    async function osSettingGet(key) {
+      const rows = await supaRest.select('os_settings', 'select=value&key=eq.' + encodeURIComponent(key));
+      return (rows && rows[0]) ? rows[0].value : null;
+    }
+    async function osSettingPut(key, value) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/os_settings?on_conflict=key', {
+        method: 'POST',
+        headers: { ...supaRest.headers(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ key: key, value: value, updated_by: agentName.value, updated_at: new Date().toISOString() })
+      });
+      if (!res.ok) {
+        let detail = 'error ' + res.status;
+        try { const e = await res.json(); detail = e.message || e.hint || detail; } catch (x) {}
+        throw new Error(detail);
+      }
+    }
+
     async function osvLoad() {
       osvLoading.value = true; osvLoadError.value = '';
       try {
-        const rows = await supaRest.select('property_notes',
-          'select=content&property_id=eq.' + OSV_NOTE_ID + '&subfolder=eq.os_videos&order=updated_at.desc&limit=1');
-        const list = (rows && rows[0] && rows[0].content) ? JSON.parse(rows[0].content) : [];
+        const list = await osSettingGet('os_videos');
         osvVideos.value = Array.isArray(list) ? list : [];
       } catch (e) {
         osvLoadError.value = 'Could not load the tutorial videos. ' + e.message;
       } finally { osvLoading.value = false; }
     }
     async function osvPersist(list) {
-      const rows = await supaRest.insert('property_notes', {
-        property_id: OSV_NOTE_ID, subfolder: 'os_videos',
-        content: JSON.stringify(list), updated_by: agentName.value
-      });
+      await osSettingPut('os_videos', list);   // throws on failure; list unchanged
       osvVideos.value = list;
-      const newId = rows && rows[0] && rows[0].id;
-      if (newId) {
-        try {
-          await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + OSV_NOTE_ID +
-            '&subfolder=eq.os_videos&id=neq.' + newId,
-            { method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' } });
-        } catch (e) { console.warn('osv cleanup (non-fatal):', e); }
-      }
     }
     function osvStartAdd() {
       osvEditIdx.value = null; osvDraft.title = ''; osvDraft.url = ''; osvDraft.desc = '';
