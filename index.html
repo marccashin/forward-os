@@ -14662,7 +14662,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       doc.roundedRect(40, y, W - 80, 30, 4, 4, 'F');
       doc.setFont('helvetica', 'bold'); doc.setFontSize(12); doc.setTextColor(...navy);
       doc.text('Purchase Price', 56, y + 20);
-      doc.text(ctcFmt(ctc.purchasePrice), W - 56, y + 20, { align:'right' });
+      doc.text(ctcFmt(ctcParse('purchasePrice')), W - 56, y + 20, { align:'right' });   // field holds typed text like '1,500,000'; parse, never Number() it
       y += 44;
       const secs = ctc.sections;
       for (let si = 0; si < secs.length; si++) {
@@ -18999,6 +18999,10 @@ const CHANGELOG = [
       {
         title: 'Buyer Tools Always Show the Buyer You Opened',
         detail: 'Cash to Close, Buyer Consult, Offer Strategy, Market Report and the Buyer Needs Analysis now each belong to one buyer. Open a tool from a buyer card and it shows only that buyer: their name, budget and contact details, and none of the last buyer you worked on. Before this, opening a second buyer could still show the first buyer\'s price, lender, needs analysis or offer strategy.\n\nGoing back into the same buyer keeps what you were working on. Switching to a different buyer clears the tools and fills them from the new buyer. If an AI step is still running when you switch buyers, its result is thrown away rather than landing on the wrong buyer.\n\nHow to use: Open the buyer card first, then the tool. Clear and Start Over inside a buyer card refills that buyer\'s details.\n\nBest practice: Finish and save one buyer\'s estimate or strategy before opening another buyer. Switching buyers clears unsaved work on the tools.'
+      },
+      {
+        title: 'Cash to Close PDF Shows the Purchase Price',
+        detail: 'The Cash to Close PDF printed the purchase price as $0 whenever the price was typed with commas, such as 1,500,000. Only that one line was wrong. The loan amount, every cost and the total were already correct. The PDF now shows the price you entered.\n\nHow to use: Nothing changes. Enter the price as you normally would and download the PDF.\n\nBest practice: If you sent a Cash to Close PDF today showing a $0 purchase price, send the buyer a fresh copy.'
       }
     ]
   }
