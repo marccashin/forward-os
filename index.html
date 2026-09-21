@@ -3394,7 +3394,7 @@ body {
 
           <!-- Overall progress bar -->
           <div style="display:flex;align-items:center;gap:16px;margin-bottom:28px;">
-            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:15px;margin:0;flex:1;">Your personalized training roadmap — 5 pillars, 25 modules, built for DMV luxury.</p>
+            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:15px;margin:0;flex:1;">Your personalized training roadmap: {{ tcPillars.length }} pillars, {{ tcPillars.reduce((n,p)=>n+p.modules.length,0) }} modules, built for DMV luxury.</p>
             <div style="display:flex;align-items:center;gap:8px;min-width:200px;">
               <div style="flex:1;height:8px;background:#e5e7eb;border-radius:99px;overflow:hidden;">
                 <div :style="{width: tcOverallProgress+'%', height:'100%', background:'var(--gold)', borderRadius:'99px', transition:'width 0.4s ease'}"></div>
@@ -3417,6 +3417,56 @@ body {
                   <span style="font-size:12px;font-weight:700;color:#6b7280;white-space:nowrap;">{{ tcPillarProgress(p.id) }}%</span>
                 </div>
                 <div style="margin-top:8px;font-size:11px;color:#9ca3af;">{{ p.modules.filter(m=>m.done).length }} / {{ p.modules.length }} modules</div>
+              </div>
+            </div>
+
+            <!-- ── FORWARD OS tutorial videos ── -->
+            <div style="margin-top:40px;">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px;">
+                <h2 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:20px;font-weight:600;color:var(--navy);">FORWARD OS Tutorials</h2>
+                <button v-if="isAdmin && !osvEditing" class="btn-gold" @click="osvStartAdd" style="font-size:11px;padding:6px 16px;">+ Add Video</button>
+              </div>
+              <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 16px;">Short walkthroughs of each tool in the OS. Watch the one for the tool you are about to use.</p>
+
+              <div v-if="osvEditing" class="card" style="margin-bottom:18px;border-top:3px solid var(--gold);">
+                <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);margin-bottom:10px;">{{ osvEditIdx===null ? 'Add a tutorial' : 'Edit tutorial' }}</div>
+                <div class="form-row"><label>Title</label><input v-model="osvDraft.title" placeholder="e.g. Building a Net Sheet"></div>
+                <div class="form-row"><label>Loom Link</label><input v-model="osvDraft.url" placeholder="https://www.loom.com/share/..."></div>
+                <div class="form-row"><label>What It Covers (optional)</label><textarea v-model="osvDraft.desc" rows="2" placeholder="One or two lines agents see under the video"></textarea></div>
+                <div v-if="osvDraftError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:9px 13px;margin:8px 0;font-size:13px;color:#dc2626;">{{ osvDraftError }}</div>
+                <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+                  <button class="btn-gold" @click="osvSaveDraft" :disabled="osvSaving" style="font-size:12px;padding:7px 18px;">Save</button>
+                  <button class="btn-outline" @click="osvCancel" :disabled="osvSaving" style="font-size:12px;padding:7px 18px;">Cancel</button>
+                  <span v-if="osvSaving" class="fwd-thinking" style="color:var(--navy);"><span></span><span></span><span></span></span>
+                </div>
+              </div>
+
+              <div v-if="osvLoading" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#6b7280;">Loading tutorials <span class="fwd-thinking" style="color:#9ca3af;"><span></span><span></span><span></span></span></div>
+              <div v-else-if="osvLoadError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:13px;color:#dc2626;">
+                {{ osvLoadError }} <button @click="osvLoad" style="margin-left:8px;font-size:12px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:6px;padding:3px 10px;cursor:pointer;">Retry</button>
+              </div>
+              <div v-else-if="!osvVideos.length" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#9ca3af;">No tutorials yet.<span v-if="isAdmin"> Record one in Loom, then click + Add Video and paste the Share link.</span></div>
+              <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;">
+                <div v-for="(v,i) in osvVideos" :key="v.id" class="card" style="padding:0;overflow:hidden;">
+                  <div v-if="osvOpenId===v.id" style="position:relative;padding-top:56.25%;background:#000;">
+                    <iframe :src="osvEmbedUrl(v.url)" frameborder="0" allow="fullscreen; picture-in-picture" allowfullscreen style="position:absolute;inset:0;width:100%;height:100%;"></iframe>
+                  </div>
+                  <div v-else @click="osvOpenId=v.id" style="position:relative;padding-top:56.25%;background:var(--navy);cursor:pointer;">
+                    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+                      <div style="width:54px;height:54px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;color:var(--navy);font-size:20px;padding-left:4px;">&#9654;</div>
+                    </div>
+                  </div>
+                  <div style="padding:14px 16px;">
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);">{{ v.title }}</div>
+                    <div v-if="v.desc" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-top:4px;line-height:1.5;">{{ v.desc }}</div>
+                    <div v-if="isAdmin" style="display:flex;gap:12px;margin-top:10px;font-size:11px;">
+                      <button @click="osvMove(i,-1)" :disabled="i===0" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:0;">Move up</button>
+                      <button @click="osvMove(i,1)" :disabled="i===osvVideos.length-1" style="background:none;border:none;cursor:pointer;color:#6b7280;padding:0;">Move down</button>
+                      <button @click="osvStartEdit(i)" style="background:none;border:none;cursor:pointer;color:var(--gold);font-weight:700;padding:0;">Edit</button>
+                      <button @click="osvDelete(i)" style="background:none;border:none;cursor:pointer;color:#dc2626;padding:0;">Remove</button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </template>
@@ -18047,6 +18097,93 @@ No markdown. Valid JSON only.`;
       finally { mktSaving.value = false; }
     }
 
+    // ── FORWARD OS tutorial videos (Training Center) ─────────────────────
+    // Stored like the market report links: one JSON row in property_notes on
+    // the sentinel property id, subfolder 'os_videos'. Admins edit in-app, so a
+    // new Loom needs no deploy. Writes are insert-new-then-delete-old, never
+    // delete-then-insert, so a failed save cannot wipe the list. Load always
+    // reads the newest row, so a failed cleanup is harmless.
+    const OSV_NOTE_ID  = '00000000-0000-0000-0000-000000000001';
+    const osvVideos    = ref([]);
+    const osvLoading   = ref(false);
+    const osvLoadError = ref('');
+    const osvEditing   = ref(false);
+    const osvEditIdx   = ref(null);
+    const osvDraft     = reactive({ title:'', url:'', desc:'' });
+    const osvDraftError= ref('');
+    const osvSaving    = ref(false);
+    const osvOpenId    = ref(null);
+
+    function osvEmbedUrl(url) {
+      const m = /loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/.exec(url || '');
+      return m ? 'https://www.loom.com/embed/' + m[1] : '';
+    }
+    async function osvLoad() {
+      osvLoading.value = true; osvLoadError.value = '';
+      try {
+        const rows = await supaRest.select('property_notes',
+          'select=content&property_id=eq.' + OSV_NOTE_ID + '&subfolder=eq.os_videos&order=updated_at.desc&limit=1');
+        const list = (rows && rows[0] && rows[0].content) ? JSON.parse(rows[0].content) : [];
+        osvVideos.value = Array.isArray(list) ? list : [];
+      } catch (e) {
+        osvLoadError.value = 'Could not load the tutorial videos. ' + e.message;
+      } finally { osvLoading.value = false; }
+    }
+    async function osvPersist(list) {
+      const rows = await supaRest.insert('property_notes', {
+        property_id: OSV_NOTE_ID, subfolder: 'os_videos',
+        content: JSON.stringify(list), updated_by: agentName.value
+      });
+      osvVideos.value = list;
+      const newId = rows && rows[0] && rows[0].id;
+      if (newId) {
+        try {
+          await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + OSV_NOTE_ID +
+            '&subfolder=eq.os_videos&id=neq.' + newId,
+            { method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' } });
+        } catch (e) { console.warn('osv cleanup (non-fatal):', e); }
+      }
+    }
+    function osvStartAdd() {
+      osvEditIdx.value = null; osvDraft.title = ''; osvDraft.url = ''; osvDraft.desc = '';
+      osvDraftError.value = ''; osvEditing.value = true;
+    }
+    function osvStartEdit(i) {
+      const v = osvVideos.value[i];
+      osvEditIdx.value = i; osvDraft.title = v.title || ''; osvDraft.url = v.url || ''; osvDraft.desc = v.desc || '';
+      osvDraftError.value = ''; osvEditing.value = true;
+    }
+    function osvCancel() { osvEditing.value = false; osvDraftError.value = ''; }
+    async function osvSaveDraft() {
+      const title = osvDraft.title.trim(), url = osvDraft.url.trim(), desc = osvDraft.desc.trim();
+      if (!title) { osvDraftError.value = 'Give the video a title.'; return; }
+      if (!osvEmbedUrl(url)) { osvDraftError.value = 'That is not a Loom link. In Loom, click Share and copy the link.'; return; }
+      const list = osvVideos.value.map(v => ({ ...v }));
+      if (osvEditIdx.value === null) list.push({ id: 'v' + Date.now(), title: title, url: url, desc: desc });
+      else Object.assign(list[osvEditIdx.value], { title: title, url: url, desc: desc });
+      osvSaving.value = true; osvDraftError.value = '';
+      try {
+        await osvPersist(list);
+        osvEditing.value = false;
+        showGoldToast('Tutorial saved. Every agent can see it now.');
+      } catch (e) {
+        osvDraftError.value = 'Not saved: ' + e.message + '. Nothing was changed, try again.';
+      } finally { osvSaving.value = false; }
+    }
+    async function osvDelete(i) {
+      const v = osvVideos.value[i];
+      if (!window.confirm('Remove "' + v.title + '" for every agent?')) return;
+      try { await osvPersist(osvVideos.value.filter((_, j) => j !== i)); showGoldToast('Tutorial removed'); }
+      catch (e) { showToast('Not removed: ' + e.message, 5000); }
+    }
+    async function osvMove(i, d) {
+      const j = i + d, list = osvVideos.value.slice();
+      if (j < 0 || j >= list.length) return;
+      const t = list[i]; list[i] = list[j]; list[j] = t;
+      try { await osvPersist(list); } catch (e) { showToast('Reorder not saved: ' + e.message, 5000); }
+    }
+    watch(view, v => { if (v === 'training') osvLoad(); });
+
     function mktStartEdit() {
       mktEditLinks.value = { ...marketReportLinks.value };
       mktEditMode.value = true;
@@ -18530,7 +18667,27 @@ const CHANGELOG = [
     ]
   }
 
-
+,
+  {
+    id: 'v2026-09-21',
+    date: 'September 21, 2026',
+    title: 'Correct Jurisdictions on Listings, and Add Your Own Prep Items',
+    summary: 'Listings now pick up the right state from Follow Up Boss, you can correct the state on any listing card, and you can add your own items to the Seller Prep Guide.',
+    updates: [
+      {
+        title: 'Listings Show the Right State',
+        detail: 'Every listing created from a Follow Up Boss deal was being labelled DC, whatever the Market field on the deal said. A Fairfax listing and a Brandywine listing both showed DC. New listings now take the state from the Market field on the FUB deal card, and if that field is empty, from the address.\n\nThe state label on each listing card is now also a button. Click it and choose DC, MD or VA. The change saves straight away. When you open the net sheet inside that listing, it uses the state you chose, so the right tax rules apply.\n\nHow to use: Look at the state label on each of your listing cards. If one is wrong, click it and pick the right state.\n\nBest practice: Fill in the Market field on every FUB deal card before moving it to Seller Engaged. Listings created before today may still say DC, so check yours once.'
+      },
+      {
+        title: 'Add Your Own Items to the Seller Prep Guide',
+        detail: 'Every section of the Seller Prep Guide now has a + Add item to this section link under it, in both the Single Family and Condo versions, and both in the standalone guide and the one inside a listing. Anything you add prints in the PDF and goes into the campaign package with the rest of the list. You can remove an item you added the same way as any other.\n\nHow to use: Click + Add item to this section, type the item, and press Enter.\n\nBest practice: Add the items specific to this home before you send the guide, such as a particular repair the inspection found. Added items last while the page is open, so save or send the guide before you leave it.'
+      },
+      {
+        title: 'FORWARD OS Tutorials in the Training Center',
+        detail: 'The Training Center now has a FORWARD OS Tutorials section under the training pillars. Each video is a short walkthrough of one tool in the OS, and it plays right on the page. More are being added as each tool is recorded.\n\nHow to use: Open the Training Center, scroll to FORWARD OS Tutorials, and click the video for the tool you want to learn.\n\nBest practice: Watch the tutorial the first time you use a tool on a live deal, not after. If something in a video does not match what you see on screen, tell Marc so it can be re-recorded.'
+      }
+    ]
+  }
 ];
 
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
@@ -21115,7 +21272,9 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore,
-      sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem, sellerPrepPDF,
+      sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
+      osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
+      osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
       ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
