@@ -56,14 +56,59 @@ async function getAccessToken() {
   return data.access_token;
 }
 
-const CORS = {
-  'Access-Control-Allow-Origin':  '*',
-  'Access-Control-Allow-Headers': 'Content-Type',
-  'Content-Type':                 'application/json',
-};
+// ── Who may ask for a token ────────────────────────────────────────────────
+// This returns a live Google Drive access token, so it answers only requests
+// made by the OS itself. Agents notice nothing: the OS calls this with a
+// same-site POST, which browsers always label with Sec-Fetch-Site and Origin,
+// headers a web page's own JavaScript cannot forge. Requests typed into an
+// address bar, sent by scripts, or made from other websites are refused.
+// (A determined attacker with a raw HTTP client can fake headers. This closes
+// the door to anyone who merely finds the URL; it is not a login.)
+const ALLOWED_ORIGINS = [
+  'https://forward-os.netlify.app',
+  'https://forward-os-staging.netlify.app',
+];
+const DEPLOY_PREVIEW = /^https:\/\/[a-z0-9-]+--forward-os(-staging)?\.netlify\.app$/;
+
+function originAllowed(o) {
+  return !!o && (ALLOWED_ORIGINS.includes(o) || DEPLOY_PREVIEW.test(o));
+}
+
+function requestAllowed(headers) {
+  const h = {};
+  for (const k of Object.keys(headers || {})) h[k.toLowerCase()] = headers[k];
+  const origin = h['origin'] || '';
+  const site   = h['sec-fetch-site'] || '';
+  let refOrigin = '';
+  try { refOrigin = h['referer'] ? new URL(h['referer']).origin : ''; } catch (e) {}
+  // A different site is refused even if another header looks right.
+  if (site === 'cross-site') return false;
+  if (origin) return originAllowed(origin);
+  if (site === 'same-origin') return true;
+  return originAllowed(refOrigin);
+}
+
+function corsFor(headers) {
+  const o = (headers && (headers.origin || headers.Origin)) || '';
+  return {
+    // Never '*': a token must not be readable by other websites.
+    'Access-Control-Allow-Origin':  originAllowed(o) ? o : 'https://forward-os.netlify.app',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary':                         'Origin',
+    'Content-Type':                 'application/json',
+  };
+}
 
 exports.handler = async (event) => {
+  const CORS = corsFor(event.headers);
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: CORS, body: '' };
+  if (!requestAllowed(event.headers)) {
+    const h = event.headers || {};
+    console.warn('[get-drive-token] refused', JSON.stringify({
+      method: event.httpMethod, origin: h.origin || '', site: h['sec-fetch-site'] || '',
+      referer: (h.referer || '').slice(0, 120) }));
+    return { statusCode: 403, headers: CORS, body: JSON.stringify({ error: 'Not available.' }) };
+  }
   try {
     const token = await getAccessToken();
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ access_token: token }) };
@@ -72,3 +117,5 @@ exports.handler = async (event) => {
     return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: err.message }) };
   }
 };
+
+exports._test = { requestAllowed, originAllowed, corsFor };
