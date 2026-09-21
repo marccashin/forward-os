@@ -4319,17 +4319,9 @@ body {
                   <div class="form-row"><label>Bed / Bath</label><input v-model="osgBedBath" type="text" placeholder="4 bed / 3 bath"></div>
                   <div class="form-row"><label>Year Built</label><input v-model="osgYearBuilt" type="text" inputmode="numeric" placeholder="1985"></div>
                 </div>
-                <button class="btn-gold" @click="osgFetchComps" :disabled="osgFetching||!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:16px;padding:12px;font-size:14px;">
-                  <span class="spinner" v-if="osgFetching"></span>
-                  {{ osgFetching ? 'Searching for comps...' : 'Search for Comparable Sales' }}
+                <button class="btn-gold" @click="osgGoToComps" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:16px;padding:12px;font-size:14px;">
+                  Upload MLS Comps
                 </button>
-                <div v-if="osgFetchError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgFetchError }}</div>
-                <button class="btn-outline" @click="osgSkipSearch" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:10px;padding:11px;font-size:13px;">
-                  Skip the search. I have MLS comps to upload
-                </button>
-                <p style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#9ca3af;margin:8px 0 0;line-height:1.5;">
-                  The search above is an AI suggestion, not an MLS query. For an offer you are actually writing, upload the MLS sheets on the next step and work from those.
-                </p>
               </div>
             </div>
 
@@ -4407,7 +4399,6 @@ body {
                   <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;padding-right:34px;">{{ comp.address }}</div>
                   <div style="margin-bottom:8px;">
                     <span v-if="comp._src==='mls'" style="display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">FROM MLS SHEET</span>
-                    <span v-else-if="comp._src==='ai'" style="display:inline-block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">UNVERIFIED AI SUGGESTION</span>
                     <span v-else style="display:inline-block;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">ENTERED BY HAND</span>
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;color:#6b7280;">
@@ -16103,8 +16094,6 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSqFt = ref('');
     const osgBedBath = ref('');
     const osgYearBuilt = ref('');
-    const osgFetching = ref(false);
-    const osgFetchError = ref('');
     const osgComps = ref([]);
     const osgAddingComp = ref(false);
     const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', concessions:'', notes:'' });
@@ -16276,40 +16265,12 @@ No markdown. No preamble. Valid JSON only.`;
         (skipped.length ? '. Skipped: ' + skipped.join('; ') : '') + '.';
     }
 
-    // Reaching step 2 used to require running the AI comp search first. An
-    // agent bringing their own MLS comps can now go straight there.
-    function osgSkipSearch() {
-      osgFetchError.value = '';
+    // Step 1 -> Step 2. Comps come only from MLS sheets or the agent's own
+    // entry. The AI comp search was removed: it had no search tool and
+    // returned invented comparables.
+    function osgGoToComps() {
       osgStep.value = 2;
       Vue.nextTick(() => window.scrollTo(0, 0));
-    }
-
-    async function osgFetchComps() {
-      osgFetching.value = true; osgFetchError.value = '';
-      try {
-        const prompt = `Find 4-6 comparable sales for this property. Search your knowledge of recent sales, Redfin, Zillow, and county records.
-
-Subject Property:
-Address: ${osgAddress.value}
-List Price: ${osgListPrice.value}
-Type: ${osgPropType.value}
-Sq Ft: ${osgSqFt.value || 'Unknown'}
-Bed/Bath: ${osgBedBath.value || 'Unknown'}
-Year Built: ${osgYearBuilt.value || 'Unknown'}
-
-Return ONLY a valid JSON array of comp objects. Each object must have exactly these keys:
-address, salePrice, sqft, ppsf, dom, soldDate, spLp, notes
-
-Focus on properties sold within 6 months, within 0.5 miles, similar size and type. No markdown, no preamble, valid JSON array only.`;
-        const raw = await claude(prompt, 'You are a real estate comp analyst. Return ONLY a valid JSON array. No markdown fences, no explanation.');
-        let jsonStr = raw.trim();
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        const comps = JSON.parse(jsonStr);
-        osgComps.value = comps.map(c => ({ concessions:'', ...c, editing: false, _src: 'ai' }));
-        osgStep.value = 2;
-        Vue.nextTick(() => window.scrollTo(0, 0));
-      } catch(e) { osgFetchError.value = 'Failed to fetch comps: ' + e.message; }
-      osgFetching.value = false;
     }
 
     async function osgAnalyze() {
@@ -16318,7 +16279,7 @@ Focus on properties sold within 6 months, within 0.5 miles, similar size and typ
         const compsStr = osgComps.value.map(function (c, i) {
           const credit = osgNum(c.concessions);
           const net = osgNetOfCredit(c);
-          const src = c._src === 'mls' ? 'MLS sheet' : (c._src === 'ai' ? 'UNVERIFIED - AI-suggested, not from an MLS sheet' : 'agent-entered');
+          const src = c._src === 'mls' ? 'MLS sheet' : 'agent-entered';
           return 'Comp ' + (i + 1) + ': ' + c.address +
             ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
             ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
@@ -16346,7 +16307,6 @@ ${compsStr}
 
 HOW TO READ THE COMPS:
 - A seller credit is cash the seller gave back at settlement. Where one exists, the price NET OF SELLER CREDIT is the truer indication of value. Value the subject off the net figures and say so in your reasoning when a credit materially moves a comp.
-- Any comp marked UNVERIFIED was suggested by AI and is not backed by an MLS sheet. Weight it below the MLS-sourced comps and say plainly in valuationReasoning that it is unverified.
 - Never invent a comp, a price, or a sold date. Work only from what is listed above.
 
 OFFER PARAMETERS:
@@ -16504,7 +16464,7 @@ No markdown. Valid JSON only.`;
     function osgReset() {
       osgStep.value = 1; osgAddress.value = ''; osgListPrice.value = ''; osgDOM.value = '';
       osgPropType.value = 'Single Family'; osgSqFt.value = ''; osgBedBath.value = ''; osgYearBuilt.value = '';
-      osgFetching.value = false; osgFetchError.value = ''; osgComps.value = []; osgAddingComp.value = false;
+      osgComps.value = []; osgAddingComp.value = false;
       Object.keys(osgNewComp).forEach(k => osgNewComp[k] = '');
       osgPdfBusy.value = false; osgPdfError.value = ''; osgPdfStatus.value = '';
       osgPdfDrag.value = false; osgImportRows.value = []; osgImportPick.value = [];
@@ -18092,8 +18052,8 @@ const CHANGELOG = [
         detail: 'A comp that sold for $1,000,000 with a $25,000 seller credit did not really sell for $1,000,000. The seller handed $25,000 back at settlement, so the market paid $975,000. Until now the Offer Strategy Generator had nowhere to record that, and the strategy was built on the higher number. That pushes a buyer to offer more than the comps support.\n\nEvery comp now has a Seller Credit field. When there is a credit, the card shows what the sale comes to net of it, and the strategy is valued off that net figure. Imported comps pull the credit from the Total Amount Paid by Seller Towards Closing Costs line on the MLS sheet, which is the dollar figure, not the yes or no field.\n\nHow to use: Check the Seller Credit line on every comp before you generate. If you added a comp by hand, enter the credit yourself or leave it blank when there was none.\n\nBest practice: Ask the listing agent what went back to the buyer. Credits do not always reach the MLS sheet, and a credit you do not know about makes a comp look stronger than it was.'
       },
       {
-        title: 'Comps Are Now Labelled by Where They Came From',
-        detail: 'The Search for Comparable Sales button on Step 1 is an AI suggestion. It does not query the MLS and it never did. It is useful for a first look at a neighbourhood and it is not evidence.\n\nEvery comp now carries a label: FROM MLS SHEET, UNVERIFIED AI SUGGESTION, or ENTERED BY HAND. The strategy is told which is which and is instructed to weight the unverified ones below the rest and to say so in its reasoning.\n\nStep 1 also has a second button now, so you can go straight to Step 2 and upload your MLS sheets without running the AI search first.\n\nHow to use: Look at the label on each card before you generate. If a card says UNVERIFIED, confirm it against an MLS sheet or take it off the list.\n\nBest practice: For an offer you are actually writing, skip the search and upload the sheets. Every price that reaches a client should trace back to a document.'
+        title: 'The AI Comp Search Is Gone',
+        detail: 'The Search for Comparable Sales button on Step 1 has been removed. It never queried the MLS. It asked AI to recall recent sales from memory, which meant the addresses, prices and sold dates it returned could be invented while looking exactly like real ones, and the offer price was built on them.\n\nStep 1 now has one button, Upload MLS Comps, which takes you straight to the MLS drop zone on Step 2. Every comp is labelled FROM MLS SHEET or ENTERED BY HAND.\n\nHow to use: Fill in the subject property, press Upload MLS Comps, and drop in your Bright sheets. You can still add a comp by hand with + Add Your Own Comp.\n\nBest practice: Every price that reaches a client should trace back to a document. If you enter a comp by hand, have the MLS sheet for it open while you do.'
       }
     ]
   }
@@ -20726,13 +20686,13 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fmtComma, fmtDollar,
       // Offer Strategy Generator
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
-      osgFetching, osgFetchError, osgComps, osgAddingComp, osgNewComp,
+      osgComps, osgAddingComp, osgNewComp,
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
-      osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgSkipSearch,
+      osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
-      osgFetchComps, osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
+      osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
