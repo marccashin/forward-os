@@ -18530,7 +18530,23 @@ const CHANGELOG = [
     ]
   }
 
-
+,
+  {
+    id: 'v2026-09-21',
+    date: 'September 21, 2026',
+    title: 'Correct Jurisdictions on Listings, and Add Your Own Prep Items',
+    summary: 'Listings now pick up the right state from Follow Up Boss, you can correct the state on any listing card, and you can add your own items to the Seller Prep Guide.',
+    updates: [
+      {
+        title: 'Listings Show the Right State',
+        detail: 'Every listing created from a Follow Up Boss deal was being labelled DC, whatever the Market field on the deal said. A Fairfax listing and a Brandywine listing both showed DC. New listings now take the state from the Market field on the FUB deal card, and if that field is empty, from the address.\n\nThe state label on each listing card is now also a button. Click it and choose DC, MD or VA. The change saves straight away. When you open the net sheet inside that listing, it uses the state you chose, so the right tax rules apply.\n\nHow to use: Look at the state label on each of your listing cards. If one is wrong, click it and pick the right state.\n\nBest practice: Fill in the Market field on every FUB deal card before moving it to Seller Engaged. Listings created before today may still say DC, so check yours once.'
+      },
+      {
+        title: 'Add Your Own Items to the Seller Prep Guide',
+        detail: 'Every section of the Seller Prep Guide now has a + Add item to this section link under it, in both the Single Family and Condo versions, and both in the standalone guide and the one inside a listing. Anything you add prints in the PDF and goes into the campaign package with the rest of the list. You can remove an item you added the same way as any other.\n\nHow to use: Click + Add item to this section, type the item, and press Enter.\n\nBest practice: Add the items specific to this home before you send the guide, such as a particular repair the inspection found. Added items last while the page is open, so save or send the guide before you leave it.'
+      }
+    ]
+  }
 ];
 
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
