@@ -4319,17 +4319,9 @@ body {
                   <div class="form-row"><label>Bed / Bath</label><input v-model="osgBedBath" type="text" placeholder="4 bed / 3 bath"></div>
                   <div class="form-row"><label>Year Built</label><input v-model="osgYearBuilt" type="text" inputmode="numeric" placeholder="1985"></div>
                 </div>
-                <button class="btn-gold" @click="osgFetchComps" :disabled="osgFetching||!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:16px;padding:12px;font-size:14px;">
-                  <span class="spinner" v-if="osgFetching"></span>
-                  {{ osgFetching ? 'Searching for comps...' : 'Search for Comparable Sales' }}
+                <button class="btn-gold" @click="osgGoToComps" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:16px;padding:12px;font-size:14px;">
+                  Upload MLS Comps
                 </button>
-                <div v-if="osgFetchError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgFetchError }}</div>
-                <button class="btn-outline" @click="osgSkipSearch" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:10px;padding:11px;font-size:13px;">
-                  Skip the search. I have MLS comps to upload
-                </button>
-                <p style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#9ca3af;margin:8px 0 0;line-height:1.5;">
-                  The search above is an AI suggestion, not an MLS query. For an offer you are actually writing, upload the MLS sheets on the next step and work from those.
-                </p>
               </div>
             </div>
 
@@ -4407,7 +4399,6 @@ body {
                   <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;padding-right:34px;">{{ comp.address }}</div>
                   <div style="margin-bottom:8px;">
                     <span v-if="comp._src==='mls'" style="display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">FROM MLS SHEET</span>
-                    <span v-else-if="comp._src==='ai'" style="display:inline-block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">UNVERIFIED AI SUGGESTION</span>
                     <span v-else style="display:inline-block;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">ENTERED BY HAND</span>
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;color:#6b7280;">
@@ -4499,7 +4490,18 @@ body {
 
             <!-- STEP 3: Results -->
             <div v-if="osgStep===3 && osgResult">
-              <!-- Three stat boxes -->
+              <!-- Figures: editable, with a warning that hand edits do not cascade -->
+              <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
+                <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('values')">{{ osgEditKey==='values' ? 'Done' : 'Edit figures' }}</button>
+              </div>
+              <div v-if="osgEditKey==='values'" class="card" style="margin-bottom:14px;">
+                <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+                  <div class="form-row"><label>Max Value</label><input v-model="osgResult.maxValue"></div>
+                  <div class="form-row"><label>Market Value</label><input v-model="osgResult.marketValue"></div>
+                  <div class="form-row"><label>Winning Offer</label><input v-model="osgResult.winningOffer"></div>
+                </div>
+                <div style="font-size:12px;color:#b45309;margin-top:8px;line-height:1.5;">Changing a figure here does not rewrite the reasoning or offer structure that mention it. Check those sections too, or ask the chat below, which updates every section the change touches.</div>
+              </div>
               <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;" class="osg-stat-grid">
                 <div style="background:var(--navy);border-radius:12px;padding:14px 10px;text-align:center;">
                   <div style="font-size:10px;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">Max Value</div>
@@ -4518,26 +4520,116 @@ body {
 
               <!-- Appraisal gap warning -->
               <div v-if="osgResult.appraisalGap" style="background:#fefce8;border:1.5px solid #fde68a;border-radius:10px;padding:14px 16px;margin-bottom:16px;">
-                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#92400e;">Appraisal Gap Risk: {{ osgResult.appraisalGap }}</div>
-                <div v-if="osgResult.appraisalGapNote" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#78350f;margin-top:4px;">{{ osgResult.appraisalGapNote }}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#92400e;">Appraisal Gap Risk: {{ osgResult.appraisalGap }}</div>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('appraisal')">{{ osgEditKey==='appraisal' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <template v-if="osgEditKey==='appraisal'">
+                  <input v-model="osgResult.appraisalGap" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;margin-top:8px;">
+                  <textarea v-model="osgResult.appraisalGapNote" rows="4" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;margin-top:8px;"></textarea>
+                </template>
+                <div v-else-if="osgResult.appraisalGapNote" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#78350f;margin-top:4px;">{{ osgResult.appraisalGapNote }}</div>
               </div>
 
-              <!-- Content cards -->
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Valuation Reasoning</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Recommended Offer Structure</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div></div>
-              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Escalation Clause</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div></div>
-              <div class="card" style="margin-bottom:12px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--navy);">Pre-Offer Call Talking Points</h3><div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div></div>
-              <div v-if="osgResult.justinNote" style="background:var(--navy);border-radius:12px;padding:16px;margin-bottom:16px;"><h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:14px;font-weight:600;color:var(--gold);">Financial Team Action</h3><div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6;white-space:pre-wrap;">{{ osgResult.justinNote }}</div></div>
-
-              <!-- Action buttons -->
-              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;">
-                <button class="btn-gold" @click="osgSavePDF" :disabled="osgSaving" style="font-size:13px;padding:10px 18px;">
-                  <span class="spinner" v-if="osgSaving"></span>{{ osgSaving ? '' : 'Save to Buyer Folder' }}
-                </button>
-                <button class="btn-navy" @click="osgDownloadPDF" style="font-size:13px;padding:10px 18px;">Download PDF</button>
-                <button class="btn-outline" @click="osgReset" style="font-size:13px;padding:10px 18px;">Start Over</button>
+              <!-- Content cards, each editable in place -->
+              <div class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);">Valuation Reasoning</h3>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('valuationReasoning')">{{ osgEditKey==='valuationReasoning' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <textarea v-if="osgEditKey==='valuationReasoning'" v-model="osgResult.valuationReasoning" rows="14" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;"></textarea>
+                <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.valuationReasoning }}</div>
               </div>
-              <div v-if="osgSaved" style="color:#16a34a;font-size:12px;font-weight:600;margin-top:8px;">Saved successfully.</div>
+              <div class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);">Recommended Offer Structure</h3>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('offerStructure')">{{ osgEditKey==='offerStructure' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <textarea v-if="osgEditKey==='offerStructure'" v-model="osgResult.offerStructure" rows="12" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;"></textarea>
+                <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.offerStructure }}</div>
+              </div>
+              <div v-if="osgResult.escalationClause" class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);">Escalation Clause</h3>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('escalationClause')">{{ osgEditKey==='escalationClause' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <textarea v-if="osgEditKey==='escalationClause'" v-model="osgResult.escalationClause" rows="6" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;"></textarea>
+                <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.escalationClause }}</div>
+              </div>
+              <div class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);">Pre-Offer Call Talking Points <span style="font-size:10px;font-weight:700;letter-spacing:.04em;color:#9ca3af;margin-left:6px;">AGENT ONLY</span></h3>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('talkingPoints')">{{ osgEditKey==='talkingPoints' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <textarea v-if="osgEditKey==='talkingPoints'" v-model="osgResult.talkingPoints" rows="12" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;"></textarea>
+                <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.talkingPoints }}</div>
+              </div>
+              <div v-if="osgResult.justinNote" class="card" style="margin-bottom:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);">Financial Team Action <span style="font-size:10px;font-weight:700;letter-spacing:.04em;color:#9ca3af;margin-left:6px;">AGENT ONLY</span></h3>
+                  <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('justinNote')">{{ osgEditKey==='justinNote' ? 'Done' : 'Edit' }}</button>
+                </div>
+                <textarea v-if="osgEditKey==='justinNote'" v-model="osgResult.justinNote" rows="6" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid var(--gold);border-radius:8px;resize:vertical;"></textarea>
+                <div v-else style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#374151;line-height:1.6;white-space:pre-wrap;">{{ osgResult.justinNote }}</div>
+              </div>
+              <div style="font-size:11px;color:#9ca3af;margin:-4px 0 14px;">Edits are kept while this page is open. Save or download a PDF to keep a copy.</div>
+
+              <!-- Chat corrections -->
+              <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px;">Refine the Strategy</h3>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 10px;line-height:1.55;">Ask for a correction in plain English, for example "Comp 1 is the subject, take it out of the reasoning" or "Make the offer $2,650,000 and update the structure." Only what you ask for changes, and every change is listed.</p>
+                <div v-if="osgChatMsgs.length || osgChatBusy" style="max-height:360px;overflow-y:auto;margin-bottom:10px;border:1px solid #e5e7eb;border-radius:8px;padding:8px 10px;background:#fafafa;">
+                  <div v-for="(m, mi) in osgChatMsgs" :key="mi" :style="{margin:'6px 0',textAlign:m.role==='agent'?'right':'left'}">
+                    <div :style="{display:'inline-block',maxWidth:'85%',padding:'8px 12px',borderRadius:'10px',fontSize:'13px',lineHeight:1.5,textAlign:'left',whiteSpace:'pre-wrap',background:m.role==='agent'?'var(--navy)':'#fff',color:m.role==='agent'?'#fff':'#374151',border:m.role==='agent'?'none':'1px solid #e5e7eb'}">{{ m.text }}</div>
+                    <div v-if="m.role==='bot' && m.changed" :style="{fontSize:'11px',marginTop:'3px',color:m.changed.length?'#b45309':'#9ca3af'}">{{ m.changed.length ? 'Changed: ' + m.changed.join(', ') : 'No sections changed.' }}</div>
+                  </div>
+                  <div v-if="osgChatBusy" style="font-size:12px;color:#9ca3af;margin:6px 0;"><span class="spinner"></span> Revising...</div>
+                </div>
+                <textarea v-model="osgChatInput" rows="3" :disabled="osgChatBusy" @keydown.enter.exact.prevent="osgChatSend" placeholder="What should change? Enter to send, Shift+Enter for a new line." style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:10px 12px;border:1.5px solid #d1d5db;border-radius:8px;resize:vertical;"></textarea>
+                <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+                  <button class="btn-gold" @click="osgChatSend" :disabled="osgChatBusy||!osgChatInput.trim()" style="font-size:12px;padding:7px 18px;">{{ osgChatBusy ? 'Revising...' : 'Send' }}</button>
+                  <button v-if="osgPrevResult" class="btn-outline" @click="osgChatUndo" :disabled="osgChatBusy" style="font-size:12px;padding:7px 14px;">Undo last change</button>
+                </div>
+                <div v-if="osgChatError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:10px;font-size:13px;color:#dc2626;">{{ osgChatError }}</div>
+              </div>
+
+              <!-- Buyer PDF -->
+              <div class="card" style="margin-bottom:12px;border-top:3px solid var(--navy);">
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px;">Buyer PDF</h3>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 10px;line-height:1.55;">Review and edit the sections above, then choose what the buyer sees. The talking points and the financial team note are for you only and are never included.</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px;color:#374151;">
+                  <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.values"> Value summary</label>
+                  <label v-if="osgResult.appraisalGap" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.appraisal"> Appraisal gap</label>
+                  <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.comps"> Comparable sales</label>
+                  <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.reasoning"> Valuation reasoning</label>
+                  <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.structure"> Offer structure</label>
+                  <label v-if="osgResult.escalationClause" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.escalation"> Escalation clause</label>
+                </div>
+                <div v-if="osgBuyerInc.comps && osgComps.length" style="margin-top:12px;padding:10px 12px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Comps in the buyer PDF</div>
+                  <label v-for="(c, ci) in osgComps" :key="ci" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#374151;padding:3px 0;">
+                    <input type="checkbox" :checked="!osgBuyerCompOff[ci]" @change="osgBuyerCompOff[ci] = !$event.target.checked" style="margin-top:2px;">
+                    <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="!c.soldDate" style="color:#b45309;"> (no sold date, so it will be labelled as not a closed sale)</span></span>
+                  </label>
+                  <div style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.5;">Comps keep their numbers from the analysis, so "Comp 3" in the reasoning still points at the right one. Comp notes are not included.</div>
+                </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
+                  <button class="btn-gold" @click="osgSavePDF('buyer')" :disabled="osgSaving" style="font-size:13px;padding:10px 18px;">
+                    <span class="spinner" v-if="osgSaving"></span>{{ osgSaving ? '' : 'Save Buyer PDF to Buyer Folder' }}
+                  </button>
+                  <button class="btn-navy" @click="osgDownloadPDF('buyer')" style="font-size:13px;padding:10px 18px;">Download Buyer PDF</button>
+                </div>
+              </div>
+
+              <!-- Agent copy -->
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+                <button class="btn-outline" @click="osgSavePDF('agent')" :disabled="osgSaving" style="font-size:13px;padding:10px 18px;">Save Agent Copy to Buyer Folder</button>
+                <button class="btn-outline" @click="osgDownloadPDF('agent')" style="font-size:13px;padding:10px 18px;">Download Agent PDF</button>
+                <button class="btn-outline" @click="osgStartOver" style="font-size:13px;padding:10px 18px;">Start Over</button>
+              </div>
+              <div style="font-size:11px;color:#9ca3af;margin-top:6px;">The agent PDF includes the talking points and the financial team note.</div>
+              <div v-if="osgSaveMsg" style="color:#16a34a;font-size:12px;font-weight:600;margin-top:8px;">{{ osgSaveMsg }}</div>
+              <div v-if="osgSaveError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:8px;font-size:13px;color:#dc2626;">{{ osgSaveError }}</div>
             </div>
           </div>
         </template>
@@ -16103,8 +16195,6 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSqFt = ref('');
     const osgBedBath = ref('');
     const osgYearBuilt = ref('');
-    const osgFetching = ref(false);
-    const osgFetchError = ref('');
     const osgComps = ref([]);
     const osgAddingComp = ref(false);
     const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', concessions:'', notes:'' });
@@ -16128,6 +16218,19 @@ No markdown. No preamble. Valid JSON only.`;
     const osgPdfDrag = ref(false);
     const osgImportRows = ref([]);
     const osgImportPick = ref([]);
+
+    // ── Offer Strategy Step 3: review, chat corrections, buyer PDF ─────
+    const osgChatMsgs = ref([]);        // {role:'agent'|'bot', text, changed?:[labels]}
+    const osgChatInput = ref('');
+    const osgChatBusy = ref(false);
+    const osgChatError = ref('');
+    const osgPrevResult = ref(null);    // one level of undo for a chat change
+    const osgEditKey = ref('');         // which section is open for hand editing
+    const osgEditTouched = ref(false);  // any hand edit this strategy (guards Start Over)
+    const osgBuyerInc = reactive({ values:true, appraisal:true, comps:true, reasoning:true, structure:true, escalation:true });
+    const osgBuyerCompOff = reactive({}); // comp index -> true when left OUT of the buyer PDF
+    const osgSaveMsg = ref('');
+    const osgSaveError = ref('');
 
     // ── Buyer Market Report state ──────────────────────────────────────────
     const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false),bmrCompareOffers=ref({}),bmrDomTip=ref(false);
@@ -16276,61 +16379,39 @@ No markdown. No preamble. Valid JSON only.`;
         (skipped.length ? '. Skipped: ' + skipped.join('; ') : '') + '.';
     }
 
-    // Reaching step 2 used to require running the AI comp search first. An
-    // agent bringing their own MLS comps can now go straight there.
-    function osgSkipSearch() {
-      osgFetchError.value = '';
+    // Step 1 -> Step 2. Comps come only from MLS sheets or the agent's own
+    // entry. The AI comp search was removed: it had no search tool and
+    // returned invented comparables.
+    function osgGoToComps() {
       osgStep.value = 2;
       Vue.nextTick(() => window.scrollTo(0, 0));
     }
 
-    async function osgFetchComps() {
-      osgFetching.value = true; osgFetchError.value = '';
-      try {
-        const prompt = `Find 4-6 comparable sales for this property. Search your knowledge of recent sales, Redfin, Zillow, and county records.
-
-Subject Property:
-Address: ${osgAddress.value}
-List Price: ${osgListPrice.value}
-Type: ${osgPropType.value}
-Sq Ft: ${osgSqFt.value || 'Unknown'}
-Bed/Bath: ${osgBedBath.value || 'Unknown'}
-Year Built: ${osgYearBuilt.value || 'Unknown'}
-
-Return ONLY a valid JSON array of comp objects. Each object must have exactly these keys:
-address, salePrice, sqft, ppsf, dom, soldDate, spLp, notes
-
-Focus on properties sold within 6 months, within 0.5 miles, similar size and type. No markdown, no preamble, valid JSON array only.`;
-        const raw = await claude(prompt, 'You are a real estate comp analyst. Return ONLY a valid JSON array. No markdown fences, no explanation.');
-        let jsonStr = raw.trim();
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        const comps = JSON.parse(jsonStr);
-        osgComps.value = comps.map(c => ({ concessions:'', ...c, editing: false, _src: 'ai' }));
-        osgStep.value = 2;
-        Vue.nextTick(() => window.scrollTo(0, 0));
-      } catch(e) { osgFetchError.value = 'Failed to fetch comps: ' + e.message; }
-      osgFetching.value = false;
+    // One builder for the comp lines, used by BOTH the analysis prompt and the
+    // chat prompt, so the two can never describe the comps differently.
+    function osgCompsText() {
+    return osgComps.value.map(function (c, i) {
+        const credit = osgNum(c.concessions);
+        const net = osgNetOfCredit(c);
+        const src = c._src === 'mls' ? 'MLS sheet' : 'agent-entered';
+        return 'Comp ' + (i + 1) + ': ' + c.address +
+          ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
+          ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
+          ' | Price net of seller credit: ' + (net === null ? (c.salePrice || 'unknown') : fmtDollar(net)) +
+          ' | ' + (c.sqft || 'unknown') + ' sqft' +
+          ' | $' + (osgShowPpsf(c) || '?') + '/sf' +
+          ' | DOM: ' + (c.dom || 'unknown') +
+          ' | Sold: ' + (c.soldDate || 'unknown') +
+          ' | SP/LP: ' + (c.spLp || 'unknown') +
+          ' | Source: ' + src +
+          ' | Notes: ' + (c.notes || 'none');
+      }).join('\n');
     }
 
     async function osgAnalyze() {
       osgAnalyzing.value = true; osgAnalyzeError.value = '';
       try {
-        const compsStr = osgComps.value.map(function (c, i) {
-          const credit = osgNum(c.concessions);
-          const net = osgNetOfCredit(c);
-          const src = c._src === 'mls' ? 'MLS sheet' : (c._src === 'ai' ? 'UNVERIFIED - AI-suggested, not from an MLS sheet' : 'agent-entered');
-          return 'Comp ' + (i + 1) + ': ' + c.address +
-            ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
-            ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
-            ' | Price net of seller credit: ' + (net === null ? (c.salePrice || 'unknown') : fmtDollar(net)) +
-            ' | ' + (c.sqft || 'unknown') + ' sqft' +
-            ' | $' + (osgShowPpsf(c) || '?') + '/sf' +
-            ' | DOM: ' + (c.dom || 'unknown') +
-            ' | Sold: ' + (c.soldDate || 'unknown') +
-            ' | SP/LP: ' + (c.spLp || 'unknown') +
-            ' | Source: ' + src +
-            ' | Notes: ' + (c.notes || 'none');
-        }).join('\n');
+        const compsStr = osgCompsText();
         const prompt = `Analyze this property and produce an offer strategy.
 
 SUBJECT PROPERTY:
@@ -16346,7 +16427,6 @@ ${compsStr}
 
 HOW TO READ THE COMPS:
 - A seller credit is cash the seller gave back at settlement. Where one exists, the price NET OF SELLER CREDIT is the truer indication of value. Value the subject off the net figures and say so in your reasoning when a credit materially moves a comp.
-- Any comp marked UNVERIFIED was suggested by AI and is not backed by an MLS sheet. Weight it below the MLS-sourced comps and say plainly in valuationReasoning that it is unverified.
 - Never invent a comp, a price, or a sold date. Work only from what is listed above.
 
 OFFER PARAMETERS:
@@ -16373,6 +16453,12 @@ No markdown. Valid JSON only.`;
         let jsonStr = raw.trim();
         if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         osgResult.value = JSON.parse(jsonStr);
+        // A regenerated strategy is a new document: old chat, undo and comp
+        // exclusions refer to the previous one and must not carry over.
+        osgChatMsgs.value = []; osgChatInput.value = ''; osgChatError.value = '';
+        osgPrevResult.value = null; osgEditKey.value = ''; osgEditTouched.value = false;
+        Object.keys(osgBuyerCompOff).forEach(k => delete osgBuyerCompOff[k]);
+        osgSaveMsg.value = ''; osgSaveError.value = '';
         osgStep.value = 3;
         Vue.nextTick(() => window.scrollTo(0, 0));
       } catch(e) { osgAnalyzeError.value = 'Strategy generation failed: ' + e.message; }
@@ -16468,21 +16554,254 @@ No markdown. Valid JSON only.`;
       return doc;
     }
 
-    function osgDownloadPDF() {
-      const doc = _osgBuildPDF();
+    const OSG_KEYS = ['maxValue','marketValue','winningOffer','appraisalGap','appraisalGapNote',
+      'valuationReasoning','offerStructure','escalationClause','talkingPoints','justinNote'];
+    const OSG_LABELS = { maxValue:'Max Value', marketValue:'Market Value', winningOffer:'Winning Offer',
+      appraisalGap:'Appraisal Gap', appraisalGapNote:'Appraisal Gap Note', valuationReasoning:'Valuation Reasoning',
+      offerStructure:'Offer Structure', escalationClause:'Escalation Clause', talkingPoints:'Talking Points',
+      justinNote:'Financial Team Action' };
+    const OSG_REQUIRED = ['maxValue','marketValue','winningOffer','valuationReasoning','offerStructure'];
+
+    function osgEditOpen(k) {
+      osgEditKey.value = (osgEditKey.value === k) ? '' : k;
+      osgEditTouched.value = true;
+      // Undo restores the strategy from before the last chat change. Once the
+      // agent edits by hand, undoing would silently throw that edit away.
+      osgPrevResult.value = null;
+    }
+
+    function _osgEmpty(v) { return v === null || v === undefined || String(v).trim() === ''; }
+
+    async function osgChatSend() {
+      const ask = (osgChatInput.value || '').trim();
+      if (!ask || osgChatBusy.value || !osgResult.value) return;
+      osgChatBusy.value = true; osgChatError.value = '';
+      osgEditKey.value = '';
+      const before = JSON.parse(JSON.stringify(osgResult.value));
+      const history = osgChatMsgs.value.slice(-10)
+        .map(m => (m.role === 'agent' ? 'AGENT: ' : 'YOU: ') + m.text).join('\n');
+      osgChatMsgs.value.push({ role: 'agent', text: ask });
+      osgChatInput.value = '';
+      try {
+        const prompt =
+          'You wrote the offer strategy below. The agent is now asking for a correction, or asking a question about it.\n\n' +
+          'SUBJECT PROPERTY:\nAddress: ' + osgAddress.value + '\nList Price: ' + osgListPrice.value +
+          '\nDOM: ' + (osgDOM.value || 'Unknown') + '\nType: ' + osgPropType.value +
+          '\nSq Ft: ' + (osgSqFt.value || 'Unknown') + '\nBed/Bath: ' + (osgBedBath.value || 'Unknown') + '\n\n' +
+          'COMPARABLE SALES (these are the ONLY comps that exist):\n' + osgCompsText() + '\n\n' +
+          'OFFER PARAMETERS:\nCompetition: ' + osgCompetition.value + '\nFinancing: ' + osgFinancing.value +
+          '\nFORWARD Financial Team: ' + (osgJustin.value === 'yes' ? 'Yes' : 'No') +
+          '\nPre-Underwritten: ' + (osgPreUW.value === 'yes' ? 'Yes' : 'No') +
+          '\nSeller Motivation: ' + (osgSellerMotivation.value || 'Unknown') + '\n\n' +
+          'CURRENT STRATEGY (JSON):\n' + JSON.stringify(before, null, 2) + '\n\n' +
+          (history ? 'CONVERSATION SO FAR:\n' + history + '\n\n' : '') +
+          'AGENT REQUEST:\n' + ask + '\n\n' +
+          'RULES:\n' +
+          '- Return ONLY a JSON object of the form {"reply": "...", "strategy": {...}}. No markdown, no code fences.\n' +
+          '- "strategy" must contain every one of these keys: ' + OSG_KEYS.join(', ') + '. Use null where a field does not apply.\n' +
+          '- Change only what the agent asked for, plus any other text that would otherwise contradict that change, such as a dollar figure repeated in the reasoning or the offer structure. Copy every other field back exactly as it is, character for character.\n' +
+          '- Never invent a comparable sale, a price, a date or a square footage. Work only from the comps listed above. If the agent asks you to use a comp that is not listed, do not add it; say in "reply" that it has to be added on Step 2 and the strategy regenerated.\n' +
+          '- If the agent asks for a figure the comps do not support, make the change they asked for and say plainly in "reply" that the comps do not support it.\n' +
+          '- If the request is a question, answer it in "reply" and return the strategy unchanged.\n' +
+          '- maxValue, marketValue and winningOffer are formatted dollar strings such as "$2,625,000".\n' +
+          '- "reply" is one to three plain-English sentences saying what you changed, or answering the question.';
+        const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney revising your own offer strategy at the agent\'s direction. Valid JSON only, no markdown.');
+        let jsonStr = String(raw || '').trim();
+        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
+        let obj;
+        try { obj = JSON.parse(jsonStr); } catch (e) { throw new Error('the reply was not valid JSON'); }
+        const next = obj && obj.strategy;
+        if (!next || typeof next !== 'object' || Array.isArray(next)) throw new Error('the reply had no strategy in it');
+        OSG_KEYS.forEach(k => {
+          if (!(k in next)) throw new Error('the reply left out ' + OSG_LABELS[k]);
+          if (next[k] !== null && typeof next[k] !== 'string') throw new Error(OSG_LABELS[k] + ' came back in the wrong format');
+        });
+        OSG_REQUIRED.forEach(k => { if (_osgEmpty(next[k])) throw new Error('the reply blanked out ' + OSG_LABELS[k]); });
+        const clean = {};
+        OSG_KEYS.forEach(k => { clean[k] = next[k]; });
+        const changed = OSG_KEYS.filter(k => {
+          const x = _osgEmpty(before[k]) ? '' : String(before[k]);
+          const y = _osgEmpty(clean[k]) ? '' : String(clean[k]);
+          return x !== y;
+        });
+        if (changed.length) {
+          osgPrevResult.value = before;
+          osgResult.value = clean;
+        }
+        osgChatMsgs.value.push({ role: 'bot', text: String(obj.reply || (changed.length ? 'Done.' : 'No change made.')),
+                                 changed: changed.map(k => OSG_LABELS[k]) });
+      } catch (e) {
+        // Nothing is applied. The request goes back in the box so it can be resent.
+        osgChatMsgs.value.pop();
+        osgChatInput.value = ask;
+        osgChatError.value = 'Nothing was changed: ' + e.message + '. Try sending it again.';
+      }
+      osgChatBusy.value = false;
+    }
+
+    function osgChatUndo() {
+      if (!osgPrevResult.value) return;
+      osgResult.value = osgPrevResult.value;
+      osgPrevResult.value = null;
+      osgChatMsgs.value.push({ role: 'bot', text: 'Undid the last change. The strategy is back to how it was before it.', changed: [] });
+    }
+
+    function osgBuyerHasContent() {
+      const r = osgResult.value; if (!r) return false;
+      const i = osgBuyerInc;
+      return !!(i.values || (i.appraisal && r.appraisalGap) || (i.comps && osgComps.value.some((c, ci) => !osgBuyerCompOff[ci])) ||
+                (i.reasoning && r.valuationReasoning) || (i.structure && r.offerStructure) || (i.escalation && r.escalationClause));
+    }
+
+    // Buyer-facing PDF. Built separately from _osgBuildPDF so the agent copy is
+    // untouched. The talking points and the financial team note are agent-only
+    // and are NEVER written here, whatever is ticked.
+    function _osgBuildBuyerPDF() {
+      if (!osgResult.value || !osgBuyerHasContent()) return null;
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:'pt', format:'letter' });
+      const W = 612, H = 792, navy = [26,39,68], gold = [201,168,76], white = [255,255,255], gray = [107,114,128], amber = [146,64,14];
+      const agent = agentName.value || '';
+      const brokerage = localStorage.getItem('fos_brokerage') || 'Corcoran McEnearney';
+      const buyerName = byrActiveBuyer.value ? byrActiveBuyer.value.buyer_name : '';
+      const r = osgResult.value, inc = osgBuyerInc;
+
+      function addHdr(isFirst) {
+        doc.setFillColor(...navy); doc.rect(0, 0, W, isFirst ? 72 : 52, 'F');
+        if (typeof FORWARD_LOGO_B64 !== 'undefined' && FORWARD_LOGO_B64) {
+          doc.addImage(FORWARD_LOGO_B64, 'PNG', 40, isFirst ? 15 : 10, (isFirst?44:32)*4.85, isFirst?44:32);
+        } else {
+          doc.setFont('helvetica','bold'); doc.setFontSize(isFirst?22:16); doc.setTextColor(...white);
+          doc.text('FORWARD', 50, isFirst?35:28);
+        }
+        if (isFirst && agent) {
+          doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...white);
+          doc.text(agent, W-50, 35, {align:'right'});
+          doc.setTextColor(...gold); doc.text(brokerage, W-50, 48, {align:'right'});
+        }
+        doc.setFillColor(...gold); doc.rect(0, isFirst?74:54, W, 3, 'F');
+        return isFirst ? 104 : 76;
+      }
+      let y = addHdr(true);
+      function ensureSpace(n) { if (y + n > H - 60) { doc.addPage(); y = addHdr(false); } }
+      // Style is re-applied on EVERY line: a page break inside ensureSpace()
+      // redraws the header, which leaves the text colour set to white when the
+      // logo is unavailable, and the rest of the paragraph would print invisibly.
+      function para(text, size, color) {
+        doc.setFontSize(size);
+        const lines = doc.splitTextToSize(String(text), W - 100);
+        for (const line of lines) {
+          ensureSpace(size + 4);
+          doc.setFont('helvetica','normal'); doc.setFontSize(size); doc.setTextColor(...color);
+          doc.text(line, 50, y); y += size + 4;
+        }
+      }
+      function section(title, text) {
+        if (_osgEmpty(text)) return;
+        ensureSpace(60);
+        doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...navy);
+        doc.text(title, 50, y); y += 16;
+        para(text, 10, [50,50,50]); y += 10;
+      }
+
+      doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(...navy);
+      doc.text('Offer Recommendation', 50, y); y += 18;
+      doc.setFont('helvetica','normal'); doc.setFontSize(11); doc.setTextColor(...gray);
+      if (buyerName) { doc.text('Prepared for ' + buyerName, 50, y); y += 14; }
+      doc.text(osgAddress.value, 50, y); y += 14;
+      doc.text(new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}), 50, y); y += 20;
+      doc.setDrawColor(...gold); doc.setLineWidth(1.5); doc.line(50, y, W-50, y); y += 20;
+
+      if (inc.values) {
+        function valBox(label, val, x, bg, txtColor) {
+          doc.setFillColor(...bg); doc.roundedRect(x, y, 160, 50, 6, 6, 'F');
+          doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...(txtColor || navy));
+          doc.text(label, x + 80, y + 16, {align:'center'});
+          doc.setFont('helvetica','bold'); doc.setFontSize(16);
+          doc.text(String(val || ''), x + 80, y + 38, {align:'center'});
+        }
+        valBox('MARKET VALUE', r.marketValue, 50, [249,250,252], navy);
+        valBox('RECOMMENDED OFFER', r.winningOffer, 226, gold, navy);
+        valBox('TOP OF RANGE', r.maxValue, 402, navy, gold);
+        y += 68;
+      }
+      if (inc.appraisal && r.appraisalGap) section('Appraisal Gap: ' + r.appraisalGap, r.appraisalGapNote || ' ');
+
+      // Comps keep their numbers from the analysis, so "Comp 3" in the
+      // reasoning still points at the right one when others are left out.
+      const shown = inc.comps ? osgComps.value.map((c, i) => ({ c: c, n: i + 1 })).filter(x => !osgBuyerCompOff[x.n - 1]) : [];
+      if (shown.length) {
+        ensureSpace(60);
+        doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...navy);
+        doc.text('Comparable Sales', 50, y); y += 18;
+        shown.forEach(x => {
+          const c = x.c;
+          ensureSpace(52);
+          doc.setFont('helvetica','bold'); doc.setFontSize(11);
+          doc.splitTextToSize('Comp ' + x.n + ': ' + (c.address || ''), W - 100).forEach(l => {
+            ensureSpace(15);
+            doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...navy);
+            doc.text(l, 50, y); y += 14;
+          });
+          const price = c.salePrice ? fmtDollar(c.salePrice) : '';
+          const parts = [];
+          // Only a comp with a sold date is described as sold. A list-price-only
+          // sheet is labelled as such rather than passed off as a sale.
+          if (price) parts.push(c.soldDate ? ('Sold for ' + price + ' on ' + c.soldDate) : (price + ', not a recorded closed sale'));
+          if (c.sqft) parts.push(fmtComma(c.sqft) + ' sq ft');
+          if (osgShowPpsf(c)) parts.push('$' + fmtComma(osgShowPpsf(c)) + '/sq ft');
+          if (!_osgEmpty(c.dom)) parts.push(c.dom + ' days on market');
+          if (c.spLp) parts.push('sale-to-list ' + c.spLp);
+          if (parts.length) para(parts.join('  |  '), 10, gray);
+          const credit = osgNum(c.concessions), net = osgNetOfCredit(c);
+          if (credit && net !== null) para('Seller credit to the buyer: ' + fmtDollar(credit) + '. Net of the credit: ' + fmtDollar(net) + '.', 10, amber);
+          y += 6;
+        });
+        y += 6;
+      }
+      if (inc.reasoning) section('Valuation Reasoning', r.valuationReasoning);
+      if (inc.structure) section('Recommended Offer Structure', r.offerStructure);
+      if (inc.escalation && r.escalationClause) section('Escalation Clause', r.escalationClause);
+
+      const foot = 'Prepared by ' + (agent ? agent + ', ' : '') + brokerage + '. Based on the comparable sales listed. This is not an appraisal.';
+      const pages = doc.getNumberOfPages();
+      for (let p = 1; p <= pages; p++) {
+        doc.setPage(p);
+        doc.setFont('helvetica','normal'); doc.setFontSize(8); doc.setTextColor(...gray);
+        doc.text(foot, 50, H - 28);
+        doc.text('Page ' + p + ' of ' + pages, W - 50, H - 28, {align:'right'});
+      }
+      return doc;
+    }
+
+    function _osgFileName(kind) {
+      return (kind === 'buyer' ? 'Offer_Recommendation_' : 'Offer_Strategy_') + osgAddress.value.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+    }
+
+    function osgDownloadPDF(kind) {
+      const buyer = kind === 'buyer';
+      if (buyer && osgResult.value && !osgBuyerHasContent()) { showToast('Tick at least one section for the buyer PDF.', 3500); return; }
+      const doc = buyer ? _osgBuildBuyerPDF() : _osgBuildPDF();
       if (!doc) { showToast('Generate the strategy first.', 3000); return; }
-      openPDFBlob(doc.output('blob'), 'Offer_Strategy_' + osgAddress.value.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf');
+      openPDFBlob(doc.output('blob'), _osgFileName(buyer ? 'buyer' : 'agent'));
       showToast('PDF ready — tap ⬇ Save to download.');
     }
 
-    async function osgSavePDF() {
-      osgSaving.value = true;
+    // A folder save either happened or it did not, and the agent is told which.
+    // This used to download locally on failure, say "folder sync pending" and
+    // mark itself saved, but nothing ever retried the upload.
+    async function osgSavePDF(kind) {
+      const buyer = kind === 'buyer';
+      if (buyer && osgResult.value && !osgBuyerHasContent()) { showToast('Tick at least one section for the buyer PDF.', 3500); return; }
+      osgSaving.value = true; osgSaved.value = false; osgSaveMsg.value = ''; osgSaveError.value = '';
+      const what = buyer ? 'Buyer PDF' : 'Agent copy';
       try {
-        const doc = _osgBuildPDF();
+        const doc = buyer ? _osgBuildBuyerPDF() : _osgBuildPDF();
         if (!doc) throw new Error('Could not build PDF');
         const pdfBlob = doc.output('blob');
-        const fileName = 'Offer_Strategy_' + osgAddress.value.replace(/[^a-zA-Z0-9]/g, '_') + '.pdf';
+        const fileName = _osgFileName(buyer ? 'buyer' : 'agent');
         if (byrActiveBuyer.value) {
+          let ok = false;
           try {
             const _osgFolId = (byrActiveBuyer.value.subfolder_drive_ids && byrActiveBuyer.value.subfolder_drive_ids.offer_documents) || '';
             const { driveFileId: _osg1id, driveLink: _osg1dl } = await fosUploadToDrive(pdfBlob, fileName, 'application/pdf', _osgFolId);
@@ -16491,23 +16810,48 @@ No markdown. Valid JSON only.`;
             _osg1fd.append('file_name', fileName); _osg1fd.append('subfolder', 'offer_documents');
             _osg1fd.append('buyer_id', byrActiveBuyer.value.id); _osg1fd.append('uploaded_by', agentName.value);
             const res = await fetch(RAILWAY_URL + '/upload-buyer-file', { method: 'POST', body: _osg1fd });
-            if (res.ok) { showGoldToast('Offer strategy saved to buyer folder.'); osgSaved.value = true; }
-            else { openPDFBlob(pdfBlob, fileName); showGoldToast('Downloaded locally — folder sync pending.'); osgSaved.value = true; }
-          } catch(_osgErr) { openPDFBlob(pdfBlob, fileName); showGoldToast('Downloaded locally — folder sync pending.'); osgSaved.value = true; }
+            ok = res.ok;
+          } catch (_osgErr) { ok = false; }
+          if (ok) {
+            osgSaved.value = true;
+            osgSaveMsg.value = what + ' saved to the buyer folder.';
+            showGoldToast(osgSaveMsg.value);
+          } else {
+            openPDFBlob(pdfBlob, fileName);
+            osgSaveError.value = 'Could not save to the buyer folder. The PDF was downloaded instead. Upload it to the folder by hand.';
+            showToast(osgSaveError.value, 6000);
+          }
         } else {
-          openPDFBlob(pdfBlob, fileName); showGoldToast('PDF downloaded.'); osgSaved.value = true;
+          openPDFBlob(pdfBlob, fileName);
+          osgSaveMsg.value = 'No buyer is linked to this strategy, so nothing was saved to a folder. The PDF was downloaded.';
+          showGoldToast('PDF downloaded.');
         }
-      } catch(e) { showToast('Save failed: ' + e.message, 4000); }
+      } catch (e) {
+        osgSaveError.value = 'Save failed: ' + e.message;
+        showToast(osgSaveError.value, 4000);
+      }
       osgSaving.value = false;
+    }
+
+    // Start Over wipes chat corrections and hand edits. Ask first when there are any.
+    function osgStartOver() {
+      if ((osgChatMsgs.value.length || osgEditTouched.value) &&
+          !window.confirm('Start over? Your edits and chat corrections to this strategy will be lost. Download or save the PDF first if you want to keep them.')) return;
+      osgReset();
     }
 
     function osgReset() {
       osgStep.value = 1; osgAddress.value = ''; osgListPrice.value = ''; osgDOM.value = '';
       osgPropType.value = 'Single Family'; osgSqFt.value = ''; osgBedBath.value = ''; osgYearBuilt.value = '';
-      osgFetching.value = false; osgFetchError.value = ''; osgComps.value = []; osgAddingComp.value = false;
+      osgComps.value = []; osgAddingComp.value = false;
       Object.keys(osgNewComp).forEach(k => osgNewComp[k] = '');
       osgPdfBusy.value = false; osgPdfError.value = ''; osgPdfStatus.value = '';
       osgPdfDrag.value = false; osgImportRows.value = []; osgImportPick.value = [];
+      osgChatMsgs.value = []; osgChatInput.value = ''; osgChatBusy.value = false; osgChatError.value = '';
+      osgPrevResult.value = null; osgEditKey.value = ''; osgEditTouched.value = false;
+      Object.assign(osgBuyerInc, { values:true, appraisal:true, comps:true, reasoning:true, structure:true, escalation:true });
+      Object.keys(osgBuyerCompOff).forEach(k => delete osgBuyerCompOff[k]);
+      osgSaveMsg.value = ''; osgSaveError.value = '';
       osgCompetition.value = 'moderate'; osgFinancing.value = 'conventional'; osgJustin.value = 'no';
       osgPreUW.value = 'no'; osgSellerMotivation.value = ''; osgAnalyzing.value = false;
       osgAnalyzeError.value = ''; osgResult.value = null; osgSaving.value = false; osgSaved.value = false;
@@ -18092,8 +18436,12 @@ const CHANGELOG = [
         detail: 'A comp that sold for $1,000,000 with a $25,000 seller credit did not really sell for $1,000,000. The seller handed $25,000 back at settlement, so the market paid $975,000. Until now the Offer Strategy Generator had nowhere to record that, and the strategy was built on the higher number. That pushes a buyer to offer more than the comps support.\n\nEvery comp now has a Seller Credit field. When there is a credit, the card shows what the sale comes to net of it, and the strategy is valued off that net figure. Imported comps pull the credit from the Total Amount Paid by Seller Towards Closing Costs line on the MLS sheet, which is the dollar figure, not the yes or no field.\n\nHow to use: Check the Seller Credit line on every comp before you generate. If you added a comp by hand, enter the credit yourself or leave it blank when there was none.\n\nBest practice: Ask the listing agent what went back to the buyer. Credits do not always reach the MLS sheet, and a credit you do not know about makes a comp look stronger than it was.'
       },
       {
-        title: 'Comps Are Now Labelled by Where They Came From',
-        detail: 'The Search for Comparable Sales button on Step 1 is an AI suggestion. It does not query the MLS and it never did. It is useful for a first look at a neighbourhood and it is not evidence.\n\nEvery comp now carries a label: FROM MLS SHEET, UNVERIFIED AI SUGGESTION, or ENTERED BY HAND. The strategy is told which is which and is instructed to weight the unverified ones below the rest and to say so in its reasoning.\n\nStep 1 also has a second button now, so you can go straight to Step 2 and upload your MLS sheets without running the AI search first.\n\nHow to use: Look at the label on each card before you generate. If a card says UNVERIFIED, confirm it against an MLS sheet or take it off the list.\n\nBest practice: For an offer you are actually writing, skip the search and upload the sheets. Every price that reaches a client should trace back to a document.'
+        title: 'The AI Comp Search Is Gone',
+        detail: 'The Search for Comparable Sales button on Step 1 has been removed. It never queried the MLS. It asked AI to recall recent sales from memory, which meant the addresses, prices and sold dates it returned could be invented while looking exactly like real ones, and the offer price was built on them.\n\nStep 1 now has one button, Upload MLS Comps, which takes you straight to the MLS drop zone on Step 2. Every comp is labelled FROM MLS SHEET or ENTERED BY HAND.\n\nHow to use: Fill in the subject property, press Upload MLS Comps, and drop in your Bright sheets. You can still add a comp by hand with + Add Your Own Comp.\n\nBest practice: Every price that reaches a client should trace back to a document. If you enter a comp by hand, have the MLS sheet for it open while you do.'
+      },
+      {
+        title: 'Review, Correct and Send a Buyer Version of the Offer Strategy',
+        detail: 'Once the strategy is generated you can now work on it before it goes anywhere, the way the seller package works.\n\nEvery section has an Edit button, including the three figures. Below the sections is a chat box: tell it what is wrong in plain English, such as \u201cComp 1 is the subject, take it out of the reasoning\u201d or \u201cmake the offer $2,650,000 and update the structure,\u201d and it rewrites only what you asked for plus anything that would otherwise contradict it. Every reply lists exactly which sections changed, and Undo last change puts it back. If the reply comes back incomplete, nothing is changed and your request stays in the box to resend.\n\nThere is now a Buyer PDF alongside the agent PDF. It carries the value summary, the comparable sales, the valuation reasoning and the offer structure. Tick which sections and which comps go in. The talking points and the financial team note are never included in it.\n\nHow to use: Read each section, fix anything by hand or through the chat, then Download Buyer PDF to review it before you Save Buyer PDF to Buyer Folder.\n\nBest practice: The reasoning is written for you, not the buyer. Read it once as the buyer will before you send it. Hand-editing a figure does not rewrite the paragraphs that mention it, so make number changes through the chat, which updates every section they touch.'
       }
     ]
   }
@@ -20726,13 +21074,16 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fmtComma, fmtDollar,
       // Offer Strategy Generator
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
-      osgFetching, osgFetchError, osgComps, osgAddingComp, osgNewComp,
+      osgComps, osgAddingComp, osgNewComp,
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
-      osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgSkipSearch,
+      osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
-      osgFetchComps, osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
+      osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
+      osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
+      osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
+      osgEditOpen, osgChatSend, osgChatUndo, osgStartOver,
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
