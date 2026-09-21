@@ -4608,8 +4608,8 @@ body {
                 <div v-if="osgBuyerInc.comps && osgComps.length" style="margin-top:12px;padding:10px 12px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px;">
                   <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Comps in the buyer PDF</div>
                   <label v-for="(c, ci) in osgComps" :key="ci" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#374151;padding:3px 0;">
-                    <input type="checkbox" :checked="!osgBuyerCompOff[ci]" @change="osgBuyerCompOff[ci] = !$event.target.checked" style="margin-top:2px;">
-                    <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="!c.soldDate" style="color:#b45309;"> (no sold date, so it will be labelled as not a closed sale)</span></span>
+                    <input type="checkbox" :checked="!osgBuyerCompOff[ci]" :disabled="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" @change="osgBuyerCompOff[ci] = !$event.target.checked" style="margin-top:2px;">
+                    <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" style="color:#dc2626;font-weight:600;"> This address matches the subject property and is excluded from the buyer PDF.</span><span v-else-if="!c.soldDate" style="color:#b45309;"> (no sold date, so it will be labelled as not a closed sale)</span></span>
                   </label>
                   <div style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.5;">Comps keep their numbers from the analysis, so "Comp 3" in the reasoning still points at the right one. Comp notes are not included.</div>
                 </div>
@@ -16729,7 +16729,9 @@ No markdown. Valid JSON only.`;
 
       // Comps keep their numbers from the analysis, so "Comp 3" in the
       // reasoning still points at the right one when others are left out.
-      const shown = inc.comps ? osgComps.value.map((c, i) => ({ c: c, n: i + 1 })).filter(x => !osgBuyerCompOff[x.n - 1]) : [];
+      const subjectNorm = osgNorm(osgAddress.value);
+      const shown = inc.comps ? osgComps.value.map((c, i) => ({ c: c, n: i + 1 }))
+        .filter(x => !osgBuyerCompOff[x.n - 1] && !(subjectNorm && osgNorm(x.c.address) === subjectNorm)) : [];
       if (shown.length) {
         ensureSpace(60);
         doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...navy);
