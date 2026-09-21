@@ -4324,23 +4324,103 @@ body {
                   {{ osgFetching ? 'Searching for comps...' : 'Search for Comparable Sales' }}
                 </button>
                 <div v-if="osgFetchError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgFetchError }}</div>
+                <button class="btn-outline" @click="osgSkipSearch" :disabled="!osgAddress.trim()||!osgListPrice.trim()" style="width:100%;margin-top:10px;padding:11px;font-size:13px;">
+                  Skip the search. I have MLS comps to upload
+                </button>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#9ca3af;margin:8px 0 0;line-height:1.5;">
+                  The search above is an AI suggestion, not an MLS query. For an offer you are actually writing, upload the MLS sheets on the next step and work from those.
+                </p>
               </div>
             </div>
 
             <!-- STEP 2: Comp Review + Offer Parameters -->
             <div v-if="osgStep===2">
+
+              <!-- MLS comp import -->
+              <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
+                <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Import Comps from MLS</h3>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;line-height:1.55;">
+                  Drop in Bright MLS sheets and the comps fill themselves. Same reader the CMA builder uses. Nothing is estimated. Whatever the sheet does not print stays blank for you to fill in.
+                </p>
+
+                <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:12px;">
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:6px;">What your export needs to include</div>
+                  <div style="font-size:12px;color:#78350f;line-height:1.6;">
+                    In Bright, run your search, select the listings, then <strong>Print &rarr; Agent Full &rarr; Save as PDF</strong>. Each sheet has to show:
+                    <ul style="margin:6px 0 0;padding-left:18px;">
+                      <li>Address</li>
+                      <li>Sales price, meaning the <strong>close price</strong> and not the list price</li>
+                      <li>Seller credit toward closing costs, where there is one</li>
+                      <li>Square footage, above grade finished</li>
+                      <li>$/SF</li>
+                      <li>DOM</li>
+                      <li>Sold date</li>
+                    </ul>
+                    <div style="margin-top:8px;">If the sheet also prints the list price, SP/LP is worked out for you. Closed sales only. An active or pending listing has a list price, not a sale price, so it will come in unticked.</div>
+                  </div>
+                </div>
+
+                <label
+                  :style="{display:'block',border:'2px dashed '+(osgPdfDrag?'var(--gold)':'#d1d5db'),background:osgPdfDrag?'#fffbeb':'#fafafa',borderRadius:'10px',padding:'22px 16px',textAlign:'center',cursor:'pointer'}"
+                  @dragover.prevent="osgPdfDrag=true" @dragenter.prevent="osgPdfDrag=true"
+                  @dragleave.prevent="osgPdfDrag=false"
+                  @drop.prevent="osgPdfDrag=false; osgUploadMLS($event.dataTransfer.files)">
+                  <input type="file" accept="application/pdf" multiple style="display:none;"
+                         @change="osgUploadMLS($event.target.files); $event.target.value=''">
+                  <span class="spinner" v-if="osgPdfBusy"></span>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);">
+                    {{ osgPdfBusy ? 'Reading your sheets...' : 'Drop MLS PDFs here, or click to choose' }}
+                  </div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:4px;">Up to 12 PDFs at a time. One PDF can hold several listings.</div>
+                </label>
+
+                <div v-if="osgPdfError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgPdfError }}</div>
+                <div v-if="osgPdfStatus" style="font-family:'Cormorant Garamond',serif;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#15803d;">{{ osgPdfStatus }}</div>
+
+                <!-- Review what was read before anything lands on the list -->
+                <div v-if="osgImportRows.length" style="margin-top:14px;border-top:1px solid #e5e7eb;padding-top:14px;">
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:13px;font-weight:700;color:var(--navy);margin-bottom:8px;">
+                    Read {{ osgImportRows.length }} propert{{ osgImportRows.length===1?'y':'ies' }}. Tick what you want as comps.
+                  </div>
+                  <div v-for="(r, ri) in osgImportRows" :key="ri" style="display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px solid #f3f4f6;">
+                    <input type="checkbox" v-model="osgImportPick[ri]" :disabled="!r.ok" style="margin-top:3px;width:17px;height:17px;">
+                    <div style="flex:1;min-width:0;">
+                      <div style="font-size:13px;font-weight:600;color:var(--navy);">{{ osgFullAddr(r) || r.file }}</div>
+                      <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ osgRouteLabel(r) }} &middot; {{ r.file }}</div>
+                      <div v-if="r.ok && r.salePrice" style="font-size:12px;color:#6b7280;margin-top:3px;">
+                        {{ fmtDollar(r.salePrice) }}<span v-if="r.gla"> &middot; {{ fmtComma(r.gla) }} sq ft</span><span v-if="r.soldDate"> &middot; sold {{ r.soldDate }}</span><span v-if="r.concessions"> &middot; seller credit {{ fmtDollar(r.concessions) }}</span>
+                      </div>
+                      <div v-if="osgRouteNote(r)" style="font-size:12px;color:#b45309;margin-top:4px;line-height:1.5;">{{ osgRouteNote(r) }}</div>
+                    </div>
+                  </div>
+                  <div style="display:flex;gap:8px;margin-top:12px;">
+                    <button class="btn-gold" @click="osgApplyImport" style="font-size:12px;padding:7px 18px;">Add Ticked Comps</button>
+                    <button class="btn-outline" @click="osgImportCancel" style="font-size:12px;padding:7px 18px;">Cancel</button>
+                  </div>
+                </div>
+              </div>
+
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Comparable Sales ({{ osgComps.length }})</h3>
               <div v-for="(comp, ci) in osgComps" :key="ci" class="card" style="margin-bottom:12px;position:relative;">
                 <button @click="osgComps.splice(ci, 1)" style="position:absolute;top:8px;right:8px;background:#fef2f2;color:#dc2626;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">✕</button>
                 <template v-if="!comp.editing">
-                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;">{{ comp.address }}</div>
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:6px;padding-right:34px;">{{ comp.address }}</div>
+                  <div style="margin-bottom:8px;">
+                    <span v-if="comp._src==='mls'" style="display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">FROM MLS SHEET</span>
+                    <span v-else-if="comp._src==='ai'" style="display:inline-block;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">UNVERIFIED AI SUGGESTION</span>
+                    <span v-else style="display:inline-block;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">ENTERED BY HAND</span>
+                  </div>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;color:#6b7280;">
                     <div>Sale: <strong style="color:var(--navy);">{{ fmtDollar(comp.salePrice) || comp.salePrice }}</strong></div>
-                    <div>$/SF: <strong>{{ comp.ppsf ? '$' + fmtComma(comp.ppsf) : comp.ppsf }}</strong></div>
+                    <div>$/SF: <strong>{{ osgShowPpsf(comp) ? '$' + fmtComma(osgShowPpsf(comp)) : '' }}</strong></div>
                     <div>DOM: <strong>{{ comp.dom }}</strong></div>
                     <div>Sq Ft: <strong>{{ fmtComma(comp.sqft) || comp.sqft }}</strong></div>
                     <div>SP/LP: <strong>{{ comp.spLp }}</strong></div>
                     <div>Sold: <strong>{{ comp.soldDate }}</strong></div>
+                    <div style="grid-column:1/-1;">Seller credit: <strong :style="{color: osgNum(comp.concessions) ? '#b45309' : 'inherit'}">{{ osgNum(comp.concessions) ? fmtDollar(comp.concessions) : 'None stated' }}</strong></div>
+                  </div>
+                  <div v-if="osgNetOfCredit(comp)!==null" style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 9px;margin-top:8px;">
+                    Net of the seller credit this sale is <strong>{{ fmtDollar(osgNetOfCredit(comp)) }}</strong>. The strategy is valued off the net figure.
                   </div>
                   <div v-if="comp.notes" style="font-size:11px;color:#9ca3af;margin-top:6px;">{{ comp.notes }}</div>
                   <button class="btn-outline" @click="comp.editing=true" style="font-size:11px;padding:4px 12px;margin-top:8px;">Edit</button>
@@ -4354,6 +4434,7 @@ body {
                     <div class="form-row"><label>DOM</label><input v-model="comp.dom"></div>
                     <div class="form-row"><label>Sold Date</label><input v-model="comp.soldDate"></div>
                     <div class="form-row"><label>SP/LP</label><input v-model="comp.spLp"></div>
+                    <div class="form-row" style="grid-column:1/-1;"><label>Seller Credit to Buyer</label><input v-model="comp.concessions" placeholder="e.g. 15000 - leave blank if none"></div>
                     <div class="form-row" style="grid-column:1/-1;"><label>Notes</label><input v-model="comp.notes"></div>
                   </div>
                   <button class="btn-navy" @click="comp.editing=false" style="font-size:11px;padding:4px 12px;margin-top:8px;">Done</button>
@@ -4374,10 +4455,11 @@ body {
                   <div class="form-row"><label>DOM</label><input v-model="osgNewComp.dom"></div>
                   <div class="form-row"><label>Sold Date</label><input v-model="osgNewComp.soldDate"></div>
                   <div class="form-row"><label>SP/LP</label><input v-model="osgNewComp.spLp"></div>
+                  <div class="form-row" style="grid-column:1/-1;"><label>Seller Credit to Buyer</label><input v-model="osgNewComp.concessions" placeholder="e.g. 15000 - leave blank if none"></div>
                   <div class="form-row" style="grid-column:1/-1;"><label>Notes</label><input v-model="osgNewComp.notes"></div>
                 </div>
                 <div style="display:flex;gap:8px;margin-top:10px;">
-                  <button class="btn-gold" @click="if(osgNewComp.address){osgComps.push({...osgNewComp,editing:false});Object.keys(osgNewComp).forEach(k=>osgNewComp[k]='');osgAddingComp=false;}" style="font-size:12px;padding:6px 16px;">Add</button>
+                  <button class="btn-gold" @click="if(osgNewComp.address){osgComps.push({...osgNewComp,editing:false,_src:'manual'});Object.keys(osgNewComp).forEach(k=>osgNewComp[k]='');osgAddingComp=false;}" style="font-size:12px;padding:6px 16px;">Add</button>
                   <button class="btn-outline" @click="osgAddingComp=false" style="font-size:12px;padding:6px 16px;">Cancel</button>
                 </div>
               </div>
@@ -16025,7 +16107,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgFetchError = ref('');
     const osgComps = ref([]);
     const osgAddingComp = ref(false);
-    const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', notes:'' });
+    const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', concessions:'', notes:'' });
     const osgCompetition = ref('moderate');
     const osgFinancing = ref('conventional');
     const osgJustin = ref('no');
@@ -16037,12 +16119,170 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSaving = ref(false);
     const osgSaved = ref(false);
 
+    // ── Offer Strategy: MLS comp import ────────────────────────────────
+    // Calls the SAME backend the CMA builder uses (/api/cma/parse-listings)
+    // so there is one MLS parser, not two that can drift apart.
+    const osgPdfBusy = ref(false);
+    const osgPdfError = ref('');
+    const osgPdfStatus = ref('');
+    const osgPdfDrag = ref(false);
+    const osgImportRows = ref([]);
+    const osgImportPick = ref([]);
+
     // ── Buyer Market Report state ──────────────────────────────────────────
     const bmrStep=ref(1),bmrFile=ref(null),bmrDragOver=ref(false),bmrAnalysis=ref(null),bmrMarketConditions=ref('balanced'),bmrSubjectDom=ref(''),bmrQualityWarnings=ref([]),bmrNExcluded=ref(0),bmrNoSubject=ref(false),bmrCompareOffers=ref({}),bmrDomTip=ref(false);
     const bmrClientName=ref(''),bmrOfferPrice=ref(''),bmrReportTitle=ref(''),bmrOfferTerms=ref([]),bmrRegenerating=ref(false),bmrRegenError=ref(''),bmrLastRegen=ref('');
     const bmrDisclaimerAck=ref(false),bmrAnalyzing=ref(false),bmrDeploying=ref(false);
     const bmrUploadError=ref(''),bmrDeployError=ref(''),bmrResult=ref(null),bmrCopied=ref(false);
     const bmrTermOptions=['Escalation clause','Waive inspection','Waive appraisal contingency','Pre-underwritten financing','Flexible settlement date','Rent-back offered','As-is purchase','Home warranty included','Personal property included'];
+
+    function osgNum(v) {
+      if (v === undefined || v === null || v === '') return null;
+      const n = Number(String(v).replace(/[^0-9.]/g, ''));
+      return isNaN(n) ? null : n;
+    }
+    // $/SF follows the MLS convention: gross close price over above-grade
+    // finished SF. A seller credit is reported on its own line instead of
+    // being folded in here, so the agent sees both numbers.
+    function osgPpsf(price, sqft) {
+      const p = osgNum(price), q = osgNum(sqft);
+      if (!p || !q) return '';
+      return String(Math.round(p / q));
+    }
+    // Derive $/SF whenever sale price and sq ft are both present, so an
+    // edited sale price cannot leave a stale $/SF on screen or in the
+    // analysis prompt. Falls back to the stored field when sq ft is unknown.
+    function osgShowPpsf(c) {
+      const d = osgPpsf(c.salePrice, c.sqft);
+      return d || (c.ppsf ? String(c.ppsf).replace(/[^0-9.]/g, '') : '');
+    }
+    function osgSpLp(sale, list) {
+      const sp = osgNum(sale), lp = osgNum(list);
+      if (!sp || !lp) return '';
+      return (sp / lp * 100).toFixed(1) + '%';
+    }
+    // A seller credit is cash the seller handed back at settlement, so the
+    // truer indication of value is close price LESS the credit. Returns null
+    // when there is no credit to net out.
+    function osgNetOfCredit(c) {
+      const p = osgNum(c.salePrice), k = osgNum(c.concessions);
+      if (!p || !k) return null;
+      return p - k;
+    }
+    function osgNorm(a) { return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    function osgFullAddr(r) {
+      return [r.address, r.city, [r.state, r.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+    }
+
+    // Route a parsed sheet the way the CMA importer does. Only a CLOSED sale
+    // is a sold comp; everything else is shown unticked with the reason.
+    function osgRoute(r) {
+      if (!r || !r.ok) return 'error';
+      if (osgNorm(r.address) && osgNorm(r.address) === osgNorm(osgAddress.value)) return 'subject';
+      if (r.status === 'closed') return 'closed';
+      if (r.status === 'pending') return 'pending';
+      if (r.status === 'active') return 'active';
+      return 'off';
+    }
+    function osgRouteLabel(r) {
+      const t = osgRoute(r);
+      return t === 'closed' ? 'Closed sale'
+           : t === 'pending' ? 'Under contract'
+           : t === 'active' ? 'Active listing'
+           : t === 'subject' ? 'Your subject property'
+           : t === 'off' ? 'Not a comp'
+           : 'Could not read';
+    }
+    function osgRouteNote(r) {
+      const t = osgRoute(r);
+      if (t === 'closed') return '';
+      if (t === 'error') return r.error || 'Could not read this sheet.';
+      if (t === 'subject') return 'This is the property you are writing the offer on, so it is not a comp. Tick it only if you meant to include it.';
+      if (t === 'off') return 'Marked "' + (r.status_raw || 'off market') + '". It never closed, so there is no sale price behind it.';
+      return 'Marked "' + (r.status_raw || t) + '". It has not closed, so its price is a list price, not a sale price. Tick it only if you want it as context.';
+    }
+
+    async function osgUploadMLS(fileList) {
+      const files = Array.from(fileList || []).filter(f => /\.pdf$/i.test(f.name));
+      osgPdfError.value = ''; osgPdfStatus.value = '';
+      if (!files.length) { osgPdfError.value = 'Choose PDF files exported from Bright MLS.'; return; }
+      if (files.length > 12) { osgPdfError.value = 'Up to 12 PDFs at a time.'; return; }
+      osgPdfBusy.value = true;
+      try {
+        const fd = new FormData();
+        files.forEach(f => fd.append('files', f, f.name));
+        const resp = await fetch(RAILWAY_URL + '/api/cma/parse-listings', { method: 'POST', body: fd });
+        const data = await resp.json();
+        if (!resp.ok || !data.success) throw new Error((data && data.detail) || 'Upload failed');
+        const rows = data.results || [];
+        if (!rows.length) throw new Error('No properties were found in those files.');
+        osgImportRows.value = rows;
+        osgImportPick.value = rows.map(r => osgRoute(r) === 'closed');
+      } catch (e) {
+        osgPdfError.value = 'Could not read those files: ' + e.message;
+      }
+      osgPdfBusy.value = false;
+    }
+
+    function osgImportCancel() {
+      osgImportRows.value = []; osgImportPick.value = []; osgPdfStatus.value = '';
+    }
+
+    function osgApplyImport() {
+      let added = 0, updated = 0;
+      const skipped = [];
+      osgImportRows.value.forEach((r, i) => {
+        if (!osgImportPick.value[i] || !r.ok) return;
+        const addr = osgFullAddr(r) || r.address || '';
+        if (!addr) { skipped.push((r.file || 'a sheet') + ' (no address printed)'); return; }
+        const closePrice = r.salePrice || '';
+        const notes = [];
+        // Say it out loud rather than passing a list price off as a sale price.
+        if (!closePrice && r.listPrice) notes.push('No close price on this sheet - the figure shown is the LIST price');
+        if (r.flags && r.flags.gla_needs_check) notes.push('Square footage flagged on the sheet - confirm it');
+        if (r.flags && r.flags.below_grade_unclear) notes.push('Below-grade finished area unclear on the sheet');
+        const row = {
+          address: addr,
+          salePrice: closePrice || r.listPrice || '',
+          sqft: r.gla || '',
+          ppsf: osgPpsf(closePrice || r.listPrice, r.gla),
+          dom: (r.dom === 0 || r.dom) ? String(r.dom) : '',
+          soldDate: r.soldDate || '',
+          spLp: osgSpLp(closePrice, r.listPrice),
+          concessions: (r.concessions === 0 || r.concessions) ? String(r.concessions) : '',
+          notes: notes.join('. '),
+          editing: false,
+          _src: 'mls'
+        };
+        const at = osgComps.value.findIndex(c => osgNorm(c.address) && osgNorm(c.address) === osgNorm(addr));
+        if (at > -1) {
+          // Merge rather than replace: MLS wins on the objective fields, but
+          // an agent's own note is never thrown away.
+          const cur = osgComps.value[at];
+          Object.keys(row).forEach(k => {
+            if (k === 'editing' || k === 'notes') return;
+            if (row[k] !== '' && row[k] !== undefined && row[k] !== null) cur[k] = row[k];
+          });
+          if (row.notes) cur.notes = cur.notes ? (cur.notes + '. ' + row.notes) : row.notes;
+          updated++;
+        } else {
+          osgComps.value.push(row);
+          added++;
+        }
+      });
+      osgImportRows.value = []; osgImportPick.value = [];
+      osgPdfStatus.value = 'Imported ' + added + ' comp' + (added === 1 ? '' : 's') +
+        (updated ? ', updated ' + updated + ' already on the list' : '') +
+        (skipped.length ? '. Skipped: ' + skipped.join('; ') : '') + '.';
+    }
+
+    // Reaching step 2 used to require running the AI comp search first. An
+    // agent bringing their own MLS comps can now go straight there.
+    function osgSkipSearch() {
+      osgFetchError.value = '';
+      osgStep.value = 2;
+      Vue.nextTick(() => window.scrollTo(0, 0));
+    }
 
     async function osgFetchComps() {
       osgFetching.value = true; osgFetchError.value = '';
@@ -16065,7 +16305,7 @@ Focus on properties sold within 6 months, within 0.5 miles, similar size and typ
         let jsonStr = raw.trim();
         if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         const comps = JSON.parse(jsonStr);
-        osgComps.value = comps.map(c => ({ ...c, editing: false }));
+        osgComps.value = comps.map(c => ({ concessions:'', ...c, editing: false, _src: 'ai' }));
         osgStep.value = 2;
         Vue.nextTick(() => window.scrollTo(0, 0));
       } catch(e) { osgFetchError.value = 'Failed to fetch comps: ' + e.message; }
@@ -16075,7 +16315,22 @@ Focus on properties sold within 6 months, within 0.5 miles, similar size and typ
     async function osgAnalyze() {
       osgAnalyzing.value = true; osgAnalyzeError.value = '';
       try {
-        const compsStr = osgComps.value.map((c, i) => `Comp ${i+1}: ${c.address} | Sold: ${c.salePrice} | ${c.sqft} sqft | ${c.ppsf}/sf | DOM: ${c.dom} | Sold: ${c.soldDate} | SP/LP: ${c.spLp} | Notes: ${c.notes || 'none'}`).join('\n');
+        const compsStr = osgComps.value.map(function (c, i) {
+          const credit = osgNum(c.concessions);
+          const net = osgNetOfCredit(c);
+          const src = c._src === 'mls' ? 'MLS sheet' : (c._src === 'ai' ? 'UNVERIFIED - AI-suggested, not from an MLS sheet' : 'agent-entered');
+          return 'Comp ' + (i + 1) + ': ' + c.address +
+            ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
+            ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
+            ' | Price net of seller credit: ' + (net === null ? (c.salePrice || 'unknown') : fmtDollar(net)) +
+            ' | ' + (c.sqft || 'unknown') + ' sqft' +
+            ' | $' + (osgShowPpsf(c) || '?') + '/sf' +
+            ' | DOM: ' + (c.dom || 'unknown') +
+            ' | Sold: ' + (c.soldDate || 'unknown') +
+            ' | SP/LP: ' + (c.spLp || 'unknown') +
+            ' | Source: ' + src +
+            ' | Notes: ' + (c.notes || 'none');
+        }).join('\n');
         const prompt = `Analyze this property and produce an offer strategy.
 
 SUBJECT PROPERTY:
@@ -16088,6 +16343,11 @@ Bed/Bath: ${osgBedBath.value || 'Unknown'}
 
 COMPARABLE SALES:
 ${compsStr}
+
+HOW TO READ THE COMPS:
+- A seller credit is cash the seller gave back at settlement. Where one exists, the price NET OF SELLER CREDIT is the truer indication of value. Value the subject off the net figures and say so in your reasoning when a credit materially moves a comp.
+- Any comp marked UNVERIFIED was suggested by AI and is not backed by an MLS sheet. Weight it below the MLS-sourced comps and say plainly in valuationReasoning that it is unverified.
+- Never invent a comp, a price, or a sold date. Work only from what is listed above.
 
 OFFER PARAMETERS:
 Competition: ${osgCompetition.value}
@@ -16246,6 +16506,8 @@ No markdown. Valid JSON only.`;
       osgPropType.value = 'Single Family'; osgSqFt.value = ''; osgBedBath.value = ''; osgYearBuilt.value = '';
       osgFetching.value = false; osgFetchError.value = ''; osgComps.value = []; osgAddingComp.value = false;
       Object.keys(osgNewComp).forEach(k => osgNewComp[k] = '');
+      osgPdfBusy.value = false; osgPdfError.value = ''; osgPdfStatus.value = '';
+      osgPdfDrag.value = false; osgImportRows.value = []; osgImportPick.value = [];
       osgCompetition.value = 'moderate'; osgFinancing.value = 'conventional'; osgJustin.value = 'no';
       osgPreUW.value = 'no'; osgSellerMotivation.value = ''; osgAnalyzing.value = false;
       osgAnalyzeError.value = ''; osgResult.value = null; osgSaving.value = false; osgSaved.value = false;
@@ -17811,6 +18073,27 @@ const CHANGELOG = [
       {
         title: 'Location Picker: Pick the State, Then the County',
         detail: 'Maryland has 23 counties and they are genuinely different \u2014 nearly $9,200 apart in seller transfer and recordation tax on a $1M sale \u2014 so the rates have to be there. Scrolling all of them in one list did not.\n\nThere are now two fields. Pick Washington DC, Virginia or Maryland; a County field appears only for Maryland, starting on Montgomery with Prince George\u2019s, Baltimore County and Howard pinned to the top and the rest alphabetical.\n\nHow to use: Jurisdiction is still auto-detected from the address. Check the County field on Maryland deals before you calculate.\n\nBest practice: If you are not certain of the county, \u201cOther county (blended estimate)\u201d is at the bottom of the list and is labelled that way on purpose.'
+      }
+    ]
+  }
+,
+  {
+    id: 'v2026-09-20',
+    date: 'September 20, 2026',
+    title: 'Offer Strategy Now Reads Your MLS Sheets, and Counts Seller Credits',
+    summary: 'The Offer Strategy Generator takes Bright MLS PDFs the same way the CMA builder does. Comps carry the seller credit, and the strategy is valued off the price net of that credit.',
+    updates: [
+      {
+        title: 'Import Comps Straight from Bright MLS',
+        detail: 'Step 2 of the Offer Strategy Generator now has a drop zone for Bright MLS PDFs. Drop the sheets in and the comps fill themselves: address, sale price, square footage, $/SF, DOM, sold date, SP/LP and the seller credit. It is the same reader the CMA builder uses, so there is one parser behind both tools rather than two that can drift apart.\n\nOne PDF can hold several listings and all of them are read. You see everything that was found and tick what you want before anything lands on your comp list. Closed sales come in ticked. An active or pending listing arrives unticked with the reason on it, because its price is a list price and not a sale price.\n\nHow to use: In Bright, run your search, select the listings, then Print, Agent Full, Save as PDF. Drop the file on Step 2. Up to 12 PDFs at a time.\n\nBest practice: Your export has to actually print the fields you want filled. Address, close price, seller credit toward closing costs, above grade finished square footage, $/SF, DOM and sold date. Anything the sheet does not print stays blank for you to fill in by hand. Nothing is estimated and nothing is guessed.'
+      },
+      {
+        title: 'Seller Credits Now Count Against the Comp',
+        detail: 'A comp that sold for $1,000,000 with a $25,000 seller credit did not really sell for $1,000,000. The seller handed $25,000 back at settlement, so the market paid $975,000. Until now the Offer Strategy Generator had nowhere to record that, and the strategy was built on the higher number. That pushes a buyer to offer more than the comps support.\n\nEvery comp now has a Seller Credit field. When there is a credit, the card shows what the sale comes to net of it, and the strategy is valued off that net figure. Imported comps pull the credit from the Total Amount Paid by Seller Towards Closing Costs line on the MLS sheet, which is the dollar figure, not the yes or no field.\n\nHow to use: Check the Seller Credit line on every comp before you generate. If you added a comp by hand, enter the credit yourself or leave it blank when there was none.\n\nBest practice: Ask the listing agent what went back to the buyer. Credits do not always reach the MLS sheet, and a credit you do not know about makes a comp look stronger than it was.'
+      },
+      {
+        title: 'Comps Are Now Labelled by Where They Came From',
+        detail: 'The Search for Comparable Sales button on Step 1 is an AI suggestion. It does not query the MLS and it never did. It is useful for a first look at a neighbourhood and it is not evidence.\n\nEvery comp now carries a label: FROM MLS SHEET, UNVERIFIED AI SUGGESTION, or ENTERED BY HAND. The strategy is told which is which and is instructed to weight the unverified ones below the rest and to say so in its reasoning.\n\nStep 1 also has a second button now, so you can go straight to Step 2 and upload your MLS sheets without running the AI search first.\n\nHow to use: Look at the label on each card before you generate. If a card says UNVERIFIED, confirm it against an MLS sheet or take it off the list.\n\nBest practice: For an offer you are actually writing, skip the search and upload the sheets. Every price that reaches a client should trace back to a document.'
       }
     ]
   }
@@ -20444,6 +20727,9 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Offer Strategy Generator
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
       osgFetching, osgFetchError, osgComps, osgAddingComp, osgNewComp,
+      osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
+      osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
+      osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgSkipSearch,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
       osgFetchComps, osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
