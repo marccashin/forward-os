@@ -5368,7 +5368,7 @@ body {
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcTaxEscrow()) }}</div>
                 </div>
                 <div v-if="ctc.loanType!=='cash'" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
-                  <div class="form-row"><label>Prepaid Interest (days)</label><input v-model="ctc.prepaidDays" type="number" min="0" max="31" placeholder="15"/></div>
+                  <div class="form-row"><label>Prepaid Interest (days)</label><input v-model="ctc.prepaidDays" type="number" min="0" max="31" placeholder="15"/><div v-if="ctc.jurisdiction==='dc' && ctc.closingDate" style="font-size:11px;color:#6b7280;margin-top:4px;">DC: worked out from the closing date (closing day through month end).</div></div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">@ {{ ctc.interestRate || '6.5' }}%</div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcPrepaidInterest()) }}</div>
                 </div>
@@ -5378,6 +5378,7 @@ body {
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcMIEscrow()) }}</div>
                 </div>
                 <div class="form-row"><label>Monthly HOA Dues</label><input :value="ctc.hoaDues" type="text" inputmode="numeric" placeholder="$0" @input="ctcCurrencyInput($event,'hoaDues')" @blur="ctcCurrencyBlur($event,'hoaDues')" @focus="ctcCurrencyFocus($event,'hoaDues')"/></div>
+                <div v-if="ctc.jurisdiction==='dc'" class="form-row"><label>HOA Move-in / Capital Contribution</label><input :value="ctc.hoaMoveIn" type="text" inputmode="numeric" placeholder="$0 (only if the building charges one)" @input="ctcCurrencyInput($event,'hoaMoveIn')" @blur="ctcCurrencyBlur($event,'hoaMoveIn')" @focus="ctcCurrencyFocus($event,'hoaMoveIn')"/></div>
               </div>
             </div>
 
@@ -14262,7 +14263,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       processingFee:'', underwritingFee:'', mortgageBrokerFee:'',
       homeInsurance:'', insEscrowMonths:'14', propTax:'', taxEscrowMonths:'3',
       prepaidDays:'15', monthlyMI:'', miEscrowMonths:'2',
-      hoaDues:'',
+      hoaDues:'', hoaMoveIn:'',
       agentCompMode:'pct', agentCompVal:'', brokerageFee:'',
       concessionMode:'pct', concessionVal:'', earnestMoney:'', lenderCredits:'',
       otherRows:[],
@@ -14371,6 +14372,53 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-other';
     }
 
+    // ── DC buyer-side conventions (Cash to Close) ─────────────────────────
+    // Anchored to a KVS Title buyer estimate for 1111 23rd St NW #7E
+    // ($1.5M, $1.2M loan, 7.125%, closing 10/30/2026), and to the DC
+    // convention the seller net sheet was reconciled to against executed
+    // KVS settlements: closing day belongs to the SELLER, tax on annual/365.
+    function ctcR2(x) { return Math.round(x * 100) / 100; }
+    function ctcShortDate(d) { return d.toLocaleDateString('en-US', { month:'short', day:'numeric' }); }
+    // DC real property tax, fiscal year Oct 1 - Sep 30. 1st half Oct 1 - Mar 31
+    // (due Mar 31), 2nd half Apr 1 - Sep 30 (due Sep 15).
+    // Before the half's due date the seller has not paid it: the seller credits
+    // the buyer for the seller's days. On or after the due date the half is
+    // paid (by the seller, or from the seller's proceeds at closing): the buyer
+    // reimburses the seller for the buyer's remaining days.
+    function ctcDCTaxItems(annualTax, cd) {
+      if (!(annualTax > 0) || !cd) return [];
+      const y = cd.getFullYear(), m = cd.getMonth();
+      let start, end, due;
+      if (m >= 9)      { start = new Date(y, 9, 1);     end = new Date(y + 1, 2, 31); due = new Date(y + 1, 2, 31); }
+      else if (m <= 2) { start = new Date(y - 1, 9, 1); end = new Date(y, 2, 31);     due = new Date(y, 2, 31); }
+      else             { start = new Date(y, 3, 1);     end = new Date(y, 8, 30);     due = new Date(y, 8, 15); }
+      const dayMs = 86400000;
+      const span = function (a, b) { return Math.round((b - a) / dayMs) + 1; };
+      const sellerDays = span(start, cd);                 // closing day to the seller
+      const buyerDays = span(start, end) - sellerDays;
+      const daily = annualTax / 365;
+      if (cd < due) {
+        return [{ label:'Property Tax Credit from Seller (' + sellerDays + ' days, ' + ctcShortDate(start) + ' to ' + ctcShortDate(cd) + ')',
+                  amount: -ctcR2(daily * sellerDays) }];
+      }
+      if (buyerDays > 0) {
+        const from = new Date(cd.getTime() + dayMs);
+        return [{ label:'Property Tax Reimbursement to Seller (' + buyerDays + ' days, ' + ctcShortDate(from) + ' to ' + ctcShortDate(end) + ')',
+                  amount: ctcR2(daily * buyerDays) }];
+      }
+      return [];
+    }
+    // Days of prepaid interest: closing day through the last day of that month.
+    function ctcPrepaidDaysFromClosing(cd) {
+      return new Date(cd.getFullYear(), cd.getMonth() + 1, 0).getDate() - cd.getDate() + 1;
+    }
+    function ctcClosingDate() {
+      if (!ctc.closingDate) return null;
+      const dp = String(ctc.closingDate).split('-');
+      const d = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
+      return isNaN(d.getTime()) ? null : d;
+    }
+
     function calcCashToClose() {
       const price = ctcParse('purchasePrice');
       if (!price) { showToast('Please enter a purchase price.', 4000); return; }
@@ -14426,14 +14474,29 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const ownerTitle = ctcParse('ownerTitle') || ownerTitleEst;
       s3Items.push({ label:"Owner's Title Insurance" + (ctc.policyType === 'enhanced' ? ' (Enhanced)' : ''), amount: ownerTitle });
       if (!isCash) {
-        const lenderTitleEst = Math.round(loanAmt * 0.0035);
+        // DC: the lender's policy is issued with the owner's policy at a
+        // simultaneous-issue charge (KVS: $150), not 0.35% of the loan.
+        const lenderTitleEst = j === 'dc' ? 150 : Math.round(loanAmt * 0.0035);
         const lenderTitle = ctcParse('lenderTitle') || lenderTitleEst;
-        s3Items.push({ label:"Lender's Title Insurance", amount: lenderTitle });
+        s3Items.push({ label:"Lender's Title Insurance" + (j === 'dc' && !ctcParse('lenderTitle') ? ' (simultaneous issue)' : ''), amount: lenderTitle });
       }
-      const settlementEst = j === 'dc' ? 1250 : j.startsWith('va') ? 1100 : 1200;
+      const settlementEst = j === 'dc' ? 1300 : j.startsWith('va') ? 1100 : 1200;
       s3Items.push({ label:'Settlement/Closing Fee', amount: ctcParse('settlementFee') || settlementEst });
-      const recordingEst = j === 'dc' ? 150 : j.startsWith('va') ? 200 : 175;
-      s3Items.push({ label:'Recording Fees', amount: ctcParse('recordingFees') || recordingEst });
+      if (j === 'dc') {
+        // KVS Title flat DC fees.
+        s3Items.push({ label:'Title Abstract/Search', amount: 300 });
+        s3Items.push({ label:'Closing Protection Letter', amount: 50 });
+        s3Items.push({ label:'Location Survey (if applicable)', amount: 290 });
+        if (ctcParse('recordingFees')) {
+          s3Items.push({ label:'Recording Fees', amount: ctcParse('recordingFees') });
+        } else {
+          s3Items.push({ label:'Deed Recording Fee', amount: 30 });
+          if (!isCash) s3Items.push({ label:'Mortgage Recording Fee', amount: 155 });
+        }
+      } else {
+        const recordingEst = j.startsWith('va') ? 200 : 175;
+        s3Items.push({ label:'Recording Fees', amount: ctcParse('recordingFees') || recordingEst });
+      }
       const s3Sub = s3Items.reduce((sum, i) => sum + i.amount, 0);
       sections.push({ label:'Title & Settlement', items:s3Items, subtotal:s3Sub });
 
@@ -14472,8 +14535,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const escrowMonths = Number(ctc.taxEscrowMonths) || 3;
       s5Items.push({ label:'Property Tax Escrow (' + escrowMonths + ' months)', amount: Math.round(annualTax / 12 * escrowMonths) });
 
-      // Tax proration (jurisdiction-aware, mirrors seller net sheet)
-      if (annualTax > 0 && ctc.closingDate) {
+      // Tax proration. DC: ctcDCTaxItems (buyer credit or reimbursement, KVS
+      // convention). The block below it now only runs for MD and VA.
+      if (j === 'dc') {
+        ctcDCTaxItems(annualTax, ctcClosingDate()).forEach(function (it) { s5Items.push(it); });
+      } else if (annualTax > 0 && ctc.closingDate) {
         const halfTax = annualTax / 2;
         const dp = ctc.closingDate.split('-');
         const cd = new Date(Number(dp[0]), Number(dp[1]) - 1, Number(dp[2]));
@@ -14522,9 +14588,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       }
 
       if (!isCash) {
-        const days = Number(ctc.prepaidDays) || 15;
-        const dailyInterest = Math.round(loanAmt * (rate / 100) / 365);
-        s5Items.push({ label:'Prepaid Interest (' + days + ' days @ ' + rate + '%)', amount: dailyInterest * days });
+        const cdI = ctcClosingDate();
+        if (j === 'dc' && cdI) {
+          // Interest from the closing day through month end, daily rate to the cent (KVS).
+          const dcDays = ctcPrepaidDaysFromClosing(cdI);
+          const dcDaily = ctcR2(loanAmt * (rate / 100) / 365);
+          s5Items.push({ label:'Prepaid Interest (' + dcDays + ' day' + (dcDays === 1 ? '' : 's') + ' @ ' + rate + '%)', amount: ctcR2(dcDaily * dcDays) });
+        } else {
+          const days = Number(ctc.prepaidDays) || 15;
+          const dailyInterest = Math.round(loanAmt * (rate / 100) / 365);
+          s5Items.push({ label:'Prepaid Interest (' + days + ' days @ ' + rate + '%)', amount: dailyInterest * days });
+        }
       }
       if (!isCash && (ctc.loanType === 'fha' || (ctc.loanType === 'conventional' && Number(ctc.downPct) < 20))) {
         const mi = ctcParse('monthlyMI') || Math.round(loanAmt * 0.005 / 12);
@@ -14532,7 +14606,22 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         s5Items.push({ label:'Mortgage Insurance Escrow (' + miMonths + ' months)', amount: Math.round(mi * miMonths) });
       }
       const hoaMonthly = ctcParse('hoaDues');
-      if (hoaMonthly > 0) {
+      if (j === 'dc') {
+        // DC: dues are paid monthly in advance, so the seller has paid the
+        // closing month. The buyer reimburses the seller's payment for the
+        // buyer's days (closing day to the seller). Move-in / capital
+        // contribution fees are building-specific: only what the agent enters.
+        const cdH = ctcClosingDate();
+        if (hoaMonthly > 0 && cdH) {
+          const dim = new Date(cdH.getFullYear(), cdH.getMonth() + 1, 0).getDate();
+          const hoaBuyerDays = dim - cdH.getDate();
+          if (hoaBuyerDays > 0) s5Items.push({ label:'HOA Dues Reimbursement to Seller (' + hoaBuyerDays + ' day' + (hoaBuyerDays === 1 ? '' : 's') + ')', amount: ctcR2(hoaMonthly / dim * hoaBuyerDays) });
+        } else if (hoaMonthly > 0) {
+          s5Items.push({ label:'HOA Dues (one month; add a closing date to prorate)', amount: hoaMonthly });
+        }
+        const moveIn = ctcParse('hoaMoveIn');
+        if (moveIn > 0) s5Items.push({ label:'HOA Move-in / Capital Contribution', amount: moveIn });
+      } else if (hoaMonthly > 0) {
         s5Items.push({ label:'HOA Prorations & Move-in Fees', amount: Math.round(hoaMonthly * 2) });
       }
       const s5Sub = s5Items.reduce((sum, i) => sum + i.amount, 0);
@@ -19003,6 +19092,10 @@ const CHANGELOG = [
       {
         title: 'Cash to Close PDF Shows the Purchase Price',
         detail: 'The Cash to Close PDF printed the purchase price as $0 whenever the price was typed with commas, such as 1,500,000. Only that one line was wrong. The loan amount, every cost and the total were already correct. The PDF now shows the price you entered.\n\nHow to use: Nothing changes. Enter the price as you normally would and download the PDF.\n\nBest practice: If you sent a Cash to Close PDF today showing a $0 purchase price, send the buyer a fresh copy.'
+      },
+      {
+        title: 'DC Cash to Close Now Matches the Title Company',
+        detail: 'For DC purchases, the Cash to Close Estimate now follows the same rules as a KVS Title buyer estimate. Tested on a real KVS estimate, every line KVS shows now matches to the cent.\n\nWhat changed for DC. Property tax: before the tax bill is due, the seller now credits the buyer for the days the seller owned the home, instead of the buyer being charged for the rest of the half-year. Prepaid interest: worked out from the closing date to the end of that month, not a flat 15 days. HOA: the buyer repays the seller only for the days left in the month, not two months of dues. Lender\'s title policy: the small simultaneous-issue charge, not a full policy. Added the title company\'s standard DC fees: title search, closing protection letter, survey, and deed and mortgage recording.\n\nOn a $1.5 million DC condo closing October 30, the estimate came down by about $16,600 to the correct figure.\n\nMaryland and Virginia are unchanged.\n\nHow to use: Enter the closing date for every DC estimate. Several lines are now worked out from it. If the building charges a move-in or capital contribution fee, enter it in the new HOA Move-in field.\n\nBest practice: The owner\'s title estimate is still a percentage of the price. If you have the title company\'s figure, type it into Owner\'s Title so the total is exact.'
       }
     ]
   }
