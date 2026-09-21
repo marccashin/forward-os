@@ -18130,6 +18130,93 @@ No markdown. Valid JSON only.`;
       finally { mktSaving.value = false; }
     }
 
+    // ── FORWARD OS tutorial videos (Training Center) ─────────────────────
+    // Stored like the market report links: one JSON row in property_notes on
+    // the sentinel property id, subfolder 'os_videos'. Admins edit in-app, so a
+    // new Loom needs no deploy. Writes are insert-new-then-delete-old, never
+    // delete-then-insert, so a failed save cannot wipe the list. Load always
+    // reads the newest row, so a failed cleanup is harmless.
+    const OSV_NOTE_ID  = '00000000-0000-0000-0000-000000000001';
+    const osvVideos    = ref([]);
+    const osvLoading   = ref(false);
+    const osvLoadError = ref('');
+    const osvEditing   = ref(false);
+    const osvEditIdx   = ref(null);
+    const osvDraft     = reactive({ title:'', url:'', desc:'' });
+    const osvDraftError= ref('');
+    const osvSaving    = ref(false);
+    const osvOpenId    = ref(null);
+
+    function osvEmbedUrl(url) {
+      const m = /loom\.com\/(?:share|embed)\/([a-zA-Z0-9]+)/.exec(url || '');
+      return m ? 'https://www.loom.com/embed/' + m[1] : '';
+    }
+    async function osvLoad() {
+      osvLoading.value = true; osvLoadError.value = '';
+      try {
+        const rows = await supaRest.select('property_notes',
+          'select=content&property_id=eq.' + OSV_NOTE_ID + '&subfolder=eq.os_videos&order=updated_at.desc&limit=1');
+        const list = (rows && rows[0] && rows[0].content) ? JSON.parse(rows[0].content) : [];
+        osvVideos.value = Array.isArray(list) ? list : [];
+      } catch (e) {
+        osvLoadError.value = 'Could not load the tutorial videos. ' + e.message;
+      } finally { osvLoading.value = false; }
+    }
+    async function osvPersist(list) {
+      const rows = await supaRest.insert('property_notes', {
+        property_id: OSV_NOTE_ID, subfolder: 'os_videos',
+        content: JSON.stringify(list), updated_by: agentName.value
+      });
+      osvVideos.value = list;
+      const newId = rows && rows[0] && rows[0].id;
+      if (newId) {
+        try {
+          await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + OSV_NOTE_ID +
+            '&subfolder=eq.os_videos&id=neq.' + newId,
+            { method: 'DELETE', headers: { ...supaRest.headers(), 'Prefer': 'return=minimal' } });
+        } catch (e) { console.warn('osv cleanup (non-fatal):', e); }
+      }
+    }
+    function osvStartAdd() {
+      osvEditIdx.value = null; osvDraft.title = ''; osvDraft.url = ''; osvDraft.desc = '';
+      osvDraftError.value = ''; osvEditing.value = true;
+    }
+    function osvStartEdit(i) {
+      const v = osvVideos.value[i];
+      osvEditIdx.value = i; osvDraft.title = v.title || ''; osvDraft.url = v.url || ''; osvDraft.desc = v.desc || '';
+      osvDraftError.value = ''; osvEditing.value = true;
+    }
+    function osvCancel() { osvEditing.value = false; osvDraftError.value = ''; }
+    async function osvSaveDraft() {
+      const title = osvDraft.title.trim(), url = osvDraft.url.trim(), desc = osvDraft.desc.trim();
+      if (!title) { osvDraftError.value = 'Give the video a title.'; return; }
+      if (!osvEmbedUrl(url)) { osvDraftError.value = 'That is not a Loom link. In Loom, click Share and copy the link.'; return; }
+      const list = osvVideos.value.map(v => ({ ...v }));
+      if (osvEditIdx.value === null) list.push({ id: 'v' + Date.now(), title: title, url: url, desc: desc });
+      else Object.assign(list[osvEditIdx.value], { title: title, url: url, desc: desc });
+      osvSaving.value = true; osvDraftError.value = '';
+      try {
+        await osvPersist(list);
+        osvEditing.value = false;
+        showGoldToast('Tutorial saved. Every agent can see it now.');
+      } catch (e) {
+        osvDraftError.value = 'Not saved: ' + e.message + '. Nothing was changed, try again.';
+      } finally { osvSaving.value = false; }
+    }
+    async function osvDelete(i) {
+      const v = osvVideos.value[i];
+      if (!window.confirm('Remove "' + v.title + '" for every agent?')) return;
+      try { await osvPersist(osvVideos.value.filter((_, j) => j !== i)); showGoldToast('Tutorial removed'); }
+      catch (e) { showToast('Not removed: ' + e.message, 5000); }
+    }
+    async function osvMove(i, d) {
+      const j = i + d, list = osvVideos.value.slice();
+      if (j < 0 || j >= list.length) return;
+      const t = list[i]; list[i] = list[j]; list[j] = t;
+      try { await osvPersist(list); } catch (e) { showToast('Reorder not saved: ' + e.message, 5000); }
+    }
+    watch(view, v => { if (v === 'training') osvLoad(); });
+
     function mktStartEdit() {
       if (mktLoadError.value) { showToast('Links did not load, so they cannot be edited safely. Retry first.', 5000); return; }
       mktEditLinks.value = { ...marketReportLinks.value };
