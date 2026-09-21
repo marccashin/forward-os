@@ -2962,7 +2962,11 @@ body {
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;">
-                <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
+                <div>
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">Monthly Market Reports</h3>
+                  <div v-if="mktMeta && mktMeta.statpak_month" style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6b7280;margin-top:3px;">From Corcoran McEnearney's {{ mktMeta.statpak_month }} StatPak. Updated automatically each month.</div>
+                  <div v-if="isAdmin && mktMeta && mktMeta.status && mktMeta.status !== 'ok'" style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#b45309;margin-top:3px;">Last automatic update did not finish ({{ mktMeta.status }}). Regions that failed still show last month.</div>
+                </div>
                 <button v-if="isAdmin && !mktEditMode" @click="mktStartEdit()" style="background:none;border:1px dashed var(--gold-muted);border-radius:2px;padding:4px 12px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;">Update Links</button>
               </div>
 
@@ -2986,16 +2990,22 @@ body {
                 <div v-if="mktLoadError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin:8px 0;font-size:13px;color:#dc2626;">{{ mktLoadError }} <button @click="mktLoadLinks()" style="margin-left:8px;font-size:12px;font-weight:700;color:#dc2626;background:none;border:1px solid #fecaca;border-radius:6px;padding:3px 10px;cursor:pointer;">Retry</button></div>
                 <div v-else-if="!Object.keys(marketReportLinks).length" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;padding:16px 0;">No report links set yet. Click "Update Links" to add them.</div>
                 <div style="display:flex;flex-direction:column;gap:10px;">
-                  <a v-for="region in marketRegions.filter(r=>r.folder)" :key="region.key" :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
+                  <template v-for="region in marketRegions.filter(r=>r.folder)" :key="region.key">
+                  <a :href="region.folder" target="_blank" rel="noopener" class="lp-report-row">
                     <div style="display:flex;align-items:center;gap:10px;">
                       <svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block;" xmlns="http://www.w3.org/2000/svg"><polyline points="2,18 8,10 13,14 22,4" fill="none" stroke="#0d1f35" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polygon points="17,2 24,2 24,9" fill="#0d1f35"/></svg>
                       <div>
                         <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ region.label }}</div>
-                        <div style="font-size:11px;color:#9ca3af;">PDF + Instagram graphic</div>
+                        <div style="font-size:11px;color:#9ca3af;">{{ (mktMeta && mktMeta.regions && mktMeta.regions[region.key] && mktMeta.regions[region.key].pdf === region.folder) ? ('Data through ' + mktMeta.regions[region.key].data_month) : 'Link set manually' }}</div>
                       </div>
                     </div>
                     <span style="font-size:12px;color:var(--gold);font-weight:600;">View &rarr;</span>
                   </a>
+                  <div v-if="mktMeta && mktMeta.regions && mktMeta.regions[region.key] && mktMeta.regions[region.key].pdf === region.folder" style="display:flex;gap:14px;margin:-4px 0 4px 30px;font-size:11px;">
+                    <a :href="mktMeta.regions[region.key].png" target="_blank" rel="noopener" style="color:var(--gold);font-weight:600;text-decoration:none;">Instagram graphic</a>
+                    <a :href="mktMeta.regions[region.key].caption" target="_blank" rel="noopener" style="color:var(--gold);font-weight:600;text-decoration:none;">Caption</a>
+                  </div>
+                </template>
                 </div>
               </template>
             </div>
@@ -18058,6 +18068,7 @@ No markdown. Valid JSON only.`;
       { key:'dc',          label:'Washington, DC' },
       { key:'nova',        label:'Northern Virginia' },
       { key:'montgomery',  label:'Montgomery County' },
+      { key:'pg',          label:"Prince George's County" },
       { key:'loudoun',     label:'Loudoun County' },
       { key:'countryside', label:'Virginia Countryside' },
     ];
@@ -18073,12 +18084,21 @@ No markdown. Valid JSON only.`;
     // would start from {} and the save would replace the real links with a
     // partial set. mktLoadError blocks editing until a load succeeds.
     const mktLoadError = ref('');
+    // Run record written by the backend's monthly market-reports job: which
+    // StatPak month is live, and per region its data month, PNG and caption.
+    const mktMeta = ref(null);
     async function mktLoadLinks() {
       mktLoadError.value = '';
       try {
         const rows = await supaRest.select('property_notes',
           'select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.links&order=updated_at.desc&limit=1');
         marketReportLinks.value = (rows && rows[0] && rows[0].content) ? JSON.parse(rows[0].content) : {};
+        // Non-fatal: without the run record the links still work, just unlabelled.
+        try {
+          const m = await supaRest.select('property_notes',
+            'select=content&property_id=eq.00000000-0000-0000-0000-000000000001&subfolder=eq.market_reports&order=updated_at.desc&limit=1');
+          mktMeta.value = (m && m[0] && m[0].content) ? JSON.parse(m[0].content) : null;
+        } catch (e) { console.warn('market report meta:', e); mktMeta.value = null; }
       } catch(e) {
         console.warn('mktLoadLinks:', e);
         mktLoadError.value = 'Could not load the market report links. ' + e.message;
@@ -18612,6 +18632,10 @@ const CHANGELOG = [
       {
         title: 'FORWARD OS Tutorials in the Training Center',
         detail: 'The Training Center now has a FORWARD OS Tutorials section under the training pillars. Each video is a short walkthrough of one tool in the OS, and it plays right on the page. More are being added as each tool is recorded.\n\nHow to use: Open the Training Center, scroll to FORWARD OS Tutorials, and click the video for the tool you want to learn.\n\nBest practice: Watch the tutorial the first time you use a tool on a live deal, not after. If something in a video does not match what you see on screen, tell Marc so it can be re-recorded.'
+      },
+      {
+        title: 'Market Reports Now Update Themselves Every Month',
+        detail: 'The Market Reports in the Listing Package now carry FORWARD-branded reports rebuilt every month from Corcoran McEnearney\'s StatPak, for six regions: Washington DC, Montgomery County, Prince George\'s County, Northern Virginia, Loudoun County and the Virginia Countryside. Prince George\'s is new.\n\nEach region shows which month of data it covers, with its Instagram graphic and caption beside it, ready to post.\n\nHow to use: Open Market Reports in the Listing Package and click a region to open its report. Use the Instagram graphic and caption links under it for social.\n\nBest practice: Check the Data through line before you share a report, and say the month when you quote a number to a client.'
       }
     ]
   }
@@ -21200,7 +21224,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
-      mktLoadError,
+      mktLoadError, mktMeta,
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
