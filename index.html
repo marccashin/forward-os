@@ -14598,6 +14598,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if ((ctc.result || ctc.result === 0) &&
           !window.confirm('Clear this estimate and start over? Everything on the form will be cleared. Download or save the PDF first if you want to keep it.')) return;
       ctcReset();
+      // Inside a buyer card, start over from THAT buyer's profile.
+      const ob = byrActiveBuyer.value;
+      if (ob && byrToolOwner.ctc === ob.id) byrPrefill('cash-to-close', ob);
       Vue.nextTick(() => window.scrollTo(0, 0));
       showToast('Cleared. Ready for a new estimate.');
     }
@@ -14734,6 +14737,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     }
 
     async function ctcSaveToBuyerFile() {
+      if (byrActiveBuyer.value && byrToolOwner.ctc !== undefined && byrToolOwner.ctc !== byrActiveBuyer.value.id) { showToast('This estimate is not for the buyer that is open, so it was not saved.', 5000); return; }
       if (ctc.result === null) { showToast('Calculate the estimate first.', 3000); return; }
       if (!byrActiveBuyer.value) { showToast('No active buyer — open a buyer profile first.', 3000); return; }
       try {
@@ -14787,11 +14791,21 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
 
     // -- Buyer Consultation Kit (branded PDF generator, inspired by FORWARD methods + Heider)
-    const bck = reactive({
+    // Buyer Consult start values. ONE source for the form and bckReset().
+    function bckBlank() {
+      return {
       buyerName:'', buyerEmail:'', buyerPhone:'', buyerType:'first-time',
       neighborhoods:'', budget:'', timeline:'1-3months', preferences:'',
       _lastPDF:null
-    });
+    };
+    }
+    const bck = reactive(bckBlank());
+    function bckReset() {
+      const blank = bckBlank();
+      // lenderName / preApprovalAmount come from the buyer prefill and were never cleared.
+      Object.keys(bck).forEach(function (k) { if (!(k in blank)) delete bck[k]; });
+      Object.assign(bck, blank);
+    }
     const bckSections = reactive([
       { icon:'👋', title:'Welcome to FORWARD', preview:'Personal welcome from your agent with team intro and FORWARD value proposition.', enabled:true },
       { icon:'🗺️', title:'Your Home Buying Roadmap', preview:'Visual 7-step timeline from pre-approval to closing day and beyond.', enabled:true },
@@ -16104,6 +16118,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
     }
 
     async function bnaGenerate() {
+      const _ownAtStart = byrToolOwner.bna;
       if (!bnaTranscript.value.trim()) { showToast('Describe your buyer first.', 3000); return; }
       bnaLoading.value = true; bnaError.value = ''; bnaResult.value = null;
       try {
@@ -16163,6 +16178,7 @@ No markdown. No preamble. Valid JSON only.`;
         if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
         const parsed = JSON.parse(jsonStr);
         if (!parsed.agentBrief || !parsed.buyerSummary) throw new Error('Missing agentBrief or buyerSummary in response');
+        if (byrToolOwner.bna !== _ownAtStart) return;   // buyer changed while this ran: discard
         bnaResult.value = parsed;
         bnaApplied.value = false;
         bnaView.value = 'result';
@@ -16306,6 +16322,7 @@ No markdown. No preamble. Valid JSON only.`;
     }
 
     async function bnaApplyToProfile() {
+      if (byrActiveBuyer.value && byrToolOwner.bna !== undefined && byrToolOwner.bna !== byrActiveBuyer.value.id) { showToast('This analysis is not for the buyer that is open, so nothing was applied.', 5000); return; }
       if (!bnaResult.value?.structuredFields || !byrActiveBuyer.value) return;
       bnaApplying.value = true;
       try {
@@ -16506,6 +16523,7 @@ No markdown. No preamble. Valid JSON only.`;
     }
 
     async function osgUploadMLS(fileList) {
+      const _ownAtStart = byrToolOwner.osg;
       const files = Array.from(fileList || []).filter(f => /\.pdf$/i.test(f.name));
       osgPdfError.value = ''; osgPdfStatus.value = '';
       if (!files.length) { osgPdfError.value = 'Choose PDF files exported from Bright MLS.'; return; }
@@ -16519,6 +16537,7 @@ No markdown. No preamble. Valid JSON only.`;
         if (!resp.ok || !data.success) throw new Error((data && data.detail) || 'Upload failed');
         const rows = data.results || [];
         if (!rows.length) throw new Error('No properties were found in those files.');
+        if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while reading: discard
         osgImportRows.value = rows;
         osgImportPick.value = rows.map(r => osgRoute(r) === 'closed');
       } catch (e) {
@@ -16676,6 +16695,7 @@ No markdown. No preamble. Valid JSON only.`;
     }
 
     async function osgUploadSubject(fileList) {
+      const _ownAtStart = byrToolOwner.osg;
       const files = Array.from(fileList || []);
       osgSheetError.value = ''; osgSheetStatus.value = ''; osgSheetWarn.value = '';
       if (!files.length) return;
@@ -16691,7 +16711,7 @@ No markdown. No preamble. Valid JSON only.`;
         try { data = await resp.json(); } catch (e) { data = null; }
         if (!resp.ok || !data || !data.success) throw new Error((data && data.detail) || ('the server answered ' + resp.status));
         if (!data.ok) osgSheetError.value = (data.error || 'Could not read this sheet.') + ' Nothing was filled in.';
-        else osgApplySubject(data, f.name);
+        else if (byrToolOwner.osg === _ownAtStart) osgApplySubject(data, f.name);   // dropped if the buyer changed mid-read
       } catch (e) {
         osgSheetError.value = 'Could not read that sheet: ' + e.message + '. Nothing was filled in.';
       }
@@ -16775,6 +16795,7 @@ No markdown. No preamble. Valid JSON only.`;
     }
 
     async function osgAnalyze() {
+      const _ownAtStart = byrToolOwner.osg;
       osgAnalyzing.value = true; osgAnalyzeError.value = '';
       try {
         const compsStr = osgCompsText();
@@ -16819,7 +16840,9 @@ No markdown. Valid JSON only.`;
         const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
         let jsonStr = raw.trim();
         if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        osgResult.value = JSON.parse(jsonStr);
+        const _parsed = JSON.parse(jsonStr);
+        if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
+        osgResult.value = _parsed;
         // A regenerated strategy is a new document: old chat, undo and comp
         // exclusions refer to the previous one and must not carry over.
         osgChatMsgs.value = []; osgChatInput.value = ''; osgChatError.value = '';
@@ -16940,6 +16963,7 @@ No markdown. Valid JSON only.`;
     function _osgEmpty(v) { return v === null || v === undefined || String(v).trim() === ''; }
 
     async function osgChatSend() {
+      const _ownAtStart = byrToolOwner.osg;
       const ask = (osgChatInput.value || '').trim();
       if (!ask || osgChatBusy.value || !osgResult.value) return;
       osgChatBusy.value = true; osgChatError.value = '';
@@ -16994,6 +17018,7 @@ No markdown. Valid JSON only.`;
         });
         if (changed.length) {
           osgPrevResult.value = before;
+          if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
           osgResult.value = clean;
         }
         osgChatMsgs.value.push({ role: 'bot', text: String(obj.reply || (changed.length ? 'Done.' : 'No change made.')),
@@ -17233,6 +17258,7 @@ No markdown. Valid JSON only.`;
     // ── Buyer Market Report ────────────────────────────────────────────────
     function bmrLsPillClass(r){if(!r)return '';const p=parseFloat(r.replace('%',''));if(isNaN(p))return '';return p>=100?'bmr-pill-over':p>=95?'bmr-pill-at':'bmr-pill-under';}
     async function bmrAnalyze(){
+      const _ownAtStart = byrToolOwner.bmr;
       if(!bmrFile.value)return; bmrAnalyzing.value=true; bmrUploadError.value='';
       try{
         const fd=new FormData(); fd.append('file',bmrFile.value);
@@ -17243,7 +17269,7 @@ No markdown. Valid JSON only.`;
         catch(fe){ if(fe.name==='AbortError') throw new Error('Request timed out after 2 minutes — the PDF may be too large or the server is busy. Please try again.'); throw fe; }
         finally{ clearTimeout(tid); }
         if(!res.ok){const e=await res.json().catch(()=>({}));const det=Array.isArray(e.detail)?e.detail.map(x=>x.msg||JSON.stringify(x)).join('; '):(e.detail||res.statusText||'Server error');throw new Error(det);}
-        bmrAnalysis.value=await res.json();
+        const _bmrData=await res.json(); if (byrToolOwner.bmr !== _ownAtStart) return; bmrAnalysis.value=_bmrData;
         bmrQualityWarnings.value=bmrAnalysis.value?.quality_warnings||[];
         bmrNExcluded.value=bmrAnalysis.value?.n_excluded||0;
         if(bmrAnalysis.value?.subject?.address) bmrReportTitle.value='Market Report: '+bmrAnalysis.value.subject.address;
@@ -17328,7 +17354,7 @@ No markdown. Valid JSON only.`;
       bmrNoSubject.value = false;
       bmrReportTitle.value = 'Market Report: ' + (cand.address || '');
     }
-    function bmrReset(){bmrStep.value=1;bmrFile.value=null;bmrDragOver.value=false;bmrAnalysis.value=null;bmrClientName.value='';bmrOfferPrice.value='';bmrReportTitle.value='';bmrOfferTerms.value=[];bmrDisclaimerAck.value=false;bmrAnalyzing.value=false;bmrDeploying.value=false;bmrUploadError.value='';bmrDeployError.value='';bmrResult.value=null;bmrCopied.value=false;bmrQualityWarnings.value=[];bmrNExcluded.value=0;bmrLastRegen.value='';bmrNoSubject.value=false;}
+    function bmrReset(){bmrStep.value=1;bmrFile.value=null;bmrDragOver.value=false;bmrAnalysis.value=null;bmrClientName.value='';bmrOfferPrice.value='';bmrReportTitle.value='';bmrOfferTerms.value=[];bmrDisclaimerAck.value=false;bmrAnalyzing.value=false;bmrDeploying.value=false;bmrUploadError.value='';bmrDeployError.value='';bmrResult.value=null;bmrCopied.value=false;bmrQualityWarnings.value=[];bmrNExcluded.value=0;bmrLastRegen.value='';bmrNoSubject.value=false;bmrSubjectDom.value='';bmrCompareOffers.value={};bmrMarketConditions.value='balanced';bmrDomTip.value=false;bmrRegenerating.value=false;bmrRegenError.value='';}
     // == Buyer System (Supabase-backed) ==
     const byrBuyers = ref([]);
     const byrActiveBuyer = ref(null);
@@ -17547,6 +17573,7 @@ No markdown. Valid JSON only.`;
 
     async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
+      byrClaimAllTools(buyer.id);   // clears any tool, incl. the Needs Analysis on this card, that belonged to another buyer
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
@@ -18968,6 +18995,10 @@ const CHANGELOG = [
       {
         title: 'Clear and Start Over on the Cash to Close Estimate',
         detail: 'The Cash to Close Estimate now has a Clear and Start Over button under the results, and the Clear button at the top of the form does the same thing. It clears every field, including a buyer name filled in from a buyer profile, which the old Clear button left behind. If you have a finished estimate on screen, it asks before clearing.\n\nHow to use: Click Clear and Start Over, confirm, and the form is blank at the top of the page.\n\nBest practice: Download or save the PDF before you clear. A cleared estimate cannot be brought back.'
+      },
+      {
+        title: 'Buyer Tools Always Show the Buyer You Opened',
+        detail: 'Cash to Close, Buyer Consult, Offer Strategy, Market Report and the Buyer Needs Analysis now each belong to one buyer. Open a tool from a buyer card and it shows only that buyer: their name, budget and contact details, and none of the last buyer you worked on. Before this, opening a second buyer could still show the first buyer\'s price, lender, needs analysis or offer strategy.\n\nGoing back into the same buyer keeps what you were working on. Switching to a different buyer clears the tools and fills them from the new buyer. If an AI step is still running when you switch buyers, its result is thrown away rather than landing on the wrong buyer.\n\nHow to use: Open the buyer card first, then the tool. Clear and Start Over inside a buyer card refills that buyer\'s details.\n\nBest practice: Finish and save one buyer\'s estimate or strategy before opening another buyer. Switching buyers clears unsaved work on the tools.'
       }
     ]
   }
@@ -20517,9 +20548,44 @@ async function dismissUpdates() {
       if (v === 'audit-log') auditLoad();
       if (v === 'dashboard' && (agentName.value === 'Marc Cashin' || agentName.value === 'Operations')) loadWebhookErrors();
       if (v === 'archive') archFetchAll();
-      // Auto-populate buyer tools from active buyer profile
-      if (byrActiveBuyer.value) {
+      // Buyer tools belong to ONE buyer. Opening a tool for a different buyer
+      // (or with no buyer) resets it before anything is shown, then fills it
+      // fresh from THIS buyer. Never another buyer's data on this card.
+      const toolKey = BYR_TOOL_KEYS[v];
+      if (toolKey) {
         const b = byrActiveBuyer.value;
+        byrClaimTool(toolKey, b ? b.id : null);
+        if (b) byrPrefill(v, b);
+      }
+    }
+
+    // ── Buyer tool ownership ──────────────────────────────────────────
+    // Which buyer each buyer tool's current state belongs to (buyer.id, or null
+    // for no buyer). Set when a buyer card opens and when a tool opens. A
+    // different owner means that tool is reset before it is shown. Async AI
+    // results check this too and are dropped if the owner changed mid-run.
+    const BYR_TOOL_KEYS = { 'cash-to-close':'ctc', 'buyer-consult':'bck', 'offer-strategy':'osg', 'buyer-market-report':'bmr' };
+    const byrToolOwner = { ctc: undefined, bck: undefined, osg: undefined, bmr: undefined, bna: undefined };
+    const BYR_TOOL_RESET = {
+      ctc: function () { ctcReset(); },
+      bck: function () { bckReset(); },
+      osg: function () { osgReset(); },
+      bmr: function () { bmrReset(); },
+      bna: function () { bnaReset(); bnaLoading.value = false; bnaSaving.value = false; bnaApplying.value = false; }
+    };
+    function byrClaimTool(key, buyerId) {
+      if (byrToolOwner[key] === buyerId) return false;
+      if (byrToolOwner[key] !== undefined) BYR_TOOL_RESET[key]();   // undefined = never used yet, nothing to clear
+      byrToolOwner[key] = buyerId;
+      return true;
+    }
+    function byrClaimAllTools(buyerId) {
+      Object.keys(byrToolOwner).forEach(function (k) { byrClaimTool(k, buyerId); });
+    }
+    // Fill a buyer tool from this buyer's profile. Moved verbatim from go(); it
+    // only fills empty fields, which is correct because byrClaimTool has already
+    // cleared anything that belonged to another buyer.
+    function byrPrefill(v, b) {
         if (v === 'buyer-consult') {
           if (b.buyer_name && !bck.buyerName) bck.buyerName = b.buyer_name;
           if (b.email     && !bck.buyerEmail) bck.buyerEmail = b.email;
@@ -20551,7 +20617,6 @@ async function dismissUpdates() {
         if (v === 'buyer-market-report') {
           if (b.buyer_name) { bmrClientName.value = b.buyer_name; }
         }
-      }
     }
     function copy(text) { navigator.clipboard.writeText(text).then(()=>showToast('✅ Copied!')); }
     function fmtDate(iso) { return new Date(iso).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}); }
@@ -20699,10 +20764,7 @@ async function dismissUpdates() {
           if (typeof ctcReset === 'function') ctcReset();
           break;
         case 'buyer-consult':
-          Object.assign(bck, {
-            buyerName:'', buyerEmail:'', buyerPhone:'', buyerType:'first-time',
-            neighborhoods:'', budget:'', timeline:'1-3months', preferences:'', _lastPDF:null
-          });
+          bckReset();
           break;
         case 'meeting-prep':
           if (typeof mpReset === 'function') mpReset();
