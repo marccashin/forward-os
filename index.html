@@ -14700,16 +14700,19 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       y += 60;
       if (y + 40 > H - 40) { doc.addPage(); y = 50; }
       doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(...gray);
-      const disclaimer = 'This is an estimate only. Actual closing costs may vary based on lender, title company, and final settlement figures. Tax proration calculated using ' + (j === 'dc' ? 'DC fiscal year (Oct 1 - Sep 30)' : 'fiscal year (Jul 1 - Jun 30)') + '. Prepared by FORWARD Real Estate Group.';
+      const disclaimer = 'This is an estimate only. Actual closing costs may vary based on lender, title company, and final settlement figures. Tax proration calculated using ' + (ctc.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 - Sep 30)' : 'fiscal year (Jul 1 - Jun 30)') + '. Prepared by FORWARD Real Estate Group.';
       doc.text(doc.splitTextToSize(disclaimer, W - 100), 50, y);
       return doc;
     }
 
     function ctcDownloadPDF() {
-      const doc = ctcGeneratePDFDoc();
+      // Loud on failure: a thrown error here used to make the button do nothing.
+      let doc = null;
+      try { doc = ctcGeneratePDFDoc(); }
+      catch (e) { console.error('Cash to Close PDF failed', e); showToast('Could not build the PDF: ' + e.message, 6000); return; }
       if (!doc) { showToast('Generate the estimate first.', 3000); return; }
       openPDFBlob(doc.output('blob'), 'Cash-to-Close-Estimate.pdf');
-      showToast('PDF ready — tap ⬇ Save to download.');
+      showToast('PDF ready. Tap ⬇ Save to download.');
     }
     function ctcGetPDFBase64() {
       const doc = ctcGeneratePDFDoc();
@@ -14719,7 +14722,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ctcSaveToProperty() {
       if (ctc.result === null) { showToast('Calculate the estimate first.', 3000); return; }
       const textSummary = ctc.sections.map(s => s.label + ':\n' + s.items.map(i => '  ' + i.label + ': ' + ctcFmt(i.amount)).join('\n')).join('\n\n') + '\n\nTotal Cash to Close: ' + ctcFmt(ctc.result);
-      const pdfData = ctcGetPDFBase64();
+      let pdfData = null;
+      try { pdfData = ctcGetPDFBase64(); }
+      catch (e) { console.error('Cash to Close PDF failed', e); showToast('Not saved: could not build the PDF (' + e.message + ').', 6000); return; }
       saveToPropertyFromTool('Cash to Close Estimate', (ctc.address || 'Buyer Estimate') + ' \u2014 ' + ctcFmt(ctc.result), textSummary, pdfData);
       ctcSaved.value = true;
       setTimeout(() => { ctcSaved.value = false; }, 8000);
@@ -18952,6 +18957,10 @@ const CHANGELOG = [
       {
         title: 'Offer Strategy and the CMA Builder Now Read Sheets Separately',
         detail: 'The Offer Strategy Generator now has its own MLS reader for comps, separate from the one in the CMA builder. Comps come in exactly as they did yesterday. The difference is that a change made to one tool can no longer change the other.\n\nHow to use: Nothing to do. Drop comp sheets into Step 2 as before.\n\nBest practice: If a comp ever reads differently in the two tools after a future update, tell Marc which one looks wrong.'
+      },
+      {
+        title: 'Cash to Close PDF Downloads Again',
+        detail: 'Download PDF and Save to Property on the Cash to Close Estimate were doing nothing when clicked. One line in the PDF footer pointed at a setting that did not exist there, so the PDF stopped before it was built and the page gave no message. Both buttons work again. If a PDF ever fails to build, you now get a red message instead of nothing.\n\nIf you tried to save a Cash to Close estimate to a property and did not see the green Saved tick, it did not save. Open it again and save it.\n\nHow to use: Click Download PDF. The PDF opens in the viewer. Click Save to download it.\n\nBest practice: After Save to Property, look for the green Saved tick next to the buttons before you move on.'
       }
     ]
   }
