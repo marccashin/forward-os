@@ -4503,7 +4503,8 @@ body {
                 </div>
               </div>
 
-              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:15px;font-weight:600;color:var(--navy);">Comparable Sales ({{ osgComps.length }})</h3>
+              <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">Comps ({{ osgComps.length }})</h3>
+              <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Closed sales set the value. Active, under-contract and off-market listings are used for market direction only, never as comps.</p>
               <div v-for="(comp, ci) in osgComps" :key="ci" class="card" style="margin-bottom:12px;position:relative;">
                 <button @click="osgComps.splice(ci, 1)" style="position:absolute;top:8px;right:8px;background:#fef2f2;color:#dc2626;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;" title="Remove">✕</button>
                 <template v-if="!comp.editing">
@@ -4511,17 +4512,19 @@ body {
                   <div style="margin-bottom:8px;">
                     <span v-if="comp._src==='mls'" style="display:inline-block;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">FROM MLS SHEET</span>
                     <span v-else style="display:inline-block;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">ENTERED BY HAND</span>
+                    <span v-if="osgCompIsSale(comp)" style="display:inline-block;margin-left:6px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">CLOSED SALE</span>
+                    <span v-else style="display:inline-block;margin-left:6px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;border-radius:99px;padding:2px 9px;font-size:10px;font-weight:700;letter-spacing:.04em;">{{ osgCompKindLabel(comp).toUpperCase() }} &middot; MARKET CONTEXT</span>
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:12px;color:#6b7280;">
-                    <div>Sale: <strong style="color:var(--navy);">{{ fmtDollar(comp.salePrice) || comp.salePrice }}</strong></div>
+                    <div>{{ osgCompIsSale(comp) ? 'Sale' : 'List' }}: <strong style="color:var(--navy);">{{ fmtDollar(comp.salePrice) || comp.salePrice }}</strong></div>
                     <div>$/SF: <strong>{{ osgShowPpsf(comp) ? '$' + fmtComma(osgShowPpsf(comp)) : '' }}</strong></div>
                     <div>DOM: <strong>{{ comp.dom }}</strong></div>
                     <div>Sq Ft: <strong>{{ fmtComma(comp.sqft) || comp.sqft }}</strong></div>
                     <div>SP/LP: <strong>{{ comp.spLp }}</strong></div>
-                    <div>Sold: <strong>{{ comp.soldDate }}</strong></div>
+                    <div v-if="osgCompIsSale(comp)">Sold: <strong>{{ comp.soldDate }}</strong></div><div v-else></div>
                     <div style="grid-column:1/-1;">Seller credit: <strong :style="{color: osgNum(comp.concessions) ? '#b45309' : 'inherit'}">{{ osgNum(comp.concessions) ? fmtDollar(comp.concessions) : 'None stated' }}</strong></div>
                   </div>
-                  <div v-if="osgNetOfCredit(comp)!==null" style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 9px;margin-top:8px;">
+                  <div v-if="osgCompIsSale(comp)&&osgNetOfCredit(comp)!==null" style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 9px;margin-top:8px;">
                     Net of the seller credit this sale is <strong>{{ fmtDollar(osgNetOfCredit(comp)) }}</strong>. The strategy is valued off the net figure.
                   </div>
                   <div v-if="comp.notes" style="font-size:11px;color:#9ca3af;margin-top:6px;">{{ comp.notes }}</div>
@@ -4530,7 +4533,8 @@ body {
                 <template v-else>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
                     <div class="form-row" style="grid-column:1/-1;"><label>Address</label><input v-model="comp.address"></div>
-                    <div class="form-row"><label>Sale Price</label><input v-model="comp.salePrice"></div>
+                    <div class="form-row" style="grid-column:1/-1;"><label>Status</label><select v-model="comp.status"><option value="closed">Closed sale (used as a comp)</option><option value="pending">Under contract (market context only)</option><option value="active">Active listing (market context only)</option><option value="off">Expired or withdrawn (market context only)</option></select></div>
+                    <div class="form-row"><label>{{ osgCompIsSale(comp) ? 'Sale Price' : 'List Price' }}</label><input v-model="comp.salePrice"></div>
                     <div class="form-row"><label>Sq Ft</label><input v-model="comp.sqft"></div>
                     <div class="form-row"><label>$/SF</label><input v-model="comp.ppsf"></div>
                     <div class="form-row"><label>DOM</label><input v-model="comp.dom"></div>
@@ -4551,7 +4555,8 @@ body {
                 <h4 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);">Add Comp</h4>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px;">
                   <div class="form-row" style="grid-column:1/-1;"><label>Address *</label><input v-model="osgNewComp.address"></div>
-                  <div class="form-row"><label>Sale Price *</label><input v-model="osgNewComp.salePrice"></div>
+                  <div class="form-row" style="grid-column:1/-1;"><label>Status</label><select v-model="osgNewComp.status"><option value="closed">Closed sale (used as a comp)</option><option value="pending">Under contract (market context only)</option><option value="active">Active listing (market context only)</option><option value="off">Expired or withdrawn (market context only)</option></select></div>
+                  <div class="form-row"><label>{{ osgNewComp.status === 'closed' ? 'Sale Price *' : 'List Price *' }}</label><input v-model="osgNewComp.salePrice"></div>
                   <div class="form-row"><label>Sq Ft</label><input v-model="osgNewComp.sqft"></div>
                   <div class="form-row"><label>$/SF</label><input v-model="osgNewComp.ppsf"></div>
                   <div class="form-row"><label>DOM</label><input v-model="osgNewComp.dom"></div>
@@ -4561,7 +4566,7 @@ body {
                   <div class="form-row" style="grid-column:1/-1;"><label>Notes</label><input v-model="osgNewComp.notes"></div>
                 </div>
                 <div style="display:flex;gap:8px;margin-top:10px;">
-                  <button class="btn-gold" @click="if(osgNewComp.address){osgComps.push({...osgNewComp,editing:false,_src:'manual'});Object.keys(osgNewComp).forEach(k=>osgNewComp[k]='');osgAddingComp=false;}" style="font-size:12px;padding:6px 16px;">Add</button>
+                  <button class="btn-gold" @click="if(osgNewComp.address){osgComps.push({...osgNewComp,editing:false,_src:'manual'});Object.keys(osgNewComp).forEach(k=>osgNewComp[k]='');osgNewComp.status='closed';osgAddingComp=false;}" style="font-size:12px;padding:6px 16px;">Add</button>
                   <button class="btn-outline" @click="osgAddingComp=false" style="font-size:12px;padding:6px 16px;">Cancel</button>
                 </div>
               </div>
@@ -4727,7 +4732,7 @@ body {
                   <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Comps in the buyer PDF</div>
                   <label v-for="(c, ci) in osgComps" :key="ci" style="display:flex;gap:8px;align-items:flex-start;font-size:12px;color:#374151;padding:3px 0;">
                     <input type="checkbox" :checked="!osgBuyerCompOff[ci]" :disabled="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" @change="osgBuyerCompOff[ci] = !$event.target.checked" style="margin-top:2px;">
-                    <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" style="color:#dc2626;font-weight:600;"> This address matches the subject property and is excluded from the buyer PDF.</span><span v-else-if="!c.soldDate" style="color:#b45309;"> (no sold date, so it will be labelled as not a closed sale)</span></span>
+                    <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" style="color:#dc2626;font-weight:600;"> This address matches the subject property and is excluded from the buyer PDF.</span><span v-else-if="!osgCompIsSale(c)" style="color:#b45309;"> ({{ osgCompKindLabel(c).toLowerCase() }}, shown under Current Market Listings, not as a sale)</span></span>
                   </label>
                   <div style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.5;">Comps keep their numbers from the analysis, so "Comp 3" in the reasoning still points at the right one. Comp notes are not included.</div>
                 </div>
@@ -16493,7 +16498,7 @@ No markdown. No preamble. Valid JSON only.`;
     const osgYearBuilt = ref('');
     const osgComps = ref([]);
     const osgAddingComp = ref(false);
-    const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', concessions:'', notes:'' });
+    const osgNewComp = reactive({ address:'', salePrice:'', sqft:'', ppsf:'', dom:'', soldDate:'', spLp:'', concessions:'', notes:'', status:'closed' });
     const osgCompetition = ref('moderate');
     const osgFinancing = ref('conventional');
     const osgJustin = ref('no');
@@ -16603,6 +16608,25 @@ No markdown. No preamble. Valid JSON only.`;
       return p - k;
     }
     function osgNorm(a) { return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+    // What a comp row IS. Only a closed sale is a direct comparable. Active,
+    // under-contract and off-market rows are market-direction context: their
+    // price is an asking price, not a sale. A row with no status (typed in
+    // before status existed) counts as closed only if it carries a sold date;
+    // otherwise it is treated as context, the conservative reading.
+    function osgCompKind(c) {
+      const s = String((c && c.status) || '').toLowerCase();
+      if (s === 'closed' || s === 'pending' || s === 'active' || s === 'off') return s;
+      return (c && String(c.soldDate || '').trim()) ? 'closed' : 'unknown';
+    }
+    function osgCompIsSale(c) { return osgCompKind(c) === 'closed'; }
+    function osgCompKindLabel(c) {
+      const k = osgCompKind(c);
+      return k === 'closed' ? 'Closed sale'
+           : k === 'pending' ? 'Under contract'
+           : k === 'active' ? 'Active listing'
+           : k === 'off' ? 'Expired or withdrawn listing'
+           : 'Not a recorded closed sale';
+    }
     function osgFullAddr(r) {
       return [r.address, r.city, [r.state, r.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     }
@@ -16689,6 +16713,7 @@ No markdown. No preamble. Valid JSON only.`;
           spLp: osgSpLp(closePrice, r.listPrice),
           concessions: (r.concessions === 0 || r.concessions) ? String(r.concessions) : '',
           notes: notes.join('. '),
+          status: (r.status === 'closed' || r.status === 'pending' || r.status === 'active') ? r.status : 'off',
           editing: false,
           _src: 'mls'
         };
@@ -16892,22 +16917,64 @@ No markdown. No preamble. Valid JSON only.`;
     // One builder for the comp lines, used by BOTH the analysis prompt and the
     // chat prompt, so the two can never describe the comps differently.
     function osgCompsText() {
-    return osgComps.value.map(function (c, i) {
-        const credit = osgNum(c.concessions);
-        const net = osgNetOfCredit(c);
+      // Numbering follows the list on screen, so "Comp 3" means the same row
+      // to the agent, the AI and both PDFs whichever block it lands in.
+      const sales = [], listings = [];
+      osgComps.value.forEach(function (c, i) {
         const src = c._src === 'mls' ? 'MLS sheet' : 'agent-entered';
-        return 'Comp ' + (i + 1) + ': ' + c.address +
-          ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
-          ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
-          ' | Price net of seller credit: ' + (net === null ? (c.salePrice || 'unknown') : fmtDollar(net)) +
-          ' | ' + (c.sqft || 'unknown') + ' sqft' +
-          ' | $' + (osgShowPpsf(c) || '?') + '/sf' +
-          ' | DOM: ' + (c.dom || 'unknown') +
-          ' | Sold: ' + (c.soldDate || 'unknown') +
-          ' | SP/LP: ' + (c.spLp || 'unknown') +
-          ' | Source: ' + src +
-          ' | Notes: ' + (c.notes || 'none');
-      }).join('\n');
+        if (osgCompIsSale(c)) {
+          const credit = osgNum(c.concessions);
+          const net = osgNetOfCredit(c);
+          sales.push('Comp ' + (i + 1) + ': ' + c.address +
+            ' | Recorded sale price: ' + (c.salePrice || 'unknown') +
+            ' | Seller credit to buyer: ' + (credit === null ? 'none stated' : fmtDollar(credit)) +
+            ' | Price net of seller credit: ' + (net === null ? (c.salePrice || 'unknown') : fmtDollar(net)) +
+            ' | ' + (c.sqft || 'unknown') + ' sqft' +
+            ' | $' + (osgShowPpsf(c) || '?') + '/sf' +
+            ' | DOM: ' + (c.dom || 'unknown') +
+            ' | Sold: ' + (c.soldDate || 'unknown') +
+            ' | SP/LP: ' + (c.spLp || 'unknown') +
+            ' | Source: ' + src +
+            ' | Notes: ' + (c.notes || 'none'));
+        } else {
+          listings.push('Comp ' + (i + 1) + ': ' + c.address +
+            ' | Status: ' + osgCompKindLabel(c) +
+            ' | Asking (list) price, NOT a sale price: ' + (c.salePrice || 'unknown') +
+            ' | ' + (c.sqft || 'unknown') + ' sqft' +
+            ' | $' + (osgShowPpsf(c) || '?') + '/sf asking' +
+            ' | DOM: ' + (c.dom || 'unknown') +
+            ' | Source: ' + src +
+            ' | Notes: ' + (c.notes || 'none'));
+        }
+      });
+      return 'CLOSED SALES (the only direct comparables):\n' +
+        (sales.length ? sales.join('\n') : 'None. No closed sale is on the list.') +
+        '\n\nACTIVE, UNDER-CONTRACT AND OFF-MARKET LISTINGS (market-direction context only, NOT comparable sales):\n' +
+        (listings.length ? listings.join('\n') : 'None.');
+    }
+
+    // How to weigh the two blocks above. One copy, used by the analysis AND
+    // the chat, so a revision can never read the listings differently.
+    const OSG_COMP_RULES =
+      '- Only CLOSED SALES are comparables. marketValue and maxValue must be supported by the closed sales, valued net of any seller credit.\n' +
+      '- Active, under-contract and off-market listings are market-direction indicators, not comps. Their prices are asking prices, not sales, so never use one as a price anchor or call it a comp or a sale.\n' +
+      '- Read the listings for direction and competition. Actives priced near or below the subject are the buyer\'s alternatives and cap what a buyer should pay. Actives with long days on market show resistance at that price. Listings that went under contract quickly show demand at that level, though their final price is unknown. Expired or withdrawn listings show a price the market rejected.\n' +
+      '- The listings can move your figures within the range the closed sales support, and can justify going below it when they show a softening market. They never justify a figure above what the closed sales support.\n' +
+      '- In valuationReasoning, cover the closed sales first, then say separately what the listings indicate about market direction and how that moved your figures.\n' +
+      '- If there are no closed sales, say so plainly at the start of valuationReasoning and state that the figures are low-confidence.\n';
+
+    // Pull the JSON object out of a model reply. A reply with a sentence
+    // before or after the object, or wrapped in a code fence, is still usable;
+    // anything else throws. The raw text goes to the console so a failure can
+    // be diagnosed instead of guessed at.
+    function osgParseJson(raw) {
+      let s = String(raw || '').trim();
+      if (s.startsWith('```')) s = s.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
+      try { return JSON.parse(s); } catch (e) {}
+      const a = s.indexOf('{'), b = s.lastIndexOf('}');
+      if (a > -1 && b > a) { try { return JSON.parse(s.slice(a, b + 1)); } catch (e) {} }
+      console.warn('[Offer Strategy] reply was not valid JSON:', raw);
+      throw new Error('the reply was not valid JSON');
     }
 
     async function osgAnalyze() {
@@ -16926,13 +16993,13 @@ Sq Ft: ${osgSqFt.value || 'Unknown'}
 Bed/Bath: ${osgBedBath.value || 'Unknown'}
 Year Built: ${osgYearBuilt.value || 'Unknown'}${osgSheetText()}
 
-COMPARABLE SALES:
+COMPS:
 ${compsStr}
 
 HOW TO READ THE COMPS:
 - A seller credit is cash the seller gave back at settlement. Where one exists, the price NET OF SELLER CREDIT is the truer indication of value. Value the subject off the net figures and say so in your reasoning when a credit materially moves a comp.
 - Never invent a comp, a price, or a sold date. Work only from what is listed above.
-
+${OSG_COMP_RULES}
 OFFER PARAMETERS:
 Competition: ${osgCompetition.value}
 Financing: ${osgFinancing.value}
@@ -16953,10 +17020,17 @@ talkingPoints (string - bullet points for the pre-offer call with listing agent)
 justinNote (string or null - only if using FORWARD financial team, specific actions for lender)
 
 No markdown. Valid JSON only.`;
-        const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
-        let jsonStr = raw.trim();
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        const _parsed = JSON.parse(jsonStr);
+        // One automatic retry on an unreadable reply, so an agent is not
+        // sent back to press the button again for a formatting slip.
+        let _parsed = null;
+        for (let _try = 0; _try < 2 && !_parsed; _try++) {
+          const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
+          try {
+            const o = osgParseJson(raw);
+            if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not a strategy');
+            _parsed = o;
+          } catch (pe) { if (_try === 1) throw pe; }
+        }
         if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
         osgResult.value = _parsed;
         // A regenerated strategy is a new document: old chat, undo and comp
@@ -17051,7 +17125,9 @@ No markdown. Valid JSON only.`;
           doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(...navy);
           doc.text('Comp ' + (i+1) + ': ' + c.address, 50, y); y += 14;
           doc.setFont('helvetica','normal'); doc.setFontSize(10); doc.setTextColor(...gray);
-          doc.text('Sold: ' + c.salePrice + ' | ' + c.sqft + ' sqft | ' + c.ppsf + '/sf | DOM: ' + c.dom + ' | SP/LP: ' + c.spLp, 50, y); y += 14;
+          doc.text(osgCompIsSale(c)
+            ? ('Sold: ' + c.salePrice + ' | ' + c.sqft + ' sqft | ' + c.ppsf + '/sf | DOM: ' + c.dom + ' | SP/LP: ' + c.spLp)
+            : (osgCompKindLabel(c) + ', market context only | List: ' + c.salePrice + ' | ' + c.sqft + ' sqft | DOM: ' + c.dom), 50, y); y += 14;
           if (c.notes) { doc.text('Notes: ' + c.notes, 50, y); y += 14; }
           y += 6;
         });
@@ -17096,7 +17172,7 @@ No markdown. Valid JSON only.`;
           '\nDOM: ' + (osgDOM.value || 'Unknown') + '\nType: ' + osgPropType.value +
           '\nSq Ft: ' + (osgSqFt.value || 'Unknown') + '\nBed/Bath: ' + (osgBedBath.value || 'Unknown') +
           '\nYear Built: ' + (osgYearBuilt.value || 'Unknown') + osgSheetText() + '\n\n' +
-          'COMPARABLE SALES (these are the ONLY comps that exist):\n' + osgCompsText() + '\n\n' +
+          'COMPS (these are the ONLY properties that exist):\n' + osgCompsText() + '\n\n' +
           'OFFER PARAMETERS:\nCompetition: ' + osgCompetition.value + '\nFinancing: ' + osgFinancing.value +
           '\nFORWARD Financial Team: ' + (osgJustin.value === 'yes' ? 'Yes' : 'No') +
           '\nPre-Underwritten: ' + (osgPreUW.value === 'yes' ? 'Yes' : 'No') +
@@ -17111,20 +17187,28 @@ No markdown. Valid JSON only.`;
           '- Never invent a comparable sale, a price, a date or a square footage. Work only from the comps listed above. If the agent asks you to use a comp that is not listed, do not add it; say in "reply" that it has to be added on Step 2 and the strategy regenerated.\n' +
           '- If the agent asks for a figure the comps do not support, make the change they asked for and say plainly in "reply" that the comps do not support it.\n' +
           '- If the request is a question, answer it in "reply" and return the strategy unchanged.\n' +
+          '- If the agent challenges your figures or asks you to push back, re-examine them against the closed sales and the listing context. If the evidence supports a change, make it and update every field that repeats those figures. If it does not, keep the figures and defend them in "reply", citing comps by number.\n' +
+          OSG_COMP_RULES +
           '- maxValue, marketValue and winningOffer are formatted dollar strings such as "$2,625,000".\n' +
-          '- "reply" is one to three plain-English sentences saying what you changed, or answering the question.';
-        const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney revising your own offer strategy at the agent\'s direction. Valid JSON only, no markdown.');
-        let jsonStr = String(raw || '').trim();
-        if (jsonStr.startsWith('```')) jsonStr = jsonStr.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '');
-        let obj;
-        try { obj = JSON.parse(jsonStr); } catch (e) { throw new Error('the reply was not valid JSON'); }
-        const next = obj && obj.strategy;
-        if (!next || typeof next !== 'object' || Array.isArray(next)) throw new Error('the reply had no strategy in it');
-        OSG_KEYS.forEach(k => {
-          if (!(k in next)) throw new Error('the reply left out ' + OSG_LABELS[k]);
-          if (next[k] !== null && typeof next[k] !== 'string') throw new Error(OSG_LABELS[k] + ' came back in the wrong format');
-        });
-        OSG_REQUIRED.forEach(k => { if (_osgEmpty(next[k])) throw new Error('the reply blanked out ' + OSG_LABELS[k]); });
+          '- "reply" is plain English, one to five sentences, saying what you changed and why, or answering the question. All of it goes inside the JSON; write nothing before or after the object.';
+        // Every check below runs on each attempt. A reply that fails any of
+        // them is retried once; only then is the agent shown the error, and
+        // nothing is applied either way until a reply passes all of them.
+        let obj = null, next = null;
+        for (let _try = 0; _try < 2 && !next; _try++) {
+          const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney revising your own offer strategy at the agent\'s direction. Valid JSON only, no markdown.');
+          try {
+            const o = osgParseJson(raw);
+            const n = o && o.strategy;
+            if (!n || typeof n !== 'object' || Array.isArray(n)) throw new Error('the reply had no strategy in it');
+            OSG_KEYS.forEach(k => {
+              if (!(k in n)) throw new Error('the reply left out ' + OSG_LABELS[k]);
+              if (n[k] !== null && typeof n[k] !== 'string') throw new Error(OSG_LABELS[k] + ' came back in the wrong format');
+            });
+            OSG_REQUIRED.forEach(k => { if (_osgEmpty(n[k])) throw new Error('the reply blanked out ' + OSG_LABELS[k]); });
+            obj = o; next = n;
+          } catch (ve) { if (_try === 1) throw ve; }
+        }
         const clean = {};
         OSG_KEYS.forEach(k => { clean[k] = next[k]; });
         const changed = OSG_KEYS.filter(k => {
@@ -17245,8 +17329,16 @@ No markdown. Valid JSON only.`;
         ensureSpace(60);
         doc.setFont('helvetica','bold'); doc.setFontSize(13); doc.setTextColor(...navy);
         doc.text('Comparable Sales', 50, y); y += 18;
-        shown.forEach(x => {
+        const _sales = shown.filter(x => osgCompIsSale(x.c)), _lists = shown.filter(x => !osgCompIsSale(x.c));
+        if (!_sales.length) para('No closed sales are included.', 10, gray);
+        _sales.concat(_lists).forEach((x, xi) => {
           const c = x.c;
+          if (_lists.length && xi === _sales.length) {
+            ensureSpace(60);
+            doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(...navy);
+            doc.text('Current Market Listings', 50, y); y += 14;
+            para('Listings that have not closed. Their prices are asking prices, shown for market direction, not as sales.', 10, gray);
+          }
           ensureSpace(52);
           doc.setFont('helvetica','bold'); doc.setFontSize(11);
           doc.splitTextToSize('Comp ' + x.n + ': ' + (c.address || ''), W - 100).forEach(l => {
@@ -17258,7 +17350,9 @@ No markdown. Valid JSON only.`;
           const parts = [];
           // Only a comp with a sold date is described as sold. A list-price-only
           // sheet is labelled as such rather than passed off as a sale.
-          if (price) parts.push(c.soldDate ? ('Sold for ' + price + ' on ' + c.soldDate) : (price + ', not a recorded closed sale'));
+          if (price) parts.push(osgCompIsSale(c)
+            ? (c.soldDate ? ('Sold for ' + price + ' on ' + c.soldDate) : ('Sold for ' + price))
+            : (osgCompKindLabel(c) + ', listed at ' + price));
           if (c.sqft) parts.push(fmtComma(c.sqft) + ' sq ft');
           if (osgShowPpsf(c)) parts.push('$' + fmtComma(osgShowPpsf(c)) + '/sq ft');
           if (!_osgEmpty(c.dom)) parts.push(c.dom + ' days on market');
@@ -17356,6 +17450,7 @@ No markdown. Valid JSON only.`;
       osgPropType.value = 'Single Family'; osgSqFt.value = ''; osgBedBath.value = ''; osgYearBuilt.value = '';
       osgComps.value = []; osgAddingComp.value = false;
       Object.keys(osgNewComp).forEach(k => osgNewComp[k] = '');
+      osgNewComp.status = 'closed';
       osgPdfBusy.value = false; osgPdfError.value = ''; osgPdfStatus.value = '';
       osgPdfDrag.value = false; osgImportRows.value = []; osgImportPick.value = [];
       osgSheet.value = null; osgSheetBusy.value = false; osgSheetError.value = '';
@@ -19137,7 +19232,24 @@ const CHANGELOG = [
         detail: 'Maryland: choose the state, then the county, the same way as on the net sheet. The address search picks the county for you. Transfer and recordation taxes now use each county\'s published rates, and the buyer pays half, as on a Maryland settlement statement. Before, every county except Montgomery and Prince George\'s used a flat guess. Property tax now matches a real Maryland settlement statement to the cent. The old version added an extra half-year of tax on summer and fall closings.\n\nVirginia: the buyer now pays recordation tax on the price and on the loan, each at $0.25 per $100 plus the local one-third, which is how Virginia law splits it. The Northern Virginia fee that was being charged to the buyer belongs to the seller and is gone. Property tax follows Virginia billing in arrears, so the buyer gets a credit from the seller for any unpaid half.\n\nBoth states: prepaid interest and HOA are now worked out from the closing date, the lender\'s title policy is the simultaneous-issue charge, and the HOA Move-in / Capital Contribution field is available.\n\nHow to use: Pick the state and county, and always enter the closing date and annual property tax.\n\nBest practice: Title company fees still vary. If you have the title company\'s own figures, type them into the Title & Settlement fields for an exact total.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-23',
+    date: 'September 23, 2026',
+    title: 'Offer Strategy: Closed Sales Set the Value',
+    summary: 'Offer Strategy now values homes off closed sales only, uses active and pending listings for market direction, and Refine the Strategy is more reliable.',
+    updates: [
+      {
+        title: 'Active and Pending Listings Count as Market Context, Not Comps',
+        detail: 'In the Offer Strategy Generator, only closed sales are now used as comparables. Active, under-contract, expired and withdrawn listings still go into the analysis, but as signs of where the market is heading, not as sales. Their prices are asking prices, so they can pull the value down in a soft market but can never push it above what the closed sales support. Each comp now shows a CLOSED SALE or MARKET CONTEXT tag, and the buyer PDF lists them under a separate Current Market Listings heading.\n\nHow to use: Add active and pending sheets alongside your closed sales. They are picked up automatically. For comps you type in, choose the Status.\n\nBest practice: Always include at least three closed sales. With only listings, the strategy says its figures are low-confidence.'
+      },
+      {
+        title: 'Refine the Strategy Is More Reliable, and Will Argue Back',
+        detail: 'Refine the Strategy no longer fails with "the reply was not valid JSON" when the AI adds a sentence around its answer, and it quietly tries a second time before showing any error. You can now challenge the numbers. It will either revise them and explain why, or hold them and cite the comps that support them.\n\nHow to use: Ask it directly, for example "208 days with no price cut. Is $635k aggressive enough?"\n\nBest practice: If it holds a figure you disagree with, check the comps it cites before changing the offer.'
+      }
+    ]
   }
+
 ];
 
 const VOICE_INTENT_SYSTEM = `You are a real estate assistant for FORWARD Real Estate. Parse a spoken voice command and return ONLY valid JSON.
@@ -21802,7 +21914,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
       osgSheet, osgSheetBusy, osgSheetError, osgSheetStatus, osgSheetWarn, osgSheetDrag,
       osgSheetFacts, osgSheetMatches, osgSheetAddr, osgUploadSubject, osgSheetClear,
-      osgComps, osgAddingComp, osgNewComp,
+      osgComps, osgAddingComp, osgNewComp, osgCompIsSale, osgCompKindLabel,
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
       osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps, osgNorm,
