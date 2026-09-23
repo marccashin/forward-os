@@ -312,6 +312,7 @@
           <option value="Attached Garage">Attached Garage</option>
           <option value="Detached Garage">Detached Garage</option>
           <option value="Carport">Carport</option>
+          <option value="Driveway">Driveway</option>
           <option value="Assigned Space">Assigned Space</option>
           <option value="None">Street / None</option>
         </select>
@@ -411,8 +412,8 @@
 
       <div class="adj-row">
         <div class="adj-row-info">
-          <div class="adj-row-label">Garage Adjustment</div>
-          <div class="adj-row-desc">Per garage space difference between comp and subject property.</div>
+          <div class="adj-row-label">Parking Adjustment</div>
+          <div class="adj-row-desc">Per parking space difference between comp and subject property.</div>
         </div>
         <div class="adj-row-controls">
           <input type="number" id="adj_garage" value="20000" step="1000" oninput="recalcAll()" />
@@ -519,7 +520,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:112px;">Proximity</th>
@@ -557,7 +558,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:112px;">Proximity</th>
@@ -624,7 +625,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:70px;">Concess.</th>
@@ -933,7 +934,7 @@ function buildCompRow(i) {
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="compChange(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
-    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
+    <td data-label="Parking"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
     <td data-label="Condition"><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
     <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
     <td data-label="Concess."><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
@@ -998,7 +999,7 @@ function buildInfoRow(type, i) {
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="${prefix}Change(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'beds',+this.value)" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'fullBaths',+this.value)" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'halfBaths',+this.value)" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'below',+this.value)" /></td>
-    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
+    <td data-label="Parking"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
     <td data-label="Condition"><select onchange="${prefix}Change(${i},'condition',this.value)">${condOpts}</select></td>
     <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'hoaMonthly',+this.value)" /></td>
     <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="${prefix}Change(${i},'proximity',this.value)" /></td>
@@ -1616,7 +1617,7 @@ function _fillPDFDoc(doc) {
     ['Finished Below-Grade', getVal('s_below') && getVal('s_below')!=='0' ? parseInt(getVal('s_below')).toLocaleString() + ' sqft' : '—'],
     ['Bedrooms', getVal('s_beds')||'—'],
     ['Bathrooms', bathStr],
-    ['Garage', garageStr],
+    ['Parking', garageStr],
     ['Condition', getVal('s_condition')||'—'],
     ['HOA', hoaTotal > 0 ? '$' + hoaTotal.toLocaleString('en-US') + '/mo' : 'None'],
   ];
@@ -1746,7 +1747,7 @@ function _fillPDFDoc(doc) {
       y += 18;
 
       const ctxCols   = ['#', 'ADDRESS', dateLabel.toUpperCase(), 'LIST PRICE', 'SQ FT', 'LOT SIZE', '$/SQFT', 'BEDS/BATHS', 'PROXIMITY'];
-      const ctxWidths = [15, 110, 60, 68, 50, 58, 46, 72, 65];
+      const ctxWidths = [15, 105, 60, 62, 50, 48, 40, 70, 58]; // sums to 508 (content width 512, 4pt left inset)
 
       // Table header row
       doc.setFillColor(...NAVY);
@@ -1866,7 +1867,8 @@ function _fillPDFDoc(doc) {
   doc.text('FEATURE', ML + 4, y + 11);
   doc.setFontSize(6.5);
   doc.text('SUBJECT', ML + 4, y + 22);
-  doc.text(subAddr.toUpperCase().slice(0, 20), ML + 44, y + 22);
+  const fitText = (t, maxW) => { let s = String(t || ''); while (s.length && doc.getTextWidth(s) > maxW) s = s.slice(0, -1); return s; };
+  doc.text(fitText(subAddr.toUpperCase(), featW - 48), ML + 44, y + 22);
 
   validComps.slice(0, 6).forEach((c, ci) => {
     const cx = ML + featW + ci * compColW;
@@ -1874,7 +1876,7 @@ function _fillPDFDoc(doc) {
     doc.setTextColor(...GRAY);
     doc.text('COMP ' + (ci + 1), cx + 4, y + 11);
     doc.setFontSize(6);
-    doc.text((c.address || '').toUpperCase().slice(0, 18), cx + 4, y + 22);
+    doc.text(fitText((c.address || '').toUpperCase(), compColW - 8), cx + 4, y + 22);
   });
   y += 28;
 
@@ -1885,14 +1887,14 @@ function _fillPDFDoc(doc) {
     { label: 'Below-Grade',      subVal: getVal('s_below') && getVal('s_below')!=='0' ? getVal('s_below') + ' sqft' : '—', fn: c => c.below && c.below!=='0' ? c.below + ' sqft' : '—', adjFn: null },
     { label: 'Condition',        subVal: getVal('s_condition')||'—',                  fn: c => c.condition||'—',      adjFn: null },
     { label: 'Beds / Baths',     subVal: (getVal('s_beds')||'—') + 'bd / ' + (getVal('s_fullBaths')||'—') + 'fb' + (getVal('s_halfBaths')&&getVal('s_halfBaths')!=='0'?' / '+getVal('s_halfBaths')+'hb':''), fn: c => (c.beds||'—') + 'bd / ' + (c.fullBaths||'—') + 'fb' + (c.halfBaths&&c.halfBaths!=='0'?' / '+c.halfBaths+'hb':''), adjFn: null },
-    { label: 'Garage',           subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces||'0') + ' space(s)', adjFn: null },
+    { label: 'Parking',          subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces||'0') + ' space(s)', adjFn: null },
     { label: 'Concessions',      subVal: '—', fn: c => (parseFloat(c.concessions)||0) > 0 ? '-$' + parseFloat(c.concessions).toLocaleString() : '—', adjFn: null, isAdj: true },
     { label: 'GLA Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.gla) : '—', isAdj: true },
     { label: 'Below-Grade Adj',  subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.below) : '—', isAdj: true },
     { label: 'Bedroom Adj',      subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.bedroom) : '—', isAdj: true },
     { label: 'Full Bath Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.fullBath) : '—', isAdj: true },
     { label: 'Half Bath Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.halfBath) : '—', isAdj: true },
-    { label: 'Garage Adj',       subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.garage) : '—', isAdj: true },
+    { label: 'Parking Adj',      subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.garage) : '—', isAdj: true },
     { label: 'Condition Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.condition) : '—', isAdj: true },
     { label: 'HOA Adj',          subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.hoa) : '—', isAdj: true },
     { label: 'Net Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.net) : '—', isAdj: true, isBold: true },
@@ -1931,7 +1933,7 @@ function _fillPDFDoc(doc) {
       if (row.adjFn) {
         cellVal = row.adjFn(c);
         if (c._adj) {
-          const adjMap = { 'GLA Adjustment': c._adj.gla, 'Below-Grade Adj': c._adj.below, 'Bedroom Adj': c._adj.bedroom, 'Full Bath Adj': c._adj.fullBath, 'Half Bath Adj': c._adj.halfBath, 'Garage Adj': c._adj.garage, 'Condition Adj': c._adj.condition, 'HOA Adj': c._adj.hoa, 'Net Adjustment': c._adj.net };
+          const adjMap = { 'GLA Adjustment': c._adj.gla, 'Below-Grade Adj': c._adj.below, 'Bedroom Adj': c._adj.bedroom, 'Full Bath Adj': c._adj.fullBath, 'Half Bath Adj': c._adj.halfBath, 'Parking Adj': c._adj.garage, 'Condition Adj': c._adj.condition, 'HOA Adj': c._adj.hoa, 'Net Adjustment': c._adj.net };
           const v = adjMap[row.label];
           if (v !== undefined && v !== 0) cellColor = v > 0 ? GREEN : RED;
         }
@@ -1967,7 +1969,7 @@ function _fillPDFDoc(doc) {
     'Bedroom: $' + parseInt(getVal('adj_bedroom')||0).toLocaleString(),
     'Full Bath: $' + parseInt(getVal('adj_bath')||0).toLocaleString(),
     'Half Bath: $' + parseInt(getVal('adj_halfbath')||0).toLocaleString(),
-    'Garage: $' + parseInt(getVal('adj_garage')||0).toLocaleString() + '/space',
+    'Parking: $' + parseInt(getVal('adj_garage')||0).toLocaleString() + '/space',
   ].join('  |  ');
   const rateLines = doc.splitTextToSize(rates, CW - 120);
   doc.text(rateLines, ML + 124, y);
@@ -2109,7 +2111,7 @@ function _fillPDFDoc(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(60, 65, 80);
-    const methodology = 'This Comparative Market Analysis applies appraiser-grade adjustment methodology consistent with Fannie Mae UAD guidelines and the ANSI measuring standard. Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, garage spaces, below-grade finished area, condition, and HOA burden. The recommended list price range represents a \u00b13% bracket around the weighted average adjusted price. All comparable sales are of the same property type and are drawn from within the market-appropriate radius. The final recommended price reflects the agent\u2019s professional judgment and should be reviewed in the context of current market conditions, days-on-market trends, and seller objectives.';
+    const methodology = 'This Comparative Market Analysis applies appraiser-grade adjustment methodology consistent with Fannie Mae UAD guidelines and the ANSI measuring standard. Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden. The recommended list price range represents a \u00b13% bracket around the weighted average adjusted price. All comparable sales are of the same property type and are drawn from within the market-appropriate radius. The final recommended price reflects the agent\u2019s professional judgment and should be reviewed in the context of current market conditions, days-on-market trends, and seller objectives.';
     const methLines = doc.splitTextToSize(methodology, CW);
     doc.text(methLines, ML, y);
     y += methLines.length * 11 + 16;
@@ -2325,7 +2327,7 @@ async function findComps() {
     'Address':'address', 'Sold Date':'soldDate', 'Date':'date',
     'Sale Price':'salePrice', 'List Price':'listPrice', 'Sq Ft':'gla',
     'Lot Size':'lotSize', 'Bd / Fb / Hb':'beds', 'Bel Gr':'below',
-    'Garage':'garageSpaces', 'Condition':'condition', 'HOA/Mo':'hoaMonthly',
+    'Parking':'garageSpaces', 'Garage':'garageSpaces', 'Condition':'condition', 'HOA/Mo':'hoaMonthly',
     'Concess.':'concessions', 'Proximity':'proximity', 'DOM':'dom'
   };
 

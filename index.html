@@ -12689,6 +12689,7 @@ async function lstSubmitToPipeline() {
       if (/attached/i.test(parkText)) parkingType = 'Attached Garage';
       else if (/detached/i.test(parkText)) parkingType = 'Detached Garage';
       else if (/carport/i.test(parkText)) parkingType = 'Carport';
+      else if (/driveway/i.test(parkText)) parkingType = 'Driveway';
       const parkingSpaces = (parkText.match(/(\d+)/) || [])[1] || '';
 
       // Property type
@@ -19003,6 +19004,10 @@ const CHANGELOG = [
       {
         title: 'Cash to Close PDF Shows the Purchase Price',
         detail: 'The Cash to Close PDF printed the purchase price as $0 whenever the price was typed with commas, such as 1,500,000. Only that one line was wrong. The loan amount, every cost and the total were already correct. The PDF now shows the price you entered.\n\nHow to use: Nothing changes. Enter the price as you normally would and download the PDF.\n\nBest practice: If you sent a Cash to Close PDF today showing a $0 purchase price, send the buyer a fresh copy.'
+      },
+      {
+        title: 'CMA Says Parking, and Driveway Is an Option',
+        detail: 'The CMA builder and the CMA PDF now say Parking where they used to say Garage: the subject property card, the adjustment grid, the adjustment settings and the comp tables. Driveway is now a choice in the Parking Type menu, and a Bright MLS sheet that lists driveway parking fills it in for you.\n\nThe Market Context page (active and pending listings) no longer cuts off the Proximity column, and long addresses at the top of the adjustment grid no longer run into the next column.\n\nHow to use: Pick the parking type that matches the home and enter the number of spaces as before. Nothing else changes, and the numbers on your CMA come out exactly as they did yesterday.\n\nBest practice: The parking adjustment is one dollar amount per space, whatever the type, so a driveway space is priced the same as a garage space. If the subject has driveway parking and the comps have garages, or the reverse, lower the Parking Adjustment in Step 2 so a driveway is not valued like a garage.'
       }
     ]
   }
