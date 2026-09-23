@@ -730,78 +730,128 @@ function _supaHdrs(extra) {
   return Object.assign({ 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY, 'Content-Type': 'application/json' }, extra || {});
 }
 
-async function _supaLoad() {
-  if (!_SUPA_KEY || !_AGENT) return null;
-  try {
-    const r = await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}&order=updated_at.desc&limit=1`,
-      { headers: _supaHdrs() }
-    );
-    const rows = await r.json();
-    return Array.isArray(rows) && rows[0] ? rows[0] : null;
-  } catch(e) { console.warn('Supabase load failed', e); return null; }
+// A saved CMA draft is found by its session key. Save and load MUST use the same key.
+// Before Sept 22 2026 they did not: saves used the street address from the prefill
+// ("4202 Woodland Dr Fairfax") while loads used the full listing address
+// ("4202 Woodland Dr Fairfax, VA"). Every reopen found nothing, showed a blank builder,
+// and two seconds later autosaved that blank builder over the real draft.
+// The key is now the listing address the builder was opened with (sessionKey, set by
+// openCMABuilder in index.html), else the prefill street address, else the address field.
+let _cmaLoaded = false;      // no autosave until the saved draft has been loaded
+let _cmaLoadFailed = false;  // load failed: never autosave, it could overwrite a real draft
+let _saveFailShown = false;
+let _cmaRowKey = '';          // key of a row this agent already has, so a closing tab can PATCH in one request
+
+function _cmaPrefillObj() {
+  try { return JSON.parse(localStorage.getItem('cma_voice_prefill') || 'null') || {}; } catch (e) { return {}; }
+}
+function _cmaSessionKey() {
+  const pf = _cmaPrefillObj();
+  return String(pf.sessionKey || pf.address || getVal('s_address') || _URL_ADDRESS || '').trim();
+}
+// Keys to look under when loading. The street-address key finds drafts saved before this fix.
+function _cmaLoadKeys() {
+  const pf = _cmaPrefillObj();
+  const keys = [pf.sessionKey, pf.address];
+  if (!pf.sessionKey && !pf.address) keys.push(_URL_ADDRESS);
+  return keys.map(k => String(k || '').trim()).filter((k, i, a) => k && a.indexOf(k) === i);
+}
+function _cmaKeyFilter(keys) {
+  const list = keys.map(k => '"' + k.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',');
+  return 'property_address=in.' + encodeURIComponent('(' + list + ')');
 }
 
-async function _supaSave(draftData) {
-  if (!_SUPA_KEY || !_AGENT) return;
+async function _supaLoad() {
+  if (!_SUPA_KEY) return null;
+  const keys = _cmaLoadKeys();
+  if (!keys.length) return null;
+  const base = _SUPA_URL + '/rest/v1/cma_sessions?' + _cmaKeyFilter(keys) + '&order=updated_at.desc&limit=1';
   try {
-    const prefillRaw = localStorage.getItem('cma_voice_prefill');
-    const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
-    const address = prefill.address || getVal('s_address') || _URL_ADDRESS || '';
-    const payload = {
-      agent_name: _AGENT,
-      property_address: address,
-      prefill_data: prefill,
-      draft_data: draftData,
-      updated_at: new Date().toISOString()
-    };
-    // Find an existing session for this agent+address and UPDATE it; otherwise INSERT.
-    // (The table has a unique (agent_name, property_address) constraint, so a blind POST
-    //  with merge-duplicates but no on_conflict target returned 409 Conflict.)
-    const _filter = `agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(address)}`;
-    const _existRes = await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?select=id&${_filter}&limit=1`, { headers: _supaHdrs() });
-    const _existing = await _existRes.json().catch(() => []);
-    if (Array.isArray(_existing) && _existing.length) {
-      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?${_filter}`, {
-        method: 'PATCH',
-        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(payload)
-      });
-    } else {
-      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
-        method: 'POST',
-        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(payload)
-      });
+    if (_AGENT) {
+      const r = await fetch(base + '&agent_name=eq.' + encodeURIComponent(_AGENT), { headers: _supaHdrs() });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows[0]) return rows[0];
     }
-  } catch(e) { console.warn('Supabase save failed', e); }
+    // Nothing saved by this agent for this property: open the latest draft a teammate saved.
+    const r2 = await fetch(base, { headers: _supaHdrs() });
+    if (!r2.ok) throw new Error('HTTP ' + r2.status);
+    const rows2 = await r2.json();
+    return Array.isArray(rows2) && rows2[0] ? rows2[0] : null;
+  } catch (e) {
+    console.warn('Supabase load failed', e);
+    return { _error: e.message || String(e) };
+  }
+}
+
+async function _supaSave(draftData, keepalive) {
+  if (!_SUPA_KEY || !_AGENT) throw new Error('open the CMA Builder from FORWARD OS while signed in');
+  const prefill = _cmaPrefillObj();
+  const key = _cmaSessionKey();
+  if (!key) throw new Error('add the property address first');
+  const payload = {
+    agent_name: _AGENT,
+    property_address: key,
+    prefill_data: prefill,
+    draft_data: draftData,
+    updated_at: new Date().toISOString()
+  };
+  // Find an existing session for this agent+key and UPDATE it; otherwise INSERT.
+  // (The table has a unique (agent_name, property_address) constraint, so a blind POST
+  //  with merge-duplicates but no on_conflict target returned 409 Conflict.)
+  const filter = 'agent_name=eq.' + encodeURIComponent(_AGENT) + '&property_address=eq.' + encodeURIComponent(key);
+  const opts = keepalive ? { keepalive: true } : {};
+  if (keepalive && _cmaRowKey === key) {
+    // Tab is closing: one request only, the page will not live long enough for two.
+    const res0 = await fetch(_SUPA_URL + '/rest/v1/cma_sessions?' + filter, Object.assign({
+      method: 'PATCH', headers: _supaHdrs({ 'Prefer': 'return=minimal' }), body: JSON.stringify(payload)
+    }, opts));
+    if (!res0.ok) throw new Error('HTTP ' + res0.status);
+    return true;
+  }
+  const ex = await fetch(_SUPA_URL + '/rest/v1/cma_sessions?select=id&' + filter + '&limit=1', Object.assign({ headers: _supaHdrs() }, opts));
+  if (!ex.ok) throw new Error('HTTP ' + ex.status);
+  const existing = await ex.json().catch(() => []);
+  const hasRow = Array.isArray(existing) && existing.length > 0;
+  const res = await fetch(_SUPA_URL + '/rest/v1/cma_sessions' + (hasRow ? '?' + filter : ''), Object.assign({
+    method: hasRow ? 'PATCH' : 'POST',
+    headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(payload)
+  }, opts));
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  _cmaRowKey = key;
+  return true;
 }
 
 async function _supaDelete() {
-  if (!_SUPA_KEY || !_AGENT) return;
+  const keys = _cmaLoadKeys();
+  if (!_SUPA_KEY || !_AGENT || !keys.length) return;
   try {
     await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}`,
+      _SUPA_URL + '/rest/v1/cma_sessions?agent_name=eq.' + encodeURIComponent(_AGENT) + '&' + _cmaKeyFilter(keys),
       { method: 'DELETE', headers: _supaHdrs() }
     );
-  } catch(e) { /* silent */ }
+  } catch(e) { /* reset continues */ }
 }
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', async () => {
   buildCompsTable();
-  const row = await _supaLoad();
-  // If a fresh prefill exists for a different property, don't resume old session
-  const _fpRaw = localStorage.getItem('cma_voice_prefill');
-  const _fp = _fpRaw ? JSON.parse(_fpRaw) : null;
-  const _fpAddr = _fp && _fp.address ? _fp.address.trim().toLowerCase() : null;
-  const _sessAddr = row && row.property_address ? row.property_address.trim().toLowerCase() : null;
-  const _mismatch = _fpAddr && _sessAddr && _fpAddr !== _sessAddr;
-  if (row && (row.draft_data || row.prefill_data) && !_mismatch) {
+  let row = await _supaLoad();
+  if (row && row._error) {
+    _cmaLoadFailed = true;
+    showToast('❌ Could not load your saved CMA (' + row._error + '). Nothing here will be saved. Reload the page to try again.', 12000);
+    row = null;
+  }
+  // The lookup keys come from this listing's own prefill, so a row found here belongs to this property.
+  if (row && (row.draft_data || row.prefill_data)) {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
     _fixUnitInCity();
-    showToast('☁️ Resumed from cloud');
+    if (row.agent_name === _AGENT && row.property_address === _cmaSessionKey()) _cmaRowKey = row.property_address;
+    const when = row.updated_at ? new Date(row.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const who = row.agent_name && row.agent_name !== _AGENT ? ' by ' + row.agent_name : '';
+    showToast('☁️ Loaded your saved CMA' + (when ? ' from ' + when : '') + who, 4000);
   } else {
     loadPrefill();
     if (_URL_ADDRESS) {
@@ -835,6 +885,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   recalcAll();
+  _cmaLoaded = !_cmaLoadFailed;
 });
 
 // ── PREFILL ──
@@ -892,10 +943,12 @@ function loadPrefill() {
   } catch(e) { console.warn('prefill load error', e); }
 }
 
-function clearPrefill() {
+async function clearPrefill() {
   if (!confirm('Reset all fields to blank?')) return;
+  _cmaLoaded = false;
+  clearTimeout(_autoSaveTimer);
+  await _supaDelete();
   localStorage.removeItem('cma_voice_prefill');
-  _supaDelete();
   location.reload();
 }
 
@@ -1256,12 +1309,18 @@ function _applyDraft(draft) {
   recalcAll();
 }
 
-function saveLocal() {
+async function saveLocal() {
+  if (!_cmaLoaded) {
+    showToast(_cmaLoadFailed ? '❌ Not saved: your saved CMA did not load. Reload the page first.' : 'Still loading your saved CMA. Try again in a moment.', 6000);
+    return;
+  }
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = null;
   try {
-    const draft = _buildDraft();
-    _supaSave(draft);
+    await _supaSave(_buildDraft());
+    _saveFailShown = false;
     showToast('✅ Draft saved');
-  } catch(e) { showToast('Error saving draft'); }
+  } catch(e) { showToast('❌ Draft NOT saved: ' + (e.message || e), 8000); }
 }
 
 function loadDraft() {
@@ -1275,11 +1334,32 @@ function loadDraft() {
 // ── AUTOSAVE ──
 let _autoSaveTimer = null;
 function _scheduleAutoSave() {
+  if (!_cmaLoaded) return;
   clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(() => {
-    try { _supaSave(_buildDraft()); } catch(e) { /* silent */ }
-  }, 2000);
+  _autoSaveTimer = setTimeout(() => _runAutoSave(false), 2000);
 }
+async function _runAutoSave(keepalive) {
+  _autoSaveTimer = null;
+  try {
+    await _supaSave(_buildDraft(), keepalive);
+    if (_saveFailShown) { _saveFailShown = false; showToast('✅ CMA draft saved again'); }
+  } catch(e) {
+    if (!_saveFailShown) { _saveFailShown = true; showToast('❌ CMA draft NOT saved: ' + (e.message || e) + '. Keep this tab open and use Save Draft.', 10000); }
+  }
+}
+// Any edit to any field saves, not only the fields that recalculate
+// (address, notes, parking type, year built, lot size and client name did not).
+function _cmaFieldEdited(e) {
+  const t = e.target;
+  if (!t || !t.matches || !t.matches('input, select, textarea') || t.type === 'file') return;
+  _scheduleAutoSave();
+}
+document.addEventListener('input', _cmaFieldEdited, true);
+document.addEventListener('change', _cmaFieldEdited, true);
+// Closing the tab inside the 2-second autosave window used to drop the last edit.
+window.addEventListener('pagehide', () => {
+  if (_autoSaveTimer && _cmaLoaded) { clearTimeout(_autoSaveTimer); _runAutoSave(true); }
+});
 
 // ── CMA SUMMARY TEXT ── (saved to property_notes subfolder:cma for campaign context)
 function _buildCmaSummary() {
@@ -1311,12 +1391,12 @@ function _buildCmaSummary() {
   ].join('\n').trim();
 }
 
-function showToast(msg) {
+function showToast(msg, ms) {
   const t = document.createElement('div');
   t.textContent = msg;
   t.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#1a2744;color:white;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;';
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+  setTimeout(() => t.remove(), ms || 2500);
 }
 
 // ── PDF EXPORT ──
