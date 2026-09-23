@@ -312,6 +312,7 @@
           <option value="Attached Garage">Attached Garage</option>
           <option value="Detached Garage">Detached Garage</option>
           <option value="Carport">Carport</option>
+          <option value="Driveway">Driveway</option>
           <option value="Assigned Space">Assigned Space</option>
           <option value="None">Street / None</option>
         </select>
@@ -411,8 +412,8 @@
 
       <div class="adj-row">
         <div class="adj-row-info">
-          <div class="adj-row-label">Garage Adjustment</div>
-          <div class="adj-row-desc">Per garage space difference between comp and subject property.</div>
+          <div class="adj-row-label">Parking Adjustment</div>
+          <div class="adj-row-desc">Per parking space difference between comp and subject property.</div>
         </div>
         <div class="adj-row-controls">
           <input type="number" id="adj_garage" value="20000" step="1000" oninput="recalcAll()" />
@@ -519,7 +520,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:112px;">Proximity</th>
@@ -557,7 +558,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:112px;">Proximity</th>
@@ -624,7 +625,7 @@
             <th style="width:80px;">Lot Size</th>
             <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
             <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Garage</th>
+            <th style="width:54px;">Parking</th>
             <th style="width:80px;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
             <th style="width:78px;">HOA/Mo</th>
             <th style="width:70px;">Concess.</th>
@@ -729,78 +730,128 @@ function _supaHdrs(extra) {
   return Object.assign({ 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY, 'Content-Type': 'application/json' }, extra || {});
 }
 
-async function _supaLoad() {
-  if (!_SUPA_KEY || !_AGENT) return null;
-  try {
-    const r = await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}&order=updated_at.desc&limit=1`,
-      { headers: _supaHdrs() }
-    );
-    const rows = await r.json();
-    return Array.isArray(rows) && rows[0] ? rows[0] : null;
-  } catch(e) { console.warn('Supabase load failed', e); return null; }
+// A saved CMA draft is found by its session key. Save and load MUST use the same key.
+// Before Sept 22 2026 they did not: saves used the street address from the prefill
+// ("4202 Woodland Dr Fairfax") while loads used the full listing address
+// ("4202 Woodland Dr Fairfax, VA"). Every reopen found nothing, showed a blank builder,
+// and two seconds later autosaved that blank builder over the real draft.
+// The key is now the listing address the builder was opened with (sessionKey, set by
+// openCMABuilder in index.html), else the prefill street address, else the address field.
+let _cmaLoaded = false;      // no autosave until the saved draft has been loaded
+let _cmaLoadFailed = false;  // load failed: never autosave, it could overwrite a real draft
+let _saveFailShown = false;
+let _cmaRowKey = '';          // key of a row this agent already has, so a closing tab can PATCH in one request
+
+function _cmaPrefillObj() {
+  try { return JSON.parse(localStorage.getItem('cma_voice_prefill') || 'null') || {}; } catch (e) { return {}; }
+}
+function _cmaSessionKey() {
+  const pf = _cmaPrefillObj();
+  return String(pf.sessionKey || pf.address || getVal('s_address') || _URL_ADDRESS || '').trim();
+}
+// Keys to look under when loading. The street-address key finds drafts saved before this fix.
+function _cmaLoadKeys() {
+  const pf = _cmaPrefillObj();
+  const keys = [pf.sessionKey, pf.address];
+  if (!pf.sessionKey && !pf.address) keys.push(_URL_ADDRESS);
+  return keys.map(k => String(k || '').trim()).filter((k, i, a) => k && a.indexOf(k) === i);
+}
+function _cmaKeyFilter(keys) {
+  const list = keys.map(k => '"' + k.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',');
+  return 'property_address=in.' + encodeURIComponent('(' + list + ')');
 }
 
-async function _supaSave(draftData) {
-  if (!_SUPA_KEY || !_AGENT) return;
+async function _supaLoad() {
+  if (!_SUPA_KEY) return null;
+  const keys = _cmaLoadKeys();
+  if (!keys.length) return null;
+  const base = _SUPA_URL + '/rest/v1/cma_sessions?' + _cmaKeyFilter(keys) + '&order=updated_at.desc&limit=1';
   try {
-    const prefillRaw = localStorage.getItem('cma_voice_prefill');
-    const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
-    const address = prefill.address || getVal('s_address') || _URL_ADDRESS || '';
-    const payload = {
-      agent_name: _AGENT,
-      property_address: address,
-      prefill_data: prefill,
-      draft_data: draftData,
-      updated_at: new Date().toISOString()
-    };
-    // Find an existing session for this agent+address and UPDATE it; otherwise INSERT.
-    // (The table has a unique (agent_name, property_address) constraint, so a blind POST
-    //  with merge-duplicates but no on_conflict target returned 409 Conflict.)
-    const _filter = `agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(address)}`;
-    const _existRes = await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?select=id&${_filter}&limit=1`, { headers: _supaHdrs() });
-    const _existing = await _existRes.json().catch(() => []);
-    if (Array.isArray(_existing) && _existing.length) {
-      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions?${_filter}`, {
-        method: 'PATCH',
-        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(payload)
-      });
-    } else {
-      await fetch(`${_SUPA_URL}/rest/v1/cma_sessions`, {
-        method: 'POST',
-        headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
-        body: JSON.stringify(payload)
-      });
+    if (_AGENT) {
+      const r = await fetch(base + '&agent_name=eq.' + encodeURIComponent(_AGENT), { headers: _supaHdrs() });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows[0]) return rows[0];
     }
-  } catch(e) { console.warn('Supabase save failed', e); }
+    // Nothing saved by this agent for this property: open the latest draft a teammate saved.
+    const r2 = await fetch(base, { headers: _supaHdrs() });
+    if (!r2.ok) throw new Error('HTTP ' + r2.status);
+    const rows2 = await r2.json();
+    return Array.isArray(rows2) && rows2[0] ? rows2[0] : null;
+  } catch (e) {
+    console.warn('Supabase load failed', e);
+    return { _error: e.message || String(e) };
+  }
+}
+
+async function _supaSave(draftData, keepalive) {
+  if (!_SUPA_KEY || !_AGENT) throw new Error('open the CMA Builder from FORWARD OS while signed in');
+  const prefill = _cmaPrefillObj();
+  const key = _cmaSessionKey();
+  if (!key) throw new Error('add the property address first');
+  const payload = {
+    agent_name: _AGENT,
+    property_address: key,
+    prefill_data: prefill,
+    draft_data: draftData,
+    updated_at: new Date().toISOString()
+  };
+  // Find an existing session for this agent+key and UPDATE it; otherwise INSERT.
+  // (The table has a unique (agent_name, property_address) constraint, so a blind POST
+  //  with merge-duplicates but no on_conflict target returned 409 Conflict.)
+  const filter = 'agent_name=eq.' + encodeURIComponent(_AGENT) + '&property_address=eq.' + encodeURIComponent(key);
+  const opts = keepalive ? { keepalive: true } : {};
+  if (keepalive && _cmaRowKey === key) {
+    // Tab is closing: one request only, the page will not live long enough for two.
+    const res0 = await fetch(_SUPA_URL + '/rest/v1/cma_sessions?' + filter, Object.assign({
+      method: 'PATCH', headers: _supaHdrs({ 'Prefer': 'return=minimal' }), body: JSON.stringify(payload)
+    }, opts));
+    if (!res0.ok) throw new Error('HTTP ' + res0.status);
+    return true;
+  }
+  const ex = await fetch(_SUPA_URL + '/rest/v1/cma_sessions?select=id&' + filter + '&limit=1', Object.assign({ headers: _supaHdrs() }, opts));
+  if (!ex.ok) throw new Error('HTTP ' + ex.status);
+  const existing = await ex.json().catch(() => []);
+  const hasRow = Array.isArray(existing) && existing.length > 0;
+  const res = await fetch(_SUPA_URL + '/rest/v1/cma_sessions' + (hasRow ? '?' + filter : ''), Object.assign({
+    method: hasRow ? 'PATCH' : 'POST',
+    headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(payload)
+  }, opts));
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  _cmaRowKey = key;
+  return true;
 }
 
 async function _supaDelete() {
-  if (!_SUPA_KEY || !_AGENT) return;
+  const keys = _cmaLoadKeys();
+  if (!_SUPA_KEY || !_AGENT || !keys.length) return;
   try {
     await fetch(
-      `${_SUPA_URL}/rest/v1/cma_sessions?agent_name=eq.${encodeURIComponent(_AGENT)}&property_address=eq.${encodeURIComponent(_URL_ADDRESS)}`,
+      _SUPA_URL + '/rest/v1/cma_sessions?agent_name=eq.' + encodeURIComponent(_AGENT) + '&' + _cmaKeyFilter(keys),
       { method: 'DELETE', headers: _supaHdrs() }
     );
-  } catch(e) { /* silent */ }
+  } catch(e) { /* reset continues */ }
 }
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', async () => {
   buildCompsTable();
-  const row = await _supaLoad();
-  // If a fresh prefill exists for a different property, don't resume old session
-  const _fpRaw = localStorage.getItem('cma_voice_prefill');
-  const _fp = _fpRaw ? JSON.parse(_fpRaw) : null;
-  const _fpAddr = _fp && _fp.address ? _fp.address.trim().toLowerCase() : null;
-  const _sessAddr = row && row.property_address ? row.property_address.trim().toLowerCase() : null;
-  const _mismatch = _fpAddr && _sessAddr && _fpAddr !== _sessAddr;
-  if (row && (row.draft_data || row.prefill_data) && !_mismatch) {
+  let row = await _supaLoad();
+  if (row && row._error) {
+    _cmaLoadFailed = true;
+    showToast('❌ Could not load your saved CMA (' + row._error + '). Nothing here will be saved. Reload the page to try again.', 12000);
+    row = null;
+  }
+  // The lookup keys come from this listing's own prefill, so a row found here belongs to this property.
+  if (row && (row.draft_data || row.prefill_data)) {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
     _fixUnitInCity();
-    showToast('☁️ Resumed from cloud');
+    if (row.agent_name === _AGENT && row.property_address === _cmaSessionKey()) _cmaRowKey = row.property_address;
+    const when = row.updated_at ? new Date(row.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const who = row.agent_name && row.agent_name !== _AGENT ? ' by ' + row.agent_name : '';
+    showToast('☁️ Loaded your saved CMA' + (when ? ' from ' + when : '') + who, 4000);
   } else {
     loadPrefill();
     if (_URL_ADDRESS) {
@@ -834,6 +885,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
   recalcAll();
+  _cmaLoaded = !_cmaLoadFailed;
 });
 
 // ── PREFILL ──
@@ -891,10 +943,12 @@ function loadPrefill() {
   } catch(e) { console.warn('prefill load error', e); }
 }
 
-function clearPrefill() {
+async function clearPrefill() {
   if (!confirm('Reset all fields to blank?')) return;
+  _cmaLoaded = false;
+  clearTimeout(_autoSaveTimer);
+  await _supaDelete();
   localStorage.removeItem('cma_voice_prefill');
-  _supaDelete();
   location.reload();
 }
 
@@ -933,7 +987,7 @@ function buildCompRow(i) {
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="compChange(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
-    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
+    <td data-label="Parking"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></td>
     <td data-label="Condition"><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
     <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
     <td data-label="Concess."><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
@@ -998,7 +1052,7 @@ function buildInfoRow(type, i) {
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="${prefix}Change(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'beds',+this.value)" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'fullBaths',+this.value)" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'halfBaths',+this.value)" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'below',+this.value)" /></td>
-    <td data-label="Garage"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
+    <td data-label="Parking"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
     <td data-label="Condition"><select onchange="${prefix}Change(${i},'condition',this.value)">${condOpts}</select></td>
     <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'hoaMonthly',+this.value)" /></td>
     <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="${prefix}Change(${i},'proximity',this.value)" /></td>
@@ -1255,12 +1309,18 @@ function _applyDraft(draft) {
   recalcAll();
 }
 
-function saveLocal() {
+async function saveLocal() {
+  if (!_cmaLoaded) {
+    showToast(_cmaLoadFailed ? '❌ Not saved: your saved CMA did not load. Reload the page first.' : 'Still loading your saved CMA. Try again in a moment.', 6000);
+    return;
+  }
+  clearTimeout(_autoSaveTimer);
+  _autoSaveTimer = null;
   try {
-    const draft = _buildDraft();
-    _supaSave(draft);
+    await _supaSave(_buildDraft());
+    _saveFailShown = false;
     showToast('✅ Draft saved');
-  } catch(e) { showToast('Error saving draft'); }
+  } catch(e) { showToast('❌ Draft NOT saved: ' + (e.message || e), 8000); }
 }
 
 function loadDraft() {
@@ -1274,11 +1334,32 @@ function loadDraft() {
 // ── AUTOSAVE ──
 let _autoSaveTimer = null;
 function _scheduleAutoSave() {
+  if (!_cmaLoaded) return;
   clearTimeout(_autoSaveTimer);
-  _autoSaveTimer = setTimeout(() => {
-    try { _supaSave(_buildDraft()); } catch(e) { /* silent */ }
-  }, 2000);
+  _autoSaveTimer = setTimeout(() => _runAutoSave(false), 2000);
 }
+async function _runAutoSave(keepalive) {
+  _autoSaveTimer = null;
+  try {
+    await _supaSave(_buildDraft(), keepalive);
+    if (_saveFailShown) { _saveFailShown = false; showToast('✅ CMA draft saved again'); }
+  } catch(e) {
+    if (!_saveFailShown) { _saveFailShown = true; showToast('❌ CMA draft NOT saved: ' + (e.message || e) + '. Keep this tab open and use Save Draft.', 10000); }
+  }
+}
+// Any edit to any field saves, not only the fields that recalculate
+// (address, notes, parking type, year built, lot size and client name did not).
+function _cmaFieldEdited(e) {
+  const t = e.target;
+  if (!t || !t.matches || !t.matches('input, select, textarea') || t.type === 'file') return;
+  _scheduleAutoSave();
+}
+document.addEventListener('input', _cmaFieldEdited, true);
+document.addEventListener('change', _cmaFieldEdited, true);
+// Closing the tab inside the 2-second autosave window used to drop the last edit.
+window.addEventListener('pagehide', () => {
+  if (_autoSaveTimer && _cmaLoaded) { clearTimeout(_autoSaveTimer); _runAutoSave(true); }
+});
 
 // ── CMA SUMMARY TEXT ── (saved to property_notes subfolder:cma for campaign context)
 function _buildCmaSummary() {
@@ -1310,12 +1391,12 @@ function _buildCmaSummary() {
   ].join('\n').trim();
 }
 
-function showToast(msg) {
+function showToast(msg, ms) {
   const t = document.createElement('div');
   t.textContent = msg;
   t.style.cssText = 'position:fixed;bottom:60px;left:50%;transform:translateX(-50%);background:#1a2744;color:white;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;pointer-events:none;';
   document.body.appendChild(t);
-  setTimeout(() => t.remove(), 2500);
+  setTimeout(() => t.remove(), ms || 2500);
 }
 
 // ── PDF EXPORT ──
@@ -1616,7 +1697,7 @@ function _fillPDFDoc(doc) {
     ['Finished Below-Grade', getVal('s_below') && getVal('s_below')!=='0' ? parseInt(getVal('s_below')).toLocaleString() + ' sqft' : '—'],
     ['Bedrooms', getVal('s_beds')||'—'],
     ['Bathrooms', bathStr],
-    ['Garage', garageStr],
+    ['Parking', garageStr],
     ['Condition', getVal('s_condition')||'—'],
     ['HOA', hoaTotal > 0 ? '$' + hoaTotal.toLocaleString('en-US') + '/mo' : 'None'],
   ];
@@ -1746,7 +1827,7 @@ function _fillPDFDoc(doc) {
       y += 18;
 
       const ctxCols   = ['#', 'ADDRESS', dateLabel.toUpperCase(), 'LIST PRICE', 'SQ FT', 'LOT SIZE', '$/SQFT', 'BEDS/BATHS', 'PROXIMITY'];
-      const ctxWidths = [15, 110, 60, 68, 50, 58, 46, 72, 65];
+      const ctxWidths = [15, 105, 60, 62, 50, 48, 40, 70, 58]; // sums to 508 (content width 512, 4pt left inset)
 
       // Table header row
       doc.setFillColor(...NAVY);
@@ -1866,7 +1947,8 @@ function _fillPDFDoc(doc) {
   doc.text('FEATURE', ML + 4, y + 11);
   doc.setFontSize(6.5);
   doc.text('SUBJECT', ML + 4, y + 22);
-  doc.text(subAddr.toUpperCase().slice(0, 20), ML + 44, y + 22);
+  const fitText = (t, maxW) => { let s = String(t || ''); while (s.length && doc.getTextWidth(s) > maxW) s = s.slice(0, -1); return s; };
+  doc.text(fitText(subAddr.toUpperCase(), featW - 48), ML + 44, y + 22);
 
   validComps.slice(0, 6).forEach((c, ci) => {
     const cx = ML + featW + ci * compColW;
@@ -1874,7 +1956,7 @@ function _fillPDFDoc(doc) {
     doc.setTextColor(...GRAY);
     doc.text('COMP ' + (ci + 1), cx + 4, y + 11);
     doc.setFontSize(6);
-    doc.text((c.address || '').toUpperCase().slice(0, 18), cx + 4, y + 22);
+    doc.text(fitText((c.address || '').toUpperCase(), compColW - 8), cx + 4, y + 22);
   });
   y += 28;
 
@@ -1885,14 +1967,14 @@ function _fillPDFDoc(doc) {
     { label: 'Below-Grade',      subVal: getVal('s_below') && getVal('s_below')!=='0' ? getVal('s_below') + ' sqft' : '—', fn: c => c.below && c.below!=='0' ? c.below + ' sqft' : '—', adjFn: null },
     { label: 'Condition',        subVal: getVal('s_condition')||'—',                  fn: c => c.condition||'—',      adjFn: null },
     { label: 'Beds / Baths',     subVal: (getVal('s_beds')||'—') + 'bd / ' + (getVal('s_fullBaths')||'—') + 'fb' + (getVal('s_halfBaths')&&getVal('s_halfBaths')!=='0'?' / '+getVal('s_halfBaths')+'hb':''), fn: c => (c.beds||'—') + 'bd / ' + (c.fullBaths||'—') + 'fb' + (c.halfBaths&&c.halfBaths!=='0'?' / '+c.halfBaths+'hb':''), adjFn: null },
-    { label: 'Garage',           subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces||'0') + ' space(s)', adjFn: null },
+    { label: 'Parking',          subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces||'0') + ' space(s)', adjFn: null },
     { label: 'Concessions',      subVal: '—', fn: c => (parseFloat(c.concessions)||0) > 0 ? '-$' + parseFloat(c.concessions).toLocaleString() : '—', adjFn: null, isAdj: true },
     { label: 'GLA Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.gla) : '—', isAdj: true },
     { label: 'Below-Grade Adj',  subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.below) : '—', isAdj: true },
     { label: 'Bedroom Adj',      subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.bedroom) : '—', isAdj: true },
     { label: 'Full Bath Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.fullBath) : '—', isAdj: true },
     { label: 'Half Bath Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.halfBath) : '—', isAdj: true },
-    { label: 'Garage Adj',       subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.garage) : '—', isAdj: true },
+    { label: 'Parking Adj',      subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.garage) : '—', isAdj: true },
     { label: 'Condition Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.condition) : '—', isAdj: true },
     { label: 'HOA Adj',          subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.hoa) : '—', isAdj: true },
     { label: 'Net Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.net) : '—', isAdj: true, isBold: true },
@@ -1931,7 +2013,7 @@ function _fillPDFDoc(doc) {
       if (row.adjFn) {
         cellVal = row.adjFn(c);
         if (c._adj) {
-          const adjMap = { 'GLA Adjustment': c._adj.gla, 'Below-Grade Adj': c._adj.below, 'Bedroom Adj': c._adj.bedroom, 'Full Bath Adj': c._adj.fullBath, 'Half Bath Adj': c._adj.halfBath, 'Garage Adj': c._adj.garage, 'Condition Adj': c._adj.condition, 'HOA Adj': c._adj.hoa, 'Net Adjustment': c._adj.net };
+          const adjMap = { 'GLA Adjustment': c._adj.gla, 'Below-Grade Adj': c._adj.below, 'Bedroom Adj': c._adj.bedroom, 'Full Bath Adj': c._adj.fullBath, 'Half Bath Adj': c._adj.halfBath, 'Parking Adj': c._adj.garage, 'Condition Adj': c._adj.condition, 'HOA Adj': c._adj.hoa, 'Net Adjustment': c._adj.net };
           const v = adjMap[row.label];
           if (v !== undefined && v !== 0) cellColor = v > 0 ? GREEN : RED;
         }
@@ -1967,7 +2049,7 @@ function _fillPDFDoc(doc) {
     'Bedroom: $' + parseInt(getVal('adj_bedroom')||0).toLocaleString(),
     'Full Bath: $' + parseInt(getVal('adj_bath')||0).toLocaleString(),
     'Half Bath: $' + parseInt(getVal('adj_halfbath')||0).toLocaleString(),
-    'Garage: $' + parseInt(getVal('adj_garage')||0).toLocaleString() + '/space',
+    'Parking: $' + parseInt(getVal('adj_garage')||0).toLocaleString() + '/space',
   ].join('  |  ');
   const rateLines = doc.splitTextToSize(rates, CW - 120);
   doc.text(rateLines, ML + 124, y);
@@ -2109,7 +2191,7 @@ function _fillPDFDoc(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8.5);
     doc.setTextColor(60, 65, 80);
-    const methodology = 'This Comparative Market Analysis applies appraiser-grade adjustment methodology consistent with Fannie Mae UAD guidelines and the ANSI measuring standard. Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, garage spaces, below-grade finished area, condition, and HOA burden. The recommended list price range represents a \u00b13% bracket around the weighted average adjusted price. All comparable sales are of the same property type and are drawn from within the market-appropriate radius. The final recommended price reflects the agent\u2019s professional judgment and should be reviewed in the context of current market conditions, days-on-market trends, and seller objectives.';
+    const methodology = 'This Comparative Market Analysis applies appraiser-grade adjustment methodology consistent with Fannie Mae UAD guidelines and the ANSI measuring standard. Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden. The recommended list price range represents a \u00b13% bracket around the weighted average adjusted price. All comparable sales are of the same property type and are drawn from within the market-appropriate radius. The final recommended price reflects the agent\u2019s professional judgment and should be reviewed in the context of current market conditions, days-on-market trends, and seller objectives.';
     const methLines = doc.splitTextToSize(methodology, CW);
     doc.text(methLines, ML, y);
     y += methLines.length * 11 + 16;
@@ -2325,7 +2407,7 @@ async function findComps() {
     'Address':'address', 'Sold Date':'soldDate', 'Date':'date',
     'Sale Price':'salePrice', 'List Price':'listPrice', 'Sq Ft':'gla',
     'Lot Size':'lotSize', 'Bd / Fb / Hb':'beds', 'Bel Gr':'below',
-    'Garage':'garageSpaces', 'Condition':'condition', 'HOA/Mo':'hoaMonthly',
+    'Parking':'garageSpaces', 'Garage':'garageSpaces', 'Condition':'condition', 'HOA/Mo':'hoaMonthly',
     'Concess.':'concessions', 'Proximity':'proximity', 'DOM':'dom'
   };
 
