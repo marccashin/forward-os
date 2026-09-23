@@ -4719,7 +4719,7 @@ body {
               <!-- Buyer PDF -->
               <div class="card" style="margin-bottom:12px;border-top:3px solid var(--navy);">
                 <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:14px;font-weight:600;color:var(--navy);margin-bottom:4px;">Buyer PDF</h3>
-                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 10px;line-height:1.55;">Review and edit the sections above, then choose what the buyer sees. The talking points and the financial team note are for you only and are never included.</p>
+                <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 10px;line-height:1.55;">The sections above are your working notes. Choose what the buyer sees, then write the client wording below: the buyer PDF prints that version, not your notes. The talking points and the financial team note are for you only and are never included.</p>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 16px;font-size:13px;color:#374151;">
                   <label style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.values"> Value summary</label>
                   <label v-if="osgResult.appraisalGap" style="display:flex;gap:8px;align-items:center;"><input type="checkbox" v-model="osgBuyerInc.appraisal"> Appraisal gap</label>
@@ -4735,6 +4735,19 @@ body {
                     <span>Comp {{ ci + 1 }}: {{ c.address }}<span v-if="osgNorm(c.address)&&osgNorm(c.address)===osgNorm(osgAddress)" style="color:#dc2626;font-weight:600;"> This address matches the subject property and is excluded from the buyer PDF.</span><span v-else-if="!osgCompIsSale(c)" style="color:#b45309;"> ({{ osgCompKindLabel(c).toLowerCase() }}, shown under Current Market Listings, not as a sale)</span></span>
                   </label>
                   <div style="font-size:11px;color:#9ca3af;margin-top:6px;line-height:1.5;">Comps keep their numbers from the analysis, so "Comp 3" in the reasoning still points at the right one. Comp notes are not included.</div>
+                </div>
+                <div v-if="osgClientShown.length" style="margin-top:12px;padding:12px;background:#fffdf7;border:1px solid #f1e3b8;border-radius:8px;">
+                  <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:4px;">Client wording</div>
+                  <div style="font-size:12px;color:#6b7280;line-height:1.5;margin-bottom:8px;">Written to your client from the sections above, with every figure kept. Read it and edit anything before you send.</div>
+                  <button class="btn-navy" @click="osgClientWrite" :disabled="osgClientBusy" style="font-size:12px;padding:7px 16px;">{{ osgClientBusy ? 'Writing...' : (osgClientFor ? 'Rewrite Client Wording' : 'Write Client Wording') }}</button>
+                  <div v-if="osgClientError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;color:#dc2626;">{{ osgClientError }}</div>
+                  <div v-if="osgClientStale" style="font-family:'Cormorant Garamond',serif;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:8px;font-size:13px;color:#b45309;">The strategy changed after this wording was written. Rewrite it before sending.</div>
+                  <template v-if="osgClientFor">
+                    <div v-for="f in osgClientShown" :key="f.k" style="margin-top:10px;">
+                      <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.04em;color:#6b7280;margin-bottom:4px;">{{ f.label.toUpperCase() }}</label>
+                      <textarea v-model="osgClient[f.k]" rows="5" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:8px 10px;border:1.5px solid #d1d5db;border-radius:8px;resize:vertical;"></textarea>
+                    </div>
+                  </template>
                 </div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;">
                   <button class="btn-gold" @click="osgSavePDF('buyer')" :disabled="osgSaving" style="font-size:13px;padding:10px 18px;">
@@ -16563,6 +16576,13 @@ No markdown. No preamble. Valid JSON only.`;
     const osgEditKey = ref('');         // which section is open for hand editing
     const osgEditTouched = ref(false);  // any hand edit this strategy (guards Start Over)
     const osgBuyerInc = reactive({ values:true, appraisal:true, comps:true, reasoning:true, structure:true, escalation:true });
+    // Client wording for the buyer PDF. The strategy sections are the agent's
+    // working notes; the buyer PDF prints this separately written version,
+    // which the agent reads and can edit before it goes out.
+    const osgClient = reactive({ appraisal:'', reasoning:'', structure:'', escalation:'' });
+    const osgClientFor = ref('');      // fingerprint of the strategy it was written from
+    const osgClientBusy = ref(false);
+    const osgClientError = ref('');
     const osgBuyerCompOff = reactive({}); // comp index -> true when left OUT of the buyer PDF
     const osgSaveMsg = ref('');
     const osgSaveError = ref('');
@@ -17038,6 +17058,7 @@ No markdown. Valid JSON only.`;
         osgChatMsgs.value = []; osgChatInput.value = ''; osgChatError.value = '';
         osgPrevResult.value = null; osgEditKey.value = ''; osgEditTouched.value = false;
         Object.keys(osgBuyerCompOff).forEach(k => delete osgBuyerCompOff[k]);
+        _osgClientClear();
         osgSaveMsg.value = ''; osgSaveError.value = '';
         osgStep.value = 3;
         Vue.nextTick(() => window.scrollTo(0, 0));
@@ -17239,6 +17260,95 @@ No markdown. Valid JSON only.`;
       osgChatMsgs.value.push({ role: 'bot', text: 'Undid the last change. The strategy is back to how it was before it.', changed: [] });
     }
 
+    // Which strategy field each client section is written from.
+    const OSG_CLIENT_SRC = { appraisal:'appraisalGapNote', reasoning:'valuationReasoning', structure:'offerStructure', escalation:'escalationClause' };
+    const OSG_CLIENT_LABELS = { appraisal:'Appraisal Gap', reasoning:'Valuation Reasoning', structure:'Recommended Offer Structure', escalation:'Escalation Clause' };
+    function _osgClientFingerprint() {
+      const r = osgResult.value || {};
+      return JSON.stringify([osgAddress.value, r.marketValue, r.winningOffer, r.maxValue, r.appraisalGap,
+        r.appraisalGapNote, r.valuationReasoning, r.offerStructure, r.escalationClause]);
+    }
+    function _osgClientHasSrc(k) {
+      const r = osgResult.value; if (!r) return false;
+      if (k === 'appraisal' && _osgEmpty(r.appraisalGap)) return false;
+      return !_osgEmpty(r[OSG_CLIENT_SRC[k]]);
+    }
+    const osgClientShown = computed(() => Object.keys(OSG_CLIENT_SRC).filter(_osgClientHasSrc)
+      .map(k => ({ k: k, label: OSG_CLIENT_LABELS[k] })));
+    const osgClientStale = computed(() => !!osgClientFor.value && osgClientFor.value !== _osgClientFingerprint());
+    function _osgClientClear() {
+      Object.keys(osgClient).forEach(k => osgClient[k] = '');
+      osgClientFor.value = ''; osgClientError.value = '';
+    }
+    // Em dashes never go to a client. Done on the AI's text before the agent
+    // sees it, so what is on screen is exactly what prints.
+    function _osgNoEmDash(t) { return String(t || '').replace(/\s*—\s*/g, ', ').replace(/,\s*,/g, ','); }
+
+    async function osgClientWrite() {
+      if (!osgResult.value || osgClientBusy.value) return;
+      const _ownAtStart = byrToolOwner.osg;
+      const keys = Object.keys(OSG_CLIENT_SRC).filter(_osgClientHasSrc);
+      if (!keys.length) { osgClientError.value = 'There is no written section to prepare for the client.'; return; }
+      const fp = _osgClientFingerprint();
+      const r = osgResult.value;
+      const srcObj = {}; keys.forEach(k => { srcObj[k] = String(r[OSG_CLIENT_SRC[k]]); });
+      const buyer = byrActiveBuyer.value ? String(byrActiveBuyer.value.buyer_name || '') : '';
+      osgClientBusy.value = true; osgClientError.value = '';
+      const prompt =
+        'Below are sections of an offer strategy that a buyer\'s agent wrote as internal working notes. Rewrite each one so it can be sent to the agent\'s client, the buyer, in a PDF from their agent.\n\n' +
+        'Buyer: ' + (buyer || 'not named') + '\nProperty: ' + osgAddress.value +
+        '\nMarket value: ' + (r.marketValue || '') + ' | Recommended offer: ' + (r.winningOffer || '') + ' | Top of range: ' + (r.maxValue || '') +
+        (r.appraisalGap ? ' | Appraisal gap: ' + r.appraisalGap : '') + '\n\n' +
+        'SECTIONS (JSON):\n' + JSON.stringify(srcObj, null, 2) + '\n\n' +
+        'RULES:\n' +
+        '- Return ONLY a JSON object with the keys ' + keys.join(', ') + ', each a string. No markdown, no code fences, nothing before or after the object.\n' +
+        '- Write to the buyer directly as "you" and "your", from their agent as "we". Never say "the buyer" or "the client".\n' +
+        '- Keep every figure, comp number, date and fact exactly as given, and keep every recommendation. Add no fact, figure or claim that is not in the source.\n' +
+        '- Professional, calm and plain. Explain the reasoning; do not sell.\n' +
+        '- Use "recommended offer", not "winning offer". Leave out internal shorthand such as "leverage", "opening position", "credible", "floor" and "aspirational".\n' +
+        '- You may explain the negotiating plan in plain terms, such as leaving room to respond to a counteroffer. Do not speculate about the seller\'s motives, finances or state of mind. Where the notes reason from the seller\'s behavior, state the market fact instead, for example "The home has been listed for 208 days without a price change."\n' +
+        '- Never use an em dash. Use a comma, a period or parentheses. Number ranges such as $310 to $312 per square foot are fine.\n' +
+        '- Never use these words: stunning, luxurious, impeccable, nestled, boasts, charming.\n' +
+        '- Keep each section about as long as the source, or shorter.';
+      try {
+        let out = null;
+        for (let _try = 0; _try < 2 && !out; _try++) {
+          const raw = await claude(prompt, 'You are a senior buyer\'s agent at FORWARD | Corcoran McEnearney writing to your own client. Valid JSON only, no markdown.');
+          try {
+            const o = osgParseJson(raw);
+            if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not in the expected format');
+            keys.forEach(k => { if (typeof o[k] !== 'string' || !o[k].trim()) throw new Error('the reply left out ' + OSG_CLIENT_LABELS[k]); });
+            out = o;
+          } catch (ve) { if (_try === 1) throw ve; }
+        }
+        if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
+        _osgClientClear();
+        keys.forEach(k => { osgClient[k] = _osgNoEmDash(out[k]).trim(); });
+        osgClientFor.value = fp;
+      } catch (e) {
+        osgClientError.value = 'Could not write the client wording: ' + e.message + '. Try again.';
+      } finally {
+        osgClientBusy.value = false;
+      }
+    }
+
+    // Why the buyer PDF cannot be built yet, or '' when it can. Agent notes
+    // are never printed in place of client wording.
+    function osgClientBlock() {
+      const r = osgResult.value, inc = osgBuyerInc; if (!r) return '';
+      const need = [];
+      if (inc.appraisal && _osgClientHasSrc('appraisal')) need.push('appraisal');
+      if (inc.reasoning && _osgClientHasSrc('reasoning')) need.push('reasoning');
+      if (inc.structure && _osgClientHasSrc('structure')) need.push('structure');
+      if (inc.escalation && _osgClientHasSrc('escalation')) need.push('escalation');
+      if (!need.length) return '';
+      if (!osgClientFor.value) return 'Write the client wording first. The buyer PDF uses a version written to your client, not your working notes.';
+      if (osgClientStale.value) return 'The strategy changed after the client wording was written. Rewrite the client wording before sending.';
+      const blank = need.filter(k => _osgEmpty(osgClient[k]));
+      if (blank.length) return OSG_CLIENT_LABELS[blank[0]] + ' is ticked but its client wording is empty. Rewrite it, or untick the section.';
+      return '';
+    }
+
     function osgBuyerHasContent() {
       const r = osgResult.value; if (!r) return false;
       const i = osgBuyerInc;
@@ -17318,7 +17428,7 @@ No markdown. Valid JSON only.`;
         valBox('TOP OF RANGE', r.maxValue, 402, navy, gold);
         y += 68;
       }
-      if (inc.appraisal && r.appraisalGap) section('Appraisal Gap: ' + r.appraisalGap, r.appraisalGapNote || ' ');
+      if (inc.appraisal && r.appraisalGap) section('Appraisal Gap: ' + r.appraisalGap, osgClient.appraisal || ' ');
 
       // Comps keep their numbers from the analysis, so "Comp 3" in the
       // reasoning still points at the right one when others are left out.
@@ -17364,9 +17474,9 @@ No markdown. Valid JSON only.`;
         });
         y += 6;
       }
-      if (inc.reasoning) section('Valuation Reasoning', r.valuationReasoning);
-      if (inc.structure) section('Recommended Offer Structure', r.offerStructure);
-      if (inc.escalation && r.escalationClause) section('Escalation Clause', r.escalationClause);
+      if (inc.reasoning) section('Valuation Reasoning', osgClient.reasoning);
+      if (inc.structure) section('Recommended Offer Structure', osgClient.structure);
+      if (inc.escalation && r.escalationClause) section('Escalation Clause', osgClient.escalation);
 
       const foot = 'Prepared by ' + (agent ? agent + ', ' : '') + brokerage + '. Based on the comparable sales listed. This is not an appraisal.';
       const pages = doc.getNumberOfPages();
@@ -17386,6 +17496,7 @@ No markdown. Valid JSON only.`;
     function osgDownloadPDF(kind) {
       const buyer = kind === 'buyer';
       if (buyer && osgResult.value && !osgBuyerHasContent()) { showToast('Tick at least one section for the buyer PDF.', 3500); return; }
+      if (buyer) { const why = osgClientBlock(); if (why) { osgClientError.value = why; showToast(why, 5000); return; } }
       const doc = buyer ? _osgBuildBuyerPDF() : _osgBuildPDF();
       if (!doc) { showToast('Generate the strategy first.', 3000); return; }
       openPDFBlob(doc.output('blob'), _osgFileName(buyer ? 'buyer' : 'agent'));
@@ -17398,6 +17509,7 @@ No markdown. Valid JSON only.`;
     async function osgSavePDF(kind) {
       const buyer = kind === 'buyer';
       if (buyer && osgResult.value && !osgBuyerHasContent()) { showToast('Tick at least one section for the buyer PDF.', 3500); return; }
+      if (buyer) { const why = osgClientBlock(); if (why) { osgClientError.value = why; showToast(why, 5000); return; } }
       osgSaving.value = true; osgSaved.value = false; osgSaveMsg.value = ''; osgSaveError.value = '';
       const what = buyer ? 'Buyer PDF' : 'Agent copy';
       try {
@@ -17459,6 +17571,7 @@ No markdown. Valid JSON only.`;
       osgPrevResult.value = null; osgEditKey.value = ''; osgEditTouched.value = false;
       Object.assign(osgBuyerInc, { values:true, appraisal:true, comps:true, reasoning:true, structure:true, escalation:true });
       Object.keys(osgBuyerCompOff).forEach(k => delete osgBuyerCompOff[k]);
+      _osgClientClear(); osgClientBusy.value = false;
       osgSaveMsg.value = ''; osgSaveError.value = '';
       osgCompetition.value = 'moderate'; osgFinancing.value = 'conventional'; osgJustin.value = 'no';
       osgPreUW.value = 'no'; osgSellerMotivation.value = ''; osgAnalyzing.value = false;
@@ -19246,6 +19359,10 @@ const CHANGELOG = [
       {
         title: 'Refine the Strategy Is More Reliable, and Will Argue Back',
         detail: 'Refine the Strategy no longer fails with "the reply was not valid JSON" when the AI adds a sentence around its answer, and it quietly tries a second time before showing any error. You can now challenge the numbers. It will either revise them and explain why, or hold them and cite the comps that support them.\n\nHow to use: Ask it directly, for example "208 days with no price cut. Is $635k aggressive enough?"\n\nBest practice: If it holds a figure you disagree with, check the comps it cites before changing the offer.'
+      },
+      {
+        title: 'The Buyer PDF Now Speaks to Your Client',
+        detail: 'The strategy sections are your working notes, written for you. The buyer PDF no longer prints them as they are. In the Buyer PDF box, click Write Client Wording and the reasoning, offer structure, appraisal gap and escalation sections are rewritten to your client as "you", with every figure kept and without internal shorthand like "winning offer" or guesses about the seller. You can edit any of it before sending. If you change the strategy afterward, the PDF will not go out until you rewrite the client wording, so an old version can never be sent by mistake.\n\nHow to use: Finish your edits to the strategy first, then click Write Client Wording, read it, and save or download the Buyer PDF.\n\nBest practice: Read the client wording as your buyer would. If a sentence is not something you would say to them directly, change it before sending.'
       }
     ]
   }
@@ -21924,6 +22041,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
+      osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,
       osgEditOpen, osgChatSend, osgChatUndo, osgStartOver,
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
