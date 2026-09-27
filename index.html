@@ -17912,6 +17912,39 @@ No markdown. Valid JSON only.`;
       } catch(e) { console.warn('byrLoadOffers failed:', e); }
     }
 
+    // ── Open a buyer from a Command Center link (?fub=<FUB deal number>) ──
+    // The Command Center's "View buyer profile in OS" link lands here. The two
+    // apps keep separate buyer lists, so the FUB deal number is what ties them
+    // together. It is read once on page load and removed from the address bar;
+    // after login (or on a restored session) the backend resolves it to the
+    // agent's card. Access follows the Buyers list: admins see everyone, agents
+    // see their own and co-agented buyers.
+    let _byrFubLink = (() => {
+      try { const v = new URLSearchParams(window.location.search).get('fub'); return v && /^\d+$/.test(v) ? v : null; }
+      catch (e) { return null; }
+    })();
+    async function byrOpenFromFubLink() {
+      if (!_byrFubLink || !loggedIn.value || !agentName.value) return;
+      const dealId = _byrFubLink;
+      _byrFubLink = null;
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('fub');
+        window.history.replaceState(null, '', u.pathname + u.search + u.hash);
+      } catch (e) { /* address bar cleanup is cosmetic */ }
+      try {
+        const res = await fetch(RAILWAY_URL + '/buyers/by-fub/' + encodeURIComponent(dealId));
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) { showToast((body && body.detail) || ('Could not open that buyer (error ' + res.status + ').'), 6000); return; }
+        const buyer = body.buyer;
+        const coAgents = ((buyer.subfolder_drive_ids || {})._co_agents) || [];
+        const mine = normalizeAgent(buyer.agent_name || '') === normalizeAgent(agentName.value) || coAgents.includes(agentName.value);
+        if (!isAdmin.value && !mine) { showToast('That buyer file belongs to ' + (buyer.agent_name || 'another agent') + '.', 5000); return; }
+        byrOpenBuyer(buyer);
+      } catch (e) { showToast('Could not open that buyer: ' + e.message, 5000); }
+    }
+    watch(loggedIn, (v) => { if (v) nextTick(byrOpenFromFubLink); }, { immediate: true });
+
     function byrConfirmDelete(buyer) {
       byrDeleteTarget.value = buyer;
     }
@@ -19363,6 +19396,22 @@ const CHANGELOG = [
       {
         title: 'The Buyer PDF Now Speaks to Your Client',
         detail: 'The strategy sections are your working notes, written for you. The buyer PDF no longer prints them as they are. In the Buyer PDF box, click Write Client Wording and the reasoning, offer structure, appraisal gap and escalation sections are rewritten to your client as "you", with every figure kept and without internal shorthand like "winning offer" or guesses about the seller. You can edit any of it before sending. If you change the strategy afterward, the PDF will not go out until you rewrite the client wording, so an old version can never be sent by mistake.\n\nHow to use: Finish your edits to the strategy first, then click Write Client Wording, read it, and save or download the Buyer PDF.\n\nBest practice: Read the client wording as your buyer would. If a sentence is not something you would say to them directly, change it before sending.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-09-27',
+    date: 'September 27, 2026',
+    title: 'Cleaner Buyer Boards',
+    summary: 'Duplicate buyer cards are gone, new ones will stop appearing, and the Command Center can now open a buyer file straight in the OS.',
+    updates: [
+      {
+        title: 'No More Duplicate Buyer Cards',
+        detail: 'Some buyers were showing up twice on your board, for example "Keith Zimmerman" next to "Keith & Brenna Zimmerman". The second card was added by the Command Center each time the deal moved to a new stage in Follow Up Boss. That no longer happens, and the empty duplicates have been archived. In every case the card with your Buyer Information filled in was kept, and nothing was deleted.\n\nHow to use: Nothing to do. If a client you expected is missing from your board, look in Archive and restore it.\n\nBest practice: Keep working in the card that has your Buyer Information. If you ever see a new duplicate, tell Marc instead of deleting it.'
+      },
+      {
+        title: 'Open a Buyer File from the Command Center',
+        detail: 'Each buyer in the Command Center now has a View buyer profile in OS link. It opens that client\'s buyer file here, matched through the Follow Up Boss deal. You only see files you already have access to on your Buyers list.\n\nHow to use: Click the link on a Command Center buyer, log in if asked, and the file opens on its own.\n\nBest practice: Keep the client\'s name in the OS close to the name on the Follow Up Boss deal. That is how the link finds the right file the first time.'
       }
     ]
   }
