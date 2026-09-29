@@ -5112,7 +5112,7 @@ body {
                   <svg viewBox="0 0 24 24" style="width:20px;height:20px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="3" y="8" width="18" height="13" rx="2" fill="#0d1f35"/><rect x="8" y="3" width="8" height="5" rx="1" fill="#0d1f35"/><circle cx="9" cy="14" r="2" fill="white"/><circle cx="15" cy="14" r="2" fill="white"/><rect x="9" y="4" width="6" height="1.5" fill="white"/></svg>
                   <h3 style="font-family:'Cormorant Garamond',serif;margin:0;font-size:15px;font-weight:600;color:var(--navy);">AI Recommendation</h3>
                 </div>
-                <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">{{ tt.recommendation }}</div>
+                <div :class="{'fos-stream-cursor': tt.streaming}" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#374151;line-height:1.7;white-space:pre-wrap;">{{ tt.recommendation }}</div>
               </div>
 
               <!-- Add property -->
@@ -8632,6 +8632,39 @@ async function getAgentToolsContent(query) {
 }
 
 // ── Claude API ─────────────────────────────────────────────
+// ── DMV Market Snapshot (buyer packet PDF) ────────────────────────────────
+// UPDATE ONCE A MONTH. Pull closed sales for the last full month from Bright
+// MLS. Change asOf to that month and edit the four rows. Nothing else.
+// If asOf falls more than two months behind, the packet tells the buyer the
+// figures are dated rather than printing them as current.
+const DMV_SNAPSHOT = {
+  asOf: 'August 2026',
+  source: 'Bright MLS',
+  rows: [
+    ['Washington, DC',     '$650K+', '25-35', 'Low'],
+    ['Arlington/Fairfax',  '$700K+', '20-30', 'Very Low'],
+    ['Montgomery County',  '$550K+', '25-40', 'Moderate'],
+    ['Loudoun County',     '$600K+', '20-35', 'Moderate']
+  ]
+};
+
+// Months between the snapshot month and today. Used only to decide whether
+// the packet should warn that the figures are dated. A value it cannot read
+// counts as dated: better to over-warn than to print stale numbers as current.
+const DMV_MONTHS = ['january','february','march','april','may','june',
+                    'july','august','september','october','november','december'];
+function dmvSnapshotMonthsOld() {
+  try {
+    const parts = String(DMV_SNAPSHOT.asOf).trim().toLowerCase().split(/\s+/);
+    if (parts.length !== 2) return 99;
+    const mi = DMV_MONTHS.indexOf(parts[0]);
+    const yr = parseInt(parts[1], 10);
+    if (mi < 0 || !/^\d{4}$/.test(parts[1]) || yr < 2000 || yr > 2100) return 99;
+    const now = new Date();
+    return (now.getFullYear() - yr) * 12 + (now.getMonth() - mi);
+  } catch (e) { return 99; }
+}
+
 // ── Model selection ───────────────────────────────────────────────────────
 // SMART is the default for all AI work. FAST is used only where an agent is
 // waiting on a spoken command and the extra quality buys nothing.
@@ -15381,13 +15414,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             bodyText('Understanding current market conditions helps you make confident decisions. Here\'s a high-level overview of the DC, Maryland, and Virginia markets:');
             ensureSpace(80);
             // Mini table
-            const cols = ['Market', 'Median Price', 'Avg DOM', 'Inventory'];
-            const rows = [
-              ['Washington, DC', '$650K+', '25-35', 'Low'],
-              ['Arlington/Fairfax', '$700K+', '20-30', 'Very Low'],
-              ['Montgomery County', '$550K+', '25-40', 'Moderate'],
-              ['Loudoun County', '$600K+', '20-35', 'Moderate'],
-            ];
+            const cols = ['Market', 'Median Sale Price', 'Avg DOM', 'Inventory'];
+            const rows = DMV_SNAPSHOT.rows;
             const colX = [58, 220, 340, 440];
             doc.setFont('helvetica','bold');
             doc.setFontSize(9);
@@ -15408,7 +15436,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             y += 6;
             doc.setFont('helvetica','italic');
             doc.setFontSize(8);
-            doc.text('* Approximate figures. Contact me for the most current data in your target area.', 58, y);
+            const _dmvOld = dmvSnapshotMonthsOld();
+            doc.text('Source: ' + DMV_SNAPSHOT.source + ' closed sales, ' + DMV_SNAPSHOT.asOf +
+                     '. Figures are rounded and describe each market as a whole; your neighbourhood may differ.', 58, y);
+            if (_dmvOld > 2) {
+              y += 11;
+              doc.text('These figures are more than two months old. Ask your agent for current numbers.', 58, y);
+            }
             y += 20;
             break;
           }
@@ -16014,8 +16048,17 @@ ${tt.activeTour.properties.length === 1 ? 'Only one property was viewed, so prov
 
 Keep the tone professional but conversational. Be specific and reference actual scores and notes. Do not use markdown formatting, just plain text with line breaks. Do not use asterisks for bold.`;
 
-        const result = await claude(prompt, 'You are a luxury real estate advisor. Be direct, specific, and helpful. Never use markdown. Use plain text only.');
-        tt.recommendation = result;
+        tt.recommendation = '';
+        tt.streaming = true;
+        const _ttTyper = fosTyper(function (s) { tt.recommendation = s; });
+        try {
+          const result = await claudeStream(prompt, 'You are a luxury real estate advisor. Be direct, specific, and helpful. Never use markdown. Use plain text only.',
+            function (chunk, full) { _ttTyper.setTarget(full); });
+          _ttTyper.setTarget(result);
+        } finally {
+          await _ttTyper.finish();
+          tt.streaming = false;
+        }
       } catch(e) {
         showToast('Error: ' + e.message, 6000);
       }
@@ -19540,6 +19583,22 @@ const CHANGELOG = [
         detail: 'The OS now runs on Claude Opus 5 by default, across listing descriptions, bios, offer analysis, the offer chat, buyer packets, open house and social copy, and meeting prep. Two places deliberately stay on the faster Sonnet 5: voice commands and activity logging, where you are waiting on an answer and speed matters more, and the CMA listing import, where you review every row on screen anyway.\n\nIf you ever changed the model in Settings, that choice has been reset once so you pick up the new default. The Settings list now shows the current models.\n\nHow to use: Nothing to do. If you want to check, Settings shows Claude Opus 5 selected.\n\nBest practice: Leave it on Opus 5. Only drop to Sonnet 5 if something feels slow, and tell Marc if you do, so we know where speed is hurting.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-29b',
+    date: 'September 29, 2026',
+    title: 'Dated Market Figures, and Two More Tools That Type',
+    summary: 'The market table in buyer packets now carries the month and the source it came from, and it warns if it falls behind. The tour recommendation and the voice open house copy now type out as they are written.',
+    updates: [
+      {
+        title: 'Buyer Packet Market Table Says Where the Numbers Came From',
+        detail: 'The DMV Market Snapshot page in the buyer packet used to print four figures with no date and no source. It now reads Median Sale Price, and carries a line underneath saying the figures are Bright MLS closed sales for a named month.\n\nIt also protects itself. If the figures fall more than two months behind, the packet tells the buyer they are dated and to ask you for current numbers, instead of printing old figures as though they were current.\n\nHow to use: Nothing to do. Build a buyer packet as usual and the source line prints itself.\n\nBest practice: If you ever see the dated warning on a packet you are about to send, tell Marc before you send it. It means the monthly update was missed.'
+      },
+      {
+        title: 'Tour Recommendations and Voice Marketing Copy Type As They Go',
+        detail: 'Two more places now show the answer being written instead of sitting on a spinner: the buyer tour recommendation after you score properties, and the open house and social copy you ask for by voice. Same behaviour as the listing description writer.\n\nHow to use: Nothing to do. Use both tools exactly as before.\n\nBest practice: Read along while it types. On the tour recommendation especially, if it is heading somewhere you disagree with you can see it early rather than waiting for the whole thing.'
+      }
+    ]
   }
 
 ];
@@ -20082,10 +20141,22 @@ async function voiceParse() {
                   const _tp=voiceModal.confirmType==='open-house'?'Write compelling open house copy: catchy headline, 3-4 sentences, CTA under 150 words.':voiceModal.confirmType==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline+3-4 sentences+CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
                   try{
                     const _key=_fosApiKey||localStorage.getItem(agentKey('fos_key'));
-                    const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:FOS_MODEL_SMART,max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
-                    const _d=await _r.json();
-                    if(_d.content&&_d.content[0]){voiceModal.generatedContent=_d.content[0].text;voiceModal.answerText='<svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,1 14,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 10,9" fill="#0d1f35"/></svg> '+_d.content[0].text;}
-                    else{voiceModal.answerText='⚠️ '+((_d.error&&_d.error.message)||'Generation failed.');}
+                    const _star = '<svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,1 14,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 10,9" fill="#0d1f35"/></svg> ';
+                    voiceModal.answerText = '';
+                    voiceModal.streaming = true;
+                    const _vTyper = fosTyper(function (s) {
+                      voiceModal.generatedContent = s;
+                      voiceModal.answerText = _star + s;
+                    });
+                    try {
+                      const _full = await claudeStream(_tp + '\n\nListing Details:\n' + _pd,
+                        'You are a top real estate marketing expert who writes compelling copy for agents.',
+                        function (chunk, full) { _vTyper.setTarget(full); }, 1200);
+                      _vTyper.setTarget(_full);
+                    } finally {
+                      await _vTyper.finish();
+                      voiceModal.streaming = false;
+                    }
                   }catch(e){voiceModal.answerText='⚠️ Error: '+e.message;}
                 };
                 return;
