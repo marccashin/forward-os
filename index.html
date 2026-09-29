@@ -8633,18 +8633,28 @@ async function getAgentToolsContent(query) {
 
 // ── Claude API ─────────────────────────────────────────────
 // ── DMV Market Snapshot (buyer packet PDF) ────────────────────────────────
-// UPDATE ONCE A MONTH. Pull closed sales for the last full month from Bright
-// MLS. Change asOf to that month and edit the four rows. Nothing else.
+// UPDATE ONCE A MONTH, from Bright MLS, logged in:
+//   Market menu > Market Statistics Report  (insights.brightmls.com/msr/mls-area)
+//   Date range already defaults to the last full month. Property type stays
+//   Residential. Type one jurisdiction, click ADD, click RUN REPORT.
+//   Read three cells off the top row: Sold Median, DOM, MSI.
+//   One run per row. Adding several counties at once MERGES them into a single
+//   number instead of breaking them out, which is why Arlington + Fairfax is one
+//   row and the others are one run each.
+// Copy the figures exactly. Do not round them and do not translate MSI into a
+// word: the rounding and the Very Low / Low / Moderate scale that used to live
+// here were invented, and every row was wrong because of it.
 // If asOf falls more than two months behind, the packet tells the buyer the
 // figures are dated rather than printing them as current.
 const DMV_SNAPSHOT = {
   asOf: 'August 2026',
   source: 'Bright MLS',
+  // [ market, median sold price, median days on market, months of supply ]
   rows: [
-    ['Washington, DC',     '$650K+', '25-35', 'Low'],
-    ['Arlington/Fairfax',  '$700K+', '20-30', 'Very Low'],
-    ['Montgomery County',  '$550K+', '25-40', 'Moderate'],
-    ['Loudoun County',     '$600K+', '20-35', 'Moderate']
+    ['Washington, DC',        '$670,000', '53', '4.4'],
+    ['Arlington + Fairfax',   '$760,000', '26', '2.1'],
+    ['Montgomery County, MD', '$639,770', '29', '2.4'],
+    ['Loudoun County, VA',    '$765,000', '25', '2.1']
   ]
 };
 
@@ -15414,13 +15424,14 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             bodyText('Understanding current market conditions helps you make confident decisions. Here\'s a high-level overview of the DC, Maryland, and Virginia markets:');
             ensureSpace(80);
             // Mini table
-            const cols = ['Market', 'Median Sale Price', 'Avg DOM', 'Inventory'];
+            const cols = ['Market', 'Median Sold Price', 'Median Days on Market', 'Months of Supply'];
             const rows = DMV_SNAPSHOT.rows;
-            const colX = [58, 220, 340, 440];
+            const colX = [58, 210, 330, 460];
             doc.setFont('helvetica','bold');
-            doc.setFontSize(9);
+            doc.setFontSize(8);
             doc.setTextColor(...navy);
             cols.forEach((c,i) => doc.text(c, colX[i], y));
+            doc.setFontSize(9);
             y += 4;
             doc.setDrawColor(...gold);
             doc.setLineWidth(1);
@@ -15438,7 +15449,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             doc.setFontSize(8);
             const _dmvOld = dmvSnapshotMonthsOld();
             doc.text('Source: ' + DMV_SNAPSHOT.source + ' closed sales, ' + DMV_SNAPSHOT.asOf +
-                     '. Figures are rounded and describe each market as a whole; your neighbourhood may differ.', 58, y);
+                     '. All residential property types.', 58, y);
+            y += 10;
+            doc.text('Each figure describes the market as a whole; your neighbourhood may differ.', 58, y);
             if (_dmvOld > 2) {
               y += 11;
               doc.text('These figures are more than two months old. Ask your agent for current numbers.', 58, y);
@@ -19592,7 +19605,7 @@ const CHANGELOG = [
     updates: [
       {
         title: 'Buyer Packet Market Table Says Where the Numbers Came From',
-        detail: 'The DMV Market Snapshot page in the buyer packet used to print four figures with no date and no source. It now reads Median Sale Price, and carries a line underneath saying the figures are Bright MLS closed sales for a named month.\n\nIt also protects itself. If the figures fall more than two months behind, the packet tells the buyer they are dated and to ask you for current numbers, instead of printing old figures as though they were current.\n\nHow to use: Nothing to do. Build a buyer packet as usual and the source line prints itself.\n\nBest practice: If you ever see the dated warning on a packet you are about to send, tell Marc before you send it. It means the monthly update was missed.'
+        detail: 'The DMV Market Snapshot page in the buyer packet used to print four figures with no date, no source, and no way to tell where they came from. Checking them against Bright this evening, every row was wrong: Loudoun was understated by $165K, Montgomery by $90K, and Washington DC was showing 25-35 days on market when the real figure was 53. DC was also labelled low inventory when it was the softest of the four markets, which is the wrong advice in the direction that costs a buyer money.\n\nThe page now prints the exact figures Bright publishes, under Bright column names: Median Sold Price, Median Days on Market, Months of Supply. Nothing is rounded and nothing is translated into a word like Low or Moderate. It also carries a line underneath saying the figures are Bright MLS closed sales for a named month.\n\nIt also protects itself. If the figures fall more than two months behind, the packet tells the buyer they are dated and to ask you for current numbers, instead of printing old figures as though they were current.\n\nHow to use: Nothing to do. Build a buyer packet as usual and the source line prints itself.\n\nBest practice: If you ever see the dated warning on a packet you are about to send, tell Marc before you send it. It means the monthly update was missed.'
       },
       {
         title: 'Tour Recommendations and Voice Marketing Copy Type As They Go',
