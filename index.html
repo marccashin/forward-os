@@ -715,6 +715,10 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .mo-chat-thread { max-height:320px; overflow-y:auto; padding:12px 14px; display:flex; flex-direction:column; gap:10px; background:var(--cream); }
 .mo-chat-bubble { max-width:88%; padding:8px 12px; border-radius:2px; font-family:'Cormorant Garamond',serif; font-size:15px; line-height:1.55; white-space:pre-wrap; }
 .mo-chat-bubble.agent { background:var(--navy); color:var(--cream); align-self:flex-end; }
+.fos-typing::after { content:''; display:inline-block; width:2px; height:1em; margin-left:1px;
+  background:currentColor; vertical-align:text-bottom; animation:fos-caret 1s step-end infinite; }
+@keyframes fos-caret { 0%,100% { opacity:1; } 50% { opacity:0; } }
+@media (prefers-reduced-motion: reduce) { .fos-typing::after { animation:none; } }
 .mo-chat-bubble.ai { background:#fff; color:var(--navy); border:1px solid var(--cream-mid); align-self:flex-start; }
 .mo-chat-input-row { display:flex; border-top:1px solid var(--cream-mid); background:#fff; }
 .mo-chat-input-row textarea { flex:1; border:none; outline:none; padding:10px 12px; font-family:'Cormorant Garamond',serif; font-size:15px; color:var(--navy); resize:none; height:56px; background:transparent; line-height:1.5; }
@@ -2630,11 +2634,6 @@ body {
               <span v-if="cmaSaved" style="font-size:12px;color:#16a34a;font-weight:700;white-space:nowrap;">✓ Saved!</span>
             </div>
           </div>
-          <div class="card" style="max-width:640px;margin-top:16px;background:#f0f4ff;border:1.5px solid #c7d2fe;">
-            <p style="font-family:'Cormorant Garamond',serif;margin:0;font-size:13px;color:#3730a3;">
-              <strong>Coming soon (Phase 2):</strong> Bright MLS integration will auto-populate comparable sales once API credentials are approved. Marc has submitted the request to licensing@brightmls.com.
-            </p>
-          </div>
         </template>
 
         <!-- ============ LISTING DESCRIPTION ============ -->
@@ -2671,6 +2670,7 @@ body {
                 <!-- Message bubbles -->
                 <template v-if="ldStarted">
                   <div v-for="(msg, i) in ldMessages" :key="i"
+                       :class="{'fos-typing': msg.typing}"
                        :style="{
                          alignSelf: msg.role==='user' ? 'flex-end' : 'flex-start',
                          maxWidth: '85%',
@@ -6854,9 +6854,9 @@ body {
               <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:14px;font-weight:600;color:var(--navy);">AI Model</h3>
               <p style="font-family:'Cormorant Garamond',serif;margin:0 0 14px;font-size:13px;color:#6b7280;">Select the Claude model used for all AI generation.</p>
               <select v-model="settModel">
-                <option value="claude-opus-4-6">Claude Opus 4 — Best quality</option>
-                <option value="claude-sonnet-4-6">Claude Sonnet 4 — Recommended (best value)</option>
-                <option value="claude-haiku-4-5-20251001">Claude Haiku — Fastest, good for quick tasks</option>
+                <option value="claude-opus-5">Claude Opus 5 — Best quality (recommended)</option>
+                <option value="claude-sonnet-5">Claude Sonnet 5 — Faster, lower cost</option>
+                <option value="claude-haiku-4-5-20251001">Claude Haiku — Fastest, simple tasks only</option>
               </select>
               <button class="btn-navy" @click="saveModel" style="margin-top:10px;">Save Model</button>
             </div>
@@ -8632,10 +8632,28 @@ async function getAgentToolsContent(query) {
 }
 
 // ── Claude API ─────────────────────────────────────────────
-async function claude(userPrompt, system = null, maxTokens = 16000) {
+// ── Model selection ───────────────────────────────────────────────────────
+// SMART is the default for all AI work. FAST is used only where an agent is
+// waiting on a spoken command and the extra quality buys nothing.
+const FOS_MODEL_SMART = 'claude-opus-5';
+const FOS_MODEL_FAST  = 'claude-sonnet-5';
+
+// One-time migration: an agent who ever opened Settings has a superseded model
+// saved in their browser, and that saved value overrides the default above.
+// Clearing it lets them pick up the new default. Runs once per browser.
+(function () {
+  try {
+    var retired = ['claude-sonnet-4-6', 'claude-sonnet-4-5', 'claude-opus-4-6',
+                   'claude-opus-4-5', 'claude-haiku-4-5-20251001'];
+    var saved = localStorage.getItem('fos_model');
+    if (saved && retired.indexOf(saved) !== -1) localStorage.removeItem('fos_model');
+  } catch (e) {}
+})();
+
+async function claude(userPrompt, system = null, maxTokens = 16000, modelOverride = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
-  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const model = modelOverride || localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: maxTokens, messages: [{ role:'user', content:userPrompt }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -8655,7 +8673,7 @@ async function claude(userPrompt, system = null, maxTokens = 16000) {
 async function claudeChat(messages, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
-  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: 4096, messages };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -8676,7 +8694,7 @@ async function claudeChat(messages, system = null) {
 async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens = 16000) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set.');
-  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: maxTokens, stream: true, messages: [{ role: 'user', content: userPrompt }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -8716,11 +8734,103 @@ async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens
 }
 
 
+
+// ── Streaming chat + shared typewriter ────────────────────────────────────
+const FOS_TYPE_MS = 15;
+
+// Streaming twin of claudeChat(). Same arguments plus onChunk(chunk, full).
+// Pass model to pin a specific one; omit it to use the agent's setting.
+async function claudeChatStream(messages, system = null, onChunk = null, maxTokens = 4096, model = null) {
+  const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
+  if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
+  const useModel = model || localStorage.getItem('fos_model') || FOS_MODEL_SMART;
+  const body = { model: useModel, max_tokens: maxTokens, stream: true, messages: messages };
+  if (system) body.system = system;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    let msg = 'API error ' + res.status;
+    try { const e = await res.json(); msg = (e.error && e.error.message) || msg; } catch (e1) {}
+    throw new Error(msg);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '', fullText = '';
+  while (true) {
+    const step = await reader.read();
+    if (step.done) break;
+    buffer += decoder.decode(step.value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop();
+    for (let li = 0; li < lines.length; li++) {
+      const line = lines[li];
+      if (line.indexOf('data: ') !== 0) continue;
+      const data = line.slice(6).trim();
+      if (data === '[DONE]') continue;
+      try {
+        const evt = JSON.parse(data);
+        if (evt.type === 'content_block_delta' && evt.delta && evt.delta.type === 'text_delta') {
+          fullText += evt.delta.text;
+          if (onChunk) onChunk(evt.delta.text, fullText);
+        }
+      } catch (e2) {}
+    }
+  }
+  return fullText;
+}
+
+// Reveals text at a constant character rate. The network delivers chunks;
+// this is what makes it read as typing. One speed for the whole app.
+function fosTyper(apply) {
+  let target = '', shown = '', finished = false, timer = null, resolveDone = null;
+  const done = new Promise(function (r) { resolveDone = r; });
+  timer = setInterval(function () {
+    if (target.length < shown.length) { shown = target; apply(shown); return; }
+    if (shown.length < target.length) {
+      const behind = target.length - shown.length;
+      let take = 1;
+      if (behind > 600)  take = 2;   // catch-up so a long answer does not lag;
+      if (behind > 1500) take = 4;   // delete these two lines for a pure fixed rate
+      shown = target.slice(0, shown.length + take);
+      apply(shown);
+    } else if (finished) {
+      clearInterval(timer); timer = null; resolveDone();
+    }
+  }, FOS_TYPE_MS);
+  return {
+    setTarget: function (t) { target = t; },
+    finish: function () { finished = true; return done; }
+  };
+}
+
+// The writer wraps its final description in markers. Never show them, and
+// never show a partial one while it is still arriving.
+const LD_MARK_START = '[FWRD_DESC_START]', LD_MARK_END = '[FWRD_DESC_END]';
+function ldDisplayText(raw) {
+  let t = raw.split(LD_MARK_START).join('').split(LD_MARK_END).join('');
+  const longest = Math.max(LD_MARK_START.length, LD_MARK_END.length) - 1;
+  for (let n = Math.min(t.length, longest); n > 0; n--) {
+    const tail = t.slice(t.length - n);
+    if (LD_MARK_START.indexOf(tail) === 0 || LD_MARK_END.indexOf(tail) === 0) {
+      return t.slice(0, t.length - n);
+    }
+  }
+  return t;
+}
+
+function ldScrollChat() {
+  const el = document.getElementById('ld-chat-scroll');
+  if (el) el.scrollTop = el.scrollHeight;
+}
+
 // ── Claude Vision API (for business card parsing) ─────────────────────────
 async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set.');
-  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const content = [
     { type:'image', source:{ type:'base64', media_type: mediaType, data: imageBase64 } },
     { type:'text', text: textPrompt }
@@ -8861,7 +8971,7 @@ async function fubGetPersonDetail(personId) {
 async function voiceCreateContactViaMCP(contactFields, assignedName) {
   const key = localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key. Add it in Settings.');
-  const model = localStorage.getItem('fos_model') || 'claude-sonnet-4-6';
+  const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const f = contactFields;
   const name = [f.firstName, f.lastName].filter(Boolean).join(' ') || 'New Contact';
 
@@ -9419,7 +9529,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     const showKey      = ref(false);
 
-    const settModel    = ref(localStorage.getItem('fos_model')||'claude-sonnet-4-6');
+    const settModel    = ref(localStorage.getItem('fos_model')||FOS_MODEL_SMART);
     const settBrokerage = ref(localStorage.getItem('fos_brokerage')||'FORWARD Real Estate | Corcoran McEnearney');
     const settMarkets   = ref(localStorage.getItem('fos_markets')||'Washington DC, Maryland, Virginia (DMV metro area)');
     const settVoice     = ref(localStorage.getItem('fos_voice')||'');
@@ -19414,6 +19524,22 @@ const CHANGELOG = [
         detail: 'Each buyer in the Command Center now has a View buyer profile in OS link. It opens that client\'s buyer file here, matched through the Follow Up Boss deal. You only see files you already have access to on your Buyers list.\n\nHow to use: Click the link on a Command Center buyer, log in if asked, and the file opens on its own.\n\nBest practice: Keep the client\'s name in the OS close to the name on the Follow Up Boss deal. That is how the link finds the right file the first time.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-29',
+    date: 'September 29, 2026',
+    title: 'Descriptions Write Themselves Out, and Better AI Behind Everything',
+    summary: 'The listing description writer now types its answer as it is written instead of dropping it in all at once, and every AI tool in the OS moved up to a newer, stronger model.',
+    updates: [
+      {
+        title: 'The Listing Description Writer Types As It Goes',
+        detail: 'When you ask the writer for a description, the reply now appears word by word as it is written, with a cursor, instead of sitting on a loading animation and then landing all at once. Nothing about how descriptions are written has changed. Same questions, same voice, same 4,000 character MLS limit.\n\nAlso fixed: the markers the writer used to print around your finished description, [FWRD_DESC_START] and [FWRD_DESC_END], no longer show on screen. They were never meant for you to see.\n\nHow to use: Nothing to do. Open the Listing Description tool and use it exactly as before.\n\nBest practice: Read along as it types. If the description is going the wrong direction you can see it early and redirect in your next message instead of waiting for the whole thing.'
+      },
+      {
+        title: 'Every AI Tool Moved Up a Model',
+        detail: 'The OS now runs on Claude Opus 5 by default, across listing descriptions, bios, offer analysis, the offer chat, buyer packets, open house and social copy, and meeting prep. Two places deliberately stay on the faster Sonnet 5: voice commands and activity logging, where you are waiting on an answer and speed matters more, and the CMA listing import, where you review every row on screen anyway.\n\nIf you ever changed the model in Settings, that choice has been reset once so you pick up the new default. The Settings list now shows the current models.\n\nHow to use: Nothing to do. If you want to check, Settings shows Claude Opus 5 selected.\n\nBest practice: Leave it on Opus 5. Only drop to Sonnet 5 if something feels slow, and tell Marc if you do, so we know where speed is hurting.'
+      }
+    ]
   }
 
 ];
@@ -19884,7 +20010,7 @@ async function voiceParse() {
         const imgPrompt = `The agent said: "${voiceModal.transcript}"\n\nThis is a photo of a business card (or contact image) they attached.\n\nExtract all contact info visible in the image, combine with what was spoken, and return a JSON object for the "add-contact" tool:\n{ "tool": "add-contact", "fields": { firstName, lastName, email, phone, address, company, jobTitle, note, taskText, taskDue, assignedTo }, "missing": [...any required fields not found] }\n\nRequired fields: firstName, lastName. Optional but extract if visible: email, phone, company, jobTitle.\nReturn ONLY the JSON.`;
         raw = await claudeVision(voiceModal.imageData, voiceModal.imageMediaType, imgPrompt);
       } else {
-        raw = await claude(voiceModal.transcript, VOICE_INTENT_SYSTEM);
+        raw = await claude(voiceModal.transcript, VOICE_INTENT_SYSTEM, 16000, FOS_MODEL_FAST);
       }
       // Strip markdown fences and normalize smart quotes before parsing
       let _cleanRaw = raw.trim().replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '')
@@ -19956,7 +20082,7 @@ async function voiceParse() {
                   const _tp=voiceModal.confirmType==='open-house'?'Write compelling open house copy: catchy headline, 3-4 sentences, CTA under 150 words.':voiceModal.confirmType==='social-post'?'Write an Instagram/Facebook post with emojis and hashtags under 100 words.':'Write TWO pieces:\n1. OPEN HOUSE COPY (headline+3-4 sentences+CTA, under 150 words)\n2. SOCIAL POST (Instagram caption with emojis and hashtags, under 100 words)\nSeparate with headers.';
                   try{
                     const _key=_fosApiKey||localStorage.getItem(agentKey('fos_key'));
-                    const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-opus-4-5',max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
+                    const _r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'x-api-key':_key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:FOS_MODEL_SMART,max_tokens:1200,system:'You are a top real estate marketing expert who writes compelling copy for agents.',messages:[{role:'user',content:_tp+'\n\nListing Details:\n'+_pd}]})});
                     const _d=await _r.json();
                     if(_d.content&&_d.content[0]){voiceModal.generatedContent=_d.content[0].text;voiceModal.answerText='<svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,1 14,9 22,9 16,14 18,22 12,17 6,22 8,14 2,9 10,9" fill="#0d1f35"/></svg> '+_d.content[0].text;}
                     else{voiceModal.answerText='⚠️ '+((_d.error&&_d.error.message)||'Generation failed.');}
@@ -20637,7 +20763,7 @@ async function logActParse() {
   try {
     const key = localStorage.getItem(agentKey('fos_key'));
     if (!key) throw new Error('No Claude API key. Add it in Settings.');
-    const raw = await claude(logAct.command, LOG_ACTIVITY_SYSTEM);
+    const raw = await claude(logAct.command, LOG_ACTIVITY_SYSTEM, 16000, FOS_MODEL_FAST);
     const m = raw.match(/\{[\s\S]*\}/);
     if (!m) throw new Error('Could not parse command. Try rephrasing.');
     const p = JSON.parse(m[0]);
@@ -21443,17 +21569,33 @@ Now let me craft a listing description tailored to attract these buyers. Here it
 
       try {
         let reply;
+        let _ldStreamed = false;
         if (ldMockMode.value) {
           await new Promise(r => setTimeout(r, 800));
           reply = MOCK_RESPONSES[0];
           ldStep.value = 1;
         } else {
-          reply = await claudeChat(
-            [{ role:'user', content:'Begin the listing description process.' }],
-            LD_SYSTEM
-          );
+          const _bIdx = ldMessages.value.length;
+          ldMessages.value.push({ role:'assistant', content: '', typing: true });
+          ldLoading.value = false;
+          const _bTyper = fosTyper(function (s) { ldMessages.value[_bIdx].content = s; ldScrollChat(); });
+          try {
+            reply = await claudeChatStream(
+              [{ role:'user', content:'Begin the listing description process.' }],
+              LD_SYSTEM,
+              function (chunk, full) { _bTyper.setTarget(ldDisplayText(full)); }
+            );
+            _bTyper.setTarget(ldDisplayText(reply));
+          } finally {
+            await _bTyper.finish();
+            ldMessages.value[_bIdx].typing = false;
+            // if the request failed before a single character arrived,
+            // take the empty bubble back out
+            if (!ldMessages.value[_bIdx].content) ldMessages.value.splice(_bIdx, 1);
+          }
+          _ldStreamed = true;
         }
-        ldMessages.value.push({ role:'assistant', content: reply });
+        if (!_ldStreamed) ldMessages.value.push({ role:'assistant', content: reply });
         // Auto-send address + any saved MLS data in ONE combined message
         if (lstActiveProp.value && lstActiveProp.value.address) {
           await nextTick();
@@ -21511,6 +21653,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldStarted.value = true;
       ldMessages.value.push({ role:'user', content: userMsg });
       ldLoading.value = true;
+      let _ldSentStreamed = false;
 
       // Auto-scroll chat
       await nextTick();
@@ -21552,7 +21695,25 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           const effectiveSystem = ldDistances.value
             ? LD_SYSTEM + '\n\nVERIFIED DISTANCE DATA (real driving distances — use ONLY these, do not estimate or fabricate any mileages):\n' + ldDistances.value
             : LD_SYSTEM + '\n\nNO VERIFIED DISTANCE DATA IS AVAILABLE for this property. The distance lookup did not return results. Therefore you MUST NOT state any distance, mileage, drive time, walk time, or number of blocks to anything, and you MUST NOT write the closing bullet list of amenity distances. This overrides the instruction above to bullet point how far away amenities are. You may still name a neighborhood, landmark, school or amenity by name, but never how far away it is or how long it takes to get there. Do not guess, approximate, or use vague proximity words such as steps from, moments from, or just minutes away.';
-          reply = await claudeChat(apiMessages, effectiveSystem);
+          const _sIdx = ldMessages.value.length;
+          ldMessages.value.push({ role:'assistant', content: '', typing: true });
+          ldLoading.value = false;
+          const _sTyper = fosTyper(function (s) { ldMessages.value[_sIdx].content = s; ldScrollChat(); });
+          try {
+            reply = await claudeChatStream(
+              apiMessages,
+              effectiveSystem,
+              function (chunk, full) { _sTyper.setTarget(ldDisplayText(full)); }
+            );
+            _sTyper.setTarget(ldDisplayText(reply));
+          } finally {
+            await _sTyper.finish();
+            ldMessages.value[_sIdx].typing = false;
+            // if the request failed before a single character arrived,
+            // take the empty bubble back out
+            if (!ldMessages.value[_sIdx].content) ldMessages.value.splice(_sIdx, 1);
+          }
+          _ldSentStreamed = true;
 
           // Check if this response contains the final listing description
           const _sm = '[FWRD_DESC_START]', _em = '[FWRD_DESC_END]';
@@ -21568,7 +21729,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
             }
           }
         }
-        ldMessages.value.push({ role:'assistant', content: reply });
+        if (!_ldSentStreamed) ldMessages.value.push({ role:'assistant', content: reply });
       } catch(e) {
         ldMessages.value.push({ role:'assistant', content: '❌ Error: ' + e.message });
         showToast('❌ '+e.message, 6000);
