@@ -10617,6 +10617,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             ns.jurisdiction = 'va-nova';
           }
         }
+        // Carry the HOA fee from this listing's MLS Data into the net sheet. Checked on
+        // every open, not only on a property change, so an MLS save made after the net
+        // sheet was first opened still reaches it. Never overwrites an amount the agent
+        // already has in the form.
+        if (!String(ns.hoaAmount || '').trim()) {
+          const _hoa = nsHoaFromMls(lstNotes.mls_data);
+          if (_hoa) {
+            ns.hoaAmount = _hoa.amount;
+            ns.hoaFreq = _hoa.freq;
+            ns._showHOA = true;
+          }
+        }
       }
       // MLS always accessible; others require at least one saved MLS file
       if (key === 'mlsdata') {
@@ -13810,6 +13822,29 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _suggestions:[],
       _detectedCounty:'', _detectedState:''
     });
+    // HOA fee from the listing's saved MLS Data note (line 'HOA Fee : <value>').
+    // The MLS form field is free text ('None or $000/month'), so accept '807',
+    // '$807', '$807/month', '$2,400/quarter', '$1,200 annually'. A bare number is
+    // monthly, as the form's placeholder tells agents. Anything we cannot read with
+    // certainty (semi-annual, no number, zero) returns null and the field stays blank:
+    // a guessed frequency would silently multiply or divide the dues.
+    function nsHoaFromMls(text) {
+      if (!text) return null;
+      const m = String(text).match(/HOA Fee\s*:\s*(.+)/);
+      if (!m) return null;
+      const raw = m[1].trim();
+      const low = raw.toLowerCase();
+      if (!raw || raw === '\u2014' || low === 'none' || low === 'n/a') return null;
+      const nm = raw.match(/(\d[\d,]*(?:\.\d+)?)/);
+      if (!nm) return null;
+      const amount = parseFloat(nm[1].replace(/,/g, ''));
+      if (!(amount > 0)) return null;
+      let freq = 'monthly';
+      if (/semi|bi-?annual|half/.test(low)) return null;
+      if (/quarter|qtr|\/\s*q\b/.test(low)) freq = 'quarterly';
+      else if (/annual|year|yr|\/\s*y\b/.test(low)) freq = 'annual';
+      return { amount: String(amount), freq: freq };
+    }
     // Auto-detect jurisdiction from address
     function nsDetectJurisdiction() {
       const a = ns.address.toLowerCase();
@@ -19807,6 +19842,18 @@ const CHANGELOG = [
       {
         title: 'Pick Up Where You Left Off in the Listing Description Writer',
         detail: 'Until now, once you saved a listing description and left the writer, the only way back in was Get Started, which began a brand new conversation. There was no way to keep working on the description you already had.\n\nThe writer now keeps the conversation with the listing. Open the listing, open Listing Description, and click Continue Refining. You land back in the same conversation with the latest description loaded, and you can keep asking for changes: tighten the opening, work in the new roof, shorten it for MLS. Each answer comes back as a complete revised description you can save over the old one.\n\nIf the saved description was edited by hand after it was saved, the writer starts from the edited version, so your edits are not lost. Descriptions saved before today have no conversation behind them, so the writer loads the saved text and picks up from there.\n\nThe conversation belongs to the listing, not to you, so a teammate who opens the same listing picks up the same conversation. Starting a new description replaces the saved conversation for that listing; the saved description itself stays until you save a new one.\n\nHow to use: Open the listing, open Listing Description, click Continue Refining, and type what you want changed. Click Save to Property when you have a version you like.\n\nBest practice: Ask for one change at a time and read the result before asking for the next. Small, specific requests keep everything else you liked about the description intact.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-09-29d',
+    date: 'September 29, 2026',
+    title: 'HOA Fee Carries Into the Net Sheet',
+    summary: 'The HOA fee you enter in a listing\'s MLS Data now fills in the HOA Dues amount on that listing\'s net sheet.',
+    updates: [
+      {
+        title: 'No More Typing the HOA Fee Twice',
+        detail: 'Until now, the HOA fee in MLS Data stayed in MLS Data. When you opened the net sheet on the same listing, HOA Dues was empty, and if you did not notice, the sheet left out the HOA proration entirely.\n\nNow, when you open the net sheet inside a listing and HOA Dues is empty, it fills in the amount from MLS Data and opens the HOA Dues section so you can see it. A plain number such as 807 is read as monthly. If you wrote the frequency, such as $2,400/quarter or $1,200 annually, the frequency is set to match. Anything the net sheet cannot read with certainty, such as a semi-annual fee, is left blank for you to enter.\n\nIf you already typed an HOA amount into the net sheet, it is never replaced.\n\nHow to use: Enter the HOA fee in MLS Data and save. Open Net Sheet on the same listing. Check the amount and frequency under HOA Dues, then answer Did Seller Pay Current Period.\n\nBest practice: Write the frequency in MLS Data whenever the fee is not monthly, for example $2,400/quarter. Always confirm Did Seller Pay Current Period, because that answer decides whether the seller gets a credit or a charge.'
       }
     ]
   }
