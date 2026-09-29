@@ -19926,6 +19926,18 @@ const CHANGELOG = [
         detail: 'If you picked Driveway as the subject\'s parking type, the CMA used to count each driveway space as a garage space at the full garage rate. A two-space driveway was worth the same as a two-car garage, which could add $40,000 or more to the value.\n\nNow only garage spaces are valued. A driveway or street parking adds nothing, and a comp with a garage is adjusted down against a subject that only has a driveway, the way an appraiser would. There is no field to override this. Changing the parking type now updates the numbers straight away.\n\nHow to use: Pick the parking type that is actually there. Enter the garage rate as before; it now applies to garage spaces only.\n\nBest practice: If the subject has a driveway and a garage, choose the garage type and enter only the garage spaces.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-29f',
+    date: 'September 29, 2026',
+    title: 'CMA Driveways in DC',
+    summary: 'The CMA now records driveway spaces for the subject and every comp, and values them only in DC, at a fixed $15,000 per space.',
+    updates: [
+      {
+        title: 'Driveways Count in DC, and Only in DC',
+        detail: 'Off-street parking is worth real money in DC and almost nothing in the suburbs, where nearly every house has a driveway. The CMA now handles that difference for you.\n\nThe subject has a new Driveway Spaces box, and every comp\'s Parking cell now has two boxes: garage spaces, then driveway spaces. MLS imports fill the driveway box from the Bright sheet. When the subject is in DC, each driveway space is worth $15,000, counting the first 2 spaces only. Outside DC a driveway adds nothing. The figure is fixed; there is no box to change it.\n\nIf a comp\'s driveway box is blank, the CMA treats the count as unknown and makes no driveway adjustment for that comp. Only a number, including 0, is compared. An import that finds a driveway but no count leaves the box blank and marks it CHECK THIS.\n\nHow to use: Enter the subject\'s driveway spaces. For each comp, check the second Parking box. Type 0 when you know a comp has no driveway.\n\nBest practice: In DC, confirm driveway counts on the comps that matter most before you send a CMA. A wrong count moves the value $15,000 per space.'
+      }
+    ]
   }
 
 ];
