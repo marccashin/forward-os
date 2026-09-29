@@ -2645,12 +2645,13 @@ body {
               <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
                   <h3 style="margin:0;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
-                  <button v-if="ldStarted" @click="ldMessages=[];ldOutput='';ldStarted=false;ldInput='';ld.address='';ldConvPropId=null;" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
+                  <button v-if="ldStarted" @click="ldStartFresh()" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
                 </div>
                 <div v-if="ldOutput" :style="{fontSize:'11px',fontFamily:'Montserrat,sans-serif',fontWeight:600,letterSpacing:'.04em',marginBottom:'8px',padding:'6px 10px',borderRadius:'6px',background: ldCharCount > 4000 ? '#fef2f2' : '#f0fdf4',border: ldCharCount > 4000 ? '1px solid #fecaca' : '1px solid #bbf7d0',color: ldCharCount > 4000 ? '#b91c1c' : '#166534'}">{{ ldCharCount.toLocaleString() }} / 4,000 characters<span v-if="ldCharCount > 4000"> \u2014 over the MLS limit by {{ (ldCharCount - 4000).toLocaleString() }}. Ask for a shorter version before pasting.</span></div>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span><span v-if="ldSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
                 </button>
+                <div v-if="ldStarted && ldResumeNote" style="margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;line-height:1.5;">{{ ldResumeNote }}</div>
               </div>
               <!-- Chat messages -->
               <div id="ld-chat-scroll" style="flex:1;overflow-y:auto;padding:8px 4px;display:flex;flex-direction:column;gap:12px;">
@@ -2660,8 +2661,15 @@ body {
                     <div style="margin-bottom:12px;"><svg viewBox="0 0 24 24" style="width:40px;height:40px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg></div>
                     <h3 style="margin:0 0 8px;color:var(--navy);font-size:18px;">FORWARD Listing Description Writer</h3>
                     <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#9ca3af;margin:0 0 16px;line-height:1.6;">Type or tap <span style="display:inline-flex;vertical-align:middle;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></span> to get started. You can say things like: <em>"I need a listing description for 123 Main Street NW, 4 bed 3 bath, 2,400 sqft, recently renovated kitchen, listed at $850,000."</em></p>
-                    <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;max-width:400px;">I'll walk you through crafting a compelling, story-driven listing description tailored to your property's ideal buyers.</p>
-                    <button class="btn-gold" @click.stop="ldBegin()" :disabled="ldLoading" style="padding:12px 40px;font-size:15px;cursor:pointer;position:relative;z-index:10;">
+                    <p v-if="!ldHasSaved" style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;max-width:400px;">I'll walk you through crafting a compelling, story-driven listing description tailored to your property's ideal buyers.</p>
+                    <p v-else style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 auto 20px;max-width:400px;">A description is already saved to this listing. Pick up where you left off and keep refining it, or start a new one.</p>
+                    <template v-if="ldHasSaved">
+                      <button class="btn-gold" @click.stop="ldResume()" :disabled="ldLoading" style="padding:12px 40px;font-size:15px;cursor:pointer;position:relative;z-index:10;">
+                        <span class="spinner" v-if="ldLoading"></span><span v-else>Continue Refining</span>
+                      </button>
+                      <div style="margin-top:14px;"><button @click.stop="ldBegin()" :disabled="ldLoading" style="background:none;border:none;padding:4px;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;letter-spacing:.05em;color:#6b7280;text-decoration:underline;cursor:pointer;">Start a new description instead</button></div>
+                    </template>
+                    <button v-else class="btn-gold" @click.stop="ldBegin()" :disabled="ldLoading" style="padding:12px 40px;font-size:15px;cursor:pointer;position:relative;z-index:10;">
                       <span class="spinner" v-if="ldLoading"></span><span v-else>Get Started</span>
                     </button>
                     <p v-if="!apiKeySet" style="font-size:12px;color:#ef4444;margin:12px 0 0;">Note: Add your Claude API key in Settings before generating.</p>
@@ -5995,7 +6003,7 @@ body {
                       <template v-if="!lstDescEditing">
                         <button v-if="lstNotes.listing_remarks" class="btn-sm btn-navy" @click="copy(lstNotes.listing_remarks)">Copy</button>
                         <button v-if="lstNotes.listing_remarks" class="btn-sm" style="background:var(--white);border:1px solid var(--gold);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescEditVal=lstNotes.listing_remarks;lstDescEditing=true">✏️ Edit</button>
-                        <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="view='listing-desc'">{{ lstNotes.listing_remarks ? 'Open Writer' : 'Open Writer' }}</button>
+                        <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="ldOpenWriter()">{{ lstNotes.listing_remarks ? 'Refine in Writer' : 'Open Writer' }}</button>
                       </template>
                       <!-- Edit mode buttons -->
                       <template v-if="lstDescEditing">
@@ -6005,8 +6013,8 @@ body {
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
-                    <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Generate a new version or refine further:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
-                    <button class="btn-gold" @click="view='listing-desc'" style="padding:10px 28px;font-size:13px;">{{ lstNotes.listing_remarks ? '✏️ Open Writer' : 'Open Listing Description Writer' }}</button>
+                    <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">{{ lstNotes.listing_remarks ? 'Pick up where you left off and keep refining:' : 'The Listing Description Writer is an interactive AI chat that crafts luxury MLS copy tailored to your property.' }}</p>
+                    <button class="btn-gold" @click="ldOpenWriter()" style="padding:10px 28px;font-size:13px;">{{ lstNotes.listing_remarks ? '✏️ Continue Refining' : 'Open Listing Description Writer' }}</button>
                   </div>
                 </div>
               </div>
@@ -10430,6 +10438,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
         ldInput.value = ''; ld.address = ''; ldDistances.value = null;
         ldDistanceFetched.value = false; ldConvPropId.value = null;
+        ldResumed.value = false; ldResumeNote.value = '';
       }
     });
     const lstActiveFiles = ref([]);
@@ -10713,10 +10722,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // not survive on screen - that is how one deal's net sheet ended up showing
       // on every other seller card.
       Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
+      ldSavedChat.value = null;
       // Fetch notes
       try {
         const notes = await supaRest.select('property_notes', `select=*&property_id=eq.${prop.id}`);
         notes.forEach(n => { if (n.subfolder && lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || ''; });
+        const _ldChatRow = notes.find(n => n.subfolder === 'listing_remarks_chat');
+        ldSavedChat.value = _ldParseChat(_ldChatRow && _ldChatRow.content);
         // Restore campaign sections for this property
         const campNote = notes.find(n => n.subfolder === 'campaign_sections');
         if (campNote && campNote.content) {
@@ -10777,6 +10789,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
       }
       ldOutput.value = ''; ldMessages.value = []; ldStarted.value = false;
+      ldResumed.value = false; ldResumeNote.value = '';
       jlOutput.value = null;
       Object.assign(jl, { address:'', price:'', type:'Single Family', beds:'', fbaths:'', hbaths:'', sqft:'', neighborhood:'', points:'', openHouse:'', agent:'' });
       // Reset Multiple Offers — must clear between properties or data bleeds across
@@ -12619,6 +12632,28 @@ async function lstSubmitToPipeline() {
     const ldStarted  = ref(false);
     const ldConvPropId = ref(null); // tracks which property owns the active conversation
     const ldSaving   = ref(false);
+    // Resume support. The writer conversation for a listing is kept in property_notes
+    // under subfolder listing_remarks_chat (one JSON row per listing), so an agent can
+    // leave, come back, and keep refining a saved description instead of starting over.
+    const ldResumed    = ref(false); // this conversation picked up an existing description
+    const ldResumeNote = ref('');    // one line shown under the header after a resume
+    const ldSavedChat  = ref(null);  // parsed listing_remarks_chat row for the open listing
+    let _ldPersistChain  = Promise.resolve();
+    let _ldPersistFailed = false;
+    // Appended to the system prompt only while resuming, the same way distance data is
+    // appended, so LD_SYSTEM itself and every new conversation stay exactly as they were.
+    const LD_RESUME_NOTE = '\n\nRESUMING AN EXISTING DESCRIPTION: This conversation picks up work on a listing description that already exists. Do not restart the conversation flow, and do not ask again for the address or property details unless the agent asks for something you cannot write accurately without them. The most recent complete description in this conversation, including a saved version pasted back in, is the current draft. When the agent asks for a change, make that change, keep everything they did not ask you to change as written, and return the complete revised description between [FWRD_DESC_START] and [FWRD_DESC_END] exactly as described above. If the agent asks a question or wants options instead of a rewrite, answer without the markers. Every writing rule above, including the 4,000 character limit, still applies.';
+    function _ldParseChat(raw) {
+      if (!raw) return null;
+      try {
+        const c = JSON.parse(raw);
+        if (!c || !Array.isArray(c.messages)) return null;
+        c.messages = c.messages.filter(function (m) {
+          return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content;
+        });
+        return c;
+      } catch (e) { console.warn('[LD] saved conversation unreadable:', e); return null; }
+    }
     const lstDescEditing = ref(false);
     const lstDescEditVal = ref('');
     const campLdIncluded   = ref(true);
@@ -12676,7 +12711,12 @@ async function lstSubmitToPipeline() {
           });
           if (!_ldr.ok) throw new Error(await _ldr.text());
           lstNotes.listing_remarks = text;
+          // The agent chose to save this conversation's output to this listing, so the
+          // conversation belongs to it even if it was started without the listing open.
+          if (!ldConvPropId.value) ldConvPropId.value = prop.id;
+          const _chatOk = await ldPersistChat(text);
           showGoldToast('Listing Description saved to ' + prop.address);
+          if (_chatOk === false) showToast('Description saved. The conversation could not be saved, so reopening the writer will start from the saved description.', 6000);
           // Auto-navigate back to the property folder after successful save
           setTimeout(() => { view.value = 'listing-detail'; window.scrollTo(0, 0); }, 700);
         } else {
@@ -12686,6 +12726,135 @@ async function lstSubmitToPipeline() {
         }
       } catch (e) { showToast('Save failed: ' + e.message, 4000); }
       ldSaving.value = false;
+    }
+
+    // Store the conversation with the listing. Returns true / false, or null when there is
+    // nothing to store (no listing, demo mode, or a conversation that belongs elsewhere).
+    // Never throws. Writes are chained so two turns can never interleave delete and insert.
+    function ldPersistChat(savedOutput) {
+      const prop = lstActiveProp.value;
+      if (!prop || !prop.id || ldMockMode.value || ldConvPropId.value !== prop.id) return Promise.resolve(null);
+      const prev = ldSavedChat.value;
+      const payload = {
+        v: 1,
+        address: prop.address || '',
+        updatedAt: new Date().toISOString(),
+        updatedBy: agentName.value || '',
+        resumed: !!ldResumed.value,
+        output: ldOutput.value || '',
+        // savedOutput = the text the writer last saved to this listing. Used on resume to
+        // tell an unsaved newer draft apart from a description edited outside the writer.
+        savedOutput: typeof savedOutput === 'string' ? savedOutput : ((prev && prev.savedOutput) || ''),
+        distances: ldDistances.value || null,
+        messages: ldMessages.value
+          .filter(function (m) { return !m.typing && m.content; })
+          .map(function (m) { return { role: m.role, content: m.content }; })
+      };
+      const pid = prop.id;
+      const job = _ldPersistChain.then(async function () {
+        try {
+          const del = await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.listing_remarks_chat', {
+            method: 'DELETE', headers: supaRest.headers()
+          });
+          if (!del.ok) throw new Error('delete ' + del.status);
+          await supaRest.insert('property_notes', { property_id: pid, subfolder: 'listing_remarks_chat', content: JSON.stringify(payload) });
+          if (lstActiveProp.value && lstActiveProp.value.id === pid) ldSavedChat.value = payload;
+          _ldPersistFailed = false;
+          return true;
+        } catch (e) { console.warn('[LD] conversation save failed:', e); return false; }
+      });
+      _ldPersistChain = job.then(function () {}, function () {});
+      return job;
+    }
+
+    // True when the open listing has a saved description or a saved conversation.
+    const ldHasSaved = computed(function () {
+      if (!lstActiveProp.value || !lstActiveProp.value.id) return false;
+      if ((lstNotes.listing_remarks || '').trim()) return true;
+      return !!(ldSavedChat.value && ldSavedChat.value.messages && ldSavedChat.value.messages.length);
+    });
+
+    // Pick the saved description back up so the agent can keep refining it.
+    async function ldResume() {
+      const prop = lstActiveProp.value;
+      if (!prop || !prop.id || ldLoading.value) return;
+      ldLoading.value = true;
+      let chat = ldSavedChat.value;
+      let saved = (lstNotes.listing_remarks || '').trim();
+      // Read fresh, so work done on another device or by a teammate is not missed.
+      try {
+        const rows = await supaRest.select('property_notes',
+          'select=subfolder,content&property_id=eq.' + prop.id + '&subfolder=in.(listing_remarks,listing_remarks_chat)');
+        const cr = (rows || []).find(function (r) { return r.subfolder === 'listing_remarks_chat'; });
+        const sr = (rows || []).find(function (r) { return r.subfolder === 'listing_remarks'; });
+        chat = _ldParseChat(cr && cr.content);
+        saved = ((sr && sr.content) || '').trim();
+        ldSavedChat.value = chat;
+        if (sr) lstNotes.listing_remarks = sr.content || '';
+      } catch (e) { console.warn('[LD] resume read failed, using what is on screen:', e); }
+      if (lstActiveProp.value !== prop) { ldLoading.value = false; return; }
+
+      const _key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
+      ldMockMode.value = !_key;
+      ldStep.value = 99;
+      ldInput.value = '';
+      ld.address = prop.address || '';
+      let msgs = [];
+      let output = '';
+      let note = '';
+      if (chat && chat.messages.length) {
+        msgs = chat.messages.map(function (m) { return { role: m.role, content: m.content }; });
+        output = (chat.output || '').trim();
+        ldDistances.value = chat.distances || null;
+        const lastSaved = (chat.savedOutput || '').trim();
+        if (saved && saved !== output && saved !== lastSaved) {
+          // The saved text was changed outside this conversation (hand edit, campaign
+          // editor, another conversation). The saved text wins: it goes in as the draft.
+          msgs.push({ role: 'user', content: 'The description saved to this listing was changed outside this conversation. This is the version saved now:\n\n' + saved });
+          msgs.push({ role: 'assistant', content: 'Understood. I will treat the saved version above as the current draft. What would you like to change?' });
+          output = saved;
+          note = 'Picked up where you left off. The saved description was edited outside the writer, so that edited version is now the current draft.';
+        } else if (output && saved !== output) {
+          note = 'Picked up where you left off. The latest draft below has not been saved to the listing yet.';
+        } else {
+          note = 'Picked up where you left off.';
+        }
+      } else if (saved) {
+        msgs = [{ role: 'assistant', content: 'Welcome back. This is the listing description saved to ' + (prop.address || 'this listing') + ', loaded as the current draft:\n\n' + saved + '\n\nWhat would you like to change?' }];
+        output = saved;
+        note = 'The saved description is loaded as the current draft. Tell the writer what to change.';
+      } else {
+        ldLoading.value = false;
+        return ldBegin();
+      }
+      // Distances: reuse the ones this conversation already verified, otherwise look them
+      // up by the listing address. Either way ldSend must never geocode pasted text.
+      if (!ldDistances.value && !ldMockMode.value && prop.address) {
+        const d = await ldGetAmenityDistances(prop.address);
+        if (d) ldDistances.value = d;
+      }
+      ldDistanceFetched.value = true;
+      ldConvPropId.value = prop.id;
+      ldResumed.value = true;
+      ldResumeNote.value = note;
+      ldMessages.value = msgs;
+      ldOutput.value = output;
+      ldStarted.value = true;
+      ldLoading.value = false;
+      await nextTick();
+      const chatEl = document.getElementById('ld-chat-scroll');
+      if (chatEl) chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    // Open Writer from a listing: continue the saved description when there is one.
+    function ldOpenWriter() {
+      view.value = 'listing-desc';
+      if (!ldStarted.value && ldHasSaved.value) ldResume();
+    }
+
+    function ldStartFresh() {
+      ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false; ldInput.value = '';
+      ld.address = ''; ldConvPropId.value = null; ldResumed.value = false; ldResumeNote.value = '';
     }
     const ldVoiceLiveText  = ref('');
     let _ldVoiceRec = null;
@@ -19635,6 +19804,18 @@ const CHANGELOG = [
         detail: 'Two more places now show the answer being written instead of sitting on a spinner: the buyer tour recommendation after you score properties, and the open house and social copy you ask for by voice. Same behaviour as the listing description writer.\n\nHow to use: Nothing to do. Use both tools exactly as before.\n\nBest practice: Read along while it types. On the tour recommendation especially, if it is heading somewhere you disagree with you can see it early rather than waiting for the whole thing.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-29c',
+    date: 'September 29, 2026',
+    title: 'Keep Refining a Saved Listing Description',
+    summary: 'Saved listing descriptions can now be picked back up in the writer and refined, instead of starting over. The conversation stays with the listing.',
+    updates: [
+      {
+        title: 'Pick Up Where You Left Off in the Listing Description Writer',
+        detail: 'Until now, once you saved a listing description and left the writer, the only way back in was Get Started, which began a brand new conversation. There was no way to keep working on the description you already had.\n\nThe writer now keeps the conversation with the listing. Open the listing, open Listing Description, and click Continue Refining. You land back in the same conversation with the latest description loaded, and you can keep asking for changes: tighten the opening, work in the new roof, shorten it for MLS. Each answer comes back as a complete revised description you can save over the old one.\n\nIf the saved description was edited by hand after it was saved, the writer starts from the edited version, so your edits are not lost. Descriptions saved before today have no conversation behind them, so the writer loads the saved text and picks up from there.\n\nThe conversation belongs to the listing, not to you, so a teammate who opens the same listing picks up the same conversation. Starting a new description replaces the saved conversation for that listing; the saved description itself stays until you save a new one.\n\nHow to use: Open the listing, open Listing Description, click Continue Refining, and type what you want changed. Click Save to Property when you have a version you like.\n\nBest practice: Ask for one change at a time and read the result before asking for the next. Small, specific requests keep everything else you liked about the description intact.'
+      }
+    ]
   }
 
 ];
@@ -21390,6 +21571,7 @@ async function dismissUpdates() {
         case 'listing-desc':
           ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
           ldInput.value = ''; ld.address = ''; ldDistances.value = null; ldDistanceFetched.value = false; ldConvPropId.value = null;
+          ldResumed.value = false; ldResumeNote.value = '';
           localStorage.removeItem(agentKey('voice_ld_context'));
           break;
         case 'net-sheet':
@@ -21666,6 +21848,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       ldStep.value = 0;
       ldDistances.value = null;
       ldDistanceFetched.value = false;
+      ldResumed.value = false; ldResumeNote.value = '';
       ldConvPropId.value = null; // will be re-stamped after auto-send
       // Use the same key-resolution logic as claudeChat so mock mode is never out of sync
       const _ldKey = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
@@ -21809,7 +21992,7 @@ Now let me craft a listing description tailored to attract these buyers. Here it
           try {
             reply = await claudeChatStream(
               apiMessages,
-              effectiveSystem,
+              effectiveSystem + (ldResumed.value ? LD_RESUME_NOTE : ''),
               function (chunk, full) { _sTyper.setTarget(ldDisplayText(full)); }
             );
             _sTyper.setTarget(ldDisplayText(reply));
@@ -21842,6 +22025,13 @@ Now let me craft a listing description tailored to attract these buyers. Here it
         showToast('❌ '+e.message, 6000);
       }
       ldLoading.value = false;
+      // Keep the conversation with the listing so it can be picked up later.
+      ldPersistChat().then(function (ok) {
+        if (ok === false && !_ldPersistFailed) {
+          _ldPersistFailed = true;
+          showToast('This conversation could not be saved to the listing. Use Save to Property before you leave.', 6000);
+        }
+      });
 
       // Auto-scroll after response
       await nextTick();
@@ -22294,7 +22484,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
       // Listing Desc (Chat)
-      ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
+      ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
       lpActivePanel, lpOpen, listingPresentationUrl,
       checklistSections, checklistProgress,
