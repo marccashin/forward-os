@@ -8339,13 +8339,12 @@ const SUBFOLDER_LABELS = {
   'listing_photos': 'Listing Photos', 'seller_net_sheet': 'Seller Net Sheet', 'seller_prep': 'Seller Prep Guide',
 };
 
-const TOOL_LABELS = { 'listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post','bio-writer':'Agent Bio' };
+const TOOL_LABELS = { 'listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post' };
 const TOOLS = [
   { id:'cma',          icon:'<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="5" height="10" fill="#0d1f35"/><rect x="9.5" y="6" width="5" height="16" fill="#0d1f35"/><rect x="17" y="2" width="5" height="20" fill="#0d1f35"/></svg>', name:'CMA Builder',          desc:'Appraiser-grade comparative market analysis with luxury branded PDF output.',  outs:1 },
   { id:'listing-desc', icon:'<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg>', name:'Listing Description',  desc:'Write luxury MLS copy optimized for property type, neighborhood, and buyer profile.', outs:1 },
   { id:'listings',     icon:'<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg>', name:'My Listings',       desc:'Property folders with all your seller tools: net sheet, CMA, listing description, market reports, and more.', outs:6 },
   { id:'social-post',  icon:'📱', name:'Social Post Generator', desc:'Platform-specific posts for market updates, listings, tips, and personal brand content.', outs:3 },
-  { id:'bio-writer',   icon:'👤', name:'Agent Bio Writer',     desc:'Professional bio in your voice — short for cards, medium for site, long for LinkedIn.', outs:1 },
   { id:'cash-to-close',icon:'<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg>', name:'Cash to Close Estimate',desc:'Buyer closing cost calculator with jurisdiction-aware fees, prepaids, and branded PDF.', outs:1 },
   { id:'buyer-consult',icon:'<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg>', name:'Buyer Consultation Kit',  desc:'Branded buyer guide PDF with your process, timeline, and FORWARD value proposition.', outs:1 },
   { id:'tour-tracker', icon:'🏘️', name:'Property Tour Tracker',  desc:'Score properties during showings, compare side-by-side, and get AI-powered recommendations.', outs:1 },
@@ -19202,17 +19201,11 @@ No markdown. Valid JSON only.`;
     const spLoading = ref(false);
     const spPosts   = ref([]);
 
-    // Tool: Bio Writer
-    const bw = reactive({ name:'',years:'',states:'DC, MD, VA',markets:'',specs:'',achiev:'',personal:'',tone:'professional',length:'medium' });
-    const bwLoading = ref(false);
-    const bwOutput  = ref('');
-    const bwRefines = ['More confident','More personal','Make shorter','LinkedIn version','Instagram version','Add call to action'];
-
     // ── Computed ───────────────────────────────────────────
     const firstName  = computed(() => agentName.value.split(' ')[0]);
     const savedCount = computed(() => lib.value.length);
     const dashToolsCompleted = computed(() => Object.values(lstNotes).filter(v => v && v.trim()).length);
-    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','bio-writer':'Agent Bio Writer','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','buyer-market-report':'Buyer Market Report','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','buyer-market-report':'Buyer Market Report','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin' }[view.value]||'FORWARD OS'));
+    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','buyer-market-report':'Buyer Market Report','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','buyer-market-report':'Buyer Market Report','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin' }[view.value]||'FORWARD OS'));
     const filteredLib = computed(() => libFilter.value==='all' ? lib.value : lib.value.filter(i=>i.type===libFilter.value));
     const jlTabObj   = computed(() => jlTabs.find(t=>t.k===jlTab.value));
     const jlCurrent  = computed(() => jlOutput.value ? (jlOutput.value[jlTab.value]||'') : '');
@@ -21486,7 +21479,6 @@ async function dismissUpdates() {
       localStorage.setItem('fos_original_agent', loginAgent.value);
       originalAgent.value = loginAgent.value;
       loggedIn.value = true;
-      bw.name = loginAgent.value;
       jl.agent = loginAgent.value;
       // Audit: log login
       nextTick(() => auditLogEvent('agent.login', { ip_hint: navigator.platform }));
@@ -21604,13 +21596,10 @@ async function dismissUpdates() {
         case 'social-post':
           Object.assign(sp, { points:'', tone:'authoritative' }); spPosts.value = [];
           break;
-        case 'bio-writer':
-          Object.assign(bw, { name:'', years:'', markets:'', specs:'', achiev:'', personal:'' }); bwOutput.value = '';
-          break;
       }
     }
     function clearAllForms() {
-      ['listing-desc','net-sheet','cash-to-close','buyer-consult','meeting-prep','cma','social-post','bio-writer']
+      ['listing-desc','net-sheet','cash-to-close','buyer-consult','meeting-prep','cma','social-post']
         .forEach(t => resetToolForm(t));
     }
 
@@ -22042,12 +22031,6 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       if (tool==='ld') {
         // For chat-based LD, send as a follow-up message
         ldSend(instruction);
-      } else if (tool==='bw') {
-        bwLoading.value=true;
-        try {
-          bwOutput.value = await claude(`Here is a real estate agent bio:\n\n${bwOutput.value}\n\nRewrite it with this adjustment: "${instruction}"\n\nKeep all the same agent facts. Return ONLY the revised bio.`);
-        } catch(e) { showToast('❌ '+e.message,6000); }
-        bwLoading.value=false;
       }
     }
 
@@ -22198,32 +22181,6 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
         spPosts.value = parseJSON(raw);
       } catch(e) { showToast('❌ '+e.message,6000); }
       spLoading.value=false;
-    }
-
-    // ── AI: Bio Writer ─────────────────────────────────────
-    async function genBio() {
-      bwLoading.value=true; bwOutput.value='';
-      const lengthMap = { short:'100–150 words', medium:'200–250 words', long:'300–400 words' };
-      try {
-        bwOutput.value = await claude(
-          `You are a luxury real estate brand copywriter. ${brandCtx()}
-
-Write a professional bio for:
-- Name: ${bw.name||agentName.value}
-- Brokerage: ${localStorage.getItem('fos_brokerage')||'FORWARD Real Estate | Corcoran McEnearney'}
-- Years in real estate: ${bw.years||'Not specified'}
-- Licensed in: ${bw.states||'DC, MD, VA'}
-- Markets: ${bw.markets||'Washington DC metro area'}
-- Specialties: ${bw.specs||'Residential real estate'}
-- Achievements: ${bw.achiev||'None specified'}
-- Personal differentiator: ${bw.personal||'None specified'}
-- Tone: ${bw.tone}
-- Target length: ${lengthMap[bw.length]||'200–250 words'}
-
-Requirements: Open with a strong positioning statement (NOT "My name is" or "With X years of experience"). Sound like a real person. Highlight measurable achievements if provided. Communicate genuine DMV luxury expertise. Third person. Return ONLY the bio text.`
-        );
-      } catch(e) { showToast('❌ '+e.message,6000); }
-      bwLoading.value=false;
     }
 
     // Initialize Google Places autocomplete after mount
@@ -22501,8 +22458,6 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       jl, jlLoading, jlOutput, jlTab, jlTabs, jlTabObj, jlCurrent, genJustListed, saveAllJL,
       // Social Post
       sp, spLoading, spPosts, genSocialPost, spPlatformLabel,
-      // Bio Writer
-      bw, bwLoading, bwOutput, bwRefines, genBio,
       // Training Center
       tcPillars, tcActivePillar, tcActiveModule, tcExpandedModule, tcToggleModule, tcOverallProgress, tcPillarProgress,
       // Agent Tools
