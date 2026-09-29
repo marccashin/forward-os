@@ -14285,10 +14285,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
       // ── 2. Settlement & Title Charges ──
       // DC: $485 closing + $150 e-sign + $145 release admin + $400 deed prep + $35 release tracking = $1,215
-      // VA: $475 closing + $150 e-sign + $495 deed prep + $195 = $1,315
+      // VA: $1,400. Seller title/settlement charges on three executed NoVA ALTAs
+      // (Sept 29, 2026 upload): CLA $1,009 (Prince William), KVS $1,385 (Alexandria,
+      // two liens at $110 release each), Pruitt $894 (Fairfax). The old $1,315 was
+      // $70 under KVS, which put that seller's net too high. $1,400 covers all three.
       // MD: $550 release admin + $70 tracking + $50 wire = $670
       let settlementFee = 1215;
-      if (j === 'va-nova' || j === 'va-other') settlementFee = 1315;
+      if (j === 'va-nova' || j === 'va-other') settlementFee = 1400;
       else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
       items.push({ label:'Settlement & Title Charges (est.)', amount:settlementFee });
 
@@ -14564,7 +14567,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (transferTax) items.push({ label: transferLabel, amount: transferTax });
       // Settlement fee
       let settlementFee = 1215;
-      if (j === 'va-nova' || j === 'va-other') settlementFee = 1315;
+      if (j === 'va-nova' || j === 'va-other') settlementFee = 1400;
       else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
       items.push({ label: 'Settlement & Title Charges (est.)', amount: settlementFee });
       // Loans
@@ -14671,6 +14674,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     };
     }
     const ctc = reactive(ctcBlank());
+    // VA lenders escrowed 4 months of taxes on top of funding the upcoming bill on
+    // both executed NoVA ALTAs where the closing fell before the bill's due date
+    // (KVS Alexandria, Pruitt Fairfax). DC / MD keep 3. Only an untouched default
+    // moves; a value the agent typed is left alone.
+    watch(function () { return ctc.jurisdiction; }, function (nv, ov) {
+      const isVa = String(nv || '').indexOf('va') === 0, wasVa = String(ov || '').indexOf('va') === 0;
+      if (isVa && !wasVa && String(ctc.taxEscrowMonths) === '3') ctc.taxEscrowMonths = '4';
+      else if (!isVa && wasVa && String(ctc.taxEscrowMonths) === '4') ctc.taxEscrowMonths = '3';
+    });
     const ctcSaved = ref(false);
     function ctcFmt(v) { return nsFmt(v); }
     function ctcCurrencyBlur(e, field) {
@@ -14938,7 +14950,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // S3: Title & Settlement
       const s3Items = [];
       const enhanced = ctc.policyType === 'enhanced' ? 1.10 : 1.0;
-      const ownerTitleEst = Math.round((j.startsWith('va') ? price * 0.0045 : price * 0.0055) * enhanced);
+      // VA financed: the lender's policy is charged at full rate on the loan, not
+      // a nominal simultaneous-issue fee. Three executed NoVA ALTAs (Sept 29, 2026):
+      //   lender 0.29% / 0.28% / 0.31% of the loan; owner + lender 0.51% / 0.46% /
+      //   0.51% of the price. So: lender = 0.29% of loan, owner = 0.51% of price less
+      //   the lender estimate. Never below any of the three actual combined totals.
+      // VA cash purchases (no lender policy) and DC / MD are unchanged.
+      const vaFinanced = j.startsWith('va') && !isCash && loanAmt > 0;
+      const vaLenderTitleEst = vaFinanced ? Math.round(loanAmt * 0.0029) : 0;
+      const ownerTitleEst = vaFinanced
+        ? Math.round((price * 0.0051 - vaLenderTitleEst) * enhanced)
+        : Math.round((j.startsWith('va') ? price * 0.0045 : price * 0.0055) * enhanced);
       const ownerTitle = ctcParse('ownerTitle') || ownerTitleEst;
       s3Items.push({ label:"Owner's Title Insurance" + (ctc.policyType === 'enhanced' ? ' (Enhanced)' : ''), amount: ownerTitle });
       if (!isCash) {
@@ -14946,11 +14968,14 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         // simultaneous-issue charge (KVS: $150), not 0.35% of the loan.
         // Simultaneous issue with the owner's policy. DC: KVS $150. MD/VA: same
         // nominal charge, an estimate until a settlement statement confirms it.
-        const lenderTitleEst = 150;
+        const lenderTitleEst = vaFinanced ? vaLenderTitleEst : 150;
         const lenderTitle = ctcParse('lenderTitle') || lenderTitleEst;
-        s3Items.push({ label:"Lender's Title Insurance" + (ctcParse('lenderTitle') ? '' : (j === 'dc' ? ' (simultaneous issue)' : ' (simultaneous issue, est.)')), amount: lenderTitle });
+        s3Items.push({ label:"Lender's Title Insurance" + (ctcParse('lenderTitle') ? '' : (j === 'dc' ? ' (simultaneous issue)' : vaFinanced ? ' (est.)' : ' (simultaneous issue, est.)')), amount: lenderTitle });
       }
-      const settlementEst = j === 'dc' ? 1300 : j.startsWith('va') ? 1100 : 1200;
+      // VA buyer settlement/title services (search, processing, CPL, notary, binder,
+      // storage) on the three NoVA ALTAs: $1,709 CLA, $1,350 KVS, $1,155 Pruitt.
+      // $1,750 covers all three; the old $1,100 was under every one.
+      const settlementEst = j === 'dc' ? 1300 : j.startsWith('va') ? 1750 : 1200;
       s3Items.push({ label:'Settlement/Closing Fee', amount: ctcParse('settlementFee') || settlementEst });
       if (j === 'dc') {
         // KVS Title flat DC fees.
@@ -14964,7 +14989,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           if (!isCash) s3Items.push({ label:'Mortgage Recording Fee', amount: 155 });
         }
       } else {
-        const recordingEst = j.startsWith('va') ? 200 : 175;
+        // VA deed + deed of trust recording, incl. e-recording: $122.50 / $107 / $117.
+        const recordingEst = j.startsWith('va') ? 125 : 175;
         s3Items.push({ label:'Recording Fees', amount: ctcParse('recordingFees') || recordingEst });
       }
       const s3Sub = s3Items.reduce((sum, i) => sum + i.amount, 0);
@@ -15007,6 +15033,23 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
       // Tax proration, buyer side: DC (KVS), MD (Universal Title ALTA), VA (arrears).
       ctcTaxProrationItems(j, annualTax, ctcClosingDate()).forEach(function (it) { s5Items.push(it); });
+      // VA, financed: when the closing sits before the current half's due date, the
+      // lender makes the buyer fund that whole half-year bill at closing, on top of
+      // the usual escrow months. All three executed NoVA ALTAs (Sept 29, 2026) show
+      // it: Pruitt collected the $4,345.97 1st half outright, KVS a 7-month escrow
+      // pending the bill, CLA 6 months of taxes. Without this line the sheet told
+      // the buyer $2,700 to $7,900 too little cash. Same due dates (latest in the
+      // NoVA cluster) and same half-bill basis as the seller side.
+      if (j.startsWith('va') && !isCash && ctcClosingDate()) {
+        const cdV = ctcClosingDate();
+        nsVATaxPeriods(cdV).forEach(function (p) {
+          if (p.start <= cdV && cdV <= p.end && cdV <= p.due) {
+            const ordV = p.half === 1 ? '1st' : '2nd';
+            s5Items.push({ label:'Upcoming ' + ordV + ' Half Property Tax Bill (' + (p.half === 1 ? 'Jan-Jun' : 'Jul-Dec') + '), funded at closing for the lender',
+                           amount: ctcR2(annualTax / 2) });
+          }
+        });
+      }
 
       if (!isCash) {
         const cdI = ctcClosingDate();
@@ -19865,6 +19908,18 @@ const CHANGELOG = [
       {
         title: 'No More Typing the HOA Fee Twice',
         detail: 'Until now, the HOA fee in MLS Data stayed in MLS Data. When you opened the net sheet on the same listing, HOA Dues was empty, and if you did not notice, the sheet left out the HOA proration entirely.\n\nNow, when you open the net sheet inside a listing and HOA Dues is empty, it fills in the amount from MLS Data and opens the HOA Dues section so you can see it. A plain number such as 807 is read as monthly. If you wrote the frequency, such as $2,400/quarter or $1,200 annually, the frequency is set to match. Anything the net sheet cannot read with certainty, such as a semi-annual fee, is left blank for you to enter.\n\nIf you already typed an HOA amount into the net sheet, it is never replaced.\n\nHow to use: Enter the HOA fee in MLS Data and save. Open Net Sheet on the same listing. Check the amount and frequency under HOA Dues, then answer Did Seller Pay Current Period.\n\nBest practice: Write the frequency in MLS Data whenever the fee is not monthly, for example $2,400/quarter. Always confirm Did Seller Pay Current Period, because that answer decides whether the seller gets a credit or a charge.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-09-29e',
+    date: 'September 29, 2026',
+    title: 'Virginia Cash to Close and Net Sheets Checked Against Real Settlements',
+    summary: 'Three executed Virginia settlement statements were run through the net sheet and Cash to Close line by line. Transfer and recordation taxes matched to the penny. The buyer side was telling Virginia buyers too little cash, by up to $7,900, and is fixed.',
+    updates: [
+      {
+        title: 'Virginia Cash to Close Now Includes the Tax Bill the Lender Collects',
+        detail: 'When a Virginia closing falls before the current half-year property tax bill is due, the lender makes the buyer fund that whole bill at closing. Every real settlement we checked did this, and the Cash to Close left it out, so it told buyers $2,700 to $7,900 less cash than they actually brought.\n\nVirginia Cash to Close now shows that bill as its own line, and the tax escrow defaults to 4 months, which is what the lenders on those settlements collected. The lender\'s title policy is now estimated at its real Virginia cost instead of a flat $150, and the settlement and recording estimates match what Virginia title companies actually charged. Recordation taxes were already exact and have not changed.\n\nOn the seller net sheet, the Virginia settlement estimate goes from $1,315 to $1,400. One of the three settlements charged $1,385, which the old figure did not cover.\n\nHow to use: Nothing to do. Run Cash to Close and net sheets exactly as before. If the buyer\'s lender has issued a Loan Estimate, type its escrow months and title figures over the estimates.\n\nBest practice: Tell Virginia buyers the upcoming tax bill line is money they bring to closing even though the seller credits part of it back on the same sheet. Buyers who only see the credit are the ones who come up short.'
       }
     ]
   }
