@@ -8827,17 +8827,36 @@ async function claudeChatStream(messages, system = null, onChunk = null, maxToke
 
 // Reveals text at a constant character rate. The network delivers chunks;
 // this is what makes it read as typing. One speed for the whole app.
+//
+// Every tick advances by however much wall-clock time actually passed, not by
+// a fixed number of characters. Chrome clamps setInterval to 1000ms in a tab
+// that is not in front, so a tick-counting typer ran at 1 char/sec there: a
+// 4,000 character answer took ~28 minutes to finish painting and the bubble
+// stayed stuck in the typing state the whole time. Scaling by elapsed time
+// leaves the foreground identical (dt is ~FOS_TYPE_MS, so the factor is 1) and
+// lets a throttled tab paint a full second's worth per tick instead of one
+// character. An agent can switch tabs and come back to finished text.
 function fosTyper(apply) {
   let target = '', shown = '', finished = false, timer = null, resolveDone = null;
+  let lastTick = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  const now = function () {
+    return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+  };
   const done = new Promise(function (r) { resolveDone = r; });
   timer = setInterval(function () {
+    const t = now();
+    // How many ticks' worth of time really elapsed. 1 when running normally.
+    let factor = Math.round((t - lastTick) / FOS_TYPE_MS);
+    if (!isFinite(factor) || factor < 1) factor = 1;
+    if (factor > 4000) factor = 4000;   // a long sleep should not lock the thread
+    lastTick = t;
     if (target.length < shown.length) { shown = target; apply(shown); return; }
     if (shown.length < target.length) {
       const behind = target.length - shown.length;
       let take = 1;
       if (behind > 600)  take = 2;   // catch-up so a long answer does not lag;
       if (behind > 1500) take = 4;   // delete these two lines for a pure fixed rate
-      shown = target.slice(0, shown.length + take);
+      shown = target.slice(0, shown.length + take * factor);
       apply(shown);
     } else if (finished) {
       clearInterval(timer); timer = null; resolveDone();
@@ -19606,6 +19625,10 @@ const CHANGELOG = [
       {
         title: 'Buyer Packet Market Table Says Where the Numbers Came From',
         detail: 'The DMV Market Snapshot page in the buyer packet used to print four figures with no date, no source, and no way to tell where they came from. Checking them against Bright this evening, every row was wrong: Loudoun was understated by $165K, Montgomery by $90K, and Washington DC was showing 25-35 days on market when the real figure was 53. DC was also labelled low inventory when it was the softest of the four markets, which is the wrong advice in the direction that costs a buyer money.\n\nThe page now prints the exact figures Bright publishes, under Bright column names: Median Sold Price, Median Days on Market, Months of Supply. Nothing is rounded and nothing is translated into a word like Low or Moderate. It also carries a line underneath saying the figures are Bright MLS closed sales for a named month.\n\nIt also protects itself. If the figures fall more than two months behind, the packet tells the buyer they are dated and to ask you for current numbers, instead of printing old figures as though they were current.\n\nHow to use: Nothing to do. Build a buyer packet as usual and the source line prints itself.\n\nBest practice: If you ever see the dated warning on a packet you are about to send, tell Marc before you send it. It means the monthly update was missed.'
+      },
+      {
+        title: 'Typing No Longer Stalls When You Switch Tabs',
+        detail: 'If you started a listing description and then switched to another tab, you would come back to the text still crawling out one letter at a time, with the cursor blinking, looking like it had hung. On a full length description that could go on for almost half an hour.\n\nThat is fixed. The answer itself was always finished and waiting; only the on-screen typing was stuck, because your browser deliberately slows down tabs you are not looking at to save battery. The writer now keeps up with the clock instead of the browser, so a tab in the background paints just as fast as one in front.\n\nHow to use: Nothing to do. Start a description, go do something else, come back to a finished one.\n\nBest practice: If a tool ever looks frozen mid answer, give it a few seconds before you start over. Starting over throws away an answer that has usually already arrived.'
       },
       {
         title: 'Tour Recommendations and Voice Marketing Copy Type As They Go',
