@@ -15642,8 +15642,19 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             break;
           }
           case 'DMV Market Snapshot': {
+            // Keep the heading, intro, table and source lines together. Without this the
+            // heading and intro could print at the foot of one page with the table on the
+            // next (seen Sept 29 on a live kit: heading at the bottom of page 4, table on 5).
+            // Height mirrors exactly what the lines below draw: sectionTitle 24, intro lines
+            // at 13 + 6 (bodyText), header 4 + 12, 15 per row, 6 + 10 for the source lines,
+            // 11 more when the stale warning prints, 4 for the last line's descenders.
+            const _dmvIntro = 'Understanding current market conditions helps you make confident decisions. Here\'s a high-level overview of the DC, Maryland, and Virginia markets:';
+            doc.setFont('helvetica','normal');
+            doc.setFontSize(10);
+            const _dmvIntroLines = doc.splitTextToSize(_dmvIntro, W - 50 - 50).length;
+            ensureSpace(24 + _dmvIntroLines * 13 + 6 + 4 + 12 + DMV_SNAPSHOT.rows.length * 15 + 6 + 10 + (dmvSnapshotMonthsOld() > 2 ? 11 : 0) + 4);
             sectionTitle('', 'DMV Market Snapshot');
-            bodyText('Understanding current market conditions helps you make confident decisions. Here\'s a high-level overview of the DC, Maryland, and Virginia markets:');
+            bodyText(_dmvIntro);
             ensureSpace(80);
             // Mini table
             const cols = ['Market', 'Median Sold Price', 'Median Days on Market', 'Months of Supply'];
@@ -15673,7 +15684,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             doc.text('Source: ' + DMV_SNAPSHOT.source + ' closed sales, ' + DMV_SNAPSHOT.asOf +
                      '. All residential property types.', 58, y);
             y += 10;
-            doc.text('Each figure describes the market as a whole; your neighbourhood may differ.', 58, y);
+            doc.text('Each figure describes the market as a whole; your neighborhood may differ.', 58, y);
             if (_dmvOld > 2) {
               y += 11;
               doc.text('These figures are more than two months old. Ask your agent for current numbers.', 58, y);
