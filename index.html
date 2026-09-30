@@ -2401,7 +2401,7 @@ body {
                     <div class="laddr">{{ p.address }}</div>
                     <div class="lmeta">{{ p.seller_name || 'Seller' }}</div>
                   </div>
-                  <button class="lbtn" @click.stop="goPrep(p.seller_name || p.address)">Prep</button>
+                  <button class="lbtn" @click.stop="goPrepFor('seller', p)">Prep</button>
                 </div>
               </template>
               <div v-else class="empty-state" style="padding:24px;">
@@ -2424,7 +2424,7 @@ body {
                     <div class="pname">{{ b.buyer_name || (b.first_name + ' ' + b.last_name).trim() }}</div>
                     <div class="pstage">{{ b.stage || 'Pipeline' }}</div>
                   </div>
-                  <button class="lbtn" @click.stop="goPrep((b.first_name||b.buyer_name||''))">Prep</button>
+                  <button class="lbtn" @click.stop="goPrepFor('buyer', b)">Prep</button>
                 </div>
               </template>
               <div v-else class="empty-state" style="padding:24px;">
@@ -3248,10 +3248,12 @@ body {
                   <div><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 17,7 17,11 12,15 7,11 7,7" fill="#0d1f35"/><polygon points="3,22 5,16 9,14 15,14 19,16 21,22" fill="#0d1f35"/></svg></div>
                   <div style="flex:1;">
                     <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#fff;">{{ mp.selectedPerson.name }}</div>
-                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">{{ mp.selectedPerson.email || mp.selectedPerson.stage || 'Follow Up Boss contact' }}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">{{ mp.selectedPerson.email || mp.selectedPerson.stage || (mp.selectedPerson.id ? 'Follow Up Boss contact' : 'Not in Follow Up Boss') }}</div>
                   </div>
-                  <button @click="mpReset" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">✕ Change</button>
+                  <button @click="mpReset(true)" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">✕ Change</button>
                 </div>
+                <div v-if="mp.target" style="font-size:12px;color:#6b7280;margin:-6px 0 12px;">This brief will be saved to {{ mp.target.name }}'s {{ mp.target.type === 'buyer' ? 'buyer' : 'seller' }} file.</div>
+                <div v-if="mp.notice" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:8px;padding:10px 14px;margin:-4px 0 14px;line-height:1.5;">{{ mp.notice }}</div>
               </template>
 
               <!-- Extra context textarea -->
@@ -3367,7 +3369,32 @@ body {
             <template v-if="mp.brief">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
-                <button class="btn-outline" @click="mpReset" style="font-size:12px;padding:6px 14px;">New Search</button>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                  <button v-if="mp.target" class="btn-outline" @click="mbBackToTarget" style="font-size:12px;padding:6px 14px;">&larr; Back to {{ mp.target.name }}</button>
+                  <button class="btn-outline" @click="mpReset" style="font-size:12px;padding:6px 14px;">New Search</button>
+                </div>
+              </div>
+
+              <!-- Saved brief being viewed -->
+              <div v-if="mp.viewingSaved" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:8px;padding:10px 14px;margin-bottom:14px;">Saved brief from {{ mbFmtDate(mp.viewingSaved.created_at) }}{{ mp.viewingSaved.agent_name ? ', run by ' + mp.viewingSaved.agent_name : '' }}.</div>
+
+              <!-- Save status (brief started from a card, or assigned below) -->
+              <div v-if="!mp.viewingSaved && mp.target" style="margin-bottom:14px;">
+                <div v-if="mbAssign.saving" style="font-size:13px;color:#6b7280;">Saving to {{ mp.target.name }}&hellip;</div>
+                <div v-else-if="mbAssign.savedTo" style="font-size:13px;color:#16a34a;font-weight:600;">&#10003; Saved to {{ mbAssign.savedTo.name }}'s {{ mbAssign.savedTo.type === 'buyer' ? 'buyer' : 'seller' }} file.</div>
+                <div v-else-if="mbAssign.error" style="font-size:13px;color:#dc2626;">{{ mbAssign.error }} <button class="btn-outline" @click="mbSave(mp.target)" style="font-size:12px;padding:4px 10px;margin-left:6px;">Retry</button></div>
+              </div>
+
+              <!-- Assign a standalone brief to a buyer or seller -->
+              <div v-if="!mp.viewingSaved && !mp.target" style="border:1.5px dashed var(--gold);border-radius:10px;padding:12px 14px;margin-bottom:14px;">
+                <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Save this brief to a buyer or seller</div>
+                <input v-model="mbAssign.query" placeholder="Type a buyer name, seller name or address&hellip;" style="width:100%;box-sizing:border-box;">
+                <div v-for="c in mbCandidates" :key="c.type + c.id" class="mp-result-item" @click="mbAssignTo(c)">
+                  <div class="subfolder-tool-name">{{ c.name }}</div>
+                  <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ c.sub }}</div>
+                </div>
+                <div v-if="mbAssign.query.trim() && !mbCandidates.length" style="font-size:12px;color:#9ca3af;margin-top:8px;">No buyer or seller matches. Check the spelling, or open the Buyer or Seller Package first so the list loads.</div>
+                <div v-if="mbAssign.error" style="font-size:13px;color:#dc2626;margin-top:8px;">{{ mbAssign.error }}</div>
               </div>
 
               <!-- Web research badge -->
@@ -3854,7 +3881,32 @@ body {
                 </button>
 
               </div>
-              <!-- BNA quick-access — Step 1 prominent card above Buyer Information -->
+              <!-- Meeting Prep (briefs saved to this buyer) -->
+<div class="subfolder-panel" style="margin-bottom:16px;">
+<div class="subfolder-header" @click="mbToggleBuyer">
+<div style="display:flex;align-items:center;gap:10px;">
+<span class="subfolder-tool-name">Meeting Prep</span>
+<span class="subfolder-tool-desc">DISC brief for this buyer</span>
+</div>
+<span style="font-size:12px;color:#9ca3af;">{{ mbBuyerOpen ? '&#9660;' : '&#9654;' }}</span>
+</div>
+<div v-if="mbBuyerOpen" class="subfolder-body" style="padding:14px 16px;">
+                  <button class="btn-gold" @click="goPrepFor('buyer', byrActiveBuyer)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:12px;">&#10022; Run Meeting Prep</button>
+                  <div v-if="mbList('buyer', byrActiveBuyer).unloaded"><button class="btn-outline" @click="mbLoad('buyer', byrActiveBuyer)" style="font-size:12px;padding:6px 12px;">Show saved briefs</button></div>
+                  <div v-else-if="mbList('buyer', byrActiveBuyer).loading" style="font-size:13px;color:#6b7280;">Loading saved briefs&hellip;</div>
+                  <div v-else-if="mbList('buyer', byrActiveBuyer).error" style="font-size:13px;color:#dc2626;">{{ mbList('buyer', byrActiveBuyer).error }}</div>
+                  <div v-else-if="!mbList('buyer', byrActiveBuyer).rows.length" style="font-size:13px;color:#9ca3af;">No briefs saved yet.</div>
+                  <div v-for="r in mbList('buyer', byrActiveBuyer).rows" :key="r.id" class="mp-result-item" @click="mbOpenSaved(r, 'buyer', byrActiveBuyer)" style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
+                    <div style="flex:1;min-width:0;">
+                      <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                      <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                    </div>
+                  </div>
+</div>
+</div>
+<!-- BNA quick-access — Step 1 prominent card above Buyer Information -->
               <div @click="go('buyer-needs')" :class="{'lp-card-done': !!bnaResult}" style="border:1.5px solid var(--gold);border-radius:8px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;margin-bottom:14px;background:linear-gradient(135deg,rgba(200,169,110,0.06) 0%,rgba(200,169,110,0.02) 100%);transition:border-color 0.15s,background 0.15s;" onmouseover="this.style.borderColor='var(--navy)';this.style.background='rgba(200,169,110,0.1)'" onmouseout="this.style.borderColor='var(--gold)';this.style.background='linear-gradient(135deg,rgba(200,169,110,0.06) 0%,rgba(200,169,110,0.02) 100%)'">
                 <div style="display:flex;align-items:center;gap:14px;">
                   <div style="width:22px;height:22px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -5843,6 +5895,32 @@ body {
                 <div>
                   <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--cream);">Fill a tool by voice</div>
                   <div style="font-family:'Montserrat',sans-serif;font-size:8px;color:rgba(247,244,239,0.55);letter-spacing:0.04em;margin-top:3px;">Say: "Net sheet for this property, sale price $750,000"</div>
+                </div>
+              </div>
+
+              <!-- Tool: Meeting Prep (briefs saved to this seller) -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" @click="mbToggleSeller">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="subfolder-tool-name">Meeting Prep</span>
+                    <span class="subfolder-tool-desc">DISC brief for this seller</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='meetingprep' ? '&#9660;' : '&#9654;' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='meetingprep'" class="subfolder-body" style="padding:14px 16px;">
+                  <button class="btn-gold" @click="goPrepFor('seller', lstActiveProp)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:12px;">&#10022; Run Meeting Prep</button>
+                  <div v-if="mbList('seller', lstActiveProp).unloaded"><button class="btn-outline" @click="mbLoad('seller', lstActiveProp)" style="font-size:12px;padding:6px 12px;">Show saved briefs</button></div>
+                  <div v-else-if="mbList('seller', lstActiveProp).loading" style="font-size:13px;color:#6b7280;">Loading saved briefs&hellip;</div>
+                  <div v-else-if="mbList('seller', lstActiveProp).error" style="font-size:13px;color:#dc2626;">{{ mbList('seller', lstActiveProp).error }}</div>
+                  <div v-else-if="!mbList('seller', lstActiveProp).rows.length" style="font-size:13px;color:#9ca3af;">No briefs saved yet.</div>
+                  <div v-for="r in mbList('seller', lstActiveProp).rows" :key="r.id" class="mp-result-item" @click="mbOpenSaved(r, 'seller', lstActiveProp)" style="display:flex;gap:12px;align-items:flex-start;">
+                    <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
+                    <div style="flex:1;min-width:0;">
+                      <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                      <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -9346,7 +9424,8 @@ createApp({
       extraContext: '', brief: null, error: '',
       webResearch: null, researchStatus: '',
       confirming: false, contactContext: '', researchPreview: null,
-      liShots: [], liText: '', liError: ''
+      liShots: [], liText: '', liError: '', notice: '',
+      target: null, viewingSaved: null
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -9404,31 +9483,33 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         mp.searchResults = await fubSearchPerson(mp.query);
         if (mp.searchResults.length === 0) {
-          // Not in FUB — run web research on the typed name anyway
+          // Not in FUB: go to the ready screen, do NOT generate. The agent may
+          // still want to add context or LinkedIn screenshots first.
           mp.searching = false;
           mpSelectedPersonFallback();
-          await mpStart();
+          mp.notice = 'Not found in Follow Up Boss. Add anything you know and any LinkedIn screenshots, then tap Generate My Brief.';
           return;
         }
       } catch(e) {
-        // FUB unreachable — still proceed with web research
+        // FUB unreachable: same ready screen, and say why
         mp.searchResults = [];
         mp.searching = false;
         mpSelectedPersonFallback();
-        await mpStart();
+        mp.notice = 'Follow Up Boss did not respond, so there is no CRM history in this brief. Add anything you know and any LinkedIn screenshots, then tap Generate My Brief.';
+        console.warn('Meeting Prep FUB search failed:', e);
         return;
       }
       mp.searching = false;
     }
 
     async function mpSelectPerson(person) {
-      mp.selectedPerson = person; mp.searchResults = []; mp.brief = null;
+      mp.selectedPerson = person; mp.searchResults = []; mp.brief = null; mp.notice = '';
     }
 
     // Phase 1: fetch FUB data + web research → show confirmation if found
     async function mpStart() {
       if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
-      mp.loading = true; mp.brief = null; mp.error = '';
+      mp.loading = true; mp.brief = null; mp.error = ''; mp.notice = '';
       mp.webResearch = null; mp.researchStatus = '';
       mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
@@ -9560,6 +9641,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const jsonMatch = raw.match(/\{[\s\S]*\}/);
         mp.brief = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
         if (!mp.brief) throw new Error('Could not generate brief. Please try again.');
+        if (mp.target) mbSave(mp.target);
       } catch(e) {
         mp.error = e.message || 'Generation failed. Check your API key in Settings.';
         console.error('Meeting Prep error:', e);
@@ -9608,7 +9690,126 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mpGenerate();
     }
 
-    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; }
+    // keepTarget === true only from the chip's Change button. A bare @click="mpReset"
+    // passes the click event, which is not === true, so New Search clears the target.
+    function mpReset(keepTarget) { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; mp.viewingSaved=null; if (keepTarget !== true) mp.target=null; mbAssign.query=''; mbAssign.saving=false; mbAssign.error=''; mbAssign.savedTo=null; }
+
+    // ── Meeting briefs saved to a buyer or seller ──────────────────────────
+    // Supabase table meeting_briefs (one row per brief; every brief is kept, newest
+    // first). Visible to anyone who can open the card. person_id is text because
+    // buyers and properties are different tables. property_notes cannot hold these:
+    // its property_id has a foreign key to properties, so buyer rows would be rejected.
+    const mbStore = reactive({});
+    const mbBuyerOpen = ref(false);
+    const mbAssign = reactive({ query: '', saving: false, error: '', savedTo: null });
+    function mbKey(type, id) { return type + ':' + id; }
+    function mbPersonName(type, rec) {
+      if (!rec) return '';
+      if (type === 'buyer') return rec.buyer_name || ((rec.first_name || '') + ' ' + (rec.last_name || '')).trim() || 'Buyer';
+      return rec.seller_name || rec.address || 'Seller';
+    }
+    function mbErrText(e, verb) {
+      const m = (e && e.message) ? e.message : String(e);
+      if (/404|does not exist|Could not find the table|relation/i.test(m)) return 'Saved briefs are not switched on yet: the meeting_briefs table is missing in Supabase. Ask Marc to run the one-time setup.';
+      return verb + ': ' + m;
+    }
+    function mbList(type, rec) {
+      if (!rec || !rec.id) return { loading: false, rows: [], error: '', unloaded: false };
+      return mbStore[mbKey(type, rec.id)] || { loading: false, rows: [], error: '', unloaded: true };
+    }
+    async function mbLoad(type, rec) {
+      if (!rec || !rec.id) return;
+      const k = mbKey(type, rec.id);
+      mbStore[k] = { loading: true, rows: (mbStore[k] && mbStore[k].rows) || [], error: '', unloaded: false };
+      try {
+        const rows = await supaRest.select('meeting_briefs', 'select=*&person_type=eq.' + type + '&person_id=eq.' + encodeURIComponent(String(rec.id)) + '&order=created_at.desc');
+        mbStore[k] = { loading: false, rows: rows || [], error: '', unloaded: false };
+      } catch(e) {
+        mbStore[k] = { loading: false, rows: [], error: mbErrText(e, 'Could not load saved briefs'), unloaded: false };
+      }
+    }
+    function mbFmtDate(iso) {
+      try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch(e) { return iso || ''; }
+    }
+    async function mbSave(target) {
+      if (!target || !mp.brief) return;
+      mbAssign.saving = true; mbAssign.error = ''; mbAssign.savedTo = null;
+      try {
+        await supaRest.insert('meeting_briefs', {
+          person_type: target.type,
+          person_id: String(target.id),
+          person_name: target.name,
+          subject_name: (mp.selectedPerson && mp.selectedPerson.name) || mp.query || target.name,
+          agent_name: agentName.value || '',
+          brief: mp.brief,
+          sources: {
+            crm: !!(mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999),
+            linkedin_screenshots: mp.liShots.length,
+            web: !!mp.webResearch
+          }
+        });
+        mbAssign.savedTo = { type: target.type, id: target.id, name: target.name };
+        mbLoad(target.type, { id: target.id });
+      } catch(e) {
+        mbAssign.error = mbErrText(e, 'Not saved');
+        console.error('meeting_briefs save failed:', e);
+      } finally {
+        mbAssign.saving = false;
+      }
+    }
+    const mbCandidates = computed(() => {
+      const q = mbAssign.query.trim().toLowerCase();
+      if (!q) return [];
+      const out = [];
+      (byrBuyers.value || []).forEach(b => {
+        const n = mbPersonName('buyer', b);
+        if (n.toLowerCase().indexOf(q) !== -1) out.push({ type: 'buyer', id: b.id, name: n, sub: 'Buyer' + (b.stage ? ' \u00b7 ' + b.stage : '') });
+      });
+      (lstProperties.value || []).forEach(pr => {
+        const n = mbPersonName('seller', pr);
+        if ((n + ' ' + (pr.address || '')).toLowerCase().indexOf(q) !== -1) out.push({ type: 'seller', id: pr.id, name: n, sub: 'Seller' + (pr.address ? ' \u00b7 ' + pr.address : '') });
+      });
+      return out.slice(0, 8);
+    });
+    function mbToggleSeller() {
+      lstToolOpen.value = lstToolOpen.value === 'meetingprep' ? null : 'meetingprep';
+      if (lstToolOpen.value === 'meetingprep') mbLoad('seller', lstActiveProp.value);
+    }
+    function mbToggleBuyer() {
+      mbBuyerOpen.value = !mbBuyerOpen.value;
+      if (mbBuyerOpen.value) mbLoad('buyer', byrActiveBuyer.value);
+    }
+    function mbAssignTo(c) { mp.target = { type: c.type, id: c.id, name: c.name }; mbAssign.query = ''; mbSave(mp.target); }
+    function goPrepFor(type, rec) {
+      if (!rec || !rec.id) return;
+      mpReset();
+      mp.target = { type: type, id: rec.id, name: mbPersonName(type, rec) };
+      mp.query = type === 'buyer' ? mbPersonName('buyer', rec) : (rec.seller_name || rec.address || '');
+      go('meeting-prep');
+      if (mp.query) nextTick(mpSearch);
+    }
+    function mbOpenSaved(row, type, rec) {
+      mpReset();
+      mp.target = { type: type, id: rec.id, name: mbPersonName(type, rec) };
+      mp.viewingSaved = row;
+      mp.selectedPerson = { id: null, name: row.subject_name || row.person_name || mp.target.name };
+      mp.brief = row.brief;
+      go('meeting-prep');
+      window.scrollTo(0, 0);
+    }
+    function mbBackToTarget() {
+      const t = mp.target;
+      if (!t) return;
+      if (t.type === 'buyer') {
+        const b = (byrBuyers.value || []).find(x => String(x.id) === String(t.id));
+        if (b) { byrOpenBuyer(b); mbBuyerOpen.value = true; mbLoad('buyer', b); return; }
+        go('buyer-package');
+      } else {
+        const pr = (lstProperties.value || []).find(x => String(x.id) === String(t.id));
+        if (pr) { lstOpenProperty(pr); lstToolOpen.value = 'meetingprep'; mbLoad('seller', pr); return; }
+        go('listings');
+      }
+    }
 
     // LinkedIn screenshots: the agent screenshots the person's profile in the
     // LinkedIn app and attaches it. LinkedIn blocks automated reading of profile
@@ -18444,6 +18645,7 @@ No markdown. Valid JSON only.`;
 
     async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
+      mbBuyerOpen.value = false;
       byrClaimAllTools(buyer.id);   // clears any tool, incl. the Needs Analysis on this card, that belonged to another buyer
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
@@ -20057,6 +20259,14 @@ const CHANGELOG = [
       {
         title: 'Attach a LinkedIn Profile Screenshot',
         detail: 'Pasting a LinkedIn link into Additional Context did not work: LinkedIn blocks automated tools from opening profile pages, so the brief never saw the profile. Now you can attach screenshots instead. FORWARD OS reads the name, headline, roles, About section and any visible posts, uses them to confirm it is researching the right person, and builds the DISC profile and talking points from what is actually on the profile.\n\nHow to use: Open the person\'s profile in the LinkedIn app. Take a screenshot of the top of the profile, then scroll and screenshot the About section and recent activity. In Meeting Prep, tap Add LinkedIn profile screenshot and pick them (up to 4). Then tap Generate My Brief.\n\nBest practice: Check the name on the screenshot matches the person you are meeting before you attach it. Two or three screenshots that include About and recent posts give a much better read than the header alone.'
+      },
+      {
+        title: 'Meeting Prep Waits for You',
+        detail: 'Meeting Prep used to start writing the brief the moment you searched a name that is not in Follow Up Boss, or right after you described someone by voice. That left no time to add what you know or attach LinkedIn screenshots. Now it stops on the ready screen with the name filled in and waits for you. Nothing is generated until you tap Generate My Brief.\n\nHow to use: Search or speak the name, add your notes and LinkedIn screenshots, then tap Generate My Brief. A contact that is not in Follow Up Boss shows "Not in Follow Up Boss" under the name.\n\nBest practice: Take your LinkedIn screenshots before you open Meeting Prep, so everything is ready to attach in one pass.'
+      },
+      {
+        title: 'Meeting Briefs Now Live on the Buyer or Seller',
+        detail: 'Every buyer and every seller now has a Meeting Prep section. Run a brief from there and it is saved to that person automatically, with the date and who ran it. Every brief is kept, newest first, so you can see how your read on someone changed between meetings. Anyone who can open the card can see its briefs, so a partner walking into the meeting has the same prep.\n\nIf you run Meeting Prep on its own, the finished brief shows a Save this brief to a buyer or seller box. Type the name or address and tap the match. The Prep buttons on the Dashboard now save to that buyer or listing too.\n\nHow to use: Open the buyer or listing, tap Meeting Prep, then Run Meeting Prep. Tap any saved brief to read it in full, and use Back to return to the card.\n\nBest practice: Run a fresh brief before each important meeting rather than reusing an old one. What they said last time is the best signal you have.'
       }
     ]
   }
@@ -21133,10 +21343,11 @@ async function voiceApplyFields() {
         const f = voiceModal.extractedFields;
         if (f.contactName) mp.query = f.contactName;
         if (f.additionalContext) mp.extraContext = f.additionalContext;
-        // If voice provided any context, auto-generate directly
+        // Prefill and wait on the ready screen. Do not auto-generate: the agent
+        // may want to add context or LinkedIn screenshots first.
         if (f.additionalContext || f.contactName) {
           mpSelectedPersonFallback();
-          nextTick(() => mpStart());
+          mp.notice = 'Ready when you are. Add anything else you know and any LinkedIn screenshots, then tap Generate My Brief.';
         }
       });
       voiceClose();
@@ -22568,9 +22779,10 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
         nextTick(() => {
           if (f.contactName)       mp.query       = f.contactName;
           if (f.additionalContext) mp.extraContext = f.additionalContext;
+          // Prefill and wait; never auto-generate (see the other voice path)
           if (f.additionalContext || f.contactName) {
             mpSelectedPersonFallback();
-            nextTick(() => mpStart());
+            mp.notice = 'Ready when you are. Add anything else you know and any LinkedIn screenshots, then tap Generate My Brief.';
           }
         });
       }
@@ -22687,6 +22899,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
       fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, fubUsersList, saveFubKey, clearFubKey, fubSyncUsers,
       goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback, mpAddLinkedInShots, mpRemoveLinkedInShot,
+      goPrepFor, mbList, mbLoad, mbFmtDate, mbAssign, mbCandidates, mbAssignTo, mbSave, mbOpenSaved, mbBackToTarget, mbBuyerOpen, mbToggleSeller, mbToggleBuyer,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
