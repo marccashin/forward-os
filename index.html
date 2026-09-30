@@ -3248,10 +3248,11 @@ body {
                   <div><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="12,2 17,7 17,11 12,15 7,11 7,7" fill="#0d1f35"/><polygon points="3,22 5,16 9,14 15,14 19,16 21,22" fill="#0d1f35"/></svg></div>
                   <div style="flex:1;">
                     <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:#fff;">{{ mp.selectedPerson.name }}</div>
-                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">{{ mp.selectedPerson.email || mp.selectedPerson.stage || 'Follow Up Boss contact' }}</div>
+                    <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">{{ mp.selectedPerson.email || mp.selectedPerson.stage || (mp.selectedPerson.id ? 'Follow Up Boss contact' : 'Not in Follow Up Boss') }}</div>
                   </div>
                   <button @click="mpReset" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px;">✕ Change</button>
                 </div>
+                <div v-if="mp.notice" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:8px;padding:10px 14px;margin:-4px 0 14px;line-height:1.5;">{{ mp.notice }}</div>
               </template>
 
               <!-- Extra context textarea -->
@@ -9346,7 +9347,7 @@ createApp({
       extraContext: '', brief: null, error: '',
       webResearch: null, researchStatus: '',
       confirming: false, contactContext: '', researchPreview: null,
-      liShots: [], liText: '', liError: ''
+      liShots: [], liText: '', liError: '', notice: ''
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -9404,31 +9405,33 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       try {
         mp.searchResults = await fubSearchPerson(mp.query);
         if (mp.searchResults.length === 0) {
-          // Not in FUB — run web research on the typed name anyway
+          // Not in FUB: go to the ready screen, do NOT generate. The agent may
+          // still want to add context or LinkedIn screenshots first.
           mp.searching = false;
           mpSelectedPersonFallback();
-          await mpStart();
+          mp.notice = 'Not found in Follow Up Boss. Add anything you know and any LinkedIn screenshots, then tap Generate My Brief.';
           return;
         }
       } catch(e) {
-        // FUB unreachable — still proceed with web research
+        // FUB unreachable: same ready screen, and say why
         mp.searchResults = [];
         mp.searching = false;
         mpSelectedPersonFallback();
-        await mpStart();
+        mp.notice = 'Follow Up Boss did not respond, so there is no CRM history in this brief. Add anything you know and any LinkedIn screenshots, then tap Generate My Brief.';
+        console.warn('Meeting Prep FUB search failed:', e);
         return;
       }
       mp.searching = false;
     }
 
     async function mpSelectPerson(person) {
-      mp.selectedPerson = person; mp.searchResults = []; mp.brief = null;
+      mp.selectedPerson = person; mp.searchResults = []; mp.brief = null; mp.notice = '';
     }
 
     // Phase 1: fetch FUB data + web research → show confirmation if found
     async function mpStart() {
       if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
-      mp.loading = true; mp.brief = null; mp.error = '';
+      mp.loading = true; mp.brief = null; mp.error = ''; mp.notice = '';
       mp.webResearch = null; mp.researchStatus = '';
       mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
@@ -9608,7 +9611,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mpGenerate();
     }
 
-    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; }
+    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; }
 
     // LinkedIn screenshots: the agent screenshots the person's profile in the
     // LinkedIn app and attaches it. LinkedIn blocks automated reading of profile
@@ -20057,6 +20060,10 @@ const CHANGELOG = [
       {
         title: 'Attach a LinkedIn Profile Screenshot',
         detail: 'Pasting a LinkedIn link into Additional Context did not work: LinkedIn blocks automated tools from opening profile pages, so the brief never saw the profile. Now you can attach screenshots instead. FORWARD OS reads the name, headline, roles, About section and any visible posts, uses them to confirm it is researching the right person, and builds the DISC profile and talking points from what is actually on the profile.\n\nHow to use: Open the person\'s profile in the LinkedIn app. Take a screenshot of the top of the profile, then scroll and screenshot the About section and recent activity. In Meeting Prep, tap Add LinkedIn profile screenshot and pick them (up to 4). Then tap Generate My Brief.\n\nBest practice: Check the name on the screenshot matches the person you are meeting before you attach it. Two or three screenshots that include About and recent posts give a much better read than the header alone.'
+      },
+      {
+        title: 'Meeting Prep Waits for You',
+        detail: 'Meeting Prep used to start writing the brief the moment you searched a name that is not in Follow Up Boss, or right after you described someone by voice. That left no time to add what you know or attach LinkedIn screenshots. Now it stops on the ready screen with the name filled in and waits for you. Nothing is generated until you tap Generate My Brief.\n\nHow to use: Search or speak the name, add your notes and LinkedIn screenshots, then tap Generate My Brief. A contact that is not in Follow Up Boss shows "Not in Follow Up Boss" under the name.\n\nBest practice: Take your LinkedIn screenshots before you open Meeting Prep, so everything is ready to attach in one pass.'
       }
     ]
   }
@@ -21133,10 +21140,11 @@ async function voiceApplyFields() {
         const f = voiceModal.extractedFields;
         if (f.contactName) mp.query = f.contactName;
         if (f.additionalContext) mp.extraContext = f.additionalContext;
-        // If voice provided any context, auto-generate directly
+        // Prefill and wait on the ready screen. Do not auto-generate: the agent
+        // may want to add context or LinkedIn screenshots first.
         if (f.additionalContext || f.contactName) {
           mpSelectedPersonFallback();
-          nextTick(() => mpStart());
+          mp.notice = 'Ready when you are. Add anything else you know and any LinkedIn screenshots, then tap Generate My Brief.';
         }
       });
       voiceClose();
@@ -22568,9 +22576,10 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
         nextTick(() => {
           if (f.contactName)       mp.query       = f.contactName;
           if (f.additionalContext) mp.extraContext = f.additionalContext;
+          // Prefill and wait; never auto-generate (see the other voice path)
           if (f.additionalContext || f.contactName) {
             mpSelectedPersonFallback();
-            nextTick(() => mpStart());
+            mp.notice = 'Ready when you are. Add anything else you know and any LinkedIn screenshots, then tap Generate My Brief.';
           }
         });
       }
