@@ -3260,6 +3260,19 @@ body {
                   <label>Additional Context (optional)</label>
                   <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. She's a corporate attorney, very data-driven. We met at a networking event last week. She's thinking about buying in Georgetown within 6 months." style="resize:vertical;min-height:130px;width:100%;box-sizing:border-box;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-m'}" @click="inlineMicToggle('mp-context-m',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
                 </div>
+                <div style="margin:-4px 0 14px;">
+                  <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy);border:1.5px dashed var(--gold);border-radius:10px;padding:10px 14px;touch-action:manipulation;">
+                    <span>＋ Add LinkedIn profile screenshot</span>
+                    <input type="file" accept="image/*" multiple style="display:none;" @change="mpAddLinkedInShots">
+                  </label>
+                  <div style="font-size:12px;color:#6b7280;margin-top:6px;line-height:1.5;">Open their profile in the LinkedIn app, screenshot the top and the About section, and attach them here (up to 4).</div>
+                  <div v-for="(shot, i) in mp.liShots" :key="i" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                    <img :src="'data:' + shot.type + ';base64,' + shot.data" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" alt="LinkedIn screenshot">
+                    <div style="flex:1;font-size:12px;color:#374151;">LinkedIn screenshot {{ i + 1 }}</div>
+                    <button @click="mpRemoveLinkedInShot(i)" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px;">✕ Remove</button>
+                  </div>
+                  <div v-if="mp.liError" style="font-size:12px;color:#dc2626;margin-top:6px;">{{ mp.liError }}</div>
+                </div>
                 <button class="btn-gold" @click="mpStart" :disabled="mp.loading" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
                   <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
                     <span class="wave-bar" style="height:8px; background:rgba(10,35,66,0.45);"></span>
@@ -3288,6 +3301,19 @@ body {
                 <div class="form-row" style="margin-top:12px;">
                   <label>Describe the person you're meeting</label>
                   <textarea v-model="mp.extraContext" rows="6" placeholder="e.g. Jane Doe, corporate attorney at a DC law firm. Very analytical. We met at a Corcoran event. Interested in buying in Capitol Hill. Has two kids, husband works in finance." style="resize:vertical;min-height:130px;width:100%;box-sizing:border-box;"></textarea><button class="ta-mic-btn" :class="{active:inlineMicActive==='mp-context-d'}" @click="inlineMicToggle('mp-context-d',()=>mp.extraContext,v=>mp.extraContext=v)" title="Dictate"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="1" width="6" height="11" rx="3"/><path d="M19 10v1a7 7 0 0 1-14 0v-1"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                </div>
+                <div style="margin:-4px 0 14px;">
+                  <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:600;color:var(--navy);border:1.5px dashed var(--gold);border-radius:10px;padding:10px 14px;touch-action:manipulation;">
+                    <span>＋ Add LinkedIn profile screenshot</span>
+                    <input type="file" accept="image/*" multiple style="display:none;" @change="mpAddLinkedInShots">
+                  </label>
+                  <div style="font-size:12px;color:#6b7280;margin-top:6px;line-height:1.5;">Open their profile in the LinkedIn app, screenshot the top and the About section, and attach them here (up to 4).</div>
+                  <div v-for="(shot, i) in mp.liShots" :key="i" style="display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 8px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;">
+                    <img :src="'data:' + shot.type + ';base64,' + shot.data" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" alt="LinkedIn screenshot">
+                    <div style="flex:1;font-size:12px;color:#374151;">LinkedIn screenshot {{ i + 1 }}</div>
+                    <button @click="mpRemoveLinkedInShot(i)" style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:13px;">✕ Remove</button>
+                  </div>
+                  <div v-if="mp.liError" style="font-size:12px;color:#dc2626;margin-top:6px;">{{ mp.liError }}</div>
                 </div>
                 <button class="btn-gold" @click="mpSelectedPersonFallback(); mpStart();" :disabled="mp.loading||!mp.extraContext.trim()" style="width:100%;min-height:52px;font-size:15px;margin-top:4px;">
                   <div v-if="mp.loading" style="display:flex;align-items:center;justify-content:center;gap:3px;height:22px;">
@@ -8700,6 +8726,19 @@ const FOS_MODEL_FAST  = 'claude-sonnet-5';
   } catch (e) {}
 })();
 
+// Join every text block in a Messages API response. The first block is not
+// always text, so reading content[0].text can return undefined and crash the
+// caller (Meeting Prep: "undefined is not an object (evaluating 'raw.match')").
+function claudeText(d) {
+  const blocks = (d && Array.isArray(d.content)) ? d.content : [];
+  const text = blocks.filter(b => b && b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('');
+  if (!text) {
+    const why = (d && d.stop_reason) ? d.stop_reason : 'unknown';
+    throw new Error('Claude returned no text (stop reason: ' + why + '). Please try again.');
+  }
+  return text;
+}
+
 async function claude(userPrompt, system = null, maxTokens = 16000, modelOverride = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
@@ -8717,7 +8756,7 @@ async function claude(userPrompt, system = null, maxTokens = 16000, modelOverrid
     throw new Error(msg);
   }
   const d = await res.json();
-  return d.content[0].text;
+  return claudeText(d);
 }
 
 async function claudeChat(messages, system = null) {
@@ -8737,7 +8776,7 @@ async function claudeChat(messages, system = null) {
     throw new Error(msg);
   }
   const d = await res.json();
-  return d.content[0].text;
+  return claudeText(d);
 }
 
 // ── Claude Vision API (for business card parsing) ─────────────────────────
@@ -8896,7 +8935,7 @@ function ldScrollChat() {
 }
 
 // ── Claude Vision API (for business card parsing) ─────────────────────────
-async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
+async function claudeVision(imageBase64, mediaType, textPrompt, system = null, maxTokens = 1024) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error('No Claude API key set.');
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
@@ -8904,7 +8943,7 @@ async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
     { type:'image', source:{ type:'base64', media_type: mediaType, data: imageBase64 } },
     { type:'text', text: textPrompt }
   ];
-  const body = { model, max_tokens: 1024, messages:[{ role:'user', content }] };
+  const body = { model, max_tokens: maxTokens, messages:[{ role:'user', content }] };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -8913,7 +8952,7 @@ async function claudeVision(imageBase64, mediaType, textPrompt, system = null) {
   });
   if (!res.ok) { let msg=`API error ${res.status}`; try{const e=await res.json();msg=e.error?.message||msg;}catch{} throw new Error(msg); }
   const d = await res.json();
-  return d.content[0].text;
+  return claudeText(d);
 }
 
 // ── Follow Up Boss API helpers ─────────────────────────────────────────────
@@ -9306,7 +9345,8 @@ createApp({
       searchResults: [], selectedPerson: null,
       extraContext: '', brief: null, error: '',
       webResearch: null, researchStatus: '',
-      confirming: false, contactContext: '', researchPreview: null
+      confirming: false, contactContext: '', researchPreview: null,
+      liShots: [], liText: '', liError: ''
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -9397,6 +9437,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
       }
       try {
+        // Step 0: read any LinkedIn screenshots the agent attached
+        if (mp.liShots.length && !mp.liText) {
+          mp.researchStatus = 'Reading LinkedIn screenshot' + (mp.liShots.length > 1 ? 's' : '') + '\u2026';
+          try {
+            mp.liText = await mpReadLinkedInShots();
+          } catch(e) {
+            mp.loading = false; mp.researchStatus = '';
+            mp.error = 'Could not read the LinkedIn screenshot: ' + (e.message || e) + ' Remove it or try again.';
+            console.error('Meeting Prep LinkedIn read error:', e);
+            return;
+          }
+        }
         // Step 1 — FUB data
         let contactContext = '';
         if (mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999) {
@@ -9425,7 +9477,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
               method: 'POST',
               headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ name: personName, agent_context: mp.extraContext.trim() }),
+              body: JSON.stringify({ name: personName, agent_context: mpResearchContext() }),
               signal: AbortSignal.timeout(30000)
             });
             if (researchResp.ok) {
@@ -9499,6 +9551,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const personName = (mp.selectedPerson?.name || mp.query || '').trim();
         const prompt = [
           contactContext ? 'CRM DATA:\n' + contactContext : '',
+          mp.liText ? 'LINKEDIN PROFILE (read from screenshots the agent took of this person\'s profile; if the name shown does not match the contact, say so in the summary and do not rely on it):\n' + mp.liText : '',
           webCtx,
           mp.extraContext.trim() ? 'ADDITIONAL CONTEXT FROM AGENT:\n' + mp.extraContext.trim() : ''
         ].filter(Boolean).join('\n\n') || ('Contact: ' + (personName || mp.query));
@@ -9530,7 +9583,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ name: personName, agent_context: mp.extraContext.trim() }),
+          body: JSON.stringify({ name: personName, agent_context: mpResearchContext() }),
           signal: AbortSignal.timeout(30000)
         });
         if (researchResp.ok) {
@@ -9555,7 +9608,59 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mpGenerate();
     }
 
-    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; }
+    function mpReset() { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; }
+
+    // LinkedIn screenshots: the agent screenshots the person's profile in the
+    // LinkedIn app and attaches it. LinkedIn blocks automated reading of profile
+    // pages, so a screenshot is the reliable way to get the real profile.
+    const MP_LI_MAX = 4;
+    const MP_LI_PROMPT = 'This is a screenshot of a LinkedIn profile, possibly one of several from the same profile. Transcribe what it shows as plain text: the person\'s name exactly as shown, headline, location, current and past roles with companies and dates, education, the About section, and any posts or activity visible (topics, tone, how often they post). Only write what is visible in the image. Do not guess or add anything. If it is not a LinkedIn profile, reply with exactly: NOT A LINKEDIN PROFILE';
+    function mpShrinkImage(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+          const maxSide = 2000;
+          const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+          const w = Math.round(img.naturalWidth * scale), h = Math.round(img.naturalHeight * scale);
+          const c = document.createElement('canvas'); c.width = w; c.height = h;
+          c.getContext('2d').drawImage(img, 0, 0, w, h);
+          URL.revokeObjectURL(url);
+          resolve(c.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('That file could not be opened as an image.')); };
+        img.src = url;
+      });
+    }
+    async function mpAddLinkedInShots(event) {
+      const files = Array.from((event.target && event.target.files) || []);
+      event.target.value = '';
+      mp.liError = '';
+      for (const f of files) {
+        if (mp.liShots.length >= MP_LI_MAX) { mp.liError = 'Up to ' + MP_LI_MAX + ' screenshots per brief.'; break; }
+        try {
+          const data = await mpShrinkImage(f);
+          mp.liShots.push({ name: f.name || 'Screenshot', data: data, type: 'image/jpeg' });
+          mp.liText = '';
+        } catch(e) { mp.liError = e.message || 'Could not add that screenshot.'; }
+      }
+    }
+    function mpRemoveLinkedInShot(i) { mp.liShots.splice(i, 1); mp.liText = ''; mp.liError = ''; }
+    async function mpReadLinkedInShots() {
+      const parts = [];
+      for (let i = 0; i < mp.liShots.length; i++) {
+        const shot = mp.liShots[i];
+        const txt = (await claudeVision(shot.data, shot.type, MP_LI_PROMPT, null, 2048)).trim();
+        if (txt === 'NOT A LINKEDIN PROFILE') throw new Error('Screenshot ' + (i + 1) + ' does not look like a LinkedIn profile.');
+        parts.push(txt);
+      }
+      return parts.join('\n\n');
+    }
+    function mpResearchContext() {
+      const bits = [mp.extraContext.trim()];
+      if (mp.liText) bits.push('LinkedIn profile (read from a screenshot the agent took; use it to confirm you have the right person):\n' + mp.liText.slice(0, 3000));
+      return bits.filter(Boolean).join('\n\n');
+    }
     function mpSelectedPersonFallback() { mp.selectedPerson = { id: null, name: mp.query || 'Contact' }; }
 
     async function saveFubKey() {
@@ -19938,6 +20043,22 @@ const CHANGELOG = [
         detail: 'Off-street parking is worth real money in DC and almost nothing in the suburbs, where nearly every house has a driveway. The CMA now handles that difference for you.\n\nThe subject has a new Driveway Spaces box, and every comp\'s Parking cell now has two boxes: garage spaces, then driveway spaces. MLS imports fill the driveway box from the Bright sheet. When the subject is in DC, each driveway space is worth $15,000, counting the first 2 spaces only. Outside DC a driveway adds nothing. The figure is fixed; there is no box to change it.\n\nIf a comp\'s driveway box is blank, the CMA treats the count as unknown and makes no driveway adjustment for that comp. Only a number, including 0, is compared. An import that finds a driveway but no count leaves the box blank and marks it CHECK THIS.\n\nHow to use: Enter the subject\'s driveway spaces. For each comp, check the second Parking box. Type 0 when you know a comp has no driveway.\n\nBest practice: In DC, confirm driveway counts on the comps that matter most before you send a CMA. A wrong count moves the value $15,000 per space.'
       }
     ]
+  },
+  {
+    id: 'v2026-09-30',
+    date: 'September 30, 2026',
+    title: 'Meeting Prep Reads LinkedIn Screenshots',
+    summary: 'Meeting Prep no longer fails with a technical error, and you can now attach screenshots of the person\'s LinkedIn profile so the brief is built from their real profile.',
+    updates: [
+      {
+        title: 'Meeting Prep Error Fixed',
+        detail: 'Some briefs stopped with a red message that read "undefined is not an object (evaluating \'raw.match\')". That was a bug in how FORWARD OS read the AI\'s reply, not anything you typed. It is fixed, and it was fixed for every tool that uses the same connection. If the AI ever returns nothing usable, you now get a plain message asking you to try again.\n\nHow to use: Nothing changes. Generate your brief as before.\n\nBest practice: If you see an error, tap Generate once more before reporting it, and send a screenshot if it happens twice.'
+      },
+      {
+        title: 'Attach a LinkedIn Profile Screenshot',
+        detail: 'Pasting a LinkedIn link into Additional Context did not work: LinkedIn blocks automated tools from opening profile pages, so the brief never saw the profile. Now you can attach screenshots instead. FORWARD OS reads the name, headline, roles, About section and any visible posts, uses them to confirm it is researching the right person, and builds the DISC profile and talking points from what is actually on the profile.\n\nHow to use: Open the person\'s profile in the LinkedIn app. Take a screenshot of the top of the profile, then scroll and screenshot the About section and recent activity. In Meeting Prep, tap Add LinkedIn profile screenshot and pick them (up to 4). Then tap Generate My Brief.\n\nBest practice: Check the name on the screenshot matches the person you are meeting before you attach it. Two or three screenshots that include About and recent posts give a much better read than the header alone.'
+      }
+    ]
   }
 
 ];
@@ -22565,7 +22686,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       saveKey, clearKey, saveModel, saveBranding, bpHandleUpload, bpRemove,
       adminKeyAgent, adminKeyValue, showAdminKey, adminKeyStatus, adminRefreshStatus, adminSaveKey, adminClearKey,
       fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, fubUsersList, saveFubKey, clearFubKey, fubSyncUsers,
-      goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback,
+      goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback, mpAddLinkedInShots, mpRemoveLinkedInShot,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
