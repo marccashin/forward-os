@@ -1,0 +1,107 @@
+{
+  "_note": "Bio, phone, email and testimonial are copied from each agent's own page (page 10) of their Canva listing presentation. Do not write new testimonials here: only paste ones a client actually gave.",
+  "agents": [
+    {
+      "slug": "marc-cashin",
+      "name": "Marc Cashin",
+      "first": "Marc",
+      "phone": "202.900.3126",
+      "email": "marc.cashin@corcoranmce.com",
+      "photo_position": "50% 30%",
+      "bio": [
+        "Marc Cashin is a licensed real estate broker and Realtor® in Washington, DC, Maryland, and Virginia. Prior to a career in real estate, Marc spent 12 years as a Baltimore City Firefighter, member of the Special Operations Command, and Urban Search and Rescue Team.",
+        "In addition to leading a top-producing real estate team with total sales over 300 Million dollars, Marc is also Chief Operating Officer of Search Real Estate Group, a national network of highly specialized and curated real estate agents designed to facilitate the sale and purchase of real estate assets across multiple markets. Additionally, Marc served as the Chief Marketing Officer for Search Media Group, a company that oversees and runs social media and digital marketing for numerous real estate agents, companies, and organizations."
+      ],
+      "quotes_heading": "What People Say",
+      "quotes": [
+        {
+          "text": "Marc isn't your average real estate agent. His charisma and leadership skills, matched with a curious mind, make your real estate journey seamless and personalized. He's rock solid on reliability - always timely, always prepared. His unique taste in the arts means he knows how to bring out the unique charm in every property. Marc's combination of commitment, consistency, and vibrant personality will elevate your real estate experience to new heights.",
+          "by": "Ryan Serhant",
+          "by_note": "Founder & CEO of SERHANT."
+        }
+      ]
+    },
+    {
+      "slug": "ashling-mcgowan",
+      "name": "Ashling McGowan",
+      "first": "Ashling",
+      "phone": "202.779.6263",
+      "email": "ash.mcgowan@corcoranmce.com",
+      "photo_position": "50% 20%",
+      "bio": [
+        "Born and raised in the picturesque countryside of Ireland, Ashling's journey to becoming a trusted real estate professional is as unique as her Irish accent. After completing her education in Ireland, Ashling made the life-changing decision to relocate to the United States, settling in the beautiful state of Virginia.",
+        "Once in Virginia, Ashling embarked on a journey to become a licensed real estate agent. Her dedication and commitment to excellence led her to obtain licenses in Virginia, Maryland, and the bustling real estate market of Washington, D.C. This multi-state licensing allows Ashling to offer her clients a broad spectrum of opportunities across three of the nation's most dynamic and competitive regions."
+      ],
+      "quotes_heading": "What Clients Say",
+      "quotes": [
+        {
+          "text": "We've had the pleasure of working twice with Ash over the past couple of years. I can't praise her enough. She's friendly, trustworthy, and highly competent, everything you would want in a realtor. She was aggressive and creative in recently marketing a property for us in a relatively slow market, leading to a sale within a surprisingly short time. She handled so many details of preparing our property for sale and really reduced our stress level through the whole process. I wholeheartedly recommend Ash to anyone needing a realtor. You'll be in great hands.",
+          "by": "Debra and John M."
+        }
+      ]
+    },
+    {
+      "slug": "niki-lang",
+      "name": "Niki Lang",
+      "first": "Niki",
+      "phone": "202.905.8828",
+      "email": "niki.lang@corcoranmce.com",
+      "photo_position": "50% 40%",
+      "bio": [
+        "Niki brings a unique mix of hospitality expertise and market savvy to her real estate practice. Beginning as a sommelier, to later stepping in as a partner to open a nationally recognized wine bar, her focus is on the power of creating meaningful, personal experiences; something she carries through her professional journey.",
+        "Niki also serves as CEO and founder of DC Motorsport Community (DCMC), where she leads a growing network that celebrates motorsport culture and builds connections among enthusiasts across the region.",
+        "Drawing on her deep knowledge of DC and her hospitality background, Niki now delivers a personalized, concierge-style experience for buyers and sellers. She engages with a community that values precision, inclusivity, and elevated experiences; qualities she brings to her real estate clients as well."
+      ],
+      "quotes_heading": "What Clients Say",
+      "quotes": [
+        {
+          "text": "If I could give 6 stars, I would. Niki was excellent to work with. Very professional, responsible, responsive, and pleasant. All the things you need for a selling realtor. She was very patient during the entire process and gave excellent advice when to put my condo on the market and how to negotiate for the best selling price. I would highly recommend her to anyone that's trying to either sell a home or buy one. You simply ROCK! Thank you for making this an awesome experience!!!!",
+          "by": "Dwayne E."
+        }
+      ]
+    },
+    {
+      "slug": "cesar-rivera",
+      "name": "Cesar Rivera",
+      "first": "Cesar",
+      "phone": "202.878.2897",
+      "email": "cesar.rivera@corcoranmce.com",
+      "photo_position": "72% 30%",
+      "bio": [
+        "Originally from Brooklyn, New York, Cesar Rivera built his career by helping people make big decisions with confidence. After moving to the D.C. area in 2014, he sold more than 250 homes for one of the top home builders along the Northeast corridor before launching his real estate career in 2018. His background in sales, combined with a natural ability to connect with people, allows him to create clarity in moments that matter most for buyers and sellers across Washington, D.C., Maryland, and Virginia.",
+        "Cesar is driven by curiosity and growth. He stays immersed in artificial intelligence, fitness, and personal development, and he is a founding member of Black Golf D.C., a community focused on expanding access and inclusion within the golf world."
+      ],
+      "quotes_heading": "What Clients Say",
+      "quotes": [
+        {
+          "text": "Absolutely the best real estate agent you could ever work with. Cesar responded to our emails, provided documentation, and handled all closing related requests instantly. His responses to what was needed for closing was faster than I could have ever asked for; even late at night and early in the morning. Out of all the agents we have worked with in the last 30 years, Cesar beat each one hands down. We were extremely lucky to have an agent who knew the market, the property he was selling, and how to make a deal work. Kudos, Cesar! We will be getting you involved in our next sale or purchase.",
+          "by": "Morris S."
+        }
+      ]
+    },
+    {
+      "slug": "charlotte-lee",
+      "approved_original": true,
+      "name": "Charlotte Lee",
+      "first": "Charlotte",
+      "phone": "202.258.6608",
+      "email": "charlotte.lee@corcoranmce.com",
+      "photo_position": "50% 50%",
+      "bio": [
+        "Charlotte brings a blend of local expertise, marketing strategy, and a genuine passion for helping sellers get the most from their homes. Originally from Singapore and raised in the DMV, she has called neighborhoods like Vienna, Alexandria, Arlington, Annandale, and the Wharf in DC home. Having bought and sold her own homes in the area, and as an investment property owner, she knows firsthand what it means to invest in these communities. That experience puts her in a unique position to deliver what sellers need most: a client-first mindset, strategic marketing, and tactical negotiation to secure the best value for their home.",
+        "Before real estate, Charlotte spent more than ten years in digital marketing, including founding and running her own company. She built strategic campaigns for clients, measured what worked, and tracked return on every dollar spent. Running her own business also made her a sharp negotiator, always pushing for the best price on every deal. Today she brings that same discipline to every listing: understanding who your buyer is, what will move them, and how to put your home in front of them with a clear, compelling story, then negotiating to get you the strongest possible offer."
+      ],
+      "quotes_heading": "What Clients Say",
+      "quotes": [
+        {
+          "text": "Charlotte truly went above and beyond throughout our entire experience. When we couldn't make appointments, Charlotte stepped in and handled things to keep the process moving. Most importantly, we truly trusted Charlotte and always felt she was on our side every step of the way. Her professionalism, her responsiveness, and her personal investment made all the difference.",
+          "by": "Scott & Regina B."
+        },
+        {
+          "text": "Charlotte was outstanding in deftly and successfully guiding two listings (in 'low season') for my sister and me. She took charge and went beyond the call of duty, even making herself available to oversee a repair when we couldn't make it. Kudos to her and I would recommend her to anyone looking to sell, rent or purchase a place in NOVA. She is a STAR!",
+          "by": "Preeti A."
+        }
+      ]
+    }
+  ]
+}
