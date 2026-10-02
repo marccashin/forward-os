@@ -2800,5 +2800,21 @@ async function findComps() {
 })();
 </script>
 
+<!-- New-version check, shared with index.html. Update now saves the draft first. -->
+<script>
+window.FOS_UPDATE = {
+  page: '/cma-tool.html',
+  title: 'A new version of the CMA Builder is ready',
+  message: 'Finish the field you are in, then tap Update now. Your draft is saved first and reopens after the update.',
+  beforeReload: function () {
+    if (typeof _cmaLoaded === 'undefined' || !_cmaLoaded || _cmaLoadFailed) {
+      return Promise.reject(new Error('this draft never finished loading, so saving it could overwrite the real one'));
+    }
+    if (_autoSaveTimer) { clearTimeout(_autoSaveTimer); _autoSaveTimer = null; }
+    return _supaSave(_buildDraft(), false);
+  }
+};
+</script>
+<script src="/fos-update.js"></script>
 </body>
 </html>
