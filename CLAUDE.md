@@ -35,6 +35,12 @@
 - Show a success message only after the save went through. On failure, say what was not saved and why (`fosWhy(e)`), and leave the agent's text on screen.
 - Never `catch` a failed save with only `console.warn`. A new save gets a case in `ci/save-failure-test.js`.
 
+## No demo output, ever
+
+- No tool may show sample, mock or demo output. A tool that cannot do its job says why and produces nothing. Until Oct 3, 2026 three tools showed made-up output on a device with no AI key.
+- The AI key is checked by `fosCheckAiKey()` at sign-in, on page load and on agent switch. It is the only place the key is looked up. `aiKey.state` drives the red notice on every screen.
+- Agents cannot add their own key: the key boxes in Settings are shown to Marc only. Never tell an agent to "add your key in Settings".
+
 ## Branches
 
 - `main` — production (Netlify)
@@ -56,7 +62,8 @@ GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`
 
 - `ci/offers-test.js`: the Offer Tracker against a made-up `buyer_offers` table, as several devices at once. A failed save is shown, a retry never duplicates, a removed offer never comes back.
 - `ci/save-failure-test.js`: runs each save with the cloud working and with every write failing. A success message may appear only when the save went through.
-- `ci/meeting-prep-test.js`: a Meeting Prep brief says when online research did not run, research slower than 30 seconds is still used, and the built-in example brief is labelled SAMPLE and cannot be saved. One case waits 33 seconds on purpose.
+- `ci/meeting-prep-test.js`: a Meeting Prep brief says when online research did not run and research slower than 30 seconds is still used. One case waits 33 seconds on purpose.
+- `ci/ai-key-test.js`: the AI key check at sign-in. No notice when a key is there; a red notice on every screen when it is not; with no key the tools produce nothing and say why.
 
 The first two compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
 

@@ -7,8 +7,7 @@
  * the online research service answering in each way it can: found something,
  * an error, "not configured", found nothing, and slow (33 seconds: longer
  * than the old 30 second limit, shorter than the backend's 45). It reads what
- * the agent would see on the brief. It also checks the built-in example brief
- * shown on a device with no AI key: labelled as a sample, never saved.
+ * the agent would see on the brief.
  *
  * SAFETY: never touches production. Every request is intercepted.
  * One case waits 33 seconds on purpose.
@@ -86,7 +85,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       if (offered && step === 'skip') { st.mpSkipResearch(); }
       for (let i = 0; i < 100 && (st.mp.loading || !st.mp.brief) && !st.mp.error; i++) await new Promise(r => setTimeout(r, 100));
       await new Promise(r => setTimeout(r, 150));
-      return { offered, kind: st.mp.researchKind, note: st.mp.researchNote, sample: st.mp.isSample, error: st.mp.error, text: document.querySelector('#app').innerText };
+      return { offered, kind: st.mp.researchKind, note: st.mp.researchNote, error: st.mp.error, text: document.querySelector('#app').innerText };
     }, step || 'use');
   }
   const NO_RESEARCH = /Online research did not run/;
@@ -133,19 +132,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   r = await brief(page, 'slow33', 'use');
   ok(r.offered && /Web research used/i.test(r.text) && !NO_RESEARCH.test(r.text), 'research that arrives at 33 seconds is used, not thrown away', [r.offered, r.kind, r.note]);
 
-  console.log('Device with no AI key: the built-in example brief');
-  const noKey = await device(false);
-  r = await brief(noKey, 'found');
-  ok(r.sample === true && /SAMPLE BRIEF/.test(r.text) && /NOT ABOUT GREG TEST/.test(r.text), 'labelled SAMPLE BRIEF, and says it is not about the contact', r.text.slice(0, 200));
-  ok(!NO_RESEARCH.test(r.text) && !/Web research used/i.test(r.text), 'no research line on a sample (there was no research either way)');
-  writes = [];
-  const sv = await noKey.evaluate(async () => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
-    st.mbAssignTo({ type: 'buyer', id: 'b-1', name: 'Buyer One' });
-    await new Promise(r => setTimeout(r, 400));
-    return st.mbAssign.error;
-  });
-  ok(!writes.some(w => /meeting_briefs/.test(w.u)) && /sample brief/i.test(sv), 'a sample brief cannot be saved to a buyer or seller', [sv, writes.length]);
+  // What happens on a device with no AI key is covered by ci/ai-key-test.js.
 
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();

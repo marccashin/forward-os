@@ -2246,10 +2246,30 @@ body {
       <!-- Page content -->
       <div class="content">
 
+        <!-- AI key notice. On EVERY screen, shown only when the sign-in check found no key. -->
+        <div v-if="aiKey.state==='missing' || aiKey.state==='unreachable'" style="background:#fef2f2;border:2px solid #dc2626;border-radius:2px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;line-height:1.55;">
+          <template v-if="aiKey.state==='missing'">
+            <strong style="letter-spacing:0.04em;">NO AI KEY FOR {{ (agentName || 'THIS LOGIN').toUpperCase() }}.</strong> The AI tools will not work until one is added: listing descriptions, Meeting Prep, the voice assistant, campaigns, offer strategy and the rest.<br>
+            <template v-if="agentName === 'Marc Cashin'">
+              <strong>To fix it:</strong> open Settings, paste the key into the Claude API Key box, and tap Save API Key.
+              <button @click="go('settings')" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Open Settings</button>
+            </template>
+            <template v-else>
+              <strong>To fix it:</strong> you cannot add the key yourself. Send Marc a screenshot of this notice. He adds it from his own login, in Settings, under Manage Team API Keys. Then tap Check again.
+              <button @click="fosCheckAiKey()" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Check again</button>
+            </template>
+          </template>
+          <template v-else>
+            <strong style="letter-spacing:0.04em;">FORWARD OS COULD NOT CHECK FOR YOUR AI KEY.</strong> The AI tools will not work on this device until it can. <span style="opacity:0.8;">({{ aiKey.msg }})</span><br>
+            <strong>To fix it:</strong> check your internet connection, then tap Check again. If it keeps failing, send Marc a screenshot of this notice.
+            <button @click="fosCheckAiKey()" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Check again</button>
+          </template>
+        </div>
+
         <!-- ============ DASHBOARD ============ -->
         <template v-if="view==='dashboard'">
-          <!-- API Warning -->
-          <div v-if="!apiKeySet" class="api-warn-bar">
+          <!-- API Warning (replaced by the notice above, which shows on every screen) -->
+          <div v-if="false" class="api-warn-bar">
             <span style="font-size:16px;flex-shrink:0;">⚠</span>
             <div>
               <strong>Claude API Key Required</strong>
@@ -2644,7 +2664,7 @@ body {
               <!-- Chat header -->
               <div style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid #e5e7eb;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                  <h3 style="margin:0;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer <span v-if="ldMockMode && ldStarted" style="font-size:10px;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:4px;margin-left:4px;font-weight:600;text-transform:uppercase;">Demo</span></h3>
+                  <h3 style="margin:0;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;white-space:normal;">Listing Description Writer</h3>
                   <button v-if="ldStarted" @click="ldStartFresh()" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
                 </div>
                 <div v-if="ldOutput" :style="{fontSize:'11px',fontFamily:'Montserrat,sans-serif',fontWeight:600,letterSpacing:'.04em',marginBottom:'8px',padding:'6px 10px',borderRadius:'6px',background: ldCharCount > 4000 ? '#fef2f2' : '#f0fdf4',border: ldCharCount > 4000 ? '1px solid #fecaca' : '1px solid #bbf7d0',color: ldCharCount > 4000 ? '#b91c1c' : '#166534'}">{{ ldCharCount.toLocaleString() }} / 4,000 characters<span v-if="ldCharCount > 4000"> \u2014 over the MLS limit by {{ (ldCharCount - 4000).toLocaleString() }}. Ask for a shorter version before pasting.</span></div>
@@ -2672,7 +2692,7 @@ body {
                     <button v-else class="btn-gold" @click.stop="ldBegin()" :disabled="ldLoading" style="padding:12px 40px;font-size:15px;cursor:pointer;position:relative;z-index:10;">
                       <span class="spinner" v-if="ldLoading"></span><span v-else>Get Started</span>
                     </button>
-                    <p v-if="!apiKeySet" style="font-size:12px;color:#ef4444;margin:12px 0 0;">Note: Add your Claude API key in Settings before generating.</p>
+                    <p v-if="!apiKeySet" style="font-size:12px;color:#ef4444;margin:12px 0 0;">No AI key on this device. See the red notice at the top of the screen.</p>
                   </div>
                 </div>
                 <!-- Message bubbles -->
@@ -3391,12 +3411,6 @@ body {
             </div>
 
             <template v-if="mp.brief">
-              <!-- The built-in example shown when this device has no AI key. It must never pass for a real brief. -->
-              <div v-if="mp.isSample" style="background:#fef2f2;border:2px solid #dc2626;border-radius:2px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;line-height:1.55;">
-                <strong style="letter-spacing:0.06em;">SAMPLE BRIEF. NOT ABOUT {{ ((mp.selectedPerson && mp.selectedPerson.name) || mp.query || 'YOUR CONTACT').toUpperCase() }}.</strong><br>
-                Everything below is a made-up example about a made-up person. No real brief was written, because this device has no AI key. Add your key in Settings, then generate again. Do not use this in a meeting.
-                <button @click="go('settings')" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Open Settings</button>
-              </div>
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
@@ -3434,13 +3448,13 @@ body {
                 <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Montserrat',sans-serif;font-size:7px;color:#6b7280;letter-spacing:0.04em;margin-left:2px;">{{ mp.webResearch.sources.join(' · ') }}</span>
               </div>
               <!-- When research was not used, say why. A brief without it must not look the same as one with it. -->
-              <div v-else-if="mp.researchKind==='failed' && !mp.isSample" style="background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.5;">
+              <div v-else-if="mp.researchKind==='failed'" style="background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.5;">
                 <strong>Online research did not run:</strong> {{ mp.researchNote || 'no reason given' }}. This brief uses only Follow Up Boss and what you entered.
               </div>
-              <div v-else-if="mp.researchKind==='nothing' && !mp.isSample" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
+              <div v-else-if="mp.researchKind==='nothing'" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
                 Online research ran and found nothing it could use about this person. This brief uses only Follow Up Boss and what you entered.
               </div>
-              <div v-else-if="mp.researchKind==='skipped' && !mp.isSample" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
+              <div v-else-if="mp.researchKind==='skipped'" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
                 Online research was skipped. This brief uses only Follow Up Boss and what you entered.
               </div>
 
@@ -8359,6 +8373,9 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEff
 // Set by doLogin() after fetching from Supabase — ensures key works on any device
 // without depending solely on localStorage reads in individual API calls.
 let _fosApiKey = '';
+// Shown by every AI tool when this device has no AI key. There is no demo or
+// sample output anywhere in the app: a tool with no key says this and stops.
+const FOS_NO_AI_KEY = 'No AI key on this device, so nothing was generated. See the red notice at the top of the screen.';
 
 // ── Campaign PDF font cache (module-level, survives across PDF generations) ──
 let _campFontCache = null;
@@ -8915,7 +8932,7 @@ function claudeText(d) {
 
 async function claude(userPrompt, system = null, maxTokens = 16000, modelOverride = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
-  if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
+  if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = modelOverride || localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: maxTokens, messages: [{ role:'user', content:userPrompt }] };
   if (system) body.system = system;
@@ -8935,7 +8952,7 @@ async function claude(userPrompt, system = null, maxTokens = 16000, modelOverrid
 
 async function claudeChat(messages, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
-  if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
+  if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: 4096, messages };
   if (system) body.system = system;
@@ -8956,7 +8973,7 @@ async function claudeChat(messages, system = null) {
 // ── Claude Vision API (for business card parsing) ─────────────────────────
 async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens = 16000) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
-  if (!key) throw new Error('No Claude API key set.');
+  if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model, max_tokens: maxTokens, stream: true, messages: [{ role: 'user', content: userPrompt }] };
   if (system) body.system = system;
@@ -9005,7 +9022,7 @@ const FOS_TYPE_MS = 15;
 // Pass model to pin a specific one; omit it to use the agent's setting.
 async function claudeChatStream(messages, system = null, onChunk = null, maxTokens = 4096, model = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
-  if (!key) throw new Error('No Claude API key set. Go to Settings to add yours.');
+  if (!key) throw new Error(FOS_NO_AI_KEY);
   const useModel = model || localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const body = { model: useModel, max_tokens: maxTokens, stream: true, messages: messages };
   if (system) body.system = system;
@@ -9111,7 +9128,7 @@ function ldScrollChat() {
 // ── Claude Vision API (for business card parsing) ─────────────────────────
 async function claudeVision(imageBase64, mediaType, textPrompt, system = null, maxTokens = 1024) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
-  if (!key) throw new Error('No Claude API key set.');
+  if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
   const content = [
     { type:'image', source:{ type:'base64', media_type: mediaType, data: imageBase64 } },
@@ -9520,6 +9537,43 @@ createApp({
 
     // API / Settings
     const apiKeySet    = ref(!!localStorage.getItem(agentKey('fos_key')));
+    // AI key check. state: 'ok' (a key is on this device: say nothing) |
+    // 'checking' | 'missing' (the cloud has no key for this agent) |
+    // 'unreachable' (the cloud could not be asked; msg says why).
+    // 'missing' and 'unreachable' put a red notice on every screen.
+    const aiKey = reactive({ state: 'ok', msg: '' });
+    // Runs at sign-in, on page load for a signed-in agent, and when an admin
+    // switches agent. The key in the cloud (agent_config) is the source of
+    // truth and is copied to this device. Before Oct 3, 2026 there were three
+    // copies of this lookup; each swallowed a failed lookup, and the tools
+    // then showed made-up demo output instead of saying the key was missing.
+    async function fosCheckAiKey() {
+      const name = agentName.value;
+      if (!name) return;
+      const local = localStorage.getItem(agentKeyFor('fos_key', name)) || '';
+      const useKey = k => { _fosApiKey = k; apiKeySet.value = !!k; settKey.value = k; ldMockMode.value = !k; };
+      useKey(local);
+      aiKey.msg = '';
+      aiKey.state = local ? 'ok' : 'checking';
+      if (!SUPABASE_URL) { aiKey.state = local ? 'ok' : 'missing'; return; }
+      try {
+        const rows = await supaRest.select('agent_config', 'select=claude_api_key&agent_name=eq.' + encodeURIComponent(name));
+        if (agentName.value !== name) return;   // signed out or switched while waiting
+        const remote = (rows && rows[0] && rows[0].claude_api_key) || '';
+        if (remote) {
+          localStorage.setItem(agentKeyFor('fos_key', name), remote);
+          useKey(remote);
+          aiKey.state = 'ok';
+        } else {
+          aiKey.state = local ? 'ok' : 'missing';
+        }
+      } catch (e) {
+        if (agentName.value !== name) return;
+        console.warn('Could not check the AI key:', e);
+        aiKey.state = local ? 'ok' : 'unreachable';
+        aiKey.msg = fosWhy(e) || 'no answer';
+      }
+    }
     const settKey      = ref(localStorage.getItem(agentKey('fos_key'))||'');
     // Meeting Prep
     const mp = reactive({
@@ -9533,9 +9587,7 @@ createApp({
       // researchKind: '' (research was used, or nothing to say) | 'failed' (it did
       // not run; researchNote says why) | 'nothing' (it ran and found nothing) |
       // 'skipped' (the agent chose Skip web data). Shown on the brief.
-      researchKind: '', researchNote: '',
-      // true while the brief on screen is the built-in example, not a real brief
-      isSample: false
+      researchKind: '', researchNote: ''
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -9570,25 +9622,17 @@ I (Influential): Social, enthusiastic, big-picture, relationship-driven. Build r
 S (Steady): Patient, loyal, risk-averse, values stability. Go slow, be warm, emphasize security and support.
 C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring facts, answer every question, be precise.`;
 
-    const MP_MOCK_BRIEF = {
-      disc: { type:'I', label:'Influential', description:'Enthusiastic, people-focused, driven by recognition and relationships', confidence:'medium', signals:'Active social presence, referred by a friend, notes mention community events' },
-      summary: 'Jane is a move-up buyer looking for more space for her family. She was referred by a mutual contact and responds well to personal connection. Excited about the process but may need reassurance on timing.',
-      talkingPoints: ['Ask about her family and what neighborhood features matter most', 'Share a success story with a similar family and the emotional outcome', 'Discuss school districts and community feel, not just square footage', 'Talk about current market conditions to create positive urgency'],
-      dos: ['Lead with warmth and personal connection before any business talk', 'Use stories — she responds to narratives more than data', 'Be enthusiastic and match her energy level', 'Follow up with a personal text not just an email'],
-      donts: ['Do not lead with market stats', 'Do not rush — she needs to feel heard before she will commit', 'Do not be too formal or transactional'],
-      opener: 'Jane, I am so glad we finally connected. Tell me more about what you are envisioning for the next chapter.',
-      goal: 'Leave with a clear sense of her timeline, budget, and a commitment to a second conversation or property tour.'
-    };
-
     function goPrep(ctx) { mp.query = ctx || ''; go('meeting-prep'); if (ctx) nextTick(mpSearch); }
     async function mpSearch() {
       if (!mp.query.trim()) return;
       mp.searching = true; mp.searchResults = []; mp.brief = null; mp.error = '';
-      const isMockMode = !localStorage.getItem('fos_fub_key');
-      if (isMockMode) {
-        await new Promise(r => setTimeout(r, 800));
-        mp.searchResults = [{ id: 99999, name: 'Jane Doe (Demo)', email: 'jane@example.com', phone: '202-555-0100', stage: 'Hot Lead' }];
-        mp.searching = false; return;
+      if (!localStorage.getItem('fos_fub_key')) {
+        // Follow Up Boss is not connected on this device. No made-up contact:
+        // go to the ready screen and say why there is no CRM history.
+        mp.searching = false;
+        mpSelectedPersonFallback();
+        mp.notice = 'Follow Up Boss is not connected on this device, so there is no CRM history in this brief. Add anything you know and any LinkedIn screenshots, then tap Generate My Brief.';
+        return;
       }
       try {
         mp.searchResults = await fubSearchPerson(mp.query);
@@ -9622,12 +9666,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mp.loading = true; mp.brief = null; mp.error = ''; mp.notice = '';
       mp.webResearch = null; mp.researchStatus = '';
       mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
-      mp.researchKind = ''; mp.researchNote = ''; mp.isSample = false;
-      const isMockMode = !localStorage.getItem(agentKey('fos_key'));
-      if (isMockMode) {
-        await new Promise(r => setTimeout(r, 2000));
-        mp.isSample = true;   // the screen labels it; it can never be saved to a card
-        mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
+      mp.researchKind = ''; mp.researchNote = '';
+      // No AI key: say so and stop. (This used to show a ready-made brief about
+      // a made-up person under the real contact's name.)
+      if (!(_fosApiKey || localStorage.getItem(agentKey('fos_key')))) {
+        mp.error = FOS_NO_AI_KEY; mp.loading = false; mp.researchStatus = ''; return;
       }
       try {
         // Step 0: read any LinkedIn screenshots the agent attached
@@ -9695,12 +9738,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
       mp.loading = true; mp.brief = null; mp.error = '';
       mp.confirming = false; mp.researchStatus = 'Generating your brief…';
-      mp.isSample = false;
-      const isMockMode = !localStorage.getItem(agentKey('fos_key'));
-      if (isMockMode) {
-        await new Promise(r => setTimeout(r, 2000));
-        mp.isSample = true;
-        mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
+      if (!(_fosApiKey || localStorage.getItem(agentKey('fos_key')))) {
+        mp.error = FOS_NO_AI_KEY; mp.loading = false; mp.researchStatus = ''; return;
       }
       try {
         // Use pre-cached CRM context if available; otherwise re-fetch
@@ -9823,7 +9862,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // keepTarget === true only from the chip's Change button. A bare @click="mpReset"
     // passes the click event, which is not === true, so New Search clears the target.
-    function mpReset(keepTarget) { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; mp.viewingSaved=null; mp.researchKind=''; mp.researchNote=''; mp.isSample=false; if (keepTarget !== true) mp.target=null; mbAssign.query=''; mbAssign.saving=false; mbAssign.error=''; mbAssign.savedTo=null; }
+    function mpReset(keepTarget) { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; mp.viewingSaved=null; mp.researchKind=''; mp.researchNote=''; if (keepTarget !== true) mp.target=null; mbAssign.query=''; mbAssign.saving=false; mbAssign.error=''; mbAssign.savedTo=null; }
 
     // ── Meeting briefs saved to a buyer or seller ──────────────────────────
     // Supabase table meeting_briefs (one row per brief; every brief is kept, newest
@@ -9864,7 +9903,6 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     async function mbSave(target) {
       if (!target || !mp.brief) return;
-      if (mp.isSample) { mbAssign.error = 'This is the sample brief, not a real one, so it was not saved.'; return; }
       mbAssign.saving = true; mbAssign.error = ''; mbAssign.savedTo = null;
       try {
         await supaRest.insert('meeting_briefs', {
@@ -10349,27 +10387,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function quickSwitchAgent(name) {
       agentName.value = name;
       localStorage.setItem('fos_agent', name);
-      // Load the new agent's API key immediately from local cache
-      const _switchedKey = localStorage.getItem(agentKeyFor('fos_key', name)) || '';
-      settKey.value = _switchedKey;
-      _fosApiKey = _switchedKey;
-      apiKeySet.value = !!_switchedKey;
-      ldMockMode.value = !_switchedKey;
-      // Background Supabase fetch — overrides local if a cloud key exists
-      if (SUPABASE_URL) {
-        supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(name)}`)
-          .then(rows => {
-            const rk = rows && rows[0] && rows[0].claude_api_key;
-            if (rk) {
-              localStorage.setItem(agentKeyFor('fos_key', name), rk);
-              _fosApiKey = rk;
-              settKey.value = rk;
-              apiKeySet.value = true;
-              ldMockMode.value = false;
-            }
-          })
-          .catch(() => {});
-      }
+      // Load the new agent's AI key (device copy at once, then the cloud)
+      fosCheckAiKey();
       refreshPropFiles();
       go('dashboard');
     }
@@ -11418,7 +11437,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     return;
   }
   if (!_fosApiKey && !localStorage.getItem(agentKey('fos_key'))) {
-    showToast('Add your Claude API key in Settings before generating.', 5000);
+    showToast(FOS_NO_AI_KEY, 7000);
     return;
   }
   campGenerating.value = true;
@@ -12803,19 +12822,8 @@ async function lstSubmitToPipeline() {
         atLoadEntries(); // Load training docs on page refresh for already-logged-in users
         if (agentName.value === 'Marc Cashin' || agentName.value === 'Operations') loadWebhookErrors();
 
-        // Auto-recover Claude API key if missing from localStorage (e.g. after cache clear or fresh deploy)
-        if (!apiKeySet.value && agentName.value) {
-          try {
-            const rows = await supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(agentName.value)}`);
-            const remoteKey = rows && rows[0] && rows[0].claude_api_key;
-            if (remoteKey) {
-              localStorage.setItem(agentKeyFor('fos_key', agentName.value), remoteKey);
-              _fosApiKey = remoteKey;
-              apiKeySet.value = true;
-              settKey.value = remoteKey; // keep settings display in sync
-            }
-          } catch(e) { /* silent — user can re-enter manually in Settings */ }
-        }
+        // AI key check for an agent who was already signed in (page refresh, new deploy)
+        await fosCheckAiKey();
 
         // Reconcile the GLOBAL FUB key from Supabase on every load (source of truth).
         // Returning devices boot straight in via session restore and never run doLogin(),
@@ -20867,7 +20875,11 @@ const CHANGELOG = [
       },
       {
         title: 'Meeting Prep Tells You What It Could Not Check',
-        detail: 'A Meeting Prep brief now says plainly when online research was not part of it. Before, if the research failed or timed out, the brief was written anyway and looked the same as one backed by research. Now a yellow line under the name says Online research did not run and gives the reason, and a grey line says so when research ran and found nothing, or when you skipped it. Research also gets 60 seconds to finish instead of 30, so slower searches that used to be thrown away are now used. Separately, a device with no AI key used to show a ready-made example brief about a made-up person, with nothing marking it as an example. It is now labelled SAMPLE BRIEF in red and cannot be saved to a buyer or seller.\n\nHow to use: Generate a brief as usual and read the line under the name before the meeting. If it says research did not run, tap New Search and generate again, or add what you know in Additional Context. If you see SAMPLE BRIEF, open Settings, add your AI key, and generate again.\n\nBest practice: Treat a brief with no online research as a starting point only, and add LinkedIn screenshots when you can. Never take a SAMPLE BRIEF into a meeting.'
+        detail: 'A Meeting Prep brief now says plainly when online research was not part of it. Before, if the research failed or timed out, the brief was written anyway and looked the same as one backed by research. Now a yellow line under the name says Online research did not run and gives the reason, and a grey line says so when research ran and found nothing, or when you skipped it. Research also gets 60 seconds to finish instead of 30, so slower searches that used to be thrown away are now used.\n\nHow to use: Generate a brief as usual and read the line under the name before the meeting. If it says research did not run, tap New Search and generate again, or add what you know in Additional Context.\n\nBest practice: Treat a brief with no online research as a starting point only, and add LinkedIn screenshots when you can.'
+      },
+      {
+        title: 'No More Demo Answers, and a Clear Notice If Your AI Key Is Missing',
+        detail: 'FORWARD OS checks for your AI key as soon as you sign in. If the key is there, you see nothing and everything works as before. If it is missing, or FORWARD OS could not check for it, a red notice appears at the top of every screen and tells you exactly what to do. Before today, a device without a key quietly switched three tools into a demo mode: Meeting Prep showed a ready-made brief about a made-up person, the voice assistant answered with a made-up net sheet, and the Listing Description Writer produced a description of a different property. Those demo answers are gone. A tool with no key now says so and produces nothing.\n\nHow to use: If you see the red notice, follow the line that starts To fix it. Agents cannot add the key themselves: send Marc a screenshot, and tap Check again once he has added it. If the notice says FORWARD OS could not check, fix your internet connection and tap Check again.\n\nBest practice: Do not work around the notice. Nothing the AI tools produce is real until it is gone.'
       }
     ]
   }
@@ -21006,12 +21018,6 @@ Field keys: query (address as spoken)
 ━━ OFFER READBACK ━━
 Use when agent says: what offers do I have / read me my offers / how many offers on [address] / show me offers for [address].
 Field keys: query (address as spoken)`;
-
-const VOICE_MOCK_RESPONSE = {
-  tool: 'net-sheet',
-  fields: { address: '123 Demo Street, Washington DC', salePrice: '750000', jurisdiction: 'dc', sellerComp: '2.5', buyerComp: '2.5' },
-  missing: ['closingDate', 'loan1', 'propTaxAnnual', 'concession', 'hoaAmount']
-};
 
 const VOICE_FOLLOWUP_QUESTIONS = {
   'net-sheet': {
@@ -21327,12 +21333,15 @@ async function voiceParse() {
   voiceModal.parsing = true;
 
   let parsed;
-  const isMockMode = !localStorage.getItem(agentKey('fos_key'));
-
-  if (isMockMode) {
-    await new Promise(r => setTimeout(r, 1200));
-    parsed = VOICE_MOCK_RESPONSE;
-  } else {
+  // No AI key: say so and stop. (This used to answer every command with a
+  // made-up net sheet for "123 Demo Street" at $750,000.)
+  if (!(_fosApiKey || localStorage.getItem(agentKey('fos_key')))) {
+    voiceModal.parsing = false;
+    voiceModal.phase = 'error';
+    voiceModal.errorMsg = FOS_NO_AI_KEY;
+    return;
+  }
+  {
     try {
       let raw;
       if (voiceModal.imageData) {
@@ -22573,24 +22582,8 @@ async function dismissUpdates() {
       lib.value = await getLib();
       refreshPropFiles();
       loadTaskFeed();
-      // Check local cache first
-      let cachedKey = localStorage.getItem(agentKeyFor('fos_key', loginAgent.value)) || '';
-      apiKeySet.value = !!cachedKey;
-      settKey.value = cachedKey;
-      ldMockMode.value = !cachedKey;
-      _fosApiKey = cachedKey; // make key available to module-level API functions
-      // Then fetch from Supabase (device-independent) — overrides local cache if found
-      try {
-        const rows = await supaRest.select('agent_config', `select=claude_api_key&agent_name=eq.${encodeURIComponent(loginAgent.value)}`);
-        const remoteKey = rows && rows[0] && rows[0].claude_api_key;
-        if (remoteKey) {
-          localStorage.setItem(agentKeyFor('fos_key', loginAgent.value), remoteKey);
-          apiKeySet.value = true;
-          settKey.value = remoteKey;
-          ldMockMode.value = false;
-          _fosApiKey = remoteKey; // Supabase key wins — works on any device
-        }
-      } catch(e) { console.warn('Could not fetch agent key from Supabase:', e); }
+      // AI key check, before the agent uses anything
+      await fosCheckAiKey();
       // Load all shared global settings from Supabase (__global__ row)
       try {
         const globalRows = await supaRest.select('agent_config',
@@ -22698,6 +22691,7 @@ async function dismissUpdates() {
       apiKeySet.value = false;
       settKey.value = '';
       _fosApiKey = ''; // clear module-level key on logout
+      aiKey.state = 'ok'; aiKey.msg = '';
       view.value = 'dashboard';
     }
 
@@ -22709,6 +22703,7 @@ async function dismissUpdates() {
       apiKeySet.value = true;
       ldMockMode.value = false;
       _fosApiKey = key; // keep module-level key in sync
+      aiKey.state = 'ok'; aiKey.msg = '';
       // Also persist to Supabase so the key is available on any device
       try {
         await supaRest.upsert('agent_config', { agent_name: agentName.value, claude_api_key: key }, 'agent_name');
@@ -22721,6 +22716,7 @@ async function dismissUpdates() {
     async function clearKey() {
       localStorage.removeItem(agentKeyFor('fos_key', agentName.value));
       settKey.value = ''; apiKeySet.value = false; ldMockMode.value = true; _fosApiKey = '';
+      aiKey.state = 'missing'; aiKey.msg = '';
       try {
         await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.${encodeURIComponent(agentName.value)}`, { method:'PATCH', headers: { ...supaRest.headers() }, body: JSON.stringify({ claude_api_key: null }) }));
         showToast('API key cleared.');
@@ -22857,86 +22853,9 @@ async function dismissUpdates() {
     }
 
     // ── AI: Listing Description (Chat-based) ────────────────
+    // true when this device has no AI key. The name is historical: there is no mock or demo output any more.
     const ldMockMode = ref(!localStorage.getItem(agentKey('fos_key')));
     const ldStep = ref(0);
-
-    const MOCK_RESPONSES = [
-      // Step 0: Greeting
-      `Welcome! I'm the FORWARD listing description writer. I'll walk you through creating a compelling, story-driven description that sells your property's unique narrative.\n\nTo get started, what is the property address?`,
-      // Step 1: After address → ask for previous listing
-      `Great, thank you! Before I begin crafting something new, do you have a copy of a previous listing description for this property? If so, go ahead and paste it here. If not, just type "no" and we'll start fresh.`,
-      // Step 2: After previous listing → ask about upgrades
-      `Got it. Has the current owner made any recent upgrades or renovations to the property? Things like kitchen remodels, new systems (HVAC, roof, windows), bathroom updates, landscaping, smart home features, etc. Share whatever you know.`,
-      // Step 3: After upgrades → ask about buyer personas
-      `That's very helpful, thank you. One more question before I write: have you already developed the 5 buyer personas for this property?`,
-      // Step 4a: If YES → ask to paste personas
-      `Perfect. Go ahead and paste those 5 buyer personas here and I'll tailor the description to attract each of them.`,
-      // Step 4b/5: Generate final description (after personas provided or after "no")
-    ];
-
-    const MOCK_DESCRIPTION = `There is a particular kind of confidence that comes with living at The Ritz-Carlton Residences. It is not loud. It does not announce itself. It simply exists in the way the morning light fills a room designed with intention, in the silence of a hallway built to feel like your own private corridor, and in the knowledge that the world outside your door operates at the highest level, and so does everything within it.
-
-This residence commands a presence from the moment you step inside. Soaring ceilings and floor-to-ceiling windows open the living space to an expansive view of the city, a daily reminder that this is Washington, DC, and you are exactly where you should be. Wide-plank hardwood floors carry warmth and continuity through the open floor plan, connecting a living area built for both intimate evenings and effortless entertaining.
-
-The kitchen was designed for someone who understands that a great meal is never just about the food. A Wolf range, Sub-Zero refrigeration, and custom cabinetry with soft-close hardware sit beneath a Calacatta marble waterfall island that serves as the room's anchor, equal parts workspace and gathering point. Every surface, every finish, chosen with precision.
-
-The primary suite is a deliberate retreat. A spa-caliber en-suite features heated floors, a frameless glass rain shower, and dual vanities in honed marble. Custom built-ins in the walk-in closet bring order and elegance to the everyday. This is where the pace of the city fades and the residence becomes entirely yours.
-
-Recent upgrades reflect an owner who invested in performance as much as beauty: a whole-home Lutron lighting system, dual-zone HVAC with smart thermostat controls, and a fully redesigned private terrace with built-in gas grill and integrated landscape lighting, perfect for an evening above the skyline.
-
-The lower level adds versatility with a media room, climate-controlled wine storage, and a full bathroom, ideal for hosting guests or retreating to a private home office.
-
-Living at The Ritz-Carlton Residences means living with intention, with Ritz-Carlton's signature service at your fingertips, and a location that places you at the center of everything that matters.
-
-Nearby Amenities:
-- Trader Joe's (25th Street): 0.2 miles
-- West End Branch, DC Public Library: 0.3 miles
-- Georgetown Waterfront Park: 0.6 miles
-- Whole Foods Market (P Street): 0.5 miles
-- Rock Creek Park: 0.4 miles
-- Dupont Circle: 0.5 miles
-- The Kennedy Center: 0.7 miles
-- Downtown DC / The White House: 0.8 miles`;
-
-    const MOCK_PERSONAS = `Based on the residence's profile, location, and features, here are 5 buyer personas most likely to purchase this home:
-
-1. James & Priya Thornton (Ages 42 & 39) - Senior Partner at a DC law firm and Chief of Staff for a US Senator. Empty nesters on the horizon with two teens heading to boarding school. They want a prestigious full-service residence for political entertaining and quiet weekends. Value: Ritz-Carlton brand and service, chef's kitchen, wine storage, concierge lifestyle.
-
-2. Elena Vasquez (Age 36) - VP of Government Relations at a major tech company. Single, relocated from San Francisco. Wants a luxury residence that matches her pace and reflects her personal brand. Value: modern upgrades, smart home features, walkability to West End dining and Dupont Circle.
-
-3. David & Michael Ashworth-Kim (Ages 45 & 47) - Cardiologist at GW Hospital and owner of a boutique architecture firm. Design-obsessed couple who entertain frequently. Value: high-end finishes, private terrace, proximity to Kennedy Center and Georgetown galleries.
-
-4. Catherine "Kit" Pemberton (Age 58) - Retired Ambassador, now sits on three nonprofit boards. Downsizing from a 6BR estate in McLean. Wants a refined urban residence with full-service building amenities. Value: Ritz-Carlton concierge, primary suite privacy, walkable neighborhood, lock-and-leave ease.
-
-5. Amir & Sarah Okafor (Ages 38 & 37) - Private equity principal and pediatrician. Young family with two children under 5. Want a secure, full-service building in a central location. Value: 24/7 security, building amenities, flexible lower level, proximity to Rock Creek Park.
-
-Now let me craft a listing description tailored to attract these buyers. Here it is:\n\n` + MOCK_DESCRIPTION;
-
-    function getMockReply(step, userMsg) {
-      const lower = userMsg.toLowerCase().trim();
-      if (step === 3) {
-        // Buyer personas question
-        if (lower === 'yes' || lower === 'y' || lower.includes('yes')) {
-          return { reply: MOCK_RESPONSES[4], nextStep: 5 };
-        } else {
-          // No personas → generate them + description
-          return { reply: MOCK_PERSONAS, nextStep: 99, isDescription: true };
-        }
-      }
-      if (step === 5) {
-        // They pasted personas → generate description
-        return { reply: 'Thank you for those personas. Let me craft a description tailored to attract each of them.\n\n' + MOCK_DESCRIPTION, nextStep: 99, isDescription: true };
-      }
-      if (step >= 99) {
-        // Post-description refinements
-        return { reply: 'Absolutely, I can adjust that. Here is the revised version:\n\n' + MOCK_DESCRIPTION, nextStep: 99, isDescription: true };
-      }
-      // Normal flow
-      if (step < MOCK_RESPONSES.length) {
-        return { reply: MOCK_RESPONSES[step], nextStep: step + 1 };
-      }
-      return { reply: MOCK_RESPONSES[0], nextStep: 1 };
-    }
 
     async function ldBegin() {
       ldStarted.value = true;
@@ -22958,10 +22877,9 @@ Now let me craft a listing description tailored to attract these buyers. Here it
       try {
         let reply;
         let _ldStreamed = false;
+        // No AI key: say so and stop. (This used to run a scripted demo chat.)
         if (ldMockMode.value) {
-          await new Promise(r => setTimeout(r, 800));
-          reply = MOCK_RESPONSES[0];
-          ldStep.value = 1;
+          throw new Error(FOS_NO_AI_KEY);
         } else {
           const _bIdx = ldMessages.value.length;
           ldMessages.value.push({ role:'assistant', content: '', typing: true });
@@ -23050,22 +22968,10 @@ Now let me craft a listing description tailored to attract these buyers. Here it
 
       try {
         let reply;
+        // No AI key: say so and stop. (This used to hand back a ready-made
+        // description of a different property, which could be saved to a listing.)
         if (ldMockMode.value) {
-          await new Promise(r => setTimeout(r, 1000));
-          const mock = getMockReply(ldStep.value, userMsg);
-          reply = mock.reply;
-          ldStep.value = mock.nextStep;
-          if (mock.isDescription) {
-            // Extract just the description portion for the copy/save button
-            const descStart = reply.lastIndexOf(MOCK_DESCRIPTION);
-            ldOutput.value = descStart >= 0 ? MOCK_DESCRIPTION : reply;
-            for (const m of ldMessages.value) {
-              if (m.role === 'user' && m.content.match(/\d+\s+\w/)) {
-                ld.address = m.content.trim();
-                break;
-              }
-            }
-          }
+          throw new Error(FOS_NO_AI_KEY);
         } else {
           // Build messages array for Claude
           const initMsg = { role:'user', content:'Begin the listing description process.' };
@@ -23643,7 +23549,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      lstProperties, lstLoading, lstLoadError, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,

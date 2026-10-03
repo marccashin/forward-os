@@ -19,8 +19,10 @@
 #                        every write failing: a success message only when it
 #                        saved, a plain failure message when it did not.
 #   ci/meeting-prep-test.js  a brief says when online research did not run,
-#                        slow research is not thrown away, and the built-in
-#                        example brief is labelled and cannot be saved.
+#                        and slow research is not thrown away.
+#   ci/ai-key-test.js    the sign-in AI key check: no notice when a key is
+#                        there, a red notice on every screen when it is not,
+#                        and no tool ever shows made-up demo output.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -89,6 +91,10 @@ jobs:
         if: always()
         run: node head/ci/save-failure-test.js head
 
-      - name: Meeting Prep test (says when research did not run, labels the sample brief)
+      - name: Meeting Prep test (says when research did not run, uses slow research)
         if: always()
         run: node head/ci/meeting-prep-test.js head
+
+      - name: AI key test (notice when the key is missing, no demo output anywhere)
+        if: always()
+        run: node head/ci/ai-key-test.js head
