@@ -375,6 +375,24 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok((await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.lstActiveProp.__marker)) === 'left as it was', 'a tab already on that listing is left exactly as it was');
   await page.context().close();
 
+  // Coming back by a full load must not show the sign-in screen while the app starts.
+  // The app's own script is held back so the page can be looked at before it has started.
+  {
+    properties = [prop('Charlotte Lee')];
+    const c = await context('Charlotte Lee', null);
+    await c.route(/cdnjs.*\/vue\//, async (route) => { await new Promise((r) => setTimeout(r, 1500)); route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE }); });
+    const p = await c.newPage();
+    p.on('pageerror', (e) => errors.push(e.message));
+    p.goto(origin + '/?listing=' + PROP_ID).catch(() => {});
+    await p.waitForFunction(() => !!document.querySelector('#app') && document.querySelector('#app').children.length > 0, null, { timeout: 5000 }).catch(() => {});
+    const early = await p.evaluate(() => ({ started: !!document.querySelector('#app').__vue_app__, shown: document.querySelector('#app').innerText.trim().length }));
+    ok(!early.started && early.shown === 0, 'before the app has started, nothing is shown: no sign-in screen flash', early);
+    await p.waitForTimeout(3200);
+    const late = await osState(p);
+    ok(late.view === 'listing-detail' && late.text.trim().length > 0, 'once it has started, the listing is shown', late.view);
+    await c.close();
+  }
+
   properties = [prop('Ash McGowan')];
   page = await os('Marc Cashin', '/?listing=' + PROP_ID);
   const pf = await page.evaluate(() => {
