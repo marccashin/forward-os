@@ -13599,7 +13599,10 @@ async function lstSubmitToPipeline() {
         condoFee: isCondo ? hoaNum : '0',
         lotSize: '',
         clientName: prop.seller_name || '',
-        agentName: agentName.value || '',
+        // The CMA carries the name of the agent whose listing this is, not whoever is
+        // signed in: Marc opens other agents' deal cards to help them (Marc, Oct 3, 2026).
+        agentName: normalizeAgent(prop.agent_name || '') || agentName.value || '',
+        listingAgent: normalizeAgent(prop.agent_name || ''),
         notes: mlsForm.features.filter(f => f.trim()).join('; '),
         propId: prop.id || '',
         driveFolderId: prop.drive_folder_id || '',
@@ -20934,7 +20937,7 @@ const CHANGELOG = [
       },
       {
         title: 'The Newest CMA for a Listing Opens, Whoever Saved It',
-        detail: 'A CMA now belongs to the listing. When you open the CMA Builder from a listing, you get the most recent version saved for that listing, whether you or a teammate saved it, as long as it has properties in it. A message says whose version opened and when it was saved. Before today you always got your own version, even an empty one, so work a teammate did on your listing could be invisible to you. Adding more MLS sheets still adds to what is already there, and removing a property still removes only that one, so you do not need to upload the full set again.\n\nHow to use: Open the CMA Builder from the listing. Read the message at the bottom of the screen to see whose version loaded. Once you change anything, it saves under your name and becomes the newest version.\n\nBest practice: Before you change a version a teammate saved, export the PDF if you want a record of how it looked. Only the newest version opens.'
+        detail: 'A CMA now belongs to the listing. When you open the CMA Builder from a listing, you get the most recent version saved for that listing, whether you or a teammate saved it, as long as it has properties in it. A message says whose version opened and when it was saved. Before today you always got your own version, even an empty one, so work a teammate did on your listing could be invisible to you. Adding more MLS sheets still adds to what is already there, and removing a property still removes only that one, so you do not need to upload the full set again.\n\nHow to use: Open the CMA Builder from the listing. Read the message at the bottom of the screen to see whose version loaded. Once you change anything, it saves under your name and becomes the newest version. The agent named on the CMA and its PDF is always the agent whose listing it is, whoever worked on it.\n\nBest practice: Before you change a version a teammate saved, export the PDF if you want a record of how it looked. Only the newest version opens.'
       }
     ]
   }

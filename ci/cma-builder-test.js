@@ -10,7 +10,7 @@
  *   - the newest draft for the listing opens, whoever saved it;
  *   - an empty draft never beats one with properties in it (Charlotte's blank
  *     draft on 4202 Woodland Dr hid Marc's six comps from her);
- *   - the exported PDF carries the name of the agent who has it open;
+ *   - the CMA carries the name of the agent whose listing it is, whoever is signed in;
  *   - changes still save under the agent's own name, never over a teammate's row;
  *   - a failed load still blocks every save (the Sept 22 wipe guard).
  *
@@ -134,7 +134,8 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
     }, [agent, prefill, SUPA, LISTING]);
     return ctx;
   }
-  const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', state: '', zip: '', agentName: agent, propId: PROP_ID, sessionKey: LISTING }, extra || {});
+  // What openCMABuilder writes. The listing here is Charlotte's, whoever is signed in.
+const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', state: '', zip: '', agentName: 'Charlotte Lee', listingAgent: 'Charlotte Lee', propId: PROP_ID, sessionKey: LISTING }, extra || {});
   async function builder(agent, prefill) {
     const ctx = await context(agent, prefill === undefined ? PREFILL(agent) : prefill);
     const page = await ctx.newPage();
@@ -163,7 +164,7 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
   let s = await state(page);
   ok(s.n === 6, 'her own draft is empty and newer, his has six comps and is older: his opens', s);
   ok(/Marc Cashin/.test(s.toasts), 'the message says whose version opened', s.toasts);
-  ok(s.agentName === 'Charlotte Lee', 'the agent name on the CMA is hers, not his', s.agentName);
+  ok(s.agentName === 'Charlotte Lee', 'the agent name on the CMA is hers (her listing), not his', s.agentName);
   await page.waitForTimeout(2600);
   ok(writes.length === 0, 'opening a teammate\'s version writes nothing by itself', writes.map((w) => w.m));
   await page.evaluate(() => { const el = document.getElementById('agentNotes'); el.value = 'Charlotte was here'; el.dispatchEvent(new Event('input', { bubbles: true })); });
@@ -185,6 +186,25 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
   page = await builder('Charlotte Lee'); s = await state(page);
   ok(s.n === 1 && s.comps[0] === 'HERS 1', 'both have comps, hers is newer: hers opens', s.comps);
   ok(/Loaded your saved CMA/.test(s.toasts) && !/Marc Cashin/.test(s.toasts), 'the message says it is her own', s.toasts);
+  await page.context().close();
+
+  // Marc signed in, working inside Charlotte's deal card.
+  table = [row('Marc Cashin', LISTING, '2026-10-03T10:00:00Z', draft('Marc Cashin', [comp('HIS 1')]))];
+  writes = [];
+  page = await builder('Marc Cashin'); s = await state(page);
+  ok(s.n === 1 && s.agentName === 'Charlotte Lee', 'Marc in her deal card, his own saved draft says Marc: the CMA still names Charlotte', s.agentName);
+  await page.evaluate(() => { const el = document.getElementById('agentNotes'); el.value = 'Marc helping'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(2800);
+  ok(table.length === 1 && table[0].agent_name === 'Marc Cashin' && table[0].draft_data.subject.agentName === 'Charlotte Lee', 'his work saves under his login, with her name on the CMA', [table.length, table[0].agent_name, table[0].draft_data.subject.agentName]);
+  await page.context().close();
+  table = [];
+  page = await builder('Marc Cashin'); s = await state(page);
+  ok(s.agentName === 'Charlotte Lee', 'a brand new CMA on her listing started by Marc names Charlotte', s.agentName);
+  await page.context().close();
+  // Not opened from a listing (no listing agent): unchanged behaviour.
+  table = [row('Marc Cashin', STREET, '2026-10-03T10:00:00Z', draft('Marc Cashin', [comp('HIS 1')]))];
+  page = await builder('Niki Lang', { address: STREET, agentName: 'Niki Lang' }); s = await state(page);
+  ok(s.n === 1 && s.agentName === 'Niki Lang', 'a CMA not opened from a listing: a teammate\'s draft takes the name of who has it open', s.agentName);
   await page.context().close();
 
   table = [row('Marc Cashin', LISTING, '2026-10-02T10:00:00Z', draft('Marc Cashin', [], { agentNotes: 'his notes' })),
@@ -303,6 +323,8 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
   const closed = new Promise((r) => child.on('close', () => r(true)));
   await child.click('text=Back to Listing').catch(() => {});
   const didClose = await Promise.race([closed, new Promise((r) => setTimeout(() => r(false), 3000))]);
+  // The message is delivered on the opener's next turn, which can be after the builder has closed.
+  await opener.waitForFunction(() => window.__msgs.length > 0, null, { timeout: 3000 }).catch(() => {});
   const msgs = await opener.evaluate(() => window.__msgs);
   ok(didClose, 'with the FORWARD OS tab still open, Back closes the builder');
   ok(msgs.length === 1 && msgs[0].data && msgs[0].data.type === 'fos-open-listing' && msgs[0].data.id === PROP_ID && msgs[0].origin === origin, 'and tells that tab which listing to show', msgs);
@@ -351,6 +373,17 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
   await page.evaluate(([id, org]) => window.postMessage({ type: 'fos-open-listing', id }, org), [PROP_ID, origin]);
   await page.waitForTimeout(600);
   ok((await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.lstActiveProp.__marker)) === 'left as it was', 'a tab already on that listing is left exactly as it was');
+  await page.context().close();
+
+  properties = [prop('Ash McGowan')];
+  page = await os('Marc Cashin', '/?listing=' + PROP_ID);
+  const pf = await page.evaluate(() => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    let opened = null; window.open = (u) => { opened = u; return null; };
+    st.openCMABuilder();
+    return { opened, pf: JSON.parse(localStorage.getItem('cma_voice_prefill') || 'null') };
+  });
+  ok(pf.opened === '/cma-tool.html' && pf.pf && pf.pf.agentName === 'Ashling McGowan' && pf.pf.listingAgent === 'Ashling McGowan' && pf.pf.propId === PROP_ID, 'FORWARD OS hands the builder the listing\'s agent, not the signed-in one (Marc on Ashling\'s listing)', pf.pf && [pf.pf.agentName, pf.pf.listingAgent]);
   await page.context().close();
 
   properties = [prop('Niki Lang')];

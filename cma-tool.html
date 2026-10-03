@@ -876,12 +876,17 @@ window.addEventListener('DOMContentLoaded', async () => {
     if ((row._ownKeys || []).indexOf(_cmaSessionKey()) > -1) _cmaRowKey = _cmaSessionKey();
     const when = row.updated_at ? new Date(row.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
     const fromTeammate = !!row.agent_name && row.agent_name !== _AGENT;
+    // WHOSE NAME IS ON THE CMA (Marc, Oct 3, 2026): always the agent whose listing it is.
+    // A saved draft carries the name of whoever saved it, and Marc works inside other
+    // agents' deal cards, so the saved name is not trusted. openCMABuilder passes the
+    // listing's agent as listingAgent. A CMA not opened from a listing has none: then a
+    // teammate's draft takes the name of the person who has it open, and your own
+    // draft keeps the name saved in it.
+    const listingAgent = String(_cmaPrefillObj().listingAgent || '').trim();
+    const nameToShow = listingAgent || (fromTeammate ? String(_cmaPrefillObj().agentName || _AGENT || '').trim() : '');
+    const an = document.getElementById('s_agentName');
+    if (an && nameToShow) an.value = nameToShow;
     if (fromTeammate) {
-      // The draft carries the name of whoever saved it. The PDF this agent exports
-      // must carry their own name, not the teammate's.
-      const me = String(_cmaPrefillObj().agentName || _AGENT || '').trim();
-      const an = document.getElementById('s_agentName');
-      if (an && me) an.value = me;
       showToast('☁️ Loaded the newest CMA for this listing' + (when ? ', saved ' + when : '') + ' by ' + row.agent_name + '. Your changes save under your name.', 8000);
     } else {
       showToast('☁️ Loaded your saved CMA' + (when ? ' from ' + when : ''), 4000);
