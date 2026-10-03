@@ -56,6 +56,7 @@ GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`
 
 - `ci/offers-test.js`: the Offer Tracker against a made-up `buyer_offers` table, as several devices at once. A failed save is shown, a retry never duplicates, a removed offer never comes back.
 - `ci/save-failure-test.js`: runs each save with the cloud working and with every write failing. A success message may appear only when the save went through.
+- `ci/meeting-prep-test.js`: a Meeting Prep brief says when online research did not run, research slower than 30 seconds is still used, and the built-in example brief is labelled SAMPLE and cannot be saved. One case waits 33 seconds on purpose.
 
 The first two compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
 

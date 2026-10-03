@@ -3391,6 +3391,12 @@ body {
             </div>
 
             <template v-if="mp.brief">
+              <!-- The built-in example shown when this device has no AI key. It must never pass for a real brief. -->
+              <div v-if="mp.isSample" style="background:#fef2f2;border:2px solid #dc2626;border-radius:2px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:#991b1b;line-height:1.55;">
+                <strong style="letter-spacing:0.06em;">SAMPLE BRIEF. NOT ABOUT {{ ((mp.selectedPerson && mp.selectedPerson.name) || mp.query || 'YOUR CONTACT').toUpperCase() }}.</strong><br>
+                Everything below is a made-up example about a made-up person. No real brief was written, because this device has no AI key. Add your key in Settings, then generate again. Do not use this in a meeting.
+                <button @click="go('settings')" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Open Settings</button>
+              </div>
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
                 <div style="font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:700;color:var(--navy);">{{ mp.selectedPerson?.name || mp.query }}</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
@@ -3426,6 +3432,16 @@ body {
                 <svg viewBox="0 0 24 24" style="width:12px;height:12px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,10 10,18 2,10" fill="#0d1f35"/><rect x="16" y="15" width="8" height="3" rx="1.5" transform="rotate(45,16,15)" fill="#0d1f35"/></svg>
                 <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#16a34a;">Web research used</span>
                 <span v-if="mp.webResearch.sources && mp.webResearch.sources.length" style="font-family:'Montserrat',sans-serif;font-size:7px;color:#6b7280;letter-spacing:0.04em;margin-left:2px;">{{ mp.webResearch.sources.join(' · ') }}</span>
+              </div>
+              <!-- When research was not used, say why. A brief without it must not look the same as one with it. -->
+              <div v-else-if="mp.researchKind==='failed' && !mp.isSample" style="background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#92400e;line-height:1.5;">
+                <strong>Online research did not run:</strong> {{ mp.researchNote || 'no reason given' }}. This brief uses only Follow Up Boss and what you entered.
+              </div>
+              <div v-else-if="mp.researchKind==='nothing' && !mp.isSample" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
+                Online research ran and found nothing it could use about this person. This brief uses only Follow Up Boss and what you entered.
+              </div>
+              <div v-else-if="mp.researchKind==='skipped' && !mp.isSample" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:2px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#475569;line-height:1.5;">
+                Online research was skipped. This brief uses only Follow Up Boss and what you entered.
               </div>
 
               <!-- DISC Badge -->
@@ -9513,7 +9529,13 @@ createApp({
       webResearch: null, researchStatus: '',
       confirming: false, contactContext: '', researchPreview: null,
       liShots: [], liText: '', liError: '', notice: '',
-      target: null, viewingSaved: null
+      target: null, viewingSaved: null,
+      // researchKind: '' (research was used, or nothing to say) | 'failed' (it did
+      // not run; researchNote says why) | 'nothing' (it ran and found nothing) |
+      // 'skipped' (the agent chose Skip web data). Shown on the brief.
+      researchKind: '', researchNote: '',
+      // true while the brief on screen is the built-in example, not a real brief
+      isSample: false
     });
     // Follow Up Boss
     const fubKeySet    = ref(!!localStorage.getItem('fos_fub_key'));
@@ -9600,9 +9622,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mp.loading = true; mp.brief = null; mp.error = ''; mp.notice = '';
       mp.webResearch = null; mp.researchStatus = '';
       mp.confirming = false; mp.contactContext = ''; mp.researchPreview = null;
+      mp.researchKind = ''; mp.researchNote = ''; mp.isSample = false;
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
       if (isMockMode) {
         await new Promise(r => setTimeout(r, 2000));
+        mp.isSample = true;   // the screen labels it; it can never be saved to a card
         mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
       }
       try {
@@ -9642,28 +9666,21 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const personName = (mp.selectedPerson?.name || mp.query || '').trim();
         if (personName && personName !== 'Contact') {
           mp.researchStatus = 'Researching ' + personName.split(' ')[0] + ' online…';
-          try {
-            const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
-              method: 'POST',
-              headers: {'Content-Type': 'application/json'},
-              body: JSON.stringify({ name: personName, agent_context: mpResearchContext() }),
-              signal: AbortSignal.timeout(30000)
-            });
-            if (researchResp.ok) {
-              const research = await researchResp.json();
-              if (research.found) {
-                // Show confirmation panel — do NOT auto-generate
-                mp.researchPreview = research;
-                mp.loading = false;
-                mp.researchStatus = '';
-                mp.confirming = true;
-                return;
-              }
-            }
-          } catch(e) { console.warn('Web research skipped:', e.message); }
+          const research = await mpRunResearch(personName);
+          if (research) {
+            // Show confirmation panel — do NOT auto-generate
+            mp.researchPreview = research;
+            mp.loading = false;
+            mp.researchStatus = '';
+            mp.confirming = true;
+            return;
+          }
+        } else {
+          mp.researchKind = 'failed'; mp.researchNote = 'there was no name to search for';
         }
 
-        // No web research found — go straight to brief generation
+        // No web research to use. mp.researchKind says whether it failed or
+        // found nothing, and the brief shows it. Go straight to brief generation.
         mp.loading = false;
         await mpGenerate();
       } catch(e) {
@@ -9678,9 +9695,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!mp.selectedPerson && !mp.extraContext.trim() && !mp.query.trim()) return;
       mp.loading = true; mp.brief = null; mp.error = '';
       mp.confirming = false; mp.researchStatus = 'Generating your brief…';
+      mp.isSample = false;
       const isMockMode = !localStorage.getItem(agentKey('fos_key'));
       if (isMockMode) {
         await new Promise(r => setTimeout(r, 2000));
+        mp.isSample = true;
         mp.brief = MP_MOCK_BRIEF; mp.loading = false; return;
       }
       try {
@@ -9737,8 +9756,41 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mp.loading = false; mp.researchStatus = '';
     }
 
+    // Online research, used by Generate and by Search again. Returns what was
+    // found, or null. It never fails quietly: when it returns null,
+    // mp.researchKind is 'failed' (with the reason in mp.researchNote) or
+    // 'nothing', and the brief says which. Before Oct 3, 2026 a failure and an
+    // empty result both went to the console and the brief looked complete.
+    //
+    // The wait is 60 seconds because the backend gives its own AI call 45. At
+    // the old 30 seconds the browser gave up on research that was about to
+    // arrive.
+    const MP_RESEARCH_TIMEOUT_MS = 60000;
+    async function mpRunResearch(personName) {
+      mp.researchKind = ''; mp.researchNote = '';
+      const failed = why => { mp.researchKind = 'failed'; mp.researchNote = why; console.warn('Web research did not run:', why); return null; };
+      try {
+        const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: personName, agent_context: mpResearchContext() }),
+          signal: AbortSignal.timeout(MP_RESEARCH_TIMEOUT_MS)
+        });
+        if (!researchResp.ok) return failed('the research service answered with an error (' + researchResp.status + ')');
+        const research = await researchResp.json();
+        if (research && research.found) return research;
+        if (research && research.error) return failed(String(research.error).slice(0, 160));
+        mp.researchKind = 'nothing';
+        return null;
+      } catch(e) {
+        const slow = e && (e.name === 'TimeoutError' || e.name === 'AbortError');
+        return failed(slow ? 'it took longer than ' + (MP_RESEARCH_TIMEOUT_MS / 1000) + ' seconds' : (fosWhy(e) || 'no answer'));
+      }
+    }
+
     // Confirmation handlers
     function mpConfirmResearch() {
+      mp.researchKind = ''; mp.researchNote = '';
       mp.webResearch = mp.researchPreview;
       mp.researchPreview = null;
       mpGenerate();
@@ -9749,29 +9801,20 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const personName = (mp.selectedPerson?.name || mp.query || '').trim();
       mp.loading = true;
       mp.researchStatus = 'Searching again…';
-      try {
-        const researchResp = await fetch(RAILWAY_URL + '/api/meeting-prep-research', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ name: personName, agent_context: mpResearchContext() }),
-          signal: AbortSignal.timeout(30000)
-        });
-        if (researchResp.ok) {
-          const research = await researchResp.json();
-          if (research.found) {
-            mp.researchPreview = research;
-            mp.loading = false;
-            mp.researchStatus = '';
-            mp.confirming = true;
-            return;
-          }
-        }
-      } catch(e) { console.warn('Re-search skipped:', e.message); }
+      const research = await mpRunResearch(personName);
+      if (research) {
+        mp.researchPreview = research;
+        mp.loading = false;
+        mp.researchStatus = '';
+        mp.confirming = true;
+        return;
+      }
       mp.loading = false;
       mp.researchStatus = '';
       mpGenerate();
     }
     function mpSkipResearch() {
+      mp.researchKind = 'skipped'; mp.researchNote = '';
       mp.webResearch = null;
       mp.researchPreview = null;
       mp.confirming = false;
@@ -9780,7 +9823,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // keepTarget === true only from the chip's Change button. A bare @click="mpReset"
     // passes the click event, which is not === true, so New Search clears the target.
-    function mpReset(keepTarget) { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; mp.viewingSaved=null; if (keepTarget !== true) mp.target=null; mbAssign.query=''; mbAssign.saving=false; mbAssign.error=''; mbAssign.savedTo=null; }
+    function mpReset(keepTarget) { mp.query=''; mp.searchResults=[]; mp.selectedPerson=null; mp.extraContext=''; mp.brief=null; mp.error=''; mp.webResearch=null; mp.researchStatus=''; mp.confirming=false; mp.contactContext=''; mp.researchPreview=null; mp.liShots=[]; mp.liText=''; mp.liError=''; mp.notice=''; mp.viewingSaved=null; mp.researchKind=''; mp.researchNote=''; mp.isSample=false; if (keepTarget !== true) mp.target=null; mbAssign.query=''; mbAssign.saving=false; mbAssign.error=''; mbAssign.savedTo=null; }
 
     // ── Meeting briefs saved to a buyer or seller ──────────────────────────
     // Supabase table meeting_briefs (one row per brief; every brief is kept, newest
@@ -9821,6 +9864,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     async function mbSave(target) {
       if (!target || !mp.brief) return;
+      if (mp.isSample) { mbAssign.error = 'This is the sample brief, not a real one, so it was not saved.'; return; }
       mbAssign.saving = true; mbAssign.error = ''; mbAssign.savedTo = null;
       try {
         await supaRest.insert('meeting_briefs', {
@@ -9833,7 +9877,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           sources: {
             crm: !!(mp.selectedPerson && mp.selectedPerson.id && mp.selectedPerson.id !== 99999),
             linkedin_screenshots: mp.liShots.length,
-            web: !!mp.webResearch
+            web: !!mp.webResearch,
+            research: mp.webResearch ? 'used' : (mp.researchKind || ''),
+            research_note: mp.researchNote || ''
           }
         });
         mbAssign.savedTo = { type: target.type, id: target.id, name: target.name };
@@ -9880,6 +9926,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       mpReset();
       mp.target = { type: type, id: rec.id, name: mbPersonName(type, rec) };
       mp.viewingSaved = row;
+      // Briefs saved from Oct 3, 2026 record what happened with online research.
+      const _src = (row && row.sources) || {};
+      if (_src.research && _src.research !== 'used') { mp.researchKind = _src.research; mp.researchNote = _src.research_note || ''; }
       mp.selectedPerson = { id: null, name: row.subject_name || row.person_name || mp.target.name };
       mp.brief = row.brief;
       go('meeting-prep');
@@ -20815,6 +20864,10 @@ const CHANGELOG = [
       {
         title: 'FORWARD OS Now Tells You When a Save Did Not Work',
         detail: 'In more than twenty places, FORWARD OS could fail to save something and either say nothing or show its usual saved message anyway. That is fixed. This covers saving a tool to a listing (the gold saved message), listing descriptions and notes, the campaign content, the Seller Prep Guide, the state badge on a listing, buyer profile fields, the Tour Tracker, the Saved Library, revision requests, deleting files, and the Settings screens. A saved message now appears only after the save really went through. When it does not, a message says what was not saved and why, and your text stays on screen. The Listings page also shows a red notice with a Try again button if your listings could not be loaded, instead of looking as if you have none.\n\nHow to use: Work as you do now. If you see a message containing NOT saved or THIS DEVICE ONLY, the item did not reach the cloud: save it again. For a revision request, if the message says the pipeline did not start, tell Operations before sending it again.\n\nBest practice: Read the message before you move on. It stays up longer than a normal confirmation. Take a screenshot of any NOT saved message and send it to Operations, because the reason in brackets tells them what to fix.'
+      },
+      {
+        title: 'Meeting Prep Tells You What It Could Not Check',
+        detail: 'A Meeting Prep brief now says plainly when online research was not part of it. Before, if the research failed or timed out, the brief was written anyway and looked the same as one backed by research. Now a yellow line under the name says Online research did not run and gives the reason, and a grey line says so when research ran and found nothing, or when you skipped it. Research also gets 60 seconds to finish instead of 30, so slower searches that used to be thrown away are now used. Separately, a device with no AI key used to show a ready-made example brief about a made-up person, with nothing marking it as an example. It is now labelled SAMPLE BRIEF in red and cannot be saved to a buyer or seller.\n\nHow to use: Generate a brief as usual and read the line under the name before the meeting. If it says research did not run, tap New Search and generate again, or add what you know in Additional Context. If you see SAMPLE BRIEF, open Settings, add your AI key, and generate again.\n\nBest practice: Treat a brief with no online research as a starting point only, and add LinkedIn screenshots when you can. Never take a SAMPLE BRIEF into a meeting.'
       }
     ]
   }
