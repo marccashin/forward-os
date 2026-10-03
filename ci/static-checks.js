@@ -25,7 +25,7 @@
  *  The same parse check (1) runs on cma-tool.html and fos-update.js.
  *
  * Usage: node ci/static-checks.js <head-dir> <base-dir>
- * Needs: @vue/compiler-dom, acorn, acorn-walk (resolved through NODE_PATH).
+ * Needs: @vue/compiler-dom, parse5, acorn, acorn-walk (resolved through NODE_PATH).
  * Exit code 1 on any failure. Never writes to the repo.
  */
 'use strict';
@@ -33,6 +33,7 @@ const fs = require('fs');
 const path = require('path');
 const { compile } = require('@vue/compiler-dom');
 const acorn = require('acorn');
+const parse5 = require('parse5');
 const walk = require('acorn-walk');
 
 const [headDir, baseDir] = process.argv.slice(2);
@@ -74,13 +75,25 @@ function parseErrors(html, label) {
   return errs;
 }
 
+// The template Vue actually compiles is NOT the text between the #app tags.
+// In the browser the HTML parser builds the DOM first (closing unclosed tags,
+// moving misplaced ones), and Vue compiles #app's innerHTML from that DOM.
+// Compiling the raw text instead makes the compiler see structure the browser
+// never sees: on Oct 3, 2026 that produced 13 phantom compile errors, one of
+// which (an "orphan" v-else) silently dropped the whole signed-in layout from
+// the compiled output, so names used there (pageTitle, every buyer and
+// listing name) were never checked. parse5 is the same HTML parsing algorithm
+// browsers implement, so this is what the browser hands to Vue.
 function appTemplate(html) {
-  const open = html.indexOf('<div id="app">');
-  if (open < 0) return null;
-  const nextScript = html.indexOf('<script', open);
-  const end = html.lastIndexOf('</div>', nextScript < 0 ? html.length : nextScript);
-  if (end < 0) return null;
-  return html.slice(open + '<div id="app">'.length, end);
+  const doc = parse5.parse(html);
+  let found = null;
+  (function visit(node) {
+    if (found) return;
+    if (node.attrs && node.attrs.some((a) => a.name === 'id' && a.value === 'app')) { found = node; return; }
+    (node.childNodes || []).forEach(visit);
+    if (node.content) visit(node.content);
+  })(doc);
+  return found ? parse5.serialize(found) : null;
 }
 
 function compileInfo(html) {
