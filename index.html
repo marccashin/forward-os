@@ -15688,36 +15688,51 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
 
 
+    // What the Offer Tracker shows: this buyer's offers that are not removed.
+    // If the buyer's older offers could not be moved to the cloud yet (the
+    // cloud could not be reached), show the old device copy so the agent never
+    // sees an empty tracker. Those rows are marked _legacy and cannot be
+    // changed until the move has happened.
     function byrGetOffers() {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id) return [];
-      return byrOfferMap.value[id] || [];
+      const list = (byrOfferMap.value[id] || []).filter(o => !o.removed_at);
+      if (list.length || byrMigratedIds().includes(id)) return list;
+      return byrLegacyList(byrLegacyMap()[id]).map(o => Object.assign({}, o, { _legacy: true }));
     }
     async function byrAddOffer() {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id || !byrNewOffer.address) return;
-      const offers = [...(byrOfferMap.value[id]||[])];
-      offers.push({id:Date.now(), address:byrNewOffer.address, price:byrNewOffer.price, notes:byrNewOffer.notes, status:'Preparing', created_at:new Date().toISOString()});
-      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
-      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+      const now = new Date().toISOString();
+      const offer = { id: byrNewOfferId(), address: byrNewOffer.address, price: byrNewOffer.price, notes: byrNewOffer.notes, status: 'Preparing', created_by: agentName.value || '', created_at: now, updated_at: now, _new: true };
+      byrSetOffers(id, (byrOfferMap.value[id] || []).concat([offer]));
       byrNewOffer.address=''; byrNewOffer.price=''; byrNewOffer.notes=''; byrNewOffer.showForm=false;
-      await _byrSaveOffers(id, offers);
+      await _byrSaveOffers(id);
+    }
+    function byrOfferIsLegacy(id, offerId) {
+      if ((byrOfferMap.value[id] || []).some(o => o.id === offerId)) return false;
+      showToast('These offers are still being moved to the cloud. Check your connection and open this buyer again.', 6000);
+      return true;
     }
     async function byrUpdateOfferStatus(offerId, status) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
-      if (!id) return;
-      const offers = (byrOfferMap.value[id]||[]).map(o => o.id===offerId ? Object.assign({},o,{status}) : o);
-      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
-      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
-      await _byrSaveOffers(id, offers);
+      if (!id || byrOfferIsLegacy(id, offerId)) return;
+      const cur = (byrOfferMap.value[id] || []).find(o => o.id === offerId);
+      if (!cur || cur.status === status) return;
+      const now = new Date().toISOString();
+      byrSetOffers(id, (byrOfferMap.value[id] || []).map(o => o.id === offerId ? Object.assign({}, o, { status: status, updated_at: now, _statusDirty: true }) : o));
+      await _byrSaveOffers(id);
     }
+    // Removing an offer marks it removed (removed_at). The row stays in the
+    // database, so a mis-tap can be undone there and another device holding an
+    // old copy can never put the offer back.
     async function byrRemoveOffer(offerId) {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
-      if (!id || !confirm('Remove this offer?')) return;
-      const offers = (byrOfferMap.value[id]||[]).filter(o => o.id !== offerId);
-      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[id]: offers});
-      localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
-      await _byrSaveOffers(id, offers);
+      if (!id || byrOfferIsLegacy(id, offerId)) return;
+      if (!confirm('Remove this offer?')) return;
+      const now = new Date().toISOString();
+      byrSetOffers(id, (byrOfferMap.value[id] || []).map(o => o.id === offerId ? Object.assign({}, o, { removed_at: now, updated_at: now, _removeDirty: true }) : o));
+      await _byrSaveOffers(id);
     }
 
 
@@ -18523,7 +18538,14 @@ No markdown. Valid JSON only.`;
     const archRestoring = reactive({});
     const byrActiveFiles = ref([]);
     const byrUploading = ref({});
-    const byrOfferMap = ref(JSON.parse(localStorage.getItem('byrOfferMap')||'{}'));
+    // Device copy of buyer offers (see "Buyer offers" further down). The key
+    // 'byrOfferMap' is the OLD device copy from before the buyer_offers table.
+    // It is only ever read, to move those offers into the table, and is left
+    // in place as a backup.
+    const BYR_OFFER_CACHE_KEY = 'byrOffersV2';
+    const BYR_OFFER_MIGRATED_KEY = 'byrOffersMigrated_v2';
+    const BYR_OFFER_SWEEP_KEY = 'byrOffersSweepDone_v2';
+    const byrOfferMap = ref(byrReadOfferCache());
     const byrNewOffer = reactive({address:'', price:'', notes:'', showForm:false});
     const byrOfferStatuses = ['Preparing','Submitted','Countered','Accepted','Rejected'];
 
@@ -18702,76 +18724,289 @@ No markdown. Valid JSON only.`;
     }
     // ── End Deal Partners ──────────────────────────────────────
 
-    // Buyer offers are saved in os_settings under the key 'buyer_offers:<buyer id>'.
+    // ── Buyer offers ───────────────────────────────────────────────────
+    // Saved in the Supabase table buyer_offers, ONE ROW PER OFFER (created by
+    // Marc on Oct 3, 2026; foreign key to buyers, cascade).
     //
-    // Until Oct 3, 2026 they were written to property_notes with the BUYER's id
-    // in property_id. That column has a foreign key to properties, so the
-    // database rejected every write (409, property_notes_property_id_fkey;
-    // confirmed live, and the table held zero buyer_offers rows). The failure
-    // was only console.warn'ed, so offers looked saved and lived on one device.
-    // os_settings has no such key and already accepts browser writes.
+    // History, so nobody repeats it:
+    //  - Until Oct 3, 2026 offers were written to property_notes with the
+    //    BUYER's id in property_id. That column's foreign key rejected every
+    //    write and the failure was only console.warn'ed, so no offer ever
+    //    reached the cloud. Never use property_notes for anything keyed by a
+    //    buyer.
+    //  - For a few hours on Oct 3 (#169) they were one JSON list per buyer in
+    //    os_settings, key 'buyer_offers:<buyer id>'. A whole-list save from one
+    //    device replaced what another device had saved.
     //
-    // Never go back to property_notes for anything keyed by a buyer.
-    function byrOffersKey(buyerId) { return 'buyer_offers:' + buyerId; }
+    // The rules this code keeps:
+    //  1. An offer's id is a uuid made on the device. A NEW offer is sent with
+    //     "insert, ignore if the id exists", so a retry can never create a
+    //     second copy and can never overwrite a row.
+    //  2. A status change or a removal is a PATCH of that one row, and only
+    //     while the row is not removed. Nothing here ever clears removed_at,
+    //     so a removed offer cannot come back.
+    //  3. Each offer on the device carries its own "not yet saved" marks
+    //     (_new, _statusDirty, _removeDirty). They are cleared only after the
+    //     database accepted the change, and replayed at sign-in, when the
+    //     buyer is opened, and by the Try again button.
+    //  4. Offers are never hard-deleted (the table has no delete policy).
+    function byrOffersKey(buyerId) { return 'buyer_offers:' + buyerId; }   // the old os_settings key, read only
     // state: '' | 'saving' | 'saved' | 'error' (save failed) | 'loaderror' (could not read the cloud copy)
     const byrOfferSync = reactive({ state: '', msg: '' });
-    // Buyers whose latest offers are on this device but not yet in the cloud.
-    // While a buyer is in this list the device copy is newer, so opening the
-    // buyer uploads it and never replaces it with the older cloud copy.
-    function byrUnsyncedIds() {
-      try { const a = JSON.parse(localStorage.getItem('byrOfferUnsynced') || '[]'); return Array.isArray(a) ? a : []; }
-      catch (e) { return []; }
-    }
-    function byrMarkUnsynced(buyerId, on) {
-      const ids = byrUnsyncedIds().filter(x => x !== buyerId);
-      if (on) ids.push(buyerId);
-      localStorage.setItem('byrOfferUnsynced', JSON.stringify(ids));
-    }
-    async function _byrSaveOffers(buyerId, offers) {
-      byrMarkUnsynced(buyerId, true);
-      byrOfferSync.state = 'saving'; byrOfferSync.msg = '';
+    let byrCacheWarned = false;
+    function byrReadOfferCache() {
       try {
-        await osSettingPut(byrOffersKey(buyerId), offers || []);
-        byrMarkUnsynced(buyerId, false);
-        byrOfferSync.state = 'saved';
+        const m = JSON.parse(localStorage.getItem(BYR_OFFER_CACHE_KEY) || '{}');
+        return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {};
+      } catch (e) { return {}; }
+    }
+    function byrStoreOfferCache() {
+      try { localStorage.setItem(BYR_OFFER_CACHE_KEY, JSON.stringify(byrOfferMap.value)); }
+      catch (e) {
+        console.error('[FOS] could not store offers on this device:', e);
+        if (!byrCacheWarned) {
+          byrCacheWarned = true;
+          showToast('This device could not store your offers. Keep this page open until the tracker says Saved to the cloud.', 8000);
+        }
+      }
+    }
+    function byrSetOffers(buyerId, list) {
+      byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyerId]: list});
+      byrStoreOfferCache();
+    }
+    function byrDropBuyerOffers(buyerId) {
+      const m = Object.assign({}, byrOfferMap.value);
+      delete m[buyerId];
+      byrOfferMap.value = m;
+      byrStoreOfferCache();
+    }
+    function byrNewOfferId() {
+      if (window.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+      const b = new Uint8Array(16);
+      crypto.getRandomValues(b);
+      b[6] = (b[6] & 0x0f) | 0x40; b[8] = (b[8] & 0x3f) | 0x80;
+      return byrUuidFromBytes(b);
+    }
+    function byrUuidFromBytes(b) {
+      const x = Array.from(b, v => (v < 16 ? '0' : '') + v.toString(16)).join('');
+      return x.slice(0,8) + '-' + x.slice(8,12) + '-' + x.slice(12,16) + '-' + x.slice(16,20) + '-' + x.slice(20,32);
+    }
+    function byrOfferPending(o) { return !!(o && (o._new || o._statusDirty || o._removeDirty)); }
+    function byrBuyerHasPending(buyerId) { return (byrOfferMap.value[buyerId] || []).some(byrOfferPending); }
+    function byrPendingBuyerIds() { return Object.keys(byrOfferMap.value).filter(byrBuyerHasPending); }
+    function byrOfferClean(o, marks) {
+      const c = Object.assign({}, o);
+      marks.forEach(k => { delete c[k]; });
+      return c;
+    }
+    function byrOfferRow(buyerId, o) {
+      const now = new Date().toISOString();
+      return {
+        id: o.id, buyer_id: buyerId,
+        address: String(o.address || ''),
+        price: String(o.price == null ? '' : o.price),
+        notes: String(o.notes == null ? '' : o.notes),
+        status: o.status || 'Preparing',
+        created_by: o.created_by || '',
+        created_at: o.created_at || now,
+        updated_at: o.updated_at || o.created_at || now,
+        removed_at: o.removed_at || null
+      };
+    }
+    // Every request to the buyer_offers table goes through here. It throws on
+    // any answer that is not a success, with the database's own message.
+    async function byrOfferRequest(method, query, body, prefer) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/buyer_offers' + (query ? '?' + query : ''), {
+        method: method,
+        headers: { ...supaRest.headers(), 'Prefer': prefer || 'return=minimal' },
+        body: body === undefined ? undefined : JSON.stringify(body)
+      });
+      if (!res.ok) {
+        let code = '', detail = 'error ' + res.status;
+        try { const e = await res.json(); code = e.code || ''; detail = e.message || e.hint || detail; } catch (x) {}
+        const err = new Error(detail);
+        err.code = code; err.status = res.status;
+        if (code === 'PGRST205' || code === '42P01') {
+          err.message = 'Offer storage is not switched on yet (the buyer_offers table is missing). Your offers are kept on this device.';
+        }
+        // 23503: the buyer row no longer exists. 22P02: the buyer id is not a real id.
+        if (code === '23503' || code === '22P02') err.buyerGone = true;
+        throw err;
+      }
+      return method === 'GET' ? res.json() : null;
+    }
+    // Send everything not yet saved for one buyer. Throws if any step fails;
+    // marks are cleared step by step, so a retry sends only what is left.
+    async function byrFlushBuyer(buyerId) {
+      const fresh = (byrOfferMap.value[buyerId] || []).filter(o => o._new);
+      if (fresh.length) {
+        const sentIds = fresh.map(o => o.id);
+        await byrOfferRequest('POST', 'on_conflict=id', fresh.map(o => byrOfferRow(buyerId, o)), 'resolution=ignore-duplicates,return=minimal');
+        byrSetOffers(buyerId, (byrOfferMap.value[buyerId] || []).map(o => sentIds.includes(o.id) ? byrOfferClean(o, ['_new']) : o));
+      }
+      const changed = (byrOfferMap.value[buyerId] || []).filter(o => o._removeDirty || o._statusDirty);
+      for (const snap of changed) {
+        const where = 'id=eq.' + encodeURIComponent(snap.id) + '&removed_at=is.null';
+        if (snap._removeDirty) {
+          await byrOfferRequest('PATCH', where, { removed_at: snap.removed_at, updated_at: snap.removed_at });
+          byrSetOffers(buyerId, (byrOfferMap.value[buyerId] || []).map(o => o.id === snap.id ? byrOfferClean(o, ['_removeDirty', '_statusDirty']) : o));
+        } else {
+          const sentStatus = snap.status;
+          await byrOfferRequest('PATCH', where, { status: sentStatus, updated_at: snap.updated_at || new Date().toISOString() });
+          // If the agent tapped another status while this was in flight, keep the mark.
+          byrSetOffers(buyerId, (byrOfferMap.value[buyerId] || []).map(o => (o.id === snap.id && o.status === sentStatus && !o._removeDirty) ? byrOfferClean(o, ['_statusDirty']) : o));
+        }
+      }
+      // A removed offer that is fully saved no longer needs a device copy.
+      byrSetOffers(buyerId, (byrOfferMap.value[buyerId] || []).filter(o => !(o.removed_at && !byrOfferPending(o))));
+    }
+    // One save at a time, in the order the agent made the changes.
+    let byrOfferChain = Promise.resolve();
+    function byrQueue(fn) {
+      const p = byrOfferChain.then(fn, fn);
+      byrOfferChain = p.catch(() => {});
+      return p;
+    }
+    function byrIsActiveBuyer(buyerId) { return !!(byrActiveBuyer.value && byrActiveBuyer.value.id === buyerId); }
+    async function _byrSaveOffers(buyerId) {
+      if (byrIsActiveBuyer(buyerId)) { byrOfferSync.state = 'saving'; byrOfferSync.msg = ''; }
+      try {
+        await byrQueue(() => byrFlushBuyer(buyerId));
+        if (byrIsActiveBuyer(buyerId)) byrOfferSync.state = byrBuyerHasPending(buyerId) ? 'saving' : 'saved';
         return true;
       } catch (e) {
-        byrOfferSync.state = 'error';
-        byrOfferSync.msg = (e && e.message) ? e.message : String(e);
+        if (byrIsActiveBuyer(buyerId)) {
+          byrOfferSync.state = 'error';
+          byrOfferSync.msg = (e && e.message) ? e.message : String(e);
+        }
         showToast('Offers NOT saved to the cloud. They are on this device only.', 6000);
         return false;
       }
     }
-    // One pass per device, at sign-in: upload every buyer's offers that exist
-    // only on this device. Each buyer is uploaded only if the cloud has no copy
-    // yet, so one device can never overwrite what another already saved.
-    // Buyers that fail stay in the unsynced list and are retried when opened.
+
+    // ── Moving older offers into the table ─────────────────────────────
+    // Two older places can hold a buyer's offers: this device's old copy
+    // (localStorage 'byrOfferMap') and the os_settings row from #169. Both are
+    // only READ here and are left untouched.
+    //
+    // Each old offer gets an id worked out from the buyer id and the offer's
+    // old id (SHA-1, laid out as a uuid). Every device works out the SAME id
+    // for the same offer, so two devices moving the same offer produce one
+    // row, and an offer that was moved and later removed is still found by its
+    // id and is left removed.
+    //
+    // Which copy is right follows what #169 already did when a buyer was
+    // opened: the cloud list wins, unless this device has changes that never
+    // reached the cloud (it is in 'byrOfferUnsynced'), in which case the
+    // device list wins. In that second case, an offer the cloud list has and
+    // the device list does not was removed on this device, so it is recorded
+    // as removed rather than left for another device to move back in.
+    function byrLegacyMap() {
+      try { const m = JSON.parse(localStorage.getItem('byrOfferMap') || '{}'); return (m && typeof m === 'object' && !Array.isArray(m)) ? m : {}; }
+      catch (e) { return {}; }
+    }
+    function byrLegacyUnsynced() {
+      try { const a = JSON.parse(localStorage.getItem('byrOfferUnsynced') || '[]'); return Array.isArray(a) ? a : []; }
+      catch (e) { return []; }
+    }
+    function byrLegacyList(list) {
+      return (Array.isArray(list) ? list : []).filter(o => o && typeof o === 'object' && String(o.address || '').trim());
+    }
+    function byrLegacyKey(o) {
+      return (o.id != null && o.id !== '') ? String(o.id) : ('noid:' + String(o.address || '') + '|' + String(o.created_at || ''));
+    }
+    async function byrLegacyOfferId(buyerId, legacyKey) {
+      if (!(window.crypto && crypto.subtle)) throw new Error('this browser cannot prepare older offers for the cloud');
+      const data = new TextEncoder().encode('forward-os:buyer-offer:' + String(buyerId).toLowerCase() + ':' + legacyKey);
+      const h = new Uint8Array(await crypto.subtle.digest('SHA-1', data)).slice(0, 16);
+      h[6] = (h[6] & 0x0f) | 0x50; h[8] = (h[8] & 0x3f) | 0x80;
+      return byrUuidFromBytes(h);
+    }
+    function byrMigratedIds() {
+      try { const a = JSON.parse(localStorage.getItem(BYR_OFFER_MIGRATED_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+      catch (e) { return []; }
+    }
+    // deviceList: this device's old copy. cloudList: the os_settings list, or
+    // null when that buyer has no os_settings row. Nothing is sent from here:
+    // the offers are added to the device copy marked _new, and the ordinary
+    // save sends them.
+    async function byrMigrateBuyer(buyerId, deviceList, cloudList, deviceIsNewer) {
+      const L = byrLegacyList(deviceList);
+      const hasCloud = Array.isArray(cloudList);
+      const S = byrLegacyList(cloudList);
+      let live = L, dead = [];
+      if (hasCloud && !deviceIsNewer) live = S;
+      else if (hasCloud) {
+        const kept = L.map(byrLegacyKey);
+        dead = S.filter(o => !kept.includes(byrLegacyKey(o)));
+      }
+      const have = (byrOfferMap.value[buyerId] || []).map(o => o.id);
+      const add = [];
+      const now = new Date().toISOString();
+      const when = v => (v && !isNaN(new Date(v).getTime())) ? new Date(v).toISOString() : now;
+      for (const o of live.concat(dead)) {
+        const id = await byrLegacyOfferId(buyerId, byrLegacyKey(o));
+        if (have.includes(id)) continue;
+        have.push(id);
+        const made = when(o.created_at);
+        const row = { id: id, address: String(o.address), price: String(o.price == null ? '' : o.price), notes: String(o.notes == null ? '' : o.notes), status: byrOfferStatuses.includes(o.status) ? o.status : 'Preparing', created_by: '', created_at: made, updated_at: made, _new: true };
+        if (dead.includes(o)) { row.removed_at = now; row.updated_at = now; row._removeDirty = true; }
+        add.push(row);
+      }
+      if (add.length) byrSetOffers(buyerId, (byrOfferMap.value[buyerId] || []).concat(add));
+      const done = byrMigratedIds();
+      if (!done.includes(buyerId)) { done.push(buyerId); localStorage.setItem(BYR_OFFER_MIGRATED_KEY, JSON.stringify(done)); }
+      // The tracker reads the "moved" list above, which Vue cannot watch:
+      // replace the map so the screen redraws from the new copy.
+      byrOfferMap.value = Object.assign({}, byrOfferMap.value);
+    }
+    // At sign-in: once per device, move every buyer's older offers into the
+    // device copy (see above), then send everything not yet saved. A buyer
+    // that fails keeps its marks and is retried when the buyer is opened and
+    // at the next sign-in. Nothing fails quietly.
     async function byrUploadLocalOffers() {
-      if (localStorage.getItem('byrOfferUploadDone_v1') === '1' && !byrUnsyncedIds().length) return;
-      let map = {};
-      try { map = JSON.parse(localStorage.getItem('byrOfferMap') || '{}') || {}; } catch (e) { map = {}; }
-      const unsynced = byrUnsyncedIds();
-      let failed = 0, uploaded = 0;
-      for (const id of Object.keys(map)) {
-        const offers = Array.isArray(map[id]) ? map[id] : [];
-        if (!offers.length && !unsynced.includes(id)) continue;
+      if (!SUPABASE_URL) return;
+      let checkFailed = false;
+      if (localStorage.getItem(BYR_OFFER_SWEEP_KEY) !== '1') {
         try {
-          const saved = await osSettingGet(byrOffersKey(id));
-          if (Array.isArray(saved) && !unsynced.includes(id)) continue;      // cloud already has this buyer
-          await osSettingPut(byrOffersKey(id), offers);
-          byrMarkUnsynced(id, false);
+          const legacy = byrLegacyMap();
+          const rows = await supaRest.select('os_settings', 'select=key,value&key=like.' + encodeURIComponent('buyer_offers:') + '*');
+          const cloud = {};
+          (rows || []).forEach(r => { if (r && typeof r.key === 'string' && r.key.indexOf('buyer_offers:') === 0) cloud[r.key.slice(13)] = r.value; });
+          const unsynced = byrLegacyUnsynced();
+          const ids = Object.keys(legacy).concat(Object.keys(cloud).filter(k => !(k in legacy)));
+          for (const id of ids) {
+            if (byrMigratedIds().includes(id)) continue;
+            await byrMigrateBuyer(id, legacy[id], Array.isArray(cloud[id]) ? cloud[id] : null, unsynced.includes(id));
+          }
+          localStorage.setItem(BYR_OFFER_SWEEP_KEY, '1');
+        } catch (e) {
+          checkFailed = true;
+          console.error('[FOS] could not move older offers to the cloud:', e);
+        }
+      }
+      let failed = 0, uploaded = 0;
+      for (const id of byrPendingBuyerIds()) {
+        try {
+          await byrQueue(() => byrFlushBuyer(id));
           uploaded += 1;
         } catch (e) {
+          if (e && e.buyerGone && !byrIsActiveBuyer(id)) {
+            // The buyer was deleted, and its offers went with it by design.
+            console.info('[FOS] buyer ' + id + ' no longer exists; its offers on this device were not uploaded.');
+            byrDropBuyerOffers(id);
+            continue;
+          }
           failed += 1;
-          byrMarkUnsynced(id, true);
           console.error('[FOS] could not upload offers for buyer ' + id + ':', e);
         }
       }
       if (failed) {
         showToast('Offers for ' + failed + ' buyer' + (failed === 1 ? '' : 's') + ' could not be saved to the cloud. Open the buyer to try again.', 7000);
-      } else {
-        localStorage.setItem('byrOfferUploadDone_v1', '1');
-        if (uploaded) showToast('Saved offers for ' + uploaded + ' buyer' + (uploaded === 1 ? '' : 's') + ' to the cloud.', 4000);
+      } else if (checkFailed) {
+        showToast('Could not check the cloud for older offers. FORWARD OS will try again the next time you open it.', 7000);
+      } else if (uploaded) {
+        showToast('Saved offers for ' + uploaded + ' buyer' + (uploaded === 1 ? '' : 's') + ' to the cloud.', 4000);
       }
     }
     // The voice assistant's copy button called navigator.clipboard straight from
@@ -18789,7 +19024,7 @@ No markdown. Valid JSON only.`;
     async function byrRetryOfferSave() {
       const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
       if (!id) return;
-      await _byrSaveOffers(id, byrOfferMap.value[id] || []);
+      await _byrSaveOffers(id);
     }
 
     async function byrOpenBuyer(buyer) {
@@ -18799,24 +19034,32 @@ No markdown. Valid JSON only.`;
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
-      // Load offers. The cloud copy is the source of truth, EXCEPT when this
-      // device holds offers that never reached the cloud: every offer entered
-      // before Oct 3, 2026 (those saves were rejected), or a save that failed.
-      // Those are uploaded, never overwritten.
+      // Load offers from the buyer_offers table. Order matters:
+      //  1. move this buyer's older offers in, if this device has not yet;
+      //  2. send anything on this device that is not saved yet;
+      //  3. only then read the table, which is the source of truth.
+      // An offer still waiting to be saved is kept on screen over the table's
+      // copy, so a failed save is never replaced by older data.
       byrOfferSync.state = ''; byrOfferSync.msg = '';
-      const _local = byrOfferMap.value[buyer.id] || [];
+      const _bid = buyer.id;
       try {
-        const _saved = await osSettingGet(byrOffersKey(buyer.id));
-        if (!byrActiveBuyer.value || byrActiveBuyer.value.id !== buyer.id) return;   // agent moved on
-        if (byrUnsyncedIds().includes(buyer.id) || (!Array.isArray(_saved) && _local.length)) {
-          await _byrSaveOffers(buyer.id, byrOfferMap.value[buyer.id] || []);
-        } else if (Array.isArray(_saved)) {
-          byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyer.id]: _saved});
-          localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
+        if (!byrMigratedIds().includes(_bid)) {
+          const _old = await osSettingGet(byrOffersKey(_bid));
+          await byrMigrateBuyer(_bid, byrLegacyMap()[_bid], Array.isArray(_old) ? _old : null, byrLegacyUnsynced().includes(_bid));
         }
+        const _hadPending = byrBuyerHasPending(_bid);
+        if (_hadPending && byrIsActiveBuyer(_bid)) byrOfferSync.state = 'saving';
+        await byrQueue(() => byrFlushBuyer(_bid));
+        const _rows = await byrOfferRequest('GET', 'select=id,address,price,notes,status,created_by,created_at,updated_at&buyer_id=eq.' + encodeURIComponent(_bid) + '&removed_at=is.null&order=created_at.asc');
+        const _pending = (byrOfferMap.value[_bid] || []).filter(byrOfferPending);
+        const _pendingIds = _pending.map(o => o.id);
+        const _cloudIds = (_rows || []).map(r => r.id);
+        byrSetOffers(_bid, (_rows || []).map(r => _pendingIds.includes(r.id) ? _pending[_pendingIds.indexOf(r.id)] : r)
+          .concat(_pending.filter(o => !_cloudIds.includes(o.id))));
+        if (byrIsActiveBuyer(_bid) && _hadPending) byrOfferSync.state = byrBuyerHasPending(_bid) ? 'saving' : 'saved';
       } catch (e) {
-        if (!byrActiveBuyer.value || byrActiveBuyer.value.id !== buyer.id) return;
-        byrOfferSync.state = 'loaderror';
+        if (!byrIsActiveBuyer(_bid)) return;
+        byrOfferSync.state = byrBuyerHasPending(_bid) ? 'error' : 'loaderror';
         byrOfferSync.msg = (e && e.message) ? e.message : String(e);
       }
     }
@@ -20467,11 +20710,15 @@ const CHANGELOG = [
     updates: [
       {
         title: 'Offer Tracker Saves to the Cloud',
-        detail: 'Until today, an offer you added to a buyer\'s Offer Tracker stayed on the phone or computer you typed it on. It did not appear on your other devices, and it would have been lost if that browser\'s data was cleared. The save to the cloud was failing without telling anyone. That is fixed. Offers now save to the cloud, and the tracker shows Saved to the cloud after each change. If a save does not go through, a red notice says so and gives you a Try again button.\n\nHow to use: Open FORWARD OS once on each device where you have entered offers. It uploads the offers stored on that device on its own and tells you how many buyers it saved. After that they appear on every device.\n\nBest practice: Do this today, on the device you normally use, before you clear your browser or switch phones. If you entered offers for the same buyer on two devices, open the one with the complete list first: the first device to upload wins. If you see the red notice, tap Try again, and tell Operations if it does not clear.'
+        detail: 'Until today, an offer you added to a buyer\'s Offer Tracker stayed on the phone or computer you typed it on. It did not appear on your other devices, and it would have been lost if that browser\'s data was cleared. The save to the cloud was failing without telling anyone. That is fixed. Offers now save to the cloud, and the tracker shows Saved to the cloud after each change. If a save does not go through, a red notice says so and gives you a Try again button.\n\nHow to use: Open FORWARD OS once on each device where you have entered offers. It uploads the offers stored on that device on its own and tells you how many buyers it saved. After that they appear on every device.\n\nBest practice: Do this today, on the device you normally use, before you clear your browser or switch phones. If you entered offers for the same buyer on two devices, open FORWARD OS on both: the offers from each device are combined, and the same offer is never added twice. If you see the red notice, tap Try again, and tell Operations if it does not clear.'
       },
       {
         title: 'The Updates Popup Remembers You Across Devices',
         detail: 'When you close this updates popup, FORWARD OS now records it in the cloud, so the same update does not pop up again on your other devices. That record was also failing to save before today.\n\nHow to use: Read the update and close the popup once. It will not reappear for that update on your phone or your computer.\n\nBest practice: Read each update the first time it appears. It is the only place you are told what changed.'
+      },
+      {
+        title: 'Each Offer Now Saves on Its Own',
+        detail: 'The Offer Tracker now saves every offer as its own record instead of saving the whole list at once. Before, if you and a co-agent (or your phone and your computer) each added an offer for the same buyer, the second save could replace the first. Now both offers are kept. Removing an offer hides it on every device, and an old copy on another phone or computer can no longer put it back. Offers you entered earlier are moved over on their own, once, with no duplicates.\n\nHow to use: Nothing new to learn. Add offers, tap a status, or remove an offer as before, and watch for Saved to the cloud under the Offer Tracker heading. If a buyer shows older offers but you cannot change them, your device has not reached the cloud yet: check your connection and open the buyer again.\n\nBest practice: Look for Saved to the cloud before you leave the buyer. If you removed an offer by mistake, add it again: the removed one stays on file in the database, so nothing is lost from the record.'
       }
     ]
   }
