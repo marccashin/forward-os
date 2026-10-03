@@ -5656,11 +5656,17 @@ body {
             </button>
           </div>
 
+          <!-- Listings could not be loaded. Must be visible: an empty list alone reads as "no listings". -->
+          <div v-if="lstLoadError && !lstLoading" style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#991b1b;line-height:1.5;">
+            <strong>Your listings could not be loaded.</strong> {{ lstProperties.length ? 'The list below may be out of date.' : 'This does not mean you have no listings.' }} <span style="opacity:0.8;">({{ lstLoadError }})</span>
+            <button @click="lstFetchProperties()" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Try again</button>
+          </div>
+
           <!-- Loading -->
           <div v-if="lstLoading" style="text-align:center;padding:48px;color:#aaa;font-size:9px;letter-spacing:0.1em;text-transform:uppercase;">Loading properties…</div>
 
           <!-- Empty state -->
-          <div v-else-if="lstProperties.length===0" class="empty-state">
+          <div v-else-if="lstProperties.length===0 && !lstLoadError" class="empty-state">
             <div class="empty-state-title">No listings yet</div>
             <div class="empty-state-sub">Create a property folder to organise assets and generate your campaign</div>
             <div class="empty-state-actions">
@@ -9317,21 +9323,29 @@ async function getLib() {
   } catch(e) { console.warn('[FOS] lib load:',e); }
   try { return JSON.parse(localStorage.getItem(agentKey('fos_lib'))||'[]'); } catch { return []; }
 }
+// Returns 'cloud' when the item is in the database, 'device' when the database
+// refused it and it is only in this browser, 'failed' when it is nowhere.
 async function pushLib(item) {
   try {
     const an = localStorage.getItem('fos_agent')||'__default__';
     await supaRest.insert('saved_library',{...item,agent_name:an});
-    lib.value = await getLib(); return;
+    // This function sits outside setup() and cannot see `lib`. It used to set
+    // lib.value here, which threw AFTER a successful insert and dropped into
+    // the device-only fallback below. The caller refreshes the list now.
+    return 'cloud';
   } catch(e) { console.warn('[FOS] lib save:',e); }
-  try { const l=await getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); } catch {}
-}async function dropLib(id) {
+  try { const l=await getLib(); l.unshift(item); localStorage.setItem(agentKey('fos_lib'),JSON.stringify(l)); return 'device'; } catch { return 'failed'; }
+}
+// Returns '' when the item was removed from the database, otherwise the reason.
+async function dropLib(id) {
+  let err = '';
   // Remove from Supabase saved_library
   try {
-    const an = localStorage.getItem('fos_agent')||'__default__';
     await supaRest.delete('saved_library', 'id', id);
-  } catch(e) { console.warn('[FOS] lib delete Supabase:', e); }
+  } catch(e) { err = (e && e.message) ? e.message : String(e); console.warn('[FOS] lib delete Supabase:', e); }
   // Also clean localStorage cache
   try { const l = await getLib(); localStorage.setItem(agentKey('fos_lib'), JSON.stringify(l.filter(i=>i.id!==id))); } catch {}
+  return err;
 }
 
 // ── Client Files helpers (agent-namespaced) ─────────────
@@ -9946,16 +9960,23 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // Also persist to Supabase under __global__ so all agents get it on any device
       try {
         await supaRest.upsert('agent_config', { agent_name: '__global__', fub_api_key: key }, 'agent_name');
-      } catch(e) { console.warn('Could not save FUB key to Supabase:', e); }
-      showToast('✅ FUB key saved! Syncing team members…');
+        showToast('✅ FUB key saved! Syncing team members…');
+      } catch(e) {
+        console.warn('Could not save FUB key to Supabase:', e);
+        showToast('FUB key saved on THIS DEVICE ONLY. It did NOT save to the cloud, so the rest of the team does not have it. (' + fosWhy(e) + ')', 9000);
+      }
       await fubSyncUsers();
     }
     async function clearFubKey() {
       localStorage.removeItem('fos_fub_key');
       localStorage.removeItem('fos_fub_users');
       settFubKey.value = ''; fubKeySet.value = false; fubUserCount.value = 0;
-      try { await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.__global__`, { method:'PATCH', headers: supaRest.headers(), body: JSON.stringify({ fub_api_key: null }) }); } catch {}
-      showToast('FUB key cleared.');
+      try {
+        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.__global__`, { method:'PATCH', headers: supaRest.headers(), body: JSON.stringify({ fub_api_key: null }) }));
+        showToast('FUB key cleared.');
+      } catch (e) {
+        showToast('FUB key cleared on THIS DEVICE ONLY. The cloud still has it, so it will come back at the next sign-in. (' + fosWhy(e) + ')', 9000);
+      }
     }
     async function fubSyncUsers() {
       fubSyncing.value = true;
@@ -10099,6 +10120,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           mimeType = 'application/json';
         }
 
+        let _noteErr = '';
         const blob = new Blob([fileBytes], { type: mimeType });
         const { driveFileId: _sp1id, driveLink: _sp1dl } = await fosUploadToDrive(blob, fileName, mimeType, driveFolderId || '');
         const _sp1fd = new FormData();
@@ -10110,7 +10132,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
         if (isTextContent && typeof data.data === 'string') {
           try { await supaRest.insert('property_notes', { property_id: targetProp.id, subfolder, content: data.data }); }
-          catch (e) { console.warn('property_notes write failed:', e); }
+          catch (e) { _noteErr = fosWhy(e) || 'unknown error'; console.warn('property_notes write failed:', e); }
         }
 
         // Also save locally
@@ -10119,7 +10141,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
         showSaveToProp.value = false; saveToPropData.value = null; saveToPropManualSubfolder.value = '';
         refreshPropFiles();
-        showGoldToast(`${toolName || 'File'} saved to ${targetProp.address} / ${SUBFOLDER_LABELS[subfolder] || subfolder}`);
+        if (_noteErr) showToast((toolName || 'File') + ' saved to the Drive folder, but the text was NOT saved to the listing in FORWARD OS (' + _noteErr + '). It will not appear on the listing card or in the campaign.', 10000);
+        else showGoldToast(`${toolName || 'File'} saved to ${targetProp.address} / ${SUBFOLDER_LABELS[subfolder] || subfolder}`);
         fetchSupaProperties();
         if (data.type) setTimeout(() => resetToolForm(data.type), 1500);
       } catch (e) { console.error('Save to property failed:', e); showToast('Save failed: ' + e.message, 4000); }
@@ -10192,11 +10215,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const inputMethod = revInputTab.value === 'voice' ? 'voice' : 'text';
       revSubmitting.value = true;
       try {
-        await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
+        const _crRes = await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
           property_id: propData.id, revision_number: nextRevNum,
           requested_by_email: currentEmail, requested_by_name: agentName.value,
           revision_notes: revNotes.value, input_method: inputMethod, status: 'pending'
         }) })
+        await fosOk(_crRes, 'the request could not be recorded');
+        let _pipeErr = '';
         await fetch(RAILWAY_URL + '/properties/' + propData.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'running' }})}).catch(e=>console.warn('Property update:',e));
         if (PIPELINE_TRIGGER_URL) {
           try {
@@ -10207,11 +10232,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
                 subfolder_drive_ids: propData.subfolder_drive_ids || {},
                 mode: 'revision', revision_notes: revNotes.value, revision_number: nextRevNum
               })
-            });
-          } catch (e) { console.warn('Webhook POST failed:', e); }
+            }).then(r => fosOk(r));
+          } catch (e) { _pipeErr = fosWhy(e) || 'no answer'; console.warn('Webhook POST failed:', e); }
         }
-        revActiveStatus.value = 'running'; revLatestNumber.value = nextRevNum; revNotes.value = '';
-        startRevisionPolling(propData.id);
+        revLatestNumber.value = nextRevNum;
+        if (_pipeErr) {
+          // The request is on record but nothing is working on it. Do not show
+          // "running" and do not wait for a result that will never come.
+          showToast('Your revision request was recorded, but the pipeline that makes the changes did NOT start (' + _pipeErr + '). Nothing is being worked on. Tell Operations before you send it again.', 12000);
+        } else {
+          revActiveStatus.value = 'running'; revNotes.value = '';
+          startRevisionPolling(propData.id);
+        }
         await fetchRevisionRequests(propData.id);
       } catch (e) { console.error('Revision submit failed:', e); showToast('Revision submit failed: ' + e.message, 4000); }
       revSubmitting.value = false;
@@ -10298,6 +10330,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     const lstProperties = ref([]);
     const lstLoading = ref(false);
+    const lstLoadError = ref('');   // why the listings could not be loaded; '' when they did
     const lstToolOpen = ref(null); // which listing tool panel is expanded in property folder
 
     // ── Multiple Offer Presentation ──────────────────────────────────────────
@@ -10908,6 +10941,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     async function lstFetchProperties() {
       if (!SUPABASE_URL) return;
       lstLoading.value = true;
+      let _loadErr = '';
       try {
         // Read directly from Supabase — Railway is for AI only.
         // A Railway restart must NEVER clear or hide the listings UI.
@@ -10920,11 +10954,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
 
         const [primaryProps, allAssets] = await Promise.all([
-          supaRest.select('properties', fetchUrl).catch(() => null),
+          supaRest.select('properties', fetchUrl).catch(e => { _loadErr = fosWhy(e) || 'no answer'; return null; }),
           supaRest.select('property_assets', 'select=property_id,subfolder').catch(() => [])
         ]);
 
-        if (primaryProps === null) { lstLoading.value = false; return; } // keep existing list on error
+        // Keep the existing list on error, and SAY the load failed. An empty
+        // list with no message reads as "you have no listings".
+        if (primaryProps === null) { lstLoadError.value = _loadErr || 'no answer'; lstLoading.value = false; return; }
 
         // For non-admins, fetch co-agent properties separately (JSONB cs filter)
         let allProps = primaryProps;
@@ -10964,7 +11000,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           p._assetCount = TRACKED_SF.filter(sf => map[sf]).length;
         });
         lstProperties.value = allProps;
-      } catch (e) { console.warn('Fetch properties failed:', e); }
+        lstLoadError.value = '';
+      } catch (e) { console.warn('Fetch properties failed:', e); lstLoadError.value = fosWhy(e) || 'unknown error'; }
       lstLoading.value = false;
     }
 
@@ -11196,21 +11233,27 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ seller_name: name }})}).catch(e=>console.warn('Property update:',e));
       lstActiveProp.value.seller_name = name;
     }
+    // Returns true only when the note is in the database. On any failure it
+    // says so on screen; the text stays in the form so it can be saved again.
     async function lstSaveNote(subfolder) {
-      if (!lstActiveProp.value) return;
+      if (!lstActiveProp.value) return false;
       const content = lstNotes[subfolder]?.trim();
-      if (!content) return;
+      if (!content) return false;
       try {
-        // Upsert: delete old, insert new
-        try {
-          await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.${subfolder}`, {
-            method:'DELETE', headers: supaRest.headers()
-          });
-        } catch {}
+        // Replace: delete old, insert new. If the delete fails, stop: inserting
+        // anyway would leave two copies of the note.
+        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.${subfolder}`, {
+          method:'DELETE', headers: supaRest.headers()
+        }));
         await supaRest.insert('property_notes', {
           property_id: lstActiveProp.value.id, subfolder, content
         });
-      } catch (e) { console.warn('Save note failed:', e); }
+        return true;
+      } catch (e) {
+        console.warn('Save note failed:', e);
+        showToast('NOT saved to this listing (' + fosWhy(e) + '). Your text is still on screen: save it again.', 9000);
+        return false;
+      }
     }
 
     // ── Google Drive direct upload helpers ─────────────────────────────────
@@ -11249,13 +11292,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return { driveFileId: u.id, driveLink: u.webViewLink || 'https://drive.google.com/file/d/' + u.id + '/view' };
     }
 
+    // Returns '' when the file is gone from Drive (or was already gone),
+    // otherwise the reason. The caller shows it.
     async function fosDriveDeleteFile(driveFileId) {
-      if (!driveFileId) return;
+      if (!driveFileId) return '';
       try {
         const token = await fosGetDriveToken();
-        await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?supportsAllDrives=true',
+        const _dr = await fetch('https://www.googleapis.com/drive/v3/files/' + driveFileId + '?supportsAllDrives=true',
           { method: 'DELETE', headers: { Authorization: 'Bearer ' + token } });
-      } catch(e) { console.warn('Drive delete failed:', e.message); }
+        if (_dr.status !== 404) await fosOk(_dr);
+        return '';
+      } catch(e) { console.warn('Drive delete failed:', e.message); return fosWhy(e) || 'unknown error'; }
     }
     // ── End Drive helpers ──────────────────────────────────────────────────
 
@@ -11301,14 +11348,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     async function lstDeleteFile(file) {
       if (!confirm('Delete ' + file.file_name + '?')) return;
       try {
-        await fosDriveDeleteFile(file.drive_file_id);
+        const _driveErr = await fosDriveDeleteFile(file.drive_file_id);
         const res = await fetch(RAILWAY_URL + '/delete-file', {
           method:'DELETE', headers:{'Content-Type':'application/json'},
           body: JSON.stringify({ asset_id: file.id || '' })
         });
         if (!res.ok) { const err = await res.text(); throw new Error(err || 'Delete failed'); }
         lstActiveFiles.value = lstActiveFiles.value.filter(f => f.id !== file.id);
-        showToast('File deleted.');
+        if (_driveErr) showToast('Removed from this listing, but the file is STILL in Google Drive (' + _driveErr + '). Delete it there by hand.', 9000);
+        else showToast('File deleted.');
       } catch (e) { showToast('Delete failed: ' + e.message, 3000); }
     }
 
@@ -11396,15 +11444,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Persist to Supabase so campaign survives device/browser changes
     if (lstActiveProp.value && lstActiveProp.value.id) {
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
+        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
           method: 'DELETE', headers: supaRest.headers()
-        });
+        }));
         await supaRest.insert('property_notes', {
           property_id: lstActiveProp.value.id,
           subfolder: 'campaign_sections',
           content: JSON.stringify(parsed)
         });
-      } catch(e) { console.warn('campaign_sections Supabase save failed:', e); }
+      } catch(e) {
+        console.warn('campaign_sections Supabase save failed:', e);
+        showToast('The campaign was generated but NOT saved to the cloud (' + fosWhy(e) + '). It is on this device only. Use a Save button in the campaign editor before you leave this page.', 10000);
+      }
     }
     campOpenPreview();
   } catch(e) {
@@ -12494,11 +12545,13 @@ async function lstSubmitToPipeline() {
       const inputMethod = lstRevInputTab.value === 'voice' ? 'voice' : 'text';
       lstRevSubmitting.value = true;
       try {
-        await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
+        const _crRes = await fetch(RAILWAY_URL + '/create-revision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify( {
           property_id: prop.id, revision_number: nextRevNum,
           requested_by_email: currentEmail, requested_by_name: agentName.value,
           revision_notes: lstRevNotes.value, input_method: inputMethod, status: 'pending'
         }) })
+        await fosOk(_crRes, 'the request could not be recorded');
+        let _pipeErr = '';
         await fetch(RAILWAY_URL + '/properties/' + prop.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ status: 'running' }})}).catch(e=>console.warn('Property update:',e));
         lstActiveProp.value = { ...prop, status: 'running' };
         if (PIPELINE_TRIGGER_URL) {
@@ -12510,11 +12563,18 @@ async function lstSubmitToPipeline() {
                 subfolder_drive_ids: prop.subfolder_drive_ids || {},
                 mode: 'revision', revision_notes: lstRevNotes.value, revision_number: nextRevNum
               })
-            });
-          } catch (e) { console.warn('Webhook POST failed:', e); }
+            }).then(r => fosOk(r));
+          } catch (e) { _pipeErr = fosWhy(e) || 'no answer'; console.warn('Webhook POST failed:', e); }
         }
-        lstRevActiveStatus.value = 'running'; lstRevLatestNumber.value = nextRevNum; lstRevNotes.value = '';
-        lstStartRevisionPolling(prop.id);
+        lstRevLatestNumber.value = nextRevNum;
+        if (_pipeErr) {
+          // The request is on record but nothing is working on it. Do not show
+          // "running" and do not wait for a result that will never come.
+          showToast('Your revision request was recorded, but the pipeline that makes the changes did NOT start (' + _pipeErr + '). Nothing is being worked on. Tell Operations before you send it again.', 12000);
+        } else {
+          lstRevActiveStatus.value = 'running'; lstRevNotes.value = '';
+          lstStartRevisionPolling(prop.id);
+        }
         await lstFetchRevisionRequests(prop.id);
       } catch (e) { console.error('Revision submit failed:', e); showToast('Revision submit failed: ' + e.message, 4000); }
       lstRevSubmitting.value = false;
@@ -12555,8 +12615,7 @@ async function lstSubmitToPipeline() {
 
       // If session has a selected property in listing-detail, save directly
       if (lstActiveProp.value && view.value === 'listing-detail') {
-        await _doSaveToPropertyDrive(lstActiveProp.value, subfolder, toolName, label, data, pdfData);
-        return true; // actual save completed
+        return await _doSaveToPropertyDrive(lstActiveProp.value, subfolder, toolName, label, data, pdfData);   // true only if it really saved
       }
 
       // Otherwise show property picker (save happens asynchronously after user picks)
@@ -12607,16 +12666,25 @@ async function lstSubmitToPipeline() {
       return doc.output('blob');
     }
 
+    // Returns true only when something was really saved. The three parts that
+    // can fail (the text on the listing, the PDF in Drive, the record of that
+    // PDF on the listing) are tracked separately, and the message names the
+    // part that did not save. Before Oct 3, 2026 every failure here was logged
+    // to the console and followed by the gold "saved" message.
     async function _doSaveToPropertyDrive(prop, subfolder, toolName, label, data, pdfData) {
+      const _where = prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder);
       try {
+        let _noteTried = false, _noteErr = '';
         // Always persist text to property_notes for in-app recall & campaign
         if (typeof data === 'string' && data.trim()) {
+          _noteTried = true;
           try {
             const _nr = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: prop.id, subfolder, content: data }) });
-            if (!_nr.ok) throw new Error(await _nr.text());
+            await fosOk(_nr);
             if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
-          } catch(e) { console.error('property_notes save failed (' + subfolder + '):', e.message); }
+          } catch(e) { _noteErr = fosWhy(e); console.error('property_notes save failed (' + subfolder + '):', e.message); }
         }
+        const _noteSaved = _noteTried && !_noteErr;
 
         let fileName, fileBytes, mimeType;
         if (pdfData) {
@@ -12640,11 +12708,13 @@ async function lstSubmitToPipeline() {
 
         // Skip Drive upload if no folder configured — text is already saved above
         if (!folderId) {
-          showGoldToast(toolName + ' saved to ' + prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder));
-          return;
+          if (_noteSaved) { showGoldToast(toolName + ' saved to ' + _where); return true; }
+          showToast(toolName + ' was NOT saved to ' + _where + ': ' + (_noteErr || 'this listing has no Drive folder for it'), 8000);
+          return false;
         }
 
-        // Attempt Drive upload — failure is non-fatal if text was already saved
+        // Attempt Drive upload. A failure here no longer hides behind a "saved" message.
+        let _driveErr = '';
         try {
           const blob = new Blob([fileBytes], { type: mimeType });
           const { driveFileId: _sp2id, driveLink: _sp2dl } = await fosUploadToDrive(blob, fileName, mimeType, folderId);
@@ -12653,11 +12723,21 @@ async function lstSubmitToPipeline() {
           _sp2fd.append('file_name', fileName); _sp2fd.append('subfolder', subfolder);
           _sp2fd.append('property_id', prop.id); _sp2fd.append('uploaded_by', agentName.value);
           const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: _sp2fd });
-          if (!uploadRes.ok) { console.warn('/upload-file error:', await uploadRes.text()); }
-        } catch (uploadErr) { console.warn('Drive upload skipped:', uploadErr.message); }
+          await fosOk(uploadRes, 'the file reached Drive but could not be recorded on the listing');
+        } catch (uploadErr) { _driveErr = fosWhy(uploadErr); console.warn('Drive upload failed:', uploadErr.message); }
 
-        showGoldToast(toolName + ' saved to ' + prop.address + ' / ' + (SUBFOLDER_LABELS[subfolder] || subfolder));
-      } catch (e) { showToast('Save failed: ' + e.message, 4000); }
+        if (!_driveErr && !_noteErr) { showGoldToast(toolName + ' saved to ' + _where); return true; }
+        if (_driveErr && !_noteSaved) {
+          showToast(toolName + ' was NOT saved to ' + _where + ': ' + (_noteErr || _driveErr), 8000);
+          return false;
+        }
+        if (_driveErr) {
+          showToast(toolName + ' text saved to ' + _where + ', but the PDF did NOT save to the Drive folder: ' + _driveErr, 8000);
+          return true;
+        }
+        showToast(toolName + ' PDF saved to the Drive folder, but the text was NOT saved to the listing in FORWARD OS: ' + _noteErr, 8000);
+        return true;
+      } catch (e) { showToast('Save failed: ' + e.message, 4000); return false; }
     }
 
     // Load listings on mount
@@ -12995,12 +13075,10 @@ async function lstSubmitToPipeline() {
       cmaSaving.value = true;
       try {
         const content = 'CMA completed on ' + new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) + ' for ' + addr;
-        // Write only to property_notes (no Drive file — stays out of files dashboard)
-        try {
-          await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${targetProp.id}&subfolder=eq.cma`, {
-            method:'DELETE', headers: supaRest.headers()
-          });
-        } catch {}
+        // Write only to property_notes (no Drive file — stays out of files dashboard).
+        // /save-property-note deletes the old note and inserts the new one itself
+        // (forward-os-backend main.py), so the extra delete that used to run here,
+        // with its failure swallowed, was removed.
         const _cmaR = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: targetProp.id, subfolder: 'cma', content }) });
         if (!_cmaR.ok) throw new Error(await _cmaR.text());
         // Update local notes cache so it shows immediately in the panel
@@ -13065,8 +13143,7 @@ async function lstSubmitToPipeline() {
       if (!trimmed || !lstActiveProp.value) return;
       lstNotes.listing_remarks = trimmed;
       lstDescEditing.value = false;
-      await lstSaveNote('listing_remarks');
-      showToast('Listing description saved.', 2500);
+      if (await lstSaveNote('listing_remarks')) showToast('Listing description saved.', 2500);
     }
     const ldVoiceListening = ref(false);
     const ldDistances       = ref(null);
@@ -13896,20 +13973,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       try {
         const pdfBase64 = await sellerPrepGetPDFBase64();
         const label = (sellerPrepType.value === 'condo' ? 'Condo' : 'SFH') + ' Seller Prep Guide';
-        const saved = await saveToPropertyFromTool('Seller Prep Guide', label, null, pdfBase64);
+        // The checklist text is handed to the same save as the PDF. That save
+        // writes the text to the listing, checks the answer, and says on screen
+        // which part did not save. The separate write that used to follow here
+        // only logged its failure to the console.
+        const textSummary = sellerPrepBuildTextSummary();
+        const saved = await saveToPropertyFromTool('Seller Prep Guide', label, textSummary, pdfBase64);
         if (saved) {
-          // Set in memory immediately so header badge appears
-          const textSummary = sellerPrepBuildTextSummary();
-          lstNotes.seller_prep = textSummary;
           sellerPrepSaved.value = true;
           setTimeout(() => { sellerPrepSaved.value = false; }, 8000);
-          // Persist to property_notes (non-critical)
-          if (lstActiveProp.value) {
-            try {
-              const _spr = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: lstActiveProp.value.id, subfolder: 'seller_prep', content: textSummary }) });
-              if (!_spr.ok) throw new Error(await _spr.text());
-            } catch(e) { console.error('seller_prep save failed:', e.message); }
-          }
         }
       } finally { sellerPrepSaving.value = false; }
     }
@@ -16579,6 +16651,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } catch(e) { console.warn('Could not load tours from Supabase:', e); }
       return ttLoadTours(); // fallback to localStorage
     }
+    let ttSyncFailed = false;
     async function ttSaveTours() {
       const toursJson = JSON.stringify(tt.tours);
       localStorage.setItem(ttBuyerKey(), toursJson);
@@ -16589,7 +16662,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           buyer_id: buyerId,
           tours_json: toursJson
         }, 'agent_name,buyer_id');
-      } catch(e) { console.warn('Could not sync tours to Supabase:', e); }
+        ttSyncFailed = false;
+      } catch(e) {
+        console.warn('Could not sync tours to Supabase:', e);
+        // Said once per run of failures, not on every keystroke.
+        if (!ttSyncFailed) showToast('Tours are NOT saving to the cloud (' + fosWhy(e) + '). They are on this device only until a save goes through.', 9000);
+        ttSyncFailed = true;
+      }
     }
     function ttCreateTour() {
       const name = tt.newTourName.trim();
@@ -17376,20 +17455,23 @@ No markdown. No preamble. Valid JSON only.`;
     async function lstSetMarket(prop, val) {
       lstMarketEditId.value = null;
       if (prop.market === val) return;
+      const _was = prop.market;
       prop.market = val;           // optimistic update, agent sees it immediately
       if (!prop.id) return;
       try {
-        await fetch(RAILWAY_URL + '/properties/' + prop.id, {
+        await fosOk(await fetch(RAILWAY_URL + '/properties/' + prop.id, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fields: { market: val } })
-        });
+        }));
         // If this is the currently open listing, keep lstActiveProp in sync
         if (lstActiveProp.value && lstActiveProp.value.id === prop.id) {
           lstActiveProp.value.market = val;
         }
       } catch (e) {
         console.warn('Market update failed:', e);
+        prop.market = _was;        // put the badge back: the net sheet follows this value
+        showToast('The state was NOT changed to ' + val + ' (' + fosWhy(e) + '). The listing is still ' + (_was || 'DC') + '.', 8000);
       }
     }
 
@@ -19605,10 +19687,14 @@ No markdown. Valid JSON only.`;
 
     async function byrUpdateProfile(field, value) {
       if (!byrActiveBuyer.value) return;
+      const _buyer = byrActiveBuyer.value;
       try {
-        await fetch(RAILWAY_URL + '/buyers/' + byrActiveBuyer.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ [field]: value }})}).catch(e=>console.warn('Buyer update:',e));
-        byrActiveBuyer.value[field] = value;
-      } catch(e) { console.warn('Profile update failed:', e); }
+        await fosOk(await fetch(RAILWAY_URL + '/buyers/' + _buyer.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ [field]: value }})}));
+        _buyer[field] = value;   // only after the server accepted it
+      } catch(e) {
+        console.warn('Profile update failed:', e);
+        showToast('That change to the buyer profile was NOT saved (' + fosWhy(e) + '). Enter it again.', 8000);
+      }
     }
 
     // == Training Admin (Marc-only) ==
@@ -19680,19 +19766,25 @@ No markdown. Valid JSON only.`;
     const atNewTitle   = ref('');
     const atNewDesc    = ref('');
 
+    let atSyncFailed = false;
     async function atSaveEntries() {
       // Save to localStorage immediately — this is the display source of truth
       localStorage.setItem(AT_KEY, JSON.stringify(atEntries.value));
       // Background sync to Supabase (fire-and-forget, never affects display)
       ;(async () => {
         try {
-          await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=eq.manual', { method: 'DELETE', headers: supaRest.headers() });
+          await fosOk(await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?drive_file_id=eq.manual', { method: 'DELETE', headers: supaRest.headers() }));
           const rows = atEntries.value.map(e => ({ file_name: e.title || '', content: e.desc || '', category: e.section || '', drive_file_id: 'manual' }));
           const BATCH = 20;
           for (let i = 0; i < rows.length; i += BATCH) {
-            await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs', { method: 'POST', headers: Object.assign({}, supaRest.headers(), {'Prefer':'return=minimal'}), body: JSON.stringify(rows.slice(i, i + BATCH)) });
+            await fosOk(await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs', { method: 'POST', headers: Object.assign({}, supaRest.headers(), {'Prefer':'return=minimal'}), body: JSON.stringify(rows.slice(i, i + BATCH)) }));
           }
-        } catch(e) { console.warn('Supabase background sync failed:', e); }
+          atSyncFailed = false;
+        } catch(e) {
+          console.warn('Supabase background sync failed:', e);
+          if (!atSyncFailed) showToast('Training entries are NOT saving to the cloud (' + fosWhy(e) + '). They are on this device only, and the voice assistant may not find them.', 9000);
+          atSyncFailed = true;
+        }
       })();
     }
 
@@ -20719,6 +20811,10 @@ const CHANGELOG = [
       {
         title: 'Each Offer Now Saves on Its Own',
         detail: 'The Offer Tracker now saves every offer as its own record instead of saving the whole list at once. Before, if you and a co-agent (or your phone and your computer) each added an offer for the same buyer, the second save could replace the first. Now both offers are kept. Removing an offer hides it on every device, and an old copy on another phone or computer can no longer put it back. Offers you entered earlier are moved over on their own, once, with no duplicates.\n\nHow to use: Nothing new to learn. Add offers, tap a status, or remove an offer as before, and watch for Saved to the cloud under the Offer Tracker heading. If a buyer shows older offers but you cannot change them, your device has not reached the cloud yet: check your connection and open the buyer again.\n\nBest practice: Look for Saved to the cloud before you leave the buyer. If you removed an offer by mistake, add it again: the removed one stays on file in the database, so nothing is lost from the record.'
+      },
+      {
+        title: 'FORWARD OS Now Tells You When a Save Did Not Work',
+        detail: 'In more than twenty places, FORWARD OS could fail to save something and either say nothing or show its usual saved message anyway. That is fixed. This covers saving a tool to a listing (the gold saved message), listing descriptions and notes, the campaign content, the Seller Prep Guide, the state badge on a listing, buyer profile fields, the Tour Tracker, the Saved Library, revision requests, deleting files, and the Settings screens. A saved message now appears only after the save really went through. When it does not, a message says what was not saved and why, and your text stays on screen. The Listings page also shows a red notice with a Try again button if your listings could not be loaded, instead of looking as if you have none.\n\nHow to use: Work as you do now. If you see a message containing NOT saved or THIS DEVICE ONLY, the item did not reach the cloud: save it again. For a revision request, if the message says the pipeline did not start, tell Operations before sending it again.\n\nBest practice: Read the message before you move on. It stays up longer than a normal confirmation. Take a screenshot of any NOT saved message and send it to Operations, because the reason in brackets tells them what to fix.'
       }
     ]
   }
@@ -22202,14 +22298,32 @@ async function dismissUpdates() {
     async function byrDeleteFile(file) {
       if (!confirm('Delete '+file.file_name+'?')) return;
       try {
-        await fosDriveDeleteFile(file.drive_file_id);
+        const _driveErr = await fosDriveDeleteFile(file.drive_file_id);
         const body = JSON.stringify({asset_id:file.id,asset_type:'buyer'});
         const res = await fetch(RAILWAY_URL+'/delete-file',{method:'DELETE',headers:{'Content-Type':'application/json'},body});
         if (!res.ok) throw new Error(await res.text());
         byrActiveFiles.value=byrActiveFiles.value.filter(f=>f.id!==file.id);
+        if (_driveErr) showToast('Removed from this buyer, but the file is STILL in Google Drive (' + _driveErr + '). Delete it there by hand.', 9000);
       } catch(e) { showToast('Delete failed: '+e.message); }
     }
     function showToast(msg, ms=2600) { toast.msg=msg; toast.show=true; setTimeout(()=>{toast.show=false;},ms); }
+    // fetch() does not throw when the server answers with an error (404, 500).
+    // Every save must pass its answer through fosOk, which throws unless the
+    // answer is a success and carries the server's own words. A save is only
+    // ever reported as saved after fosOk let it through.
+    async function fosOk(res, what) {
+      if (res && res.ok) return res;
+      let detail = res ? ('error ' + res.status) : 'no answer';
+      try {
+        const t = await res.text();
+        if (t) {
+          try { const j = JSON.parse(t); detail = j.message || j.detail || j.hint || detail; }
+          catch (x) { detail = t.slice(0, 160); }
+        }
+      } catch (x) {}
+      throw new Error((what ? what + ': ' : '') + detail);
+    }
+    function fosWhy(e) { return (e && e.message) ? e.message : String(e); }
 
     // Universal PDF opener that works on mobile (avoids popup blockers)
     // PDF viewer modal state
@@ -22365,14 +22479,26 @@ async function dismissUpdates() {
       if (sp.platform==='all') return ['Instagram','LinkedIn','Facebook','Twitter/X'][idx]||`Version ${idx+1}`;
       return sp.platform==='twitter'?'Twitter/X':sp.platform.charAt(0).toUpperCase()+sp.platform.slice(1);
     }
-    function saveOut(type, title, content) {
-      pushLib({ id:Date.now(), type, title, content, toolLabel:TOOL_LABELS[type]||type, savedAt:new Date().toISOString(), agent:agentName.value });
-      getLib().then(v => { lib.value = v; });
+    async function saveOut(type, title, content) {
+      const _how = await pushLib({ id:Date.now(), type, title, content, toolLabel:TOOL_LABELS[type]||type, savedAt:new Date().toISOString(), agent:agentName.value });
+      if (_how === 'device') {
+        // The device copy is not shown in the library while the cloud answers, so add it by hand.
+        try { lib.value = JSON.parse(localStorage.getItem(agentKey('fos_lib'))||'[]'); } catch (e) {}
+        showToast('Saved on THIS DEVICE ONLY. The library in the cloud did not accept it, so it is not on your other devices.', 9000);
+        return;
+      }
+      if (_how !== 'cloud') { showToast('NOT saved to your library. Copy your text before leaving this page.', 9000); return; }
+      lib.value = await getLib();
       showToast('✅ Saved to library!');
       // Reset the form 1.5s after saving — agent sees the confirmation, then gets a clean slate
       setTimeout(() => resetToolForm(type), 1500);
     }
-    function delItem(id) { dropLib(id); lib.value=getLib(); showToast('Deleted.'); }
+    async function delItem(id) {
+      const _err = await dropLib(id);
+      lib.value = await getLib();
+      if (_err) showToast('NOT deleted from your library (' + _err + ').', 8000);
+      else showToast('Deleted.');
+    }
 
     // ── Auth ───────────────────────────────────────────────
     async function doLogin() {
@@ -22533,14 +22659,21 @@ async function dismissUpdates() {
       // Also persist to Supabase so the key is available on any device
       try {
         await supaRest.upsert('agent_config', { agent_name: agentName.value, claude_api_key: key }, 'agent_name');
-      } catch(e) { console.warn('Could not save key to Supabase:', e); }
-      showToast('✅ API key saved!');
+        showToast('✅ API key saved!');
+      } catch(e) {
+        console.warn('Could not save key to Supabase:', e);
+        showToast('API key saved on THIS DEVICE ONLY. It did NOT save to the cloud, so your other devices do not have it. (' + fosWhy(e) + ')', 9000);
+      }
     }
     async function clearKey() {
       localStorage.removeItem(agentKeyFor('fos_key', agentName.value));
       settKey.value = ''; apiKeySet.value = false; ldMockMode.value = true; _fosApiKey = '';
-      try { await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.${encodeURIComponent(agentName.value)}`, { method:'PATCH', headers: { ...supaRest.headers() }, body: JSON.stringify({ claude_api_key: null }) }); } catch {}
-      showToast('API key cleared.');
+      try {
+        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.${encodeURIComponent(agentName.value)}`, { method:'PATCH', headers: { ...supaRest.headers() }, body: JSON.stringify({ claude_api_key: null }) }));
+        showToast('API key cleared.');
+      } catch (e) {
+        showToast('API key cleared on THIS DEVICE ONLY. The cloud still has it, so it will come back at the next sign-in. (' + fosWhy(e) + ')', 9000);
+      }
     }
     function saveModel() { localStorage.setItem('fos_model', settModel.value); showToast('✅ Model saved!'); }
 
@@ -22589,10 +22722,13 @@ async function dismissUpdates() {
     async function adminClearKey() {
       const targetAgent = adminKeyAgent.value;
       localStorage.removeItem(agentKeyFor('fos_key', targetAgent));
-      try { await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.${encodeURIComponent(targetAgent)}`, { method:'PATCH', headers: supaRest.headers(), body: JSON.stringify({ claude_api_key: null }) }); } catch {}
+      let _clrErr = '';
+      try { await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/agent_config?agent_name=eq.${encodeURIComponent(targetAgent)}`, { method:'PATCH', headers: supaRest.headers(), body: JSON.stringify({ claude_api_key: null }) })); }
+      catch (e) { _clrErr = fosWhy(e); }
       adminKeyValue.value = '';
       adminRefreshStatus();
-      showToast('API key cleared for ' + targetAgent);
+      if (_clrErr) showToast('API key for ' + targetAgent + ' was NOT cleared in the cloud. (' + _clrErr + ')', 9000);
+      else showToast('API key cleared for ' + targetAgent);
     }
     async function saveBranding() {
       localStorage.setItem('fos_brokerage', settBrokerage.value);
@@ -22605,8 +22741,11 @@ async function dismissUpdates() {
           markets: settMarkets.value,
           voice_tone: settVoice.value
         }, 'agent_name');
-      } catch(e) { console.warn('Could not save branding to Supabase:', e); }
-      showToast('✅ Branding saved!');
+        showToast('✅ Branding saved!');
+      } catch(e) {
+        console.warn('Could not save branding to Supabase:', e);
+        showToast('Branding saved on THIS DEVICE ONLY. It did NOT save to the cloud. (' + fosWhy(e) + ')', 9000);
+      }
     }
 
     // ── Brand PDFs ─────────────────────────────────────────────────────────
@@ -22615,7 +22754,8 @@ async function dismissUpdates() {
       localStorage.setItem('fos_brand_pdfs', json);
       try {
         await supaRest.upsert('agent_config', { agent_name: '__global__', brand_pdfs: json }, 'agent_name');
-      } catch(e) { console.warn('Could not save brand PDFs to Supabase:', e); }
+        return '';
+      } catch(e) { console.warn('Could not save brand PDFs to Supabase:', e); return fosWhy(e) || 'unknown error'; }   // the caller shows it
     }
     async function bpHandleUpload(e) {
       const file = e.target.files[0]; if (!file) return;
@@ -22638,20 +22778,29 @@ async function dismissUpdates() {
         }
         const entry = { id: Date.now(), name: file.name, content: fullText.trim() };
         settBrandPdfs.value.push(entry);
-        await saveBrandPdfs();
+        const _bpErr = await saveBrandPdfs();
         // Also save to knowledge_docs so Voice can search Brand PDFs
-        try { await supaRest.insert('knowledge_docs', { file_name: file.name, content: fullText.trim(), category: 'Brand Reference', drive_file_id: 'brand_pdf' }); } catch(e) { console.warn('knowledge_docs insert failed:', e); }
-        showToast('✅ Brand PDF added (' + pdfDoc.numPages + ' page' + (pdfDoc.numPages === 1 ? '' : 's') + ')');
+        let _kdErr = '';
+        try { await supaRest.insert('knowledge_docs', { file_name: file.name, content: fullText.trim(), category: 'Brand Reference', drive_file_id: 'brand_pdf' }); } catch(e) { _kdErr = fosWhy(e); console.warn('knowledge_docs insert failed:', e); }
+        if (_bpErr) showToast('Brand PDF added on THIS DEVICE ONLY. It did NOT save to the cloud. (' + _bpErr + ')', 9000);
+        else if (_kdErr) showToast('Brand PDF added, but the voice assistant cannot search it yet: that part did NOT save. (' + _kdErr + ')', 9000);
+        else showToast('✅ Brand PDF added (' + pdfDoc.numPages + ' page' + (pdfDoc.numPages === 1 ? '' : 's') + ')');
       } catch(err) { console.error(err); showToast('Could not read PDF: ' + err.message, 4000); }
       e.target.value = '';
     }
     async function bpRemove(id) {
       const pdf = settBrandPdfs.value.find(p => p.id === id);
       settBrandPdfs.value = settBrandPdfs.value.filter(p => p.id !== id);
-      await saveBrandPdfs();
+      const _bpErr = await saveBrandPdfs();
       // Also remove from knowledge_docs
-      if (pdf) { try { await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?file_name=eq.' + encodeURIComponent(pdf.name) + '&category=eq.Brand%20Reference', { method: 'DELETE', headers: supaRest.headers() }); } catch(e) { console.warn('knowledge_docs delete failed:', e); } }
-      showToast('Brand PDF removed.');
+      let _kdErr = '';
+      if (pdf) {
+        try { await fosOk(await fetch(SUPABASE_URL + '/rest/v1/knowledge_docs?file_name=eq.' + encodeURIComponent(pdf.name) + '&category=eq.Brand%20Reference', { method: 'DELETE', headers: supaRest.headers() })); }
+        catch(e) { _kdErr = fosWhy(e); console.warn('knowledge_docs delete failed:', e); }
+      }
+      if (_bpErr) showToast('Brand PDF removed on THIS DEVICE ONLY. The cloud still has it, so it will come back. (' + _bpErr + ')', 9000);
+      else if (_kdErr) showToast('Brand PDF removed, but the voice assistant can still search it: that part did NOT save. (' + _kdErr + ')', 9000);
+      else showToast('Brand PDF removed.');
     }
 
     // ── AI: Listing Description (Chat-based) ────────────────
@@ -23441,7 +23590,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      lstProperties, lstLoading, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      lstProperties, lstLoading, lstLoadError, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
