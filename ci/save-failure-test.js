@@ -23,7 +23,9 @@ const VUE = fs.readFileSync(require.resolve('vue/dist/vue.global.js'), 'utf8');
 const JSPDF = fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js'), 'utf8');
 const P1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B1 = '11111111-1111-4111-8111-111111111111';
 // failWrites: every write answers 500. failPipeline: only the pipeline webhook does. failListings: the listings read does.
-let mode = { failWrites: false, failPipeline: false, failListings: false };
+// failNotes: only the writes that put text on a listing do (Drive and everything else work).
+let mode = { failWrites: false, failPipeline: false, failListings: false, failNotes: false };
+let sent = [];   // every write the page made: method, address, body text
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function api(route) {
   const req = route.request(), u = req.url(), m = req.method();
@@ -33,7 +35,10 @@ function api(route) {
     if (mode.failListings && /\/rest\/v1\/properties/.test(u)) return J(route, 500, { message: 'mock outage' });
     return J(route, 200, []);
   }
+  sent.push({ m, u, body: req.postData() || '' });
   if (mode.failWrites) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
+  if (mode.failNotes && (/\/rest\/v1\/property_notes/.test(u) || /\/save-property-note$/.test(u))) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
+  if (/googleapis\.com\/upload\/drive/.test(u)) return J(route, 200, { id: 'drive-file-1', webViewLink: 'https://drive.example/f1' });
   if (/\/rest\/v1\//.test(u)) return J(route, m === 'POST' ? 201 : 200, [{ id: 1 }]);
   return J(route, 200, { ok: true });
 }
@@ -52,7 +57,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const ctx = await browser.newContext();
   await ctx.route('**/*', (route) => {
     const u = route.request().url();
-    if (u.startsWith(origin)) return u.includes('/.netlify/') ? J(route, 200, {}) : route.continue();
+    if (u.startsWith(origin)) return u.includes('/.netlify/') ? J(route, 200, { access_token: 'mock-token' }) : route.continue();
     if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
     if (/cdnjs.*\/jspdf\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: JSPDF });
     const t = route.request().resourceType();
@@ -69,7 +74,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
   // Runs one save in the page and returns every message shown while it ran.
   async function run(m, body, arg) {
-    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false }, m);
+    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false, failNotes: false }, m);
+    sent = [];
     return page.evaluate(async ([src, arg]) => {
       const st = document.querySelector('#app').__vue_app__._instance.setupState;
       const seen = [];
@@ -112,6 +118,34 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const st1 = "st.lstActiveProp = { id: arg.P1, address: '1 Test St' }; st.view = 'listing-detail'; return await st.saveToPropertyFromTool('Seller Net Sheet', 'Net Sheet', 'Net to seller: 1', null);";
   ok((await run({}, st1, { P1 })).ret === true, 'true when it saved');
   ok((await run({ failWrites: true }, st1, { P1 })).ret === false, 'false when it did not (callers show their Saved badge only on true)');
+
+  console.log('Seller Prep Guide save (its text now goes through the same checked save as the PDF)');
+  const spFolder = "st.lstActiveProp = { id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_prep: 'folder-1' } }; st.view = 'listing-detail'; st.lstNotes.seller_prep = ''; st.sellerPrepSaved = false; await st.sellerPrepSaveToProperty(); return [st.sellerPrepSaved, st.lstNotes.seller_prep.length > 0];";
+  const spNoFolder = spFolder.replace("{ seller_prep: 'folder-1' }", '{}');
+  const noteWrites = () => sent.filter(x => /\/save-property-note$/.test(x.u)).map(x => JSON.parse(x.body));
+  let r = await run({}, spFolder, { P1 });
+  ok(r.ret[0] === true && r.ret[1] === true && r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)), 'everything working: says saved, badge on', r);
+  let nw = noteWrites();
+  ok(nw.length === 1 && nw[0].subfolder === 'seller_prep' && nw[0].property_id === P1 && nw[0].content.length > 50, 'the checklist text is written to the listing exactly once', nw.map(x => [x.subfolder, (x.content || '').length]));
+  ok(sent.some(x => /googleapis\.com\/upload\/drive/.test(x.u)) && sent.some(x => /\/upload-file$/.test(x.u)), 'the PDF is uploaded to Drive and recorded');
+  r = await run({ failNotes: true }, spFolder, { P1 });
+  ok(r.msgs.some(x => /PDF saved to the Drive folder, but the text was NOT saved/.test(x)) && !r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && r.ret[1] === false, 'text write fails: says exactly that, no plain saved message', r);
+  r = await run({}, spNoFolder, { P1 });
+  ok(r.ret[0] === true && r.ret[1] === true && r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && noteWrites().length === 1, 'listing with no Drive folder: the text still saves', r);
+  r = await run({ failNotes: true }, spNoFolder, { P1 });
+  ok(r.ret[0] === false && r.msgs.some(x => /was NOT saved/.test(x)) && !r.msgs.some(x => /Seller Prep Guide saved to/.test(x)), 'no Drive folder and the text write fails: NOT saved, badge off', r);
+  r = await run({ failWrites: true }, spFolder, { P1 });
+  ok(r.ret[0] === false && r.msgs.some(x => /was NOT saved/.test(x)), 'everything fails: NOT saved, badge off', r);
+
+  console.log('Pick-a-listing save window (a tool saved from outside a listing)');
+  const pick = "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_net_sheet: 'folder-2' } }]; st.saveToPropData = { type: 'net-sheet-x', label: 'Net Sheet', data: 'Net to seller: 1', pdfData: null, toolName: 'Seller Net Sheet' }; st.saveToPropSelected = arg.P1; st.showSaveToProp = true; await st.confirmSaveToPropDrive(); return st.showSaveToProp;";
+  r = await run({}, pick, { P1 });
+  ok(r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)) && r.ret === false, 'everything working: says saved and closes', r);
+  ok(sent.some(x => /\/rest\/v1\/property_notes/.test(x.u) && /Net to seller: 1/.test(x.body)), 'the text is written to the listing');
+  r = await run({ failNotes: true }, pick, { P1 });
+  ok(r.msgs.some(x => /text was NOT saved to the listing/.test(x)) && !r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)), 'text write fails: says so, no plain saved message', r);
+  r = await run({ failWrites: true }, pick, { P1 });
+  ok(r.msgs.some(x => /Save failed/.test(x)) && !r.msgs.some(x => /saved to 1 Test St/.test(x)) && r.ret === true, 'everything fails: says Save failed and the window stays open', r);
 
   console.log('Listing state badge');
   const mk = "const p = { id: arg.P1, market: 'DC' }; await st.lstSetMarket(p, 'MD'); return p.market;";
