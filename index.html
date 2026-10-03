@@ -8458,6 +8458,26 @@ const supaRest = {
     if (!res.ok) throw new Error(`Supabase select error: ${res.status}`);
     return res.json();
   },
+  // Replace a listing's note of one type in ONE database step (Postgres function
+  // save_property_note, added Oct 3 2026). The old way was two requests: delete the
+  // old note, then insert the new one. If the insert failed after the delete worked,
+  // the note was gone from the cloud. The function removes the old copy (or copies)
+  // and writes the new one together; if anything fails, the old note is still there.
+  // Throws with the database's own words. Never use this for voice notes: a listing
+  // has many of those, and the function refuses them.
+  async saveNote(propertyId, subfolder, content) {
+    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/save_property_note', {
+      method: 'POST', headers: this.headers(),
+      body: JSON.stringify({ p_property_id: propertyId, p_subfolder: subfolder, p_content: content })
+    });
+    if (!res.ok) {
+      let detail = 'note save error ' + res.status, code = '';
+      try { const e = await res.json(); code = e.code || ''; detail = e.message || e.hint || e.details || detail; } catch {}
+      if (code === 'PGRST202' || res.status === 404) detail = 'note saving is not switched on yet (database function save_property_note is missing)';
+      throw new Error(detail);
+    }
+    return res.json();
+  },
   async insert(table, data) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
       method: 'POST', headers: this.headers(), body: JSON.stringify(data)
@@ -10217,8 +10237,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const uploadRes = await fetch(RAILWAY_URL + '/upload-file', { method: 'POST', body: _sp1fd });
         if (!uploadRes.ok) { const err = await uploadRes.text(); throw new Error(err || 'Upload failed'); }
 
-        if (isTextContent && typeof data.data === 'string') {
-          try { await supaRest.insert('property_notes', { property_id: targetProp.id, subfolder, content: data.data }); }
+        if (isTextContent && typeof data.data === 'string' && data.data.trim()) {
+          try { await supaRest.saveNote(targetProp.id, subfolder, data.data); }
           catch (e) { _noteErr = fosWhy(e) || 'unknown error'; console.warn('property_notes write failed:', e); }
         }
 
@@ -11221,8 +11241,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       ldSavedChat.value = null;
       // Fetch notes
       try {
-        const notes = await supaRest.select('property_notes', `select=*&property_id=eq.${prop.id}`);
-        notes.forEach(n => { if (n.subfolder && lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || ''; });
+        // Newest first, and the FIRST row of each type is the one used. Before Oct 3, 2026
+        // there was no order: plain notes took the last row the database happened to
+        // return and the campaign and writer notes took the first, so a listing with
+        // two copies of a note could show either one.
+        const notes = await supaRest.select('property_notes', `select=*&property_id=eq.${prop.id}&order=updated_at.desc.nullslast`);
+        const _seenNote = {};
+        notes.forEach(n => {
+          if (!n.subfolder || _seenNote[n.subfolder]) return;
+          _seenNote[n.subfolder] = true;
+          if (lstNotes.hasOwnProperty(n.subfolder)) lstNotes[n.subfolder] = n.content || '';
+        });
         const _ldChatRow = notes.find(n => n.subfolder === 'listing_remarks_chat');
         ldSavedChat.value = _ldParseChat(_ldChatRow && _ldChatRow.content);
         // Restore campaign sections for this property
@@ -11308,14 +11337,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const content = lstNotes[subfolder]?.trim();
       if (!content) return false;
       try {
-        // Replace: delete old, insert new. If the delete fails, stop: inserting
-        // anyway would leave two copies of the note.
-        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.${subfolder}`, {
-          method:'DELETE', headers: supaRest.headers()
-        }));
-        await supaRest.insert('property_notes', {
-          property_id: lstActiveProp.value.id, subfolder, content
-        });
+        // One database step: the old note is only removed if the new one is written.
+        await supaRest.saveNote(lstActiveProp.value.id, subfolder, content);
         return true;
       } catch (e) {
         console.warn('Save note failed:', e);
@@ -11512,14 +11535,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Persist to Supabase so campaign survives device/browser changes
     if (lstActiveProp.value && lstActiveProp.value.id) {
       try {
-        await fosOk(await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${lstActiveProp.value.id}&subfolder=eq.campaign_sections`, {
-          method: 'DELETE', headers: supaRest.headers()
-        }));
-        await supaRest.insert('property_notes', {
-          property_id: lstActiveProp.value.id,
-          subfolder: 'campaign_sections',
-          content: JSON.stringify(parsed)
-        });
+        await supaRest.saveNote(lstActiveProp.value.id, 'campaign_sections', JSON.stringify(parsed));
       } catch(e) {
         console.warn('campaign_sections Supabase save failed:', e);
         showToast('The campaign was generated but NOT saved to the cloud (' + fosWhy(e) + '). It is on this device only. Use a Save button in the campaign editor before you leave this page.', 10000);
@@ -11607,14 +11623,7 @@ async function campSaveOne(kind, force) {
   }
 
   try {
-    await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.' + subfolder, {
-      method: 'DELETE', headers: supaRest.headers()
-    });
-    await supaRest.insert('property_notes', {
-      property_id: pid,
-      subfolder: subfolder,
-      content: payload
-    });
+    await supaRest.saveNote(pid, subfolder, payload);
     _campLastSaved[kind] = payload;
     return true;
   } catch (e) {
@@ -12747,8 +12756,7 @@ async function lstSubmitToPipeline() {
         if (typeof data === 'string' && data.trim()) {
           _noteTried = true;
           try {
-            const _nr = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: prop.id, subfolder, content: data }) });
-            await fosOk(_nr);
+            await supaRest.saveNote(prop.id, subfolder, data);
             if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
           } catch(e) { _noteErr = fosWhy(e); console.error('property_notes save failed (' + subfolder + '):', e.message); }
         }
@@ -13133,11 +13141,8 @@ async function lstSubmitToPipeline() {
       try {
         const content = 'CMA completed on ' + new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) + ' for ' + addr;
         // Write only to property_notes (no Drive file — stays out of files dashboard).
-        // /save-property-note deletes the old note and inserts the new one itself
-        // (forward-os-backend main.py), so the extra delete that used to run here,
-        // with its failure swallowed, was removed.
-        const _cmaR = await fetch(RAILWAY_URL + '/save-property-note', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ property_id: targetProp.id, subfolder: 'cma', content }) });
-        if (!_cmaR.ok) throw new Error(await _cmaR.text());
+        // One database step (supaRest.saveNote): the old note is replaced, never lost.
+        await supaRest.saveNote(targetProp.id, 'cma', content);
         // Update local notes cache so it shows immediately in the panel
         lstNotes.cma = content;  // set immediately so header badge appears
         cmaSaved.value = true;
@@ -13229,13 +13234,8 @@ async function lstSubmitToPipeline() {
         const text = ldOutput.value;
         const prop = lstActiveProp.value;
         if (prop) {
-          // Save listing description as a property note via Railway service-role endpoint
-          const _ldr = await fetch(RAILWAY_URL + '/save-property-note', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ property_id: prop.id, subfolder: 'listing_remarks', content: text })
-          });
-          if (!_ldr.ok) throw new Error(await _ldr.text());
+          // Save the listing description as a note on the listing, in one database step
+          await supaRest.saveNote(prop.id, 'listing_remarks', text);
           lstNotes.listing_remarks = text;
           // The agent chose to save this conversation's output to this listing, so the
           // conversation belongs to it even if it was started without the listing open.
@@ -13279,11 +13279,7 @@ async function lstSubmitToPipeline() {
       const pid = prop.id;
       const job = _ldPersistChain.then(async function () {
         try {
-          const del = await fetch(SUPABASE_URL + '/rest/v1/property_notes?property_id=eq.' + pid + '&subfolder=eq.listing_remarks_chat', {
-            method: 'DELETE', headers: supaRest.headers()
-          });
-          if (!del.ok) throw new Error('delete ' + del.status);
-          await supaRest.insert('property_notes', { property_id: pid, subfolder: 'listing_remarks_chat', content: JSON.stringify(payload) });
+          await supaRest.saveNote(pid, 'listing_remarks_chat', JSON.stringify(payload));
           if (lstActiveProp.value && lstActiveProp.value.id === pid) ldSavedChat.value = payload;
           _ldPersistFailed = false;
           return true;
@@ -13310,7 +13306,7 @@ async function lstSubmitToPipeline() {
       // Read fresh, so work done on another device or by a teammate is not missed.
       try {
         const rows = await supaRest.select('property_notes',
-          'select=subfolder,content&property_id=eq.' + prop.id + '&subfolder=in.(listing_remarks,listing_remarks_chat)');
+          'select=subfolder,content&property_id=eq.' + prop.id + '&subfolder=in.(listing_remarks,listing_remarks_chat)&order=updated_at.desc.nullslast');
         const cr = (rows || []).find(function (r) { return r.subfolder === 'listing_remarks_chat'; });
         const sr = (rows || []).find(function (r) { return r.subfolder === 'listing_remarks'; });
         chat = _ldParseChat(cr && cr.content);
@@ -13522,13 +13518,8 @@ async function lstSubmitToPipeline() {
 
       mlsSaving.value = true;
       try {
-        // Save MLS data as a property note (text) via Railway service-role endpoint
-        const res = await fetch(RAILWAY_URL + '/save-property-note', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ property_id: prop.id, subfolder: 'mls_data', content: text })
-        });
-        if (!res.ok) throw new Error(await res.text());
+        // Save MLS data as a note on the listing, in one database step
+        await supaRest.saveNote(prop.id, 'mls_data', text);
         lstNotes.mls_data = text;
         showGoldToast('MLS Data saved.');
       } catch (e) {
@@ -20880,6 +20871,10 @@ const CHANGELOG = [
       {
         title: 'No More Demo Answers, and a Clear Notice If Your AI Key Is Missing',
         detail: 'FORWARD OS checks for your AI key as soon as you sign in. If the key is there, you see nothing and everything works as before. If it is missing, or FORWARD OS could not check for it, a red notice appears at the top of every screen and tells you exactly what to do. Before today, a device without a key quietly switched three tools into a demo mode: Meeting Prep showed a ready-made brief about a made-up person, the voice assistant answered with a made-up net sheet, and the Listing Description Writer produced a description of a different property. Those demo answers are gone. A tool with no key now says so and produces nothing.\n\nHow to use: If you see the red notice, follow the line that starts To fix it. Agents cannot add the key themselves: send Marc a screenshot, and tap Check again once he has added it. If the notice says FORWARD OS could not check, fix your internet connection and tap Check again.\n\nBest practice: Do not work around the notice. Nothing the AI tools produce is real until it is gone.'
+      },
+      {
+        title: 'A Note on a Listing Can No Longer Be Lost by a Failed Save',
+        detail: 'Saving a note on a listing used to happen in two steps: remove the old note, then write the new one. If the second step failed, the note was gone from the cloud. Saving is now a single step. Either the new note replaces the old one, or the old one stays exactly as it was. This covers the listing description, MLS data, the net sheet and other tools saved to a listing, the CMA note, the Seller Prep Guide, the Letter to Seller, the campaign content and the description writer conversation. A listing that had ended up with more than one copy of the same note now always shows the newest copy.\n\nHow to use: Nothing changes in how you save. If a save does not go through you still see NOT saved, your text stays on screen, and the note in the cloud is the last one that did save.\n\nBest practice: If you see NOT saved, save again before you leave the page. Your earlier version is safe in the meantime.'
       }
     ]
   }

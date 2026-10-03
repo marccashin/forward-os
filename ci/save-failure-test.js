@@ -26,6 +26,18 @@ const P1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B1 = '11111111-1111-4111-8111
 // failNotes: only the writes that put text on a listing do (Drive and everything else work).
 let mode = { failWrites: false, failPipeline: false, failListings: false, failNotes: false };
 let sent = [];   // every write the page made: method, address, body text
+let gets = [];   // every read of the listing notes table: its address
+// Two copies of the same notes on one listing, stored with the NEWEST in the middle,
+// the way a real table can hand them back when no order is asked for.
+const DUP_NOTES = [
+  { id: 1, property_id: 'P', subfolder: 'listing_remarks', content: 'OLDEST description', updated_at: '2026-04-23T19:27:33Z' },
+  { id: 2, property_id: 'P', subfolder: 'listing_remarks', content: 'NEWEST description', updated_at: '2026-09-30T10:00:00Z' },
+  { id: 3, property_id: 'P', subfolder: 'listing_remarks', content: 'MIDDLE description', updated_at: '2026-06-01T10:00:00Z' },
+  { id: 4, property_id: 'P', subfolder: 'campaign_sections', content: JSON.stringify([{ title: 'OLD campaign', content: 'x', included: true }]), updated_at: '2026-05-01T10:00:00Z' },
+  { id: 5, property_id: 'P', subfolder: 'campaign_sections', content: JSON.stringify([{ title: 'NEW campaign', content: 'x', included: true }]), updated_at: '2026-09-01T10:00:00Z' },
+  { id: 6, property_id: 'P', subfolder: 'cma', content: 'NEW cma', updated_at: '2026-09-23T01:43:16Z' },
+  { id: 7, property_id: 'P', subfolder: 'cma', content: 'OLD cma', updated_at: '2026-09-20T21:57:36Z' },
+];
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function api(route) {
   const req = route.request(), u = req.url(), m = req.method();
@@ -33,11 +45,19 @@ function api(route) {
   if (/\/trigger$/.test(u.split('?')[0])) return (mode.failPipeline || mode.failWrites) ? J(route, 500, { detail: 'mock outage' }) : J(route, 200, { ok: true });
   if (m === 'GET') {
     if (mode.failListings && /\/rest\/v1\/properties/.test(u)) return J(route, 500, { message: 'mock outage' });
+    if (/\/rest\/v1\/property_notes/.test(u)) {
+      gets.push(u);
+      if (mode.dupNotes) {
+        const rows = DUP_NOTES.slice();
+        if (/order=updated_at\.desc/.test(u)) rows.sort((a, b) => a.updated_at < b.updated_at ? 1 : -1);
+        return J(route, 200, rows);
+      }
+    }
     return J(route, 200, []);
   }
   sent.push({ m, u, body: req.postData() || '' });
   if (mode.failWrites) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
-  if (mode.failNotes && (/\/rest\/v1\/property_notes/.test(u) || /\/save-property-note$/.test(u))) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
+  if (mode.failNotes && (/\/rest\/v1\/property_notes/.test(u) || /\/rpc\/save_property_note$/.test(u) || /\/save-property-note$/.test(u))) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
   if (/googleapis\.com\/upload\/drive/.test(u)) return J(route, 200, { id: 'drive-file-1', webViewLink: 'https://drive.example/f1' });
   if (/\/rest\/v1\//.test(u)) return J(route, m === 'POST' ? 201 : 200, [{ id: 1 }]);
   return J(route, 200, { ok: true });
@@ -74,8 +94,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
   // Runs one save in the page and returns every message shown while it ran.
   async function run(m, body, arg) {
-    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false, failNotes: false }, m);
-    sent = [];
+    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false, failNotes: false, dupNotes: false }, m);
+    sent = []; gets = [];
     return page.evaluate(async ([src, arg]) => {
       const st = document.querySelector('#app').__vue_app__._instance.setupState;
       const seen = [];
@@ -122,7 +142,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   console.log('Seller Prep Guide save (its text now goes through the same checked save as the PDF)');
   const spFolder = "st.lstActiveProp = { id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_prep: 'folder-1' } }; st.view = 'listing-detail'; st.lstNotes.seller_prep = ''; st.sellerPrepSaved = false; await st.sellerPrepSaveToProperty(); return [st.sellerPrepSaved, st.lstNotes.seller_prep.length > 0];";
   const spNoFolder = spFolder.replace("{ seller_prep: 'folder-1' }", '{}');
-  const noteWrites = () => sent.filter(x => /\/save-property-note$/.test(x.u)).map(x => JSON.parse(x.body));
+  const noteWrites = () => sent.filter(x => /\/rpc\/save_property_note$/.test(x.u)).map(x => { const b = JSON.parse(x.body); return { property_id: b.p_property_id, subfolder: b.p_subfolder, content: b.p_content }; });
   let r = await run({}, spFolder, { P1 });
   ok(r.ret[0] === true && r.ret[1] === true && r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)), 'everything working: says saved, badge on', r);
   let nw = noteWrites();
@@ -141,11 +161,55 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const pick = "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_net_sheet: 'folder-2' } }]; st.saveToPropData = { type: 'net-sheet-x', label: 'Net Sheet', data: 'Net to seller: 1', pdfData: null, toolName: 'Seller Net Sheet' }; st.saveToPropSelected = arg.P1; st.showSaveToProp = true; await st.confirmSaveToPropDrive(); return st.showSaveToProp;";
   r = await run({}, pick, { P1 });
   ok(r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)) && r.ret === false, 'everything working: says saved and closes', r);
-  ok(sent.some(x => /\/rest\/v1\/property_notes/.test(x.u) && /Net to seller: 1/.test(x.body)), 'the text is written to the listing');
+  ok(sent.some(x => /\/rpc\/save_property_note$/.test(x.u) && /Net to seller: 1/.test(x.body)), 'the text is written to the listing');
   r = await run({ failNotes: true }, pick, { P1 });
   ok(r.msgs.some(x => /text was NOT saved to the listing/.test(x)) && !r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)), 'text write fails: says so, no plain saved message', r);
   r = await run({ failWrites: true }, pick, { P1 });
   ok(r.msgs.some(x => /Save failed/.test(x)) && !r.msgs.some(x => /saved to 1 Test St/.test(x)) && r.ret === true, 'everything fails: says Save failed and the window stays open', r);
+
+  // A note is replaced in ONE request (the save_property_note database function). The
+  // old way was a DELETE and then an insert: if the insert failed after the delete
+  // worked, the note was gone from the cloud.
+  console.log('Listing notes are replaced in one step, never delete-then-insert');
+  const unsafe = () => sent.filter(x => (x.m === 'DELETE' && /\/rest\/v1\/property_notes/.test(x.u)) || (x.m === 'POST' && /\/rest\/v1\/property_notes(\?|$)/.test(x.u)) || /\/save-property-note$/.test(x.u)).map(x => x.m + ' ' + x.u.replace(/^https?:\/\/[^/]+/, ''));
+  const open = "st.lstActiveProp = { id: arg.P1, address: '1 Test St', market: 'DC', subfolder_drive_ids: {} }; st.view = 'listing-detail'; ";
+  const noteCases = [
+    ['a plain note (lstSaveNote)', open + "st.lstNotes.mls_data = 'Beds: 3'; return await st.lstSaveNote('mls_data');", 'mls_data', 'Beds: 3'],
+    ['listing description (edit box)', open + "st.lstDescEditVal = 'A description.'; await st.lstDescSave(); return true;", 'listing_remarks', 'A description.'],
+    ['listing description (writer, Save to Property)', open + "st.ldOutput = 'Writer text.'; await st.ldSaveToProperty(); return true;", 'listing_remarks', 'Writer text.'],
+    ['a tool saved to the listing', open + "return await st.saveToPropertyFromTool('Seller Net Sheet', 'Net Sheet', 'Net to seller: 2', null);", 'seller_net_sheet', 'Net to seller: 2'],
+    ['CMA logged to a listing', "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: {} }]; st.lstProperties = st.supaProperties; st.cmaLogAddress = '1 Test St'; await st.saveCMAToProperty(); return true;", 'cma', null],
+  ];
+  for (const [name, code, sf, text] of noteCases) {
+    const g = await run({}, code, { P1 });
+    const w = noteWrites().filter(x => x.subfolder === sf);
+    ok(w.length >= 1 && w.every(x => x.property_id === P1) && (text === null || w[0].content === text), name + ': written through the one-step save', { w: noteWrites().map(x => [x.subfolder, (x.content || '').slice(0, 30)]), g });
+    ok(unsafe().length === 0, name + ': no delete, no plain insert, no backend note call', unsafe());
+    const b = await run({ failNotes: true }, code, { P1 });
+    ok(unsafe().length === 0, name + ' with the save failing: still nothing is deleted', unsafe());
+    ok(b.msgs.some(x => SAID_FAILED.test(x)) || b.ret === false, name + ' with the save failing: says so', b);
+  }
+  const fnMissing = await page.evaluate(async () => {
+    const real = window.fetch;
+    window.fetch = async () => new Response(JSON.stringify({ code: 'PGRST202', message: 'Could not find the function public.save_property_note' }), { status: 404, headers: { 'content-type': 'application/json' } });
+    try { await supaRest.saveNote('x', 'mls_data', 'y'); return 'no error'; } catch (e) { return e.message; } finally { window.fetch = real; }
+  });
+  ok(/not switched on yet/.test(fnMissing), 'database function missing: a plain message, not a raw error', fnMissing);
+
+  console.log('A listing with more than one copy of a note shows the newest');
+  const dup = "st.lstNotes.listing_remarks = ''; st.lstNotes.cma = ''; await st.lstOpenProperty({ id: arg.P1, address: '1 Test St', market: 'DC', subfolder_drive_ids: {} }); return [st.lstNotes.listing_remarks, st.lstNotes.cma, (st.campParsed[0] || {}).title];";
+  const dr = await run({ dupNotes: true }, dup, { P1 });
+  ok(dr.ret && dr.ret[0] === 'NEWEST description', 'listing description: newest copy', dr.ret);
+  ok(dr.ret && dr.ret[1] === 'NEW cma', 'CMA note: newest copy', dr.ret);
+  ok(dr.ret && dr.ret[2] === 'NEW campaign', 'campaign content: newest copy', dr.ret);
+  ok(gets.some(u => /order=updated_at\.desc\.nullslast/.test(u)), 'the notes are asked for newest first');
+  ok(sent.filter(x => /property_notes|save_property_note/.test(x.u)).length === 0, 'opening a listing writes nothing to its notes', sent.map(x => x.m + ' ' + x.u));
+
+  console.log('Voice notes still add up (many per listing, never replaced)');
+  const src = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+  ok((src.match(/supaRest\.insert\('property_notes'/g) || []).length === 2 && (src.match(/subfolder: 'voice_note'/g) || []).length === 2, 'the only plain inserts into listing notes are the two voice notes');
+  ok(!/save-property-note/.test(src), 'the app no longer calls the backend note save');
+  ok(!/saveNote\([^)]*voice_note/.test(src), 'voice notes do not go through the replace save');
 
   console.log('Listing state badge');
   const mk = "const p = { id: arg.P1, market: 'DC' }; await st.lstSetMarket(p, 'MD'); return p.market;";
