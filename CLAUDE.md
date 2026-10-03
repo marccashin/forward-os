@@ -11,6 +11,12 @@
 **Never push to `main` directly. GitHub ruleset enforces this, but follow it regardless.**
 **Never skip staging. Even small fixes go to staging first.**
 
+## One change at a time
+
+- One session ships to a repo at a time. Check for open PRs and other sessions' branches before starting.
+- Do not open a PR while the backend system check (`GET /api/smoke-test/status` on the Railway backend) or the PR check on GitHub is red. Fix the red check first.
+- After a backend merge, wait for the deploy and read the system check again before starting the next change.
+
 ## Security rules
 
 - Never paste GitHub tokens in chat — they are auto-revoked by GitHub the moment they appear in a conversation

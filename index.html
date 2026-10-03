@@ -4268,6 +4268,16 @@ body {
                 <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold-muted);">Offer Tracker</div>
                 <button @click="byrNewOffer.showForm=!byrNewOffer.showForm" style="background:var(--navy);color:var(--gold);border:none;border-radius:2px;padding:7px 14px;font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;cursor:pointer;">{{ byrNewOffer.showForm ? 'Cancel' : '+ Add Offer' }}</button>
               </div>
+              <!-- Cloud save state. A failed save must be visible. -->
+              <div v-if="byrOfferSync.state==='error'" style="background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#991b1b;line-height:1.5;">
+                <strong>These offers are NOT saved to the cloud.</strong> They are on this device only, so you will not see them on your other devices. <span style="opacity:0.8;">({{ byrOfferSync.msg }})</span>
+                <button @click="byrRetryOfferSave()" style="margin-left:8px;background:#991b1b;color:#fff;border:none;border-radius:2px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;">Try again</button>
+              </div>
+              <div v-else-if="byrOfferSync.state==='loaderror'" style="background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#92400e;line-height:1.5;">
+                Could not check the cloud for this buyer's offers. Showing what is on this device. <span style="opacity:0.8;">({{ byrOfferSync.msg }})</span>
+              </div>
+              <div v-else-if="byrOfferSync.state==='saving'" style="font-size:11px;color:#94a3b8;margin-bottom:8px;">Saving...</div>
+              <div v-else-if="byrOfferSync.state==='saved'" style="font-size:11px;color:#166534;margin-bottom:8px;">Saved to the cloud</div>
               <!-- Add form -->
               <div v-if="byrNewOffer.showForm" style="background:var(--cream);border-radius:2px;padding:14px;margin-bottom:12px;border:1px solid var(--cream-mid);">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
@@ -7699,7 +7709,7 @@ body {
       </div>
       <div style="display:flex;gap:10px;">
         <button class="btn-outline" @click="voiceClose" style="flex:1;min-height:48px;">Close</button>
-        <button v-if="voiceModal.generatedContent" @click="navigator.clipboard.writeText(voiceModal.generatedContent)" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy Content</button>
+        <button v-if="voiceModal.generatedContent" @click="voiceCopyGenerated()" style="flex:1;min-height:48px;background:#f0fdf4;color:#166534;border:1.5px solid #86efac;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy Content</button>
         <template v-if="voiceModal.detectedTool!=='write-content'">
           <a v-if="voiceGetSourceLink()" :href="voiceGetSourceLink().url" target="_blank" class="btn-navy" @click="voiceClose()" style="flex:1;min-height:48px;font-size:12px;display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>{{ voiceGetSourceLink().label.length > 22 ? voiceGetSourceLink().label.slice(0,22)+'…' : voiceGetSourceLink().label }}</a>
           <button v-else class="btn-navy" @click="voiceClose(); go('training')" style="flex:1;min-height:48px;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>Training Library</button>
@@ -12660,6 +12670,7 @@ async function lstSubmitToPipeline() {
         mktLoadLinks();
         fubReminderCheckAndShow();
         checkForUpdates();
+        byrUploadLocalOffers();
         atLoadEntries(); // Load training docs on page refresh for already-logged-in users
         if (agentName.value === 'Marc Cashin' || agentName.value === 'Operations') loadWebhookErrors();
 
@@ -18691,20 +18702,94 @@ No markdown. Valid JSON only.`;
     }
     // ── End Deal Partners ──────────────────────────────────────
 
-    // Save buyer offers to Supabase (property_notes, subfolder buyer_offers, keyed by buyer id)
+    // Buyer offers are saved in os_settings under the key 'buyer_offers:<buyer id>'.
+    //
+    // Until Oct 3, 2026 they were written to property_notes with the BUYER's id
+    // in property_id. That column has a foreign key to properties, so the
+    // database rejected every write (409, property_notes_property_id_fkey;
+    // confirmed live, and the table held zero buyer_offers rows). The failure
+    // was only console.warn'ed, so offers looked saved and lived on one device.
+    // os_settings has no such key and already accepts browser writes.
+    //
+    // Never go back to property_notes for anything keyed by a buyer.
+    function byrOffersKey(buyerId) { return 'buyer_offers:' + buyerId; }
+    // state: '' | 'saving' | 'saved' | 'error' (save failed) | 'loaderror' (could not read the cloud copy)
+    const byrOfferSync = reactive({ state: '', msg: '' });
+    // Buyers whose latest offers are on this device but not yet in the cloud.
+    // While a buyer is in this list the device copy is newer, so opening the
+    // buyer uploads it and never replaces it with the older cloud copy.
+    function byrUnsyncedIds() {
+      try { const a = JSON.parse(localStorage.getItem('byrOfferUnsynced') || '[]'); return Array.isArray(a) ? a : []; }
+      catch (e) { return []; }
+    }
+    function byrMarkUnsynced(buyerId, on) {
+      const ids = byrUnsyncedIds().filter(x => x !== buyerId);
+      if (on) ids.push(buyerId);
+      localStorage.setItem('byrOfferUnsynced', JSON.stringify(ids));
+    }
     async function _byrSaveOffers(buyerId, offers) {
+      byrMarkUnsynced(buyerId, true);
+      byrOfferSync.state = 'saving'; byrOfferSync.msg = '';
       try {
-        await fetch(`${SUPABASE_URL}/rest/v1/property_notes?property_id=eq.${buyerId}&subfolder=eq.buyer_offers`, {
-          method: 'DELETE', headers: supaRest.headers()
-        });
-        if (offers && offers.length) {
-          await supaRest.insert('property_notes', {
-            property_id: buyerId,
-            subfolder: 'buyer_offers',
-            content: JSON.stringify(offers)
-          });
+        await osSettingPut(byrOffersKey(buyerId), offers || []);
+        byrMarkUnsynced(buyerId, false);
+        byrOfferSync.state = 'saved';
+        return true;
+      } catch (e) {
+        byrOfferSync.state = 'error';
+        byrOfferSync.msg = (e && e.message) ? e.message : String(e);
+        showToast('Offers NOT saved to the cloud. They are on this device only.', 6000);
+        return false;
+      }
+    }
+    // One pass per device, at sign-in: upload every buyer's offers that exist
+    // only on this device. Each buyer is uploaded only if the cloud has no copy
+    // yet, so one device can never overwrite what another already saved.
+    // Buyers that fail stay in the unsynced list and are retried when opened.
+    async function byrUploadLocalOffers() {
+      if (localStorage.getItem('byrOfferUploadDone_v1') === '1' && !byrUnsyncedIds().length) return;
+      let map = {};
+      try { map = JSON.parse(localStorage.getItem('byrOfferMap') || '{}') || {}; } catch (e) { map = {}; }
+      const unsynced = byrUnsyncedIds();
+      let failed = 0, uploaded = 0;
+      for (const id of Object.keys(map)) {
+        const offers = Array.isArray(map[id]) ? map[id] : [];
+        if (!offers.length && !unsynced.includes(id)) continue;
+        try {
+          const saved = await osSettingGet(byrOffersKey(id));
+          if (Array.isArray(saved) && !unsynced.includes(id)) continue;      // cloud already has this buyer
+          await osSettingPut(byrOffersKey(id), offers);
+          byrMarkUnsynced(id, false);
+          uploaded += 1;
+        } catch (e) {
+          failed += 1;
+          byrMarkUnsynced(id, true);
+          console.error('[FOS] could not upload offers for buyer ' + id + ':', e);
         }
-      } catch(e) { console.warn('byrSaveOffers Supabase failed:', e); }
+      }
+      if (failed) {
+        showToast('Offers for ' + failed + ' buyer' + (failed === 1 ? '' : 's') + ' could not be saved to the cloud. Open the buyer to try again.', 7000);
+      } else {
+        localStorage.setItem('byrOfferUploadDone_v1', '1');
+        if (uploaded) showToast('Saved offers for ' + uploaded + ' buyer' + (uploaded === 1 ? '' : 's') + ' to the cloud.', 4000);
+      }
+    }
+    // The voice assistant's copy button called navigator.clipboard straight from
+    // the template. A Vue template cannot see window.navigator, so the click
+    // threw and nothing was copied, with no message. Found Oct 3, 2026 by the
+    // PR check once it compiled the template the way the browser does.
+    async function voiceCopyGenerated() {
+      try {
+        await navigator.clipboard.writeText(voiceModal.generatedContent || '');
+        showToast('Copied');
+      } catch (e) {
+        showToast('Could not copy. Select the text and copy it by hand.', 5000);
+      }
+    }
+    async function byrRetryOfferSave() {
+      const id = byrActiveBuyer.value ? byrActiveBuyer.value.id : null;
+      if (!id) return;
+      await _byrSaveOffers(id, byrOfferMap.value[id] || []);
     }
 
     async function byrOpenBuyer(buyer) {
@@ -18714,15 +18799,26 @@ No markdown. Valid JSON only.`;
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
       window.scrollTo(0, 0);
-      // Load offers from Supabase (source of truth)
+      // Load offers. The cloud copy is the source of truth, EXCEPT when this
+      // device holds offers that never reached the cloud: every offer entered
+      // before Oct 3, 2026 (those saves were rejected), or a save that failed.
+      // Those are uploaded, never overwritten.
+      byrOfferSync.state = ''; byrOfferSync.msg = '';
+      const _local = byrOfferMap.value[buyer.id] || [];
       try {
-        const rows = await supaRest.select('property_notes',
-          `select=content&property_id=eq.${buyer.id}&subfolder=eq.buyer_offers&limit=1`);
-        if (rows && rows[0] && rows[0].content) {
-          const loaded = JSON.parse(rows[0].content);
-          byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyer.id]: loaded});
+        const _saved = await osSettingGet(byrOffersKey(buyer.id));
+        if (!byrActiveBuyer.value || byrActiveBuyer.value.id !== buyer.id) return;   // agent moved on
+        if (byrUnsyncedIds().includes(buyer.id) || (!Array.isArray(_saved) && _local.length)) {
+          await _byrSaveOffers(buyer.id, byrOfferMap.value[buyer.id] || []);
+        } else if (Array.isArray(_saved)) {
+          byrOfferMap.value = Object.assign({}, byrOfferMap.value, {[buyer.id]: _saved});
+          localStorage.setItem('byrOfferMap', JSON.stringify(byrOfferMap.value));
         }
-      } catch(e) { console.warn('byrLoadOffers failed:', e); }
+      } catch (e) {
+        if (!byrActiveBuyer.value || byrActiveBuyer.value.id !== buyer.id) return;
+        byrOfferSync.state = 'loaderror';
+        byrOfferSync.msg = (e && e.message) ? e.message : String(e);
+      }
     }
 
     // ── Open a buyer from a Command Center link (?fub=<FUB deal number>) ──
@@ -20362,6 +20458,22 @@ const CHANGELOG = [
         detail: 'The CMA Builder opens in its own tab, so it gets the same check. It already saves your draft as you work. When you tap Update now there, it saves the draft one more time first, then refreshes, and your CMA reopens where you left it. If that save does not go through, the builder does not refresh. The banner tells you why and leaves everything on screen.\n\nHow to use: In the CMA Builder, finish the field you are typing in, then tap Update now. Wait for the page to reopen with your comps and adjustments in place.\n\nBest practice: If the banner says your work could not be saved, do not tap Update anyway. Download the PDF first, or fix what it names (most often a missing property address), then update.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-03',
+    date: 'October 3, 2026',
+    title: 'Buyer Offers Now Save Across Your Devices',
+    summary: 'Offers in a buyer\'s Offer Tracker were only ever kept on the device you entered them on. They now save to the cloud, and the tracker tells you whether the save worked.',
+    updates: [
+      {
+        title: 'Offer Tracker Saves to the Cloud',
+        detail: 'Until today, an offer you added to a buyer\'s Offer Tracker stayed on the phone or computer you typed it on. It did not appear on your other devices, and it would have been lost if that browser\'s data was cleared. The save to the cloud was failing without telling anyone. That is fixed. Offers now save to the cloud, and the tracker shows Saved to the cloud after each change. If a save does not go through, a red notice says so and gives you a Try again button.\n\nHow to use: Open FORWARD OS once on each device where you have entered offers. It uploads the offers stored on that device on its own and tells you how many buyers it saved. After that they appear on every device.\n\nBest practice: Do this today, on the device you normally use, before you clear your browser or switch phones. If you entered offers for the same buyer on two devices, open the one with the complete list first: the first device to upload wins. If you see the red notice, tap Try again, and tell Operations if it does not clear.'
+      },
+      {
+        title: 'The Updates Popup Remembers You Across Devices',
+        detail: 'When you close this updates popup, FORWARD OS now records it in the cloud, so the same update does not pop up again on your other devices. That record was also failing to save before today.\n\nHow to use: Read the update and close the popup once. It will not reappear for that update on your phone or your computer.\n\nBest practice: Read each update the first time it appears. It is the only place you are told what changed.'
+      }
+    ]
   }
 
 ];
@@ -21021,7 +21133,10 @@ async function voiceParse() {
           property_id: _prop.id, subfolder: 'voice_note', content: _noteText,
           updated_by: agentName.value, updated_at: new Date().toISOString()
         });
-      } catch(e) { console.warn('Showing note save failed:', e); }
+      } catch(e) {
+        console.error('Showing note save failed:', e);
+        showToast('The showing note was NOT saved to ' + _prop.address.split(',')[0] + '. ' + (e && e.message ? e.message : ''), 6000);
+      }
     }
     // Open logAct pre-filled for the buyer contact in FUB
     voiceClose();
@@ -21759,12 +21874,13 @@ async function checkForUpdates() {
   // Check localStorage first (fast, per-device fallback)
   const localKey = 'fos_last_update_' + agent.replace(/\s+/g,'_');
   if (localStorage.getItem(localKey) === latestId) return;
-  // Check Supabase (global across devices — source of truth)
+  // Check Supabase (global across devices, source of truth). Stored in
+  // os_settings under 'changelog_seen:<agent>'. It used to be written to
+  // property_notes under a placeholder property id, which that table's foreign
+  // key rejects: confirmed Oct 3, 2026, the table held zero such rows, so the
+  // cross-device record had never once been saved.
   try {
-    const rows = await supaRest.select('property_notes',
-      'select=content&property_id=eq.00000000-0000-0000-0000-000000000003&subfolder=eq.changelog_meta&updated_by=eq.' + encodeURIComponent(agent) + '&limit=1'
-    );
-    const lastSeen = rows && rows[0] && rows[0].content;
+    const lastSeen = await osSettingGet('changelog_seen:' + agent.replace(/\s+/g,'_'));
     if (lastSeen === latestId) {
       localStorage.setItem(localKey, latestId); // sync local cache
       return;
@@ -21784,24 +21900,12 @@ async function dismissUpdates() {
   // Save to Supabase (global sync across devices)
   if (agent && SUPABASE_URL) {
     try {
-      const existing = await supaRest.select('property_notes',
-        'select=id&property_id=eq.00000000-0000-0000-0000-000000000003&subfolder=eq.changelog_meta&updated_by=eq.' + encodeURIComponent(agent) + '&limit=1'
-      );
-      if (existing && existing[0]) {
-        await fetch(SUPABASE_URL + '/rest/v1/property_notes?id=eq.' + existing[0].id, {
-          method: 'PATCH', headers: { ...supaRest.headers() },
-          body: JSON.stringify({ content: latestId, updated_at: new Date().toISOString() })
-        });
-      } else {
-        await supaRest.insert('property_notes', {
-          property_id: '00000000-0000-0000-0000-000000000003',
-          subfolder: 'changelog_meta',
-          content: latestId,
-          updated_by: agent,
-          updated_at: new Date().toISOString()
-        });
-      }
-    } catch(e) { /* silent — localStorage already saved */ }
+      await osSettingPut('changelog_seen:' + agent.replace(/\s+/g,'_'), latestId);
+    } catch(e) {
+      // This device remembers (localStorage above). Only the cross-device record failed.
+      console.error('[FOS] could not record the updates popup as seen:', e);
+      showToast('Could not record that you have seen these updates. They may show again on your other devices.', 5000);
+    }
   }
 }
 
@@ -22109,6 +22213,8 @@ async function dismissUpdates() {
       fubReminderCheckAndShow();
       // Check for new OS updates
       checkForUpdates();
+      // Upload buyer offers that only ever lived on this device
+      byrUploadLocalOffers();
     }
     // ── Form reset helpers ─────────────────────────────────────────────────
     // Called after a tool is saved/exported, or on logout.
@@ -23037,7 +23143,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
       // Buyer System
-      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
+      byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrOfferSync, byrRetryOfferSave, voiceCopyGenerated, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrConfirmArchive, byrDoArchive, byrArchiveTarget, byrArchiving, byrUpdateProfile,
       byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrGeneratePackage, byrApprovePackage,
       byrCreating,
