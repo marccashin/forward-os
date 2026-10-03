@@ -29,6 +29,7 @@
 - When writing to `property_notes`, do NOT include a `created_by` field — that column does not exist
 - A listing note (`property_notes`) is saved with `supaRest.saveNote(propertyId, subfolder, content)`, which calls the database function `save_property_note` (SQL in `sql/2026-10-03_save_property_note.sql`, run by Marc Oct 3, 2026). It replaces the note in one step. Never delete a note and then insert it: if the insert fails the note is gone. Never call the backend's `/save-property-note` from the app. Voice notes (`voice_note`) are the exception: many per listing, added with a plain insert, and the function refuses them.
 - Read listing notes newest first (`order=updated_at.desc.nullslast`) and use the first row of each type.
+- CMA drafts (`cma_sessions`, one row per agent and listing): the builder OPENS the newest draft for the listing that has at least one property in it, whoever saved it (Marc, Oct 3, 2026). It always SAVES under the signed-in agent's own name. Never let an empty draft win over one with properties, and never save before the load has finished.
 - Buyer offers live in the `buyer_offers` table, one row per offer. New offers are sent as insert-ignore-duplicates with an id made on the device; changes are a PATCH limited to rows that are not removed; nothing ever clears `removed_at` and nothing is hard-deleted. Never save offers as one list again.
 
 ## Saves must tell the truth
@@ -66,6 +67,7 @@ GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`
 - `ci/save-failure-test.js`: runs each save with the cloud working and with every write failing. A success message may appear only when the save went through.
 - `ci/meeting-prep-test.js`: a Meeting Prep brief says when online research did not run and research slower than 30 seconds is still used. One case waits 33 seconds on purpose.
 - `ci/ai-key-test.js`: the AI key check at sign-in. No notice when a key is there; a red notice on every screen when it is not; with no key the tools produce nothing and say why.
+- `ci/cma-builder-test.js`: the CMA Builder (`cma-tool.html`). The newest saved CMA for a listing opens and an empty one never hides one with properties in it; orange review boxes clear once clicked or changed and the count equals the boxes on the page; Back to Listing returns to the listing.
 
 The first two compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
 

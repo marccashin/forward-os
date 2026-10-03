@@ -19227,6 +19227,54 @@ No markdown. Valid JSON only.`;
     }
     watch(loggedIn, (v) => { if (v) nextTick(byrOpenFromFubLink); }, { immediate: true });
 
+    // ── Open a listing by its id: the CMA Builder's "Back to Listing" ──
+    // The builder runs in its own tab. Its Back button used to load the OS front page
+    // and leave the agent on the dashboard. Two ways in now:
+    //   - the builder tells THIS tab which listing to show (a message), then closes itself;
+    //   - if this tab is gone, the builder opens the OS at /?listing=<property id>.
+    // Access follows the Listings page: admins see every listing, agents their own
+    // and the ones they co-agent.
+    const _LST_ID_RE = /^[0-9a-f-]{36}$/i;
+    let _lstLink = (() => {
+      try { const v = new URLSearchParams(window.location.search).get('listing'); return v && _LST_ID_RE.test(v) ? v : null; }
+      catch (e) { return null; }
+    })();
+    async function lstOpenById(id, skipIfAlreadyOpen) {
+      if (!id || !loggedIn.value || !agentName.value) return;
+      // Already on that listing: leave the page exactly as the agent left it.
+      if (skipIfAlreadyOpen && view.value === 'listing-detail' && lstActiveProp.value && lstActiveProp.value.id === id) return;
+      try {
+        let prop = (lstProperties.value || []).find(p => p.id === id) || null;
+        if (!prop) {
+          const rows = await supaRest.select('properties', 'select=*&id=eq.' + encodeURIComponent(id) + '&limit=1');
+          prop = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        }
+        if (!prop) { showToast('That listing could not be found. It may have been removed.', 5000); return; }
+        const coAgents = ((prop.subfolder_drive_ids || {})._co_agents) || [];
+        const mine = normalizeAgent(prop.agent_name || '') === normalizeAgent(agentName.value) || coAgents.includes(agentName.value);
+        if (!isAdmin.value && !mine) { showToast('That listing belongs to ' + (prop.agent_name || 'another agent') + '.', 5000); return; }
+        lstOpenProperty(prop);
+      } catch (e) { showToast('Could not open that listing: ' + fosWhy(e), 5000); }
+    }
+    function lstOpenFromLink() {
+      if (!_lstLink || !loggedIn.value || !agentName.value) return;
+      const id = _lstLink;
+      _lstLink = null;
+      try {
+        const u = new URL(window.location.href);
+        u.searchParams.delete('listing');
+        window.history.replaceState(null, '', u.pathname + u.search + u.hash);
+      } catch (e) { /* address bar cleanup is cosmetic */ }
+      lstOpenById(id, false);
+    }
+    watch(loggedIn, (v) => { if (v) nextTick(lstOpenFromLink); }, { immediate: true });
+    window.addEventListener('message', (e) => {
+      if (e.origin !== window.location.origin) return;
+      const d = e.data;
+      if (!d || d.type !== 'fos-open-listing' || !_LST_ID_RE.test(String(d.id || ''))) return;
+      lstOpenById(String(d.id), true);
+    });
+
     function byrConfirmDelete(buyer) {
       byrDeleteTarget.value = buyer;
     }
@@ -20875,6 +20923,18 @@ const CHANGELOG = [
       {
         title: 'A Note on a Listing Can No Longer Be Lost by a Failed Save',
         detail: 'Saving a note on a listing used to happen in two steps: remove the old note, then write the new one. If the second step failed, the note was gone from the cloud. Saving is now a single step. Either the new note replaces the old one, or the old one stays exactly as it was. This covers the listing description, MLS data, the net sheet and other tools saved to a listing, the CMA note, the Seller Prep Guide, the Letter to Seller, the campaign content and the description writer conversation. A listing that had ended up with more than one copy of the same note now always shows the newest copy.\n\nHow to use: Nothing changes in how you save. If a save does not go through you still see NOT saved, your text stays on screen, and the note in the cloud is the last one that did save.\n\nBest practice: If you see NOT saved, save again before you leave the page. Your earlier version is safe in the meantime.'
+      },
+      {
+        title: 'Back to Listing Now Takes You Back to the Listing',
+        detail: 'In the CMA Builder, Back to Listing used to drop you on the main dashboard, and you had to find your listing again. It now closes the CMA Builder and returns you to the FORWARD OS tab you came from, still on that listing. If that tab has been closed, FORWARD OS opens directly on the listing instead of the dashboard.\n\nHow to use: Open the CMA Builder from a listing as usual. When you are done, click Back to Listing in the top left corner.\n\nBest practice: Leave the FORWARD OS tab open while you work in the CMA Builder. Going back is then instant, and anything you had open on the listing is still there.'
+      },
+      {
+        title: 'CMA Boxes Turn Green Once You Have Reviewed Them',
+        detail: 'After an MLS import, the CMA Builder marks boxes in orange that need you: Condition on every property, and any value the import was unsure of, such as Sq Ft. Until today those marks never went away, even after you corrected the value, and the count at the top never reached zero. Now, when you click into an orange box or change it, the box turns green and says REVIEWED, then the highlight clears. The count at the top goes down with each one. What you have reviewed is saved with the CMA, so the boxes stay clear when you come back.\n\nHow to use: Work through the orange boxes. If the value is right, click the box. If it is wrong, change it. Condition starts at C on every property: click it to confirm C, or pick the right grade.\n\nBest practice: Do not export a CMA while the notice at the top still says fields need your input. Condition moves the value of each comp by thousands of dollars, so every one deserves a look.'
+      },
+      {
+        title: 'The Newest CMA for a Listing Opens, Whoever Saved It',
+        detail: 'A CMA now belongs to the listing. When you open the CMA Builder from a listing, you get the most recent version saved for that listing, whether you or a teammate saved it, as long as it has properties in it. A message says whose version opened and when it was saved. Before today you always got your own version, even an empty one, so work a teammate did on your listing could be invisible to you. Adding more MLS sheets still adds to what is already there, and removing a property still removes only that one, so you do not need to upload the full set again.\n\nHow to use: Open the CMA Builder from the listing. Read the message at the bottom of the screen to see whose version loaded. Once you change anything, it saves under your name and becomes the newest version.\n\nBest practice: Before you change a version a teammate saved, export the PDF if you want a record of how it looked. Only the newest version opens.'
       }
     ]
   }
