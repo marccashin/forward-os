@@ -27,6 +27,7 @@
 - Everything is stored globally in Supabase so any device can access it at any time
 - `localStorage` is only used as a fast display cache — Supabase is always the source of truth
 - When writing to `property_notes`, do NOT include a `created_by` field — that column does not exist
+- Buyer offers live in the `buyer_offers` table, one row per offer. New offers are sent as insert-ignore-duplicates with an id made on the device; changes are a PATCH limited to rows that are not removed; nothing ever clears `removed_at` and nothing is hard-deleted. Never save offers as one list again.
 
 ## Branches
 
@@ -47,7 +48,9 @@ GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`
 - `ci/static-checks.js`: scripts parse, the `#app` template compiles, every name the template uses is returned from `setup()` and declared, `index.html` did not shrink, CHANGELOG is well formed.
 - `ci/mount-check.js`: opens the real app in headless Chromium, logged out and as every login, and opens every view. All network calls are intercepted; it never touches production.
 
-Both compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
+- `ci/offers-test.js`: the Offer Tracker against a made-up `buyer_offers` table, as several devices at once. A failed save is shown, a retry never duplicates, a removed offer never comes back.
+
+The first two compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
 
 Run them yourself before pushing (tools installed OUTSIDE the clone, base = a copy of `main`):
 

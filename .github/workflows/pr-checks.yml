@@ -12,6 +12,9 @@
 #   ci/mount-check.js    opens the real app in headless Chromium, logged out
 #                        and as every login, opens every view. Never touches
 #                        production: all network calls are intercepted.
+#   ci/offers-test.js    Offer Tracker against a made-up buyer_offers table:
+#                        failed saves are shown, retries never duplicate, a
+#                        removed offer never comes back.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -71,3 +74,7 @@ jobs:
       - name: Mount check (real browser, every login, every view)
         if: always()
         run: node head/ci/mount-check.js head base
+
+      - name: Offer Tracker test (saves, retries, removed offers, moving old offers)
+        if: always()
+        run: node head/ci/offers-test.js head
