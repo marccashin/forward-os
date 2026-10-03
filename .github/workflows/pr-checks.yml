@@ -1,0 +1,73 @@
+# Runs on every pull request to main or staging.
+#
+# Why: index.html is one large file holding the whole app. A name used in the
+# template but not returned from setup() blanks production; it has happened
+# five times. These checks used to live in a session's scratch folder and ran
+# only if that session remembered. Now GitHub runs them on every PR.
+#
+# What runs:
+#   ci/static-checks.js  scripts parse, template compiles, every template name
+#                        is returned and declared, file did not shrink,
+#                        CHANGELOG is well formed.
+#   ci/mount-check.js    opens the real app in headless Chromium, logged out
+#                        and as every login, opens every view. Never touches
+#                        production: all network calls are intercepted.
+#
+# Both compare the PR against its base branch. Parity is the signal: problems
+# main already has do not fail a PR, new ones do.
+#
+# To allow an intended large removal, add the label "allow-shrink" to the PR.
+name: PR checks
+
+on:
+  pull_request:
+    branches: [main, staging]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: App loads and names line up
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the PR
+        uses: actions/checkout@v4
+        with:
+          path: head
+
+      - name: Check out the base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Installed outside both checkouts. Never npm install inside the repo.
+      - name: Install check tools
+        run: |
+          mkdir -p "$RUNNER_TEMP/tools"
+          cd "$RUNNER_TEMP/tools"
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund \
+            @vue/compiler-dom@3.4.21 vue@3.4.21 acorn@8 acorn-walk@8 jspdf@2.5.1 playwright@1.56.0
+          npx playwright install --with-deps chromium
+          echo "NODE_PATH=$RUNNER_TEMP/tools/node_modules" >> "$GITHUB_ENV"
+
+      - name: Static checks
+        env:
+          ALLOW_SHRINK: ${{ contains(github.event.pull_request.labels.*.name, 'allow-shrink') && '1' || '0' }}
+        run: node head/ci/static-checks.js head base
+
+      - name: Mount check (real browser, every login, every view)
+        if: always()
+        run: node head/ci/mount-check.js head base
