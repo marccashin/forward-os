@@ -59,7 +59,7 @@ jobs:
           cd "$RUNNER_TEMP/tools"
           npm init -y >/dev/null
           npm install --no-audit --no-fund \
-            @vue/compiler-dom@3.4.21 vue@3.4.21 acorn@8 acorn-walk@8 jspdf@2.5.1 playwright@1.56.0
+            @vue/compiler-dom@3.4.21 vue@3.4.21 parse5@7 acorn@8 acorn-walk@8 jspdf@2.5.1 playwright@1.56.0
           npx playwright install --with-deps chromium
           echo "NODE_PATH=$RUNNER_TEMP/tools/node_modules" >> "$GITHUB_ENV"
 
