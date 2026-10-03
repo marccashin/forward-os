@@ -765,23 +765,43 @@ function _cmaKeyFilter(keys) {
   return 'property_address=in.' + encodeURIComponent('(' + list + ')');
 }
 
+// Does a saved draft hold at least one real property (an address or a price)?
+// Blank rows added with the + button do not count.
+function _cmaDraftHasComps(row) {
+  var d = row && row.draft_data;
+  if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+  if (!d) return false;
+  return [d.comps, d.activeComps, d.pendingComps].some(function (a) {
+    return Array.isArray(a) && a.some(function (c) {
+      return !!c && (String(c.address || '').trim() !== '' || parseFloat(c.salePrice) > 0 || parseFloat(c.listPrice) > 0);
+    });
+  });
+}
+
+// WHICH DRAFT OPENS (Marc, Oct 3, 2026): the NEWEST draft for this listing, whoever saved
+// it, as long as it holds at least one property. A CMA belongs to the listing: Marc
+// works on it inside an agent's deal card and the agent has to see that work.
+// Before this, an agent's own draft always won, even an empty one. Charlotte's blank
+// draft on 4202 Woodland Dr hid Marc's six comps from her.
+// An empty draft never beats one with properties in it. If no draft has any, the
+// agent's own opens (it may hold subject details), else the newest.
+// Saving is unchanged: every agent still saves under their own name.
 async function _supaLoad() {
   if (!_SUPA_KEY) return null;
   const keys = _cmaLoadKeys();
   if (!keys.length) return null;
-  const base = _SUPA_URL + '/rest/v1/cma_sessions?' + _cmaKeyFilter(keys) + '&order=updated_at.desc&limit=1';
   try {
-    if (_AGENT) {
-      const r = await fetch(base + '&agent_name=eq.' + encodeURIComponent(_AGENT), { headers: _supaHdrs() });
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      const rows = await r.json();
-      if (Array.isArray(rows) && rows[0]) return rows[0];
-    }
-    // Nothing saved by this agent for this property: open the latest draft a teammate saved.
-    const r2 = await fetch(base, { headers: _supaHdrs() });
-    if (!r2.ok) throw new Error('HTTP ' + r2.status);
-    const rows2 = await r2.json();
-    return Array.isArray(rows2) && rows2[0] ? rows2[0] : null;
+    const r = await fetch(_SUPA_URL + '/rest/v1/cma_sessions?' + _cmaKeyFilter(keys) + '&order=updated_at.desc&limit=50', { headers: _supaHdrs() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (!Array.isArray(rows) || !rows.length) return null;
+    const mine = rows.filter(function (x) { return !!_AGENT && x.agent_name === _AGENT; });
+    const pick = rows.find(_cmaDraftHasComps) || mine[0] || rows[0];
+    const out = Object.assign({}, pick);
+    if (typeof out.draft_data === 'string') { try { out.draft_data = JSON.parse(out.draft_data); } catch (e) { out.draft_data = null; } }
+    if (typeof out.prefill_data === 'string') { try { out.prefill_data = JSON.parse(out.prefill_data); } catch (e) { out.prefill_data = null; } }
+    out._ownKeys = mine.map(function (x) { return x.property_address; });
+    return out;
   } catch (e) {
     console.warn('Supabase load failed', e);
     return { _error: e.message || String(e) };
@@ -852,10 +872,25 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
     _fixUnitInCity();
-    if (row.agent_name === _AGENT && row.property_address === _cmaSessionKey()) _cmaRowKey = row.property_address;
+    // This agent already has a row under the key saves use: a closing tab can update it in one request.
+    if ((row._ownKeys || []).indexOf(_cmaSessionKey()) > -1) _cmaRowKey = _cmaSessionKey();
     const when = row.updated_at ? new Date(row.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
-    const who = row.agent_name && row.agent_name !== _AGENT ? ' by ' + row.agent_name : '';
-    showToast('☁️ Loaded your saved CMA' + (when ? ' from ' + when : '') + who, 4000);
+    const fromTeammate = !!row.agent_name && row.agent_name !== _AGENT;
+    // WHOSE NAME IS ON THE CMA (Marc, Oct 3, 2026): always the agent whose listing it is.
+    // A saved draft carries the name of whoever saved it, and Marc works inside other
+    // agents' deal cards, so the saved name is not trusted. openCMABuilder passes the
+    // listing's agent as listingAgent. A CMA not opened from a listing has none: then a
+    // teammate's draft takes the name of the person who has it open, and your own
+    // draft keeps the name saved in it.
+    const listingAgent = String(_cmaPrefillObj().listingAgent || '').trim();
+    const nameToShow = listingAgent || (fromTeammate ? String(_cmaPrefillObj().agentName || _AGENT || '').trim() : '');
+    const an = document.getElementById('s_agentName');
+    if (an && nameToShow) an.value = nameToShow;
+    if (fromTeammate) {
+      showToast('☁️ Loaded the newest CMA for this listing' + (when ? ', saved ' + when : '') + ' by ' + row.agent_name + '. Your changes save under your name.', 8000);
+    } else {
+      showToast('☁️ Loaded your saved CMA' + (when ? ' from ' + when : ''), 4000);
+    }
   } else {
     loadPrefill();
     if (_URL_ADDRESS) {
@@ -1318,7 +1353,9 @@ function _buildDraft() {
       condB: getVal('adj_condB'), condC: getVal('adj_condC'), condD: getVal('adj_condD')
     },
     agentNotes: getVal('agentNotes'),
-    agentPriceOverride: getVal('agentPriceOverride')
+    agentPriceOverride: getVal('agentPriceOverride'),
+    // Which subject fields are still flagged for review (see MLS PDF IMPORT, section 1).
+    subjectFlags: (typeof window._cmaGetSubjectFlags === 'function') ? window._cmaGetSubjectFlags() : undefined
   };
 }
 
@@ -1343,6 +1380,7 @@ function _applyDraft(draft) {
   if (draft.pendingComps && draft.pendingComps.length) { pendingComps = draft.pendingComps; buildPendingTable(); }
   if (draft.agentNotes) { const el = document.getElementById('agentNotes'); if (el) el.value = draft.agentNotes; }
   if (draft.agentPriceOverride) { const el = document.getElementById('agentPriceOverride'); if (el) { el.value = draft.agentPriceOverride; updateOverrideDisplay(); } }
+  if (draft.subjectFlags && typeof window._cmaSetSubjectFlags === 'function') window._cmaSetSubjectFlags(draft.subjectFlags);
   recalcAll();
 }
 
@@ -1448,8 +1486,35 @@ function showToast(msg, ms) {
 
 // ── PDF EXPORT ──
 // ── BACK NAVIGATION ──
+// The builder opens in its own tab (openCMABuilder in index.html uses window.open), so
+// this tab has no history to go back through. Until Oct 3, 2026 Back then loaded the OS
+// front page from scratch and the agent landed on the dashboard, with the listing to
+// find again. Now:
+//   1. If the OS tab that opened the builder is still there, tell it which listing to
+//      show (it does nothing when it is already on it) and close this tab.
+//   2. Otherwise open the OS straight on that listing (/?listing=<property id>).
+// A pending autosave is flushed by the pagehide handler either way.
+function _cmaListingHome() {
+  var id = '';
+  try { id = String(_cmaPrefillObj().propId || ''); } catch (e) {}
+  return /^[0-9a-f-]{36}$/i.test(id) ? '/?listing=' + encodeURIComponent(id) : '/';
+}
 function goBack() {
-  try { if (window.history.length > 1) { window.history.back(); } else { window.location.href = '/'; } } catch(e) { window.location.href = '/'; }
+  var home = _cmaListingHome();
+  var op = null;
+  try {
+    // Reading location.origin throws if the opener has gone to another site.
+    if (window.opener && !window.opener.closed && window.opener.location.origin === window.location.origin) op = window.opener;
+  } catch (e) { op = null; }
+  if (op) {
+    try { op.postMessage({ type: 'fos-open-listing', id: String(_cmaPrefillObj().propId || '') }, window.location.origin); } catch (e) {}
+    try { op.focus(); } catch (e) {}
+    try { window.close(); } catch (e) {}
+    // A browser that refuses to close the tab still gets the agent to the listing.
+    setTimeout(function () { window.location.href = home; }, 600);
+    return;
+  }
+  window.location.href = home;
 }
 
 // ── SAVE TO FOLDER ──
@@ -2407,8 +2472,11 @@ async function findComps() {
   .f-check  { background:#fff7ed !important; box-shadow:inset 0 0 0 2px #fdba74; }
   .f-mls input, .f-mls select,
   .f-needs input, .f-needs select,
-  .f-check input, .f-check select { background:transparent !important; }
+  .f-check input, .f-check select,
+  .f-ok input, .f-ok select { background:transparent !important; }
+  .f-ok     { background:#ecfdf5 !important; box-shadow:inset 0 0 0 2px #22c55e; }
   .fieldflag { display:block;font-size:10px;font-weight:700;margin-top:2px;letter-spacing:.02em; }
+  .fieldflag.ok    { color:#15803d; }
   .fieldflag.needs { color:#b45309; }
   .fieldflag.check { color:#c2620a; }
   .fieldflag.mls   { color:#2563eb; }
@@ -2471,14 +2539,62 @@ async function findComps() {
     return ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'})[c]; }); }
 
   // ══ 1. HIGHLIGHTING ══
-  function paintRow(tr, src) {
+  // A box is orange until the agent has looked at it. Looking at it means clicking
+  // into the box, or changing its value. It then shows green for a moment and the
+  // highlight goes away, and the count in the banner drops. (Charlotte, Oct 3, 2026.)
+  //
+  // Until Oct 3, 2026 nothing the agent did cleared a highlight: Condition was painted
+  // orange whatever was selected, a corrected Sq Ft kept its CHECK THIS flag, and the
+  // banner counted flags on fields that had no box of their own, so it never reached 0.
+  //
+  // Why a click counts, and not only a change: Condition is pre-filled with C. An agent
+  // who looks and finds C correct has nothing to change, and re-selecting C is not a
+  // change the browser reports.
+  //
+  // What was reviewed is kept on the row itself (row._rev), so it is saved with the
+  // draft and the boxes do not turn orange again when the CMA is reopened.
+  //
+  // DISPLAY ONLY. Nothing here is read by recalcAll() or by the PDF.
+
+  // Some boxes hold more than one value. The box shows the most urgent state of the
+  // fields inside it, and reviewing the box reviews all of them.
+  var LABEL_TO_FIELDS = { 'Bd / Fb / Hb': ['beds', 'fullBaths', 'halfBaths'], 'Parking': ['garageSpaces', 'drivewaySpaces'], 'Garage': ['garageSpaces', 'drivewaySpaces'] };
+  function fieldsOf(label) { return LABEL_TO_FIELDS[label] || (LABEL_TO_FIELD[label] ? [LABEL_TO_FIELD[label]] : []); }
+  var ALL_LABELS = Object.keys(LABEL_TO_FIELD);
+
+  // A row the agent has not started (added with the + button, still blank) is not flagged.
+  function rowInUse(c) {
+    return !!c && (String(c.address || '').trim() !== '' || parseFloat(c.salePrice) > 0 || parseFloat(c.listPrice) > 0);
+  }
+
+  // 'needs' | 'check' | 'mls' | '' for one field of one row.
+  function fieldState(c, field) {
+    if (!c) return '';
+    if (c._rev && c._rev[field]) return '';
+    if (AGENT_ONLY_COMP.indexOf(field) > -1) {
+      // Only the agent can judge it, so it is flagged on every row in use, imported or typed.
+      // A value already moved off the pre-filled C was a deliberate choice (drafts saved before Oct 3).
+      if (!rowInUse(c)) return '';
+      return (!c[field] || c[field] === 'C') ? 'needs' : '';
+    }
+    return (c._src || {})[field] || '';
+  }
+  var RANK = { needs: 3, check: 2, mls: 1, '': 0 };
+  function cellState(c, label) {
+    var best = '';
+    fieldsOf(label).forEach(function (f) { var st = fieldState(c, f); if ((RANK[st] || 0) > (RANK[best] || 0)) best = st; });
+    return best;
+  }
+
+  function paintRow(tr, c) {
     if (!tr) return;
     Array.prototype.forEach.call(tr.querySelectorAll('td[data-label]'), function (td) {
-      var field = LABEL_TO_FIELD[td.getAttribute('data-label')];
-      if (!field) return;
+      var label = td.getAttribute('data-label');
+      if (!fieldsOf(label).length) return;
+      if (td.classList.contains('f-ok')) return; // showing green for a moment: leave it
       td.classList.remove('f-mls', 'f-needs', 'f-check');
       var old = td.querySelector('.fieldflag'); if (old) old.remove();
-      var state = AGENT_ONLY_COMP.indexOf(field) > -1 ? 'needs' : (src || {})[field];
+      var state = cellState(c, label);
       if (!state) return;
       if (state === 'mls')       { td.classList.add('f-mls'); }
       else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS</span>'); }
@@ -2488,21 +2604,92 @@ async function findComps() {
 
   function paintAll() {
     try {
-      (comps || []).forEach(function (c, i) { paintRow(document.getElementById('comp-row-' + i), c._src); });
+      (comps || []).forEach(function (c, i) { paintRow(document.getElementById('comp-row-' + i), c); });
       var ab = document.getElementById('activeBody'), pb = document.getElementById('pendingBody');
-      if (ab) Array.prototype.forEach.call(ab.children, function (tr, i) { paintRow(tr, (activeComps[i] || {})._src); });
-      if (pb) Array.prototype.forEach.call(pb.children, function (tr, i) { paintRow(tr, (pendingComps[i] || {})._src); });
+      if (ab) Array.prototype.forEach.call(ab.children, function (tr, i) { paintRow(tr, activeComps[i]); });
+      if (pb) Array.prototype.forEach.call(pb.children, function (tr, i) { paintRow(tr, pendingComps[i]); });
       paintSubject();
       updateNeedsCount();
     } catch (e) { /* highlighting must never break the tool */ }
   }
   window._cmaPaintAll = paintAll;
 
+  // Green for a moment, then no highlight at all.
+  var OK_MS = 1600;
+  function flashOk(box) {
+    if (!box) return;
+    box.classList.remove('f-mls', 'f-needs', 'f-check');
+    var old = box.querySelector('.fieldflag'); if (old) old.remove();
+    box.classList.add('f-ok');
+    box.insertAdjacentHTML('beforeend', '<span class="fieldflag ok">REVIEWED</span>');
+    setTimeout(function () {
+      box.classList.remove('f-ok');
+      var f = box.querySelector('.fieldflag.ok'); if (f) f.remove();
+    }, OK_MS);
+  }
+
+  // The row object behind a table row, from the row's id (comp-row-2, ac-row-0, pc-row-1).
+  function rowOf(tr) {
+    var m = /^(comp|ac|pc)-row-(\d+)$/.exec((tr && tr.id) || '');
+    if (!m) return null;
+    var arr = m[1] === 'comp' ? comps : m[1] === 'ac' ? activeComps : pendingComps;
+    return (arr || [])[+m[2]] || null;
+  }
+
+  function reviewed(e) {
+    try {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (e.type === 'keydown' && e.key !== 'Enter') return;
+      var changed = false;
+      var td = t.closest('td[data-label]');
+      if (td) {
+        var c = rowOf(td.parentNode);
+        var label = td.getAttribute('data-label');
+        var st = c ? cellState(c, label) : '';
+        var edited = e.type === 'change' || e.type === 'input';
+        if (c && fieldsOf(label).length && (st === 'needs' || st === 'check' || edited)) {
+          // An edit always counts, flagged or not: this runs before the box's own handler
+          // stores the new value, so a Condition moved back to C must not be flagged again.
+          var had = !!c._rev && fieldsOf(label).every(function (f) { return c._rev[f]; });
+          c._rev = c._rev || {};
+          fieldsOf(label).forEach(function (f) { c._rev[f] = true; });
+          if (st === 'needs' || st === 'check') flashOk(td);
+          changed = !had;
+        }
+      } else {
+        var w = t.closest('.field');
+        var ctl = w && w.querySelector('input[id], select[id], textarea[id]');
+        var id = ctl && ctl.id;
+        if (id && (subjectSrc[id] === 'needs' || subjectSrc[id] === 'check')) {
+          delete subjectSrc[id];
+          flashOk(w);
+          changed = true;
+        }
+      }
+      if (changed) {
+        updateNeedsCount();
+        if (typeof _scheduleAutoSave === 'function') _scheduleAutoSave();
+      }
+    } catch (err) { /* highlighting must never break the tool */ }
+  }
+  ['click', 'change', 'input', 'keydown'].forEach(function (ev) { document.addEventListener(ev, reviewed, true); });
+
+  // Saved with the draft (see _buildDraft / _applyDraft), so a flag nobody has
+  // reviewed is still there after a reload instead of quietly disappearing.
+  window._cmaGetSubjectFlags = function () { var o = {}; Object.keys(subjectSrc).forEach(function (k) { o[k] = subjectSrc[k]; }); return o; };
+  window._cmaSetSubjectFlags = function (o) {
+    Object.keys(subjectSrc).forEach(function (k) { delete subjectSrc[k]; });
+    Object.keys(o || {}).forEach(function (k) { if (o[k] === 'mls' || o[k] === 'needs' || o[k] === 'check') subjectSrc[k] = o[k]; });
+    setTimeout(paintAll, 0);
+  };
+
   var subjectSrc = {};
   function paintSubject() {
     Object.keys(subjectSrc).forEach(function (id) {
       var el = document.getElementById(id); if (!el) return;
       var w = el.closest('.field'); if (!w) return;
+      if (w.classList.contains('f-ok')) return;
       w.classList.remove('f-mls', 'f-needs', 'f-check');
       var old = w.querySelector('.fieldflag'); if (old) old.remove();
       var s = subjectSrc[id];
@@ -2515,18 +2702,21 @@ async function findComps() {
   function updateNeedsCount() {
     var n = 0;
     Object.keys(subjectSrc).forEach(function (k) { if (subjectSrc[k] === 'needs' || subjectSrc[k] === 'check') n++; });
+    // One per orange box, by the same rule that paints it, so the count can reach zero.
     [comps, activeComps, pendingComps].forEach(function (arr) {
       (arr || []).forEach(function (c) {
-        if (!c._src) return;
-        AGENT_ONLY_COMP.forEach(function (f) { if (!c[f] || c[f] === 'C') n++; });
-        Object.keys(c._src).forEach(function (f) { if (c._src[f] === 'check') n++; });
+        ALL_LABELS.forEach(function (label) {
+          if (label === 'Garage') return; // older name for the Parking box
+          var st = cellState(c, label);
+          if (st === 'needs' || st === 'check') n++;
+        });
       });
     });
     var el = document.getElementById('needsBanner');
     if (!el) return;
     el.style.display = n ? '' : 'none';
     el.innerHTML = '<strong>' + n + ' field' + (n === 1 ? '' : 's') + ' need your input.</strong> ' +
-      'Orange boxes are yours to fill in or double-check. Blue came straight from the MLS sheet.';
+      'Orange boxes are yours to fill in or double-check. Click a box, or change it, to mark it reviewed. Blue came straight from the MLS sheet.';
   }
 
   // wrap the existing renderers so highlighting survives every redraw
@@ -2753,6 +2943,8 @@ async function findComps() {
         if (v === undefined || v === null || v === '') return;
         row[rowField] = String(v);
         row._src[rowField] = srcFor(r, rowField);
+        // A value just re-read from the MLS sheet has not been reviewed yet.
+        if (row._rev) delete row._rev[rowField];
       });
       AGENT_ONLY_COMP.forEach(function (f) { row._src[f] = 'needs'; });
       if (!row.proximity) row._src.proximity = 'needs';

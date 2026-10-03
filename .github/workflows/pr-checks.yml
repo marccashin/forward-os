@@ -23,6 +23,10 @@
 #   ci/ai-key-test.js    the sign-in AI key check: no notice when a key is
 #                        there, a red notice on every screen when it is not,
 #                        and no tool ever shows made-up demo output.
+#   ci/cma-builder-test.js  the CMA Builder: the newest saved CMA for a listing
+#                        opens and an empty one never hides a full one, orange
+#                        boxes clear once reviewed and the count matches them,
+#                        and Back to Listing returns to the listing.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -98,3 +102,7 @@ jobs:
       - name: AI key test (notice when the key is missing, no demo output anywhere)
         if: always()
         run: node head/ci/ai-key-test.js head
+
+      - name: CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)
+        if: always()
+        run: node head/ci/cma-builder-test.js head
