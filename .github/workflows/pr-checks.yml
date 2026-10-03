@@ -15,6 +15,9 @@
 #   ci/offers-test.js    Offer Tracker against a made-up buyer_offers table:
 #                        failed saves are shown, retries never duplicate, a
 #                        removed offer never comes back.
+#   ci/save-failure-test.js  runs each save with the cloud working and with
+#                        every write failing: a success message only when it
+#                        saved, a plain failure message when it did not.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -78,3 +81,7 @@ jobs:
       - name: Offer Tracker test (saves, retries, removed offers, moving old offers)
         if: always()
         run: node head/ci/offers-test.js head
+
+      - name: Save failure test (never says saved when it did not save)
+        if: always()
+        run: node head/ci/save-failure-test.js head

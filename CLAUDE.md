@@ -29,6 +29,12 @@
 - When writing to `property_notes`, do NOT include a `created_by` field — that column does not exist
 - Buyer offers live in the `buyer_offers` table, one row per offer. New offers are sent as insert-ignore-duplicates with an id made on the device; changes are a PATCH limited to rows that are not removed; nothing ever clears `removed_at` and nothing is hard-deleted. Never save offers as one list again.
 
+## Saves must tell the truth
+
+- `fetch()` does not throw on a 404 or 500. Pass every save's answer through `fosOk(res)` (in `index.html`), which throws unless it succeeded.
+- Show a success message only after the save went through. On failure, say what was not saved and why (`fosWhy(e)`), and leave the agent's text on screen.
+- Never `catch` a failed save with only `console.warn`. A new save gets a case in `ci/save-failure-test.js`.
+
 ## Branches
 
 - `main` — production (Netlify)
@@ -49,6 +55,7 @@ GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`
 - `ci/mount-check.js`: opens the real app in headless Chromium, logged out and as every login, and opens every view. All network calls are intercepted; it never touches production.
 
 - `ci/offers-test.js`: the Offer Tracker against a made-up `buyer_offers` table, as several devices at once. A failed save is shown, a retry never duplicates, a removed offer never comes back.
+- `ci/save-failure-test.js`: runs each save with the cloud working and with every write failing. A success message may appear only when the save went through.
 
 The first two compare the PR with its base branch. Problems `main` already has do not fail a PR; new ones do.
 
