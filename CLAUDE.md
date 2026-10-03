@@ -27,6 +27,8 @@
 - Everything is stored globally in Supabase so any device can access it at any time
 - `localStorage` is only used as a fast display cache — Supabase is always the source of truth
 - When writing to `property_notes`, do NOT include a `created_by` field — that column does not exist
+- A listing note (`property_notes`) is saved with `supaRest.saveNote(propertyId, subfolder, content)`, which calls the database function `save_property_note` (SQL in `sql/2026-10-03_save_property_note.sql`, run by Marc Oct 3, 2026). It replaces the note in one step. Never delete a note and then insert it: if the insert fails the note is gone. Never call the backend's `/save-property-note` from the app. Voice notes (`voice_note`) are the exception: many per listing, added with a plain insert, and the function refuses them.
+- Read listing notes newest first (`order=updated_at.desc.nullslast`) and use the first row of each type.
 - Buyer offers live in the `buyer_offers` table, one row per offer. New offers are sent as insert-ignore-duplicates with an id made on the device; changes are a PATCH limited to rows that are not removed; nothing ever clears `removed_at` and nothing is hard-deleted. Never save offers as one list again.
 
 ## Saves must tell the truth
