@@ -44,6 +44,13 @@
  *   - every orange box except a blank fee has a Confirm button, and pressing it
  *     clears the box.
  *
+ * INDICATED VALUE (what used to be called Adjusted Price)
+ *   - the number beside each comp is labelled Indicated Value on the screen and in
+ *     the PDF, with a plain sentence saying it is what that sale says the listing is
+ *     worth, and what plus and minus mean. Agents read 'Adjusted Price' as the
+ *     comp's own new value and could not explain why a worse comp went up;
+ *   - the longer note does not push the Adjustment Grid off its page.
+ *
  * WHAT THE PDF SAYS ABOUT ITS METHOD
  *   - it says the structure follows the Fannie Mae sales comparison approach and that
  *     the dollar amounts are FORWARD's estimates; it no longer says 'per Fannie Mae
@@ -526,17 +533,27 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   // Draws the real PDF with the real jsPDF and records every piece of text put on a page.
   const pdfText = (page) => page.evaluate(() => {
     const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
-    const out = [], wide = [];
+    const out = [], wide = [], rates = [];
     const orig = doc.text.bind(doc);
     doc.text = function (t, x, y, o) {
+      if (/Adjustment Rates Used/.test(String([].concat(t)[0]))) rates.push([doc.internal.getCurrentPageInfo().pageNumber, y]);
       [].concat(t).forEach((line) => { out.push(String(line)); if (/Fannie Mae sales comparison structure/.test(String(line))) wide.push([doc.getTextWidth(String(line)), doc.getFontSize(), x]); });
       return orig(t, x, y, o);
     };
     _fillPDFDoc(doc);
-    return { text: out.join(' ').replace(/\s+/g, ' '), wide, pages: doc.getNumberOfPages() };
+    return { text: out.join(' ').replace(/\s+/g, ' '), wide, rates, pages: doc.getNumberOfPages() };
   });
   await page.fill('#agentPriceOverride', '');
+  await page.fill('#s_state', 'DC');   // a DC CMA has two more grid rows (driveway): the tallest grid there is
+  await page.waitForTimeout(100);
   let pdf = await pdfText(page);
+  ok(/Indicated Value/.test(pdf.text) && /INDICATED VALUE/.test(pdf.text) && /Lowest Indicated Value/i.test(pdf.text) && /Median Indicated Value/i.test(pdf.text), 'the PDF calls the number beside each comp Indicated Value', null);
+  ok(!/Adjusted Price|ADJUSTED PRICE|Adjusted Low|Avg Adjusted|comp is inferior|comp is superior/.test(pdf.text), 'and no longer says Adjusted Price, or that a comp is inferior or superior', null);
+  ok(/A plus \(\+\) means this property is better on that feature\. A minus \(\u2013\) means the comparable is better\./.test(pdf.text) && /Indicated Value, is what that sale says this property is worth\./.test(pdf.text), 'the Adjustment Grid explains plus, minus and Indicated Value in plain words', null);
+  ok(pdf.rates.length === 1 && pdf.rates[0][1] < 740, 'with five comps on a DC CMA the grid and its rates line still end above the page footer', pdf.rates);
+  const scr = await page.evaluate(() => ({ th: Array.prototype.map.call(document.querySelectorAll('#compsTable th'), (t) => t.textContent).join('|'), intro: document.getElementById('compsTable').closest('.card').textContent, all: document.body.innerText, mobile: document.querySelector('#comp-row-0 td.calc[id$="_adjPrice"]').getAttribute('data-label') }));
+  ok(/\|Indicated Value\|/.test(scr.th) && !/Adj Price/.test(scr.all) && scr.mobile === 'Indicated Value', 'on the screen the column is Indicated Value, and Adj Price is gone', scr.th);
+  ok(/Indicated Value is what each sale says your listing is worth/.test(scr.intro) && /A plus \(\+\) means your listing is better than the comp on that feature/.test(scr.all), 'the screen says what Indicated Value is and what plus and minus mean', null);
   ok(/follows the structure of the Fannie Mae sales comparison approach/.test(pdf.text) && /in line with the ANSI measuring standard, counts above-grade living area separately/.test(pdf.text), 'the method paragraph says the STRUCTURE follows Fannie Mae and ANSI', pdf.text.slice(-900));
   ok(/The dollar amount of each adjustment is FORWARD\u2019s estimate/.test(pdf.text), 'and that the dollar amounts are FORWARD\'s', null);
   ok(!/per Fannie Mae UAD standards/.test(pdf.text) && !/appraiser-grade/.test(pdf.text) && !/weighted average/.test(pdf.text), 'the old claims are gone: per Fannie Mae UAD standards, appraiser-grade, weighted average', null);

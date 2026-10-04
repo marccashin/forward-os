@@ -373,7 +373,7 @@
       <span class="badge">Step 2</span>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:14px;">
-      These per-unit dollar adjustments normalize each comp to the subject property. Positive (+) = comp is inferior to subject. Negative (–) = comp is superior.
+      These dollar amounts adjust each comp for how it differs from your listing. A plus (+) means your listing is better than the comp on that feature. A minus (–) means the comp is better.
     </div>
     <div class="adj-grid">
 
@@ -609,7 +609,7 @@
       <button id="findCompsBtn" disabled style="margin-left:auto;padding:5px 14px;background:#aaa;color:#fff;border:none;border-radius:6px;font-size:12px;font-weight:600;cursor:not-allowed;opacity:0.6;">Find Comps from MLS</button>
       <span id="findCompsStatus" style="font-size:12px;color:#666;margin-left:6px;"></span>
     </div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 closed sales. All adjustments are calculated automatically and feed the value estimate.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 closed sales. All adjustments are calculated automatically and feed the value estimate. <strong>Indicated Value</strong> is what each sale says your listing is worth: its sale price, plus where your listing is better than that comp, minus where the comp is better.</div>
     <!-- Condition Grade Reference -->
     <details style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);list-style:none;display:flex;align-items:center;gap:8px;">
@@ -642,23 +642,23 @@
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="width:14.003%;">Address</th>
-            <th style="width:6.931%;">Sold Date</th>
-            <th style="width:6.223%;">Sale Price</th>
-            <th style="width:4.668%;">Sq Ft</th>
-            <th style="width:4.385%;">Lot Size</th>
-            <th style="width:7.355%;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:3.395%;">Bel Gr</th>
-            <th style="width:8.487%;" title="Garage spaces and driveway spaces. Driveway spaces are valued in DC only.">Parking spaces</th>
-            <th style="width:6.082%;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
-            <th style="width:5.941%;">HOA/Mo</th>
-            <th style="width:4.809%;">Concess.</th>
-            <th style="width:5.658%;">Proximity</th>
-            <th style="width:3.253%;">DOM</th>
-            <th class="gold" style="width:4.243%;">$/SqFt</th>
-            <th class="gold" style="width:5.799%;">Net Adj</th>
-            <th class="gold" style="width:6.365%;">Adj Price</th>
-            <th class="xcol" style="width:2.405%;"></th>
+            <th style="width:13.540%;">Address</th>
+            <th style="width:6.911%;">Sold Date</th>
+            <th style="width:6.206%;">Sale Price</th>
+            <th style="width:4.654%;">Sq Ft</th>
+            <th style="width:4.372%;">Lot Size</th>
+            <th style="width:7.334%;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:3.385%;">Bel Gr</th>
+            <th style="width:8.463%;" title="Garage spaces and driveway spaces. Driveway spaces are valued in DC only.">Parking spaces</th>
+            <th style="width:6.065%;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
+            <th style="width:5.924%;">HOA/Mo</th>
+            <th style="width:4.795%;">Concess.</th>
+            <th style="width:5.642%;">Proximity</th>
+            <th style="width:3.244%;">DOM</th>
+            <th class="gold" style="width:4.231%;">$/SqFt</th>
+            <th class="gold" style="width:5.501%;">Net Adj</th>
+            <th class="gold" style="width:7.334%;" title="What this sale says your listing is worth: its sale price plus or minus the adjustments.">Indicated Value</th>
+            <th class="xcol" style="width:2.398%;"></th>
           </tr>
         </thead>
         <tbody id="compsBody">
@@ -684,11 +684,11 @@
         <div class="vb-value" id="vCompsUsed">—</div>
       </div>
       <div class="value-box">
-        <div class="vb-label">Avg Adj Price</div>
+        <div class="vb-label">Avg Indicated Value</div>
         <div class="vb-value" id="vAvgAdj">—</div>
       </div>
       <div class="value-box">
-        <div class="vb-label">Median Adj Price</div>
+        <div class="vb-label">Median Indicated Value</div>
         <div class="vb-value" id="vMedianAdj">—</div>
       </div>
       <div class="value-box">
@@ -1059,7 +1059,7 @@ function buildCompRow(i) {
     <td data-label="DOM"><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="compChange(${i},'dom',+this.value)" /></td>
     <td class="calc" data-label="$/SqFt" id="c${i}_psf">—</td>
     <td class="calc" data-label="Net Adj" id="c${i}_netAdj">—</td>
-    <td class="calc" data-label="Adj Price" id="c${i}_adjPrice">—</td>
+    <td class="calc" data-label="Indicated Value" id="c${i}_adjPrice">—</td>
   `;
   tr.appendChild(_removeBtn(() => removeComp(i)));
   return tr;
@@ -2073,7 +2073,9 @@ function _fillPDFDoc(doc) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(...GRAY);
-  const adjNote = 'Adjustments applied to comps to equal subject property. Positive (+) = comp is inferior to subject. Negative (\u2013) = comp is superior.';
+  // Plain words for a client (Marc, Oct 4, 2026). 'Adjusted Price' next to a comp read as the comp's new value;
+  // it is the value that sale indicates for THIS property, which is why a comp with a worse feature goes UP.
+  const adjNote = 'Each column starts with what a comparable home sold for, then adjusts for how it differs from this property. A plus (+) means this property is better on that feature. A minus (\u2013) means the comparable is better. The last row, Indicated Value, is what that sale says this property is worth.';
   const adjNoteLines = doc.splitTextToSize(adjNote, CW);
   doc.text(adjNoteLines, ML, y);
   y += adjNoteLines.length * 11 + 14;
@@ -2123,7 +2125,7 @@ function _fillPDFDoc(doc) {
     { label: 'Condition Adj',    subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.condition) : '—', isAdj: true },
     { label: 'HOA Adj',          subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.hoa) : '—', isAdj: true },
     { label: 'Net Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.net) : '—', isAdj: true, isBold: true },
-    { label: 'Adjusted Price',   subVal: '—', fn: null, adjFn: c => c._adj ? fmtDollar(c._adj.adjusted) : '—', isBold: true },
+    { label: 'Indicated Value',  subVal: '—', fn: null, adjFn: c => c._adj ? fmtDollar(c._adj.adjusted) : '—', isBold: true },
   ];
 
   if (_cmaIsDC()) {
@@ -2233,10 +2235,10 @@ function _fillPDFDoc(doc) {
   const avg = adjPrices.length ? adjPrices.reduce((a,b)=>a+b,0)/adjPrices.length : 0;
 
   const metricBoxes = [
-    { label: 'Adjusted Low',          val: adjPrices.length ? fmtDollar(low)  : '—', color: NAVY },
-    { label: 'Adjusted High',         val: adjPrices.length ? fmtDollar(high) : '—', color: NAVY },
-    { label: 'Avg Adjusted',          val: adjPrices.length ? fmtDollar(avg)  : '—', color: NAVY },
-    { label: 'Median Adjusted',       val: adjPrices.length ? fmtDollar(median): '—', color: NAVY },
+    { label: 'Lowest Indicated Value', val: adjPrices.length ? fmtDollar(low)  : '—', color: NAVY },
+    { label: 'Highest Indicated Value', val: adjPrices.length ? fmtDollar(high) : '—', color: NAVY },
+    { label: 'Average Indicated Value', val: adjPrices.length ? fmtDollar(avg)  : '—', color: NAVY },
+    { label: 'Median Indicated Value', val: adjPrices.length ? fmtDollar(median): '—', color: NAVY },
     { label: 'Recommended Range',     val: adjPrices.length ? fmtDollar(rangeLow) + '\n\u2013 ' + fmtDollar(rangeHigh) : '—', color: NAVY },
     { label: 'Agent Recommended Price', val: adjPrices.length ? fmtDollar(recommended) : '—', color: GOLD, isGold: true },
   ];
@@ -2279,13 +2281,13 @@ function _fillPDFDoc(doc) {
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
   doc.setTextColor(...GOLD);
-  doc.text('ADJUSTED PRICE SUMMARY BY COMP', ML, y);
+  doc.text('WHAT EACH SALE SAYS THIS PROPERTY IS WORTH', ML, y);
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.6);
   doc.line(ML, y + 4, W - MR, y + 4);
   y += 18;
 
-  const sumCols   = ['#', 'ADDRESS', 'SALE PRICE', 'NET ADJ', 'ADJUSTED PRICE', '$/SQFT ADJ'];
+  const sumCols   = ['#', 'ADDRESS', 'SALE PRICE', 'NET ADJ', 'INDICATED VALUE', '$/SQFT ADJ'];
   const sumWidths = [20, 180, 80, 80, 100, 80];
 
   doc.setFillColor(...NAVY);
