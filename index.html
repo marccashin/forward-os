@@ -20947,6 +20947,18 @@ const CHANGELOG = [
         detail: 'A CMA now belongs to the listing. When you open the CMA Builder from a listing, you get the most recent version saved for that listing, whether you or a teammate saved it, as long as it has properties in it. A message says whose version opened and when it was saved. Before today you always got your own version, even an empty one, so work a teammate did on your listing could be invisible to you. Adding more MLS sheets still adds to what is already there, and removing a property still removes only that one, so you do not need to upload the full set again.\n\nHow to use: Open the CMA Builder from the listing. Read the message at the bottom of the screen to see whose version loaded. Once you change anything, it saves under your name and becomes the newest version. The agent named on the CMA and its PDF is always the agent whose listing it is, whoever worked on it.\n\nBest practice: Before you change a version a teammate saved, export the PDF if you want a record of how it looked. Only the newest version opens.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-04',
+    date: 'October 4, 2026',
+    title: 'CMA Builder: Comps Now Carry Their Condo and HOA Fees',
+    summary: 'On a condo CMA, the comps were coming in with no monthly fee, which pushed every adjusted price up by a large amount. The builder now reads each comp\'s fee from the MLS sheet and flags any that are missing.',
+    updates: [
+      {
+        title: 'Comps Get Their Monthly Fee From the MLS Sheet',
+        detail: 'When you added MLS sheets to a CMA, the builder filled in the condo fee for your subject property but left the HOA/Mo box empty on every condo comp. An empty box counts as $0, so the builder treated the comps as having no fee at all and added the subject\'s whole fee, times 100, to each one. On a unit with an $865 fee that was $86,500 added to every comp, which made the adjusted prices come out higher than the sale prices. That is fixed. Each comp now gets its HOA fee and condo fee from the sheet, added together, the same way the subject does.\n\nIf a closed sale still has no fee and your subject has one, the HOA/Mo box on that comp turns orange and says YOU FILL IN. This also shows on CMAs you saved before today and on comps you typed in by hand.\n\nHow to use: Open any condo CMA you built before today. Look at the HOA/Mo column in Closed Sales. Type each comp\'s monthly fee into the orange boxes, or click a box to confirm that comp really has no fee. Then download a new PDF. To fill them from the sheets, add the same MLS sheets again: the builder updates the comps already there and does not create duplicates.\n\nBest practice: Before you send any CMA, read the HOA Adj row on the Adjustment Grid page of the PDF. For comps in the same building it should be a small number or a dash. If you see the same large number on every comp, a fee is missing. Do not send a condo CMA made before today without checking it.'
+      }
+    ]
   }
 
 ];
