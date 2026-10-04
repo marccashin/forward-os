@@ -1020,7 +1020,9 @@ function _removeBtn(fn) {
   const td = document.createElement('td');
   const btn = document.createElement('button');
   btn.textContent = '✕';
-  btn.style.cssText = 'background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 2px;';
+  // Fills its own narrow column, so its size does not depend on which font draws the X.
+  btn.style.cssText = 'display:block;width:100%;background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 0;text-align:center;overflow:hidden;';
+  td.style.cssText = 'padding-left:0;padding-right:0;';
   btn.title = 'Remove this property';
   btn.onclick = fn;
   td.appendChild(btn);

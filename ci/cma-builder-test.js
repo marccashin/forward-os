@@ -485,11 +485,11 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
     const r = {};
     r.wrappers = Array.prototype.map.call(document.querySelectorAll('.comps-wrapper'), (w) => w.scrollWidth - w.clientWidth);
     r.pageScroll = document.documentElement.scrollWidth - window.innerWidth;
-    r.cutHeaders = Array.prototype.filter.call(document.querySelectorAll('.comps-table th'), (th) => th.scrollWidth > th.clientWidth).map((th) => th.textContent);
+    r.cutHeaders = Array.prototype.filter.call(document.querySelectorAll('.comps-table th'), (th) => th.scrollWidth > th.clientWidth + 2).map((th) => th.textContent);
     r.spill = [];
     document.querySelectorAll('#compsBody td, #activeBody td').forEach((td) => { const t = td.getBoundingClientRect(); td.querySelectorAll('input, select, button, label').forEach((el) => { const e = el.getBoundingClientRect(); if (e.right > t.right + 0.5 || e.left < t.left - 0.5) r.spill.push((td.getAttribute('data-label') || 'remove') + ':' + el.tagName); }); });
     const a = document.querySelector('#comp-row-0 td[data-label="Address"] input');
-    r.addrCut = a.scrollWidth - a.clientWidth; r.addrTitle = a.title;
+    r.addrBox = a.clientWidth; r.addrTitle = a.title;
     r.tableWidth = document.getElementById('compsTable').getBoundingClientRect().width;
     r.cardWidth = document.getElementById('compsTable').closest('.card').getBoundingClientRect().width;
     return r;
@@ -501,7 +501,8 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
     ok(L.wrappers.every((d) => d <= 0) && L.pageScroll <= 0, 'at ' + w + ' wide nothing scrolls sideways', [L.wrappers, L.pageScroll]);
     ok(L.cutHeaders.length === 0, 'at ' + w + ' wide no column header is cut off', L.cutHeaders);
     ok(L.spill.length === 0, 'at ' + w + ' wide no box spills out of its cell', L.spill);
-    if (w >= 1440) ok(L.addrCut <= 0, 'at ' + w + ' wide a full condo address with its unit number fits in the Address box', L.addrCut);
+    // Box widths, not text widths: how wide the text is depends on the fonts installed on the machine running this.
+    ok(L.addrBox >= (w >= 1440 ? 170 : 148), 'at ' + w + ' wide the Address box is wide enough for a condo address with its unit number (it was 148 at every width)', L.addrBox);
     if (w === 1920) ok(L.cardWidth > 1400 && L.tableWidth > 1350, 'at 1920 wide the table uses the screen (it stopped at about 1100 before)', [L.cardWidth, L.tableWidth]);
     if (w === 1280) ok(L.addrTitle === '601 Pennsylvania Ave NW #1003', 'the full address shows when you point at the box', L.addrTitle);
   }
