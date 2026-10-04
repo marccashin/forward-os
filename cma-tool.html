@@ -428,7 +428,7 @@
       <div class="adj-row">
         <div class="adj-row-info">
           <div class="adj-row-label">HOA Adjustment (monthly)</div>
-          <div class="adj-row-desc">Monthly HOA difference × this multiplier. Reflects capitalized cost to buyer.</div>
+          <div class="adj-row-desc">Monthly fee difference × this multiplier. A comp with a higher fee than the subject is adjusted up; a lower fee, down.</div>
         </div>
         <div class="adj-row-controls">
           <input type="number" id="adj_hoa" value="100" step="10" oninput="recalcAll()" />
@@ -1234,7 +1234,10 @@ function recalcAll() {
     const cDriveRaw   = (c.drivewaySpaces === undefined || c.drivewaySpaces === null) ? '' : String(c.drivewaySpaces).trim();
     const drivewayAdj = (drvRate && cDriveRaw !== '')
       ? (subDrive - Math.min(parseFloat(cDriveRaw) || 0, DRIVEWAY_MAX_SPACES)) * drvRate : 0;
-    const hoaAdj      = (cHoa - subHoa) * adjHoaMult * -1;
+    // A monthly fee is a cost to the buyer. A comp with a HIGHER fee than the subject is
+    // the inferior one, so its price is adjusted UP; a comp with a lower fee is adjusted
+    // DOWN. Until Oct 4, 2026 this line ended in * -1 and did the opposite (Marc, Oct 4).
+    const hoaAdj      = (cHoa - subHoa) * adjHoaMult;
     const concessAdj  = -cConcess; // concessions reduce effective comp price
 
     const netAdj   = glaAdj + belowAdj + condAdj + bedroomAdj + bathAdj + halfBathAdj + garageAdj + drivewayAdj + hoaAdj + concessAdj;

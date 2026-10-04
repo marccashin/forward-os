@@ -26,6 +26,8 @@
  *     only, so every condo comp came in blank and counted as $0, and the subject's
  *     whole fee times the multiplier was added to each comp (+$86,500 on all three
  *     comps of 601 Pennsylvania Ave NW #1103N);
+ *   - a comp with a higher fee than the subject is adjusted up, a lower fee down
+ *     (until Oct 4, 2026 it was the other way round);
  *   - a closed sale whose fee is still blank, when the subject has one, is orange
  *     until the agent types the fee or clicks the box. That covers comps typed by
  *     hand and CMAs saved before the fix.
@@ -349,7 +351,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   page = await builder('Charlotte Lee');
   let f = await fees(page);
   ok(f.hoa.join('|') === 'f-needs|f-needs|f-needs', 'a saved CMA whose subject has a fee and whose comps have none shows HOA/Mo in orange on every closed sale', f.hoa);
-  ok(f.adj.every((a) => a === 86500), 'that is the case where the subject\'s whole fee lands on each comp (865 x 100)', f.adj);
+  ok(f.adj.every((a) => a === -86500), 'that is the case where the subject\'s whole fee lands on each comp (865 x 100, taken off)', f.adj);
   ok(f.active.join('|') === '', 'an active listing is not flagged: it is not adjusted', f.active);
   ok(f.count === f.orange && f.count === 3, 'the number in the banner equals the orange boxes (3)', [f.count, f.orange]);
 
@@ -362,7 +364,8 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '917');
   await page.waitForTimeout(1900);
   f = await fees(page);
-  ok(f.vals[1] === 917 && f.hoa[1] === '' && Math.abs(f.adj[1]) === 5200, 'typing the comp\'s fee clears the box and the adjustment is the difference, not the whole fee', [f.vals[1], f.hoa[1], f.adj[1]]);
+  ok(f.vals[1] === 917 && f.hoa[1] === '' && f.adj[1] === 5200, 'typing the comp\'s fee clears the box and the adjustment is the difference, not the whole fee', [f.vals[1], f.hoa[1], f.adj[1]]);
+  ok(f.adj[1] > 0, 'a comp with a HIGHER fee than the subject is adjusted UP (it is the inferior one)', f.adj[1]);
   ok(f.hoa[0] === '' && f.hoa[2] === 'f-needs' && f.count === f.orange && f.count === 1, 'the one not looked at yet is still orange', [f.hoa, f.count, f.orange]);
 
   await page.fill('#s_condoFee', '');
@@ -406,7 +409,9 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(f.vals[4] === '0' && f.hoa[4] === 'f-mls', 'a fee printed as 0 comes in as 0, in blue, not flagged', [f.vals[4], f.hoa[4]]);
   ok(f.activeVals[0] === '640', 'active listings get the fee too', f.activeVals);
   ok(f.hoa[0] === 'f-mls' && f.hoa[1] === 'f-mls' && f.hoa[2] === 'f-mls', 'fees read from the sheet show in blue', f.hoa);
-  ok(Math.abs(f.adj[0]) === 5200 && Math.abs(f.adj[1]) === 56500 && Math.abs(f.adj[2]) === 11500, 'each adjustment is the difference from the subject\'s fee', f.adj);
+  ok(f.adj[0] === 5200 && f.adj[1] === -56500 && f.adj[2] === -11500, 'each adjustment is the difference from the subject\'s fee: up for a higher fee (917), down for a lower one (300, 750)', f.adj);
+  const net = await page.evaluate(() => comps.slice(0, 3).map((c) => [c._adj.net, c._adj.adjusted - parseFloat(c.salePrice)]));
+  ok(net.every((n) => n[0] === n[1]), 'and it carries into the net adjustment and the adjusted price', net);
   ok(f.vals[3] === '' && f.hoa[3] === 'f-needs', 'a sheet that prints no fee leaves the box blank and orange', [f.vals[3], f.hoa[3]]);
   ok(f.count === f.orange, 'the number in the banner equals the orange boxes', [f.count, f.orange]);
   await page.fill('#comp-row-3 td[data-label="HOA/Mo"] input', '700');
