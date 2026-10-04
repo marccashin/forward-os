@@ -2577,7 +2577,24 @@ async function findComps() {
       if (!rowInUse(c)) return '';
       return (!c[field] || c[field] === 'C') ? 'needs' : '';
     }
+    if (field === 'hoaMonthly' && feeMissing(c)) return 'needs';
     return (c._src || {})[field] || '';
+  }
+
+  // A closed sale with a blank HOA/Mo box, when the subject has a monthly fee. recalcAll
+  // counts a blank as $0, so the subject's whole fee times the multiplier lands on that
+  // comp. The box is orange until the agent types the fee or clicks it to confirm there
+  // is none. This covers comps typed by hand and CMAs saved before Oct 4, 2026 as well as
+  // imports. Active and pending rows are not adjusted, so they are not flagged.
+  function subjectFee() {
+    var g = function (id) { return parseFloat((document.getElementById(id) || {}).value) || 0; };
+    return g('s_hoaMonthly') + g('s_condoFee');
+  }
+  function feeMissing(c) {
+    if (!c || (comps || []).indexOf(c) === -1 || !rowInUse(c)) return false;
+    var v = c.hoaMonthly;
+    if (!(v === undefined || v === null || String(v).trim() === '')) return false;
+    return subjectFee() > 0;
   }
   var RANK = { needs: 3, check: 2, mls: 1, '': 0 };
   function cellState(c, label) {
@@ -2674,6 +2691,10 @@ async function findComps() {
     } catch (err) { /* highlighting must never break the tool */ }
   }
   ['click', 'change', 'input', 'keydown'].forEach(function (ev) { document.addEventListener(ev, reviewed, true); });
+  document.addEventListener('input', function (e) {
+    var id = e.target && e.target.id;
+    if (id === 's_hoaMonthly' || id === 's_condoFee') setTimeout(paintAll, 0);
+  }, true);
 
   // Saved with the draft (see _buildDraft / _applyDraft), so a flag nobody has
   // reviewed is still there after a reload instead of quietly disappearing.
@@ -2868,6 +2889,21 @@ async function findComps() {
 
   function norm(a) { return String(a || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
 
+  // HOA fee plus condo fee from one parsed sheet, as a monthly figure. '' when the
+  // sheet printed neither, which is not the same as a printed 0.
+  function importedFee(r) {
+    var seen = false, sum = 0;
+    [r.hoaMonthly, r.condoFee].forEach(function (v) {
+      if (v === undefined || v === null) return;
+      var t = String(v).replace(/[$,\s]/g, '');
+      if (t === '') return;
+      var n = parseFloat(t);
+      if (isNaN(n)) return;
+      seen = true; sum += n;
+    });
+    return seen ? String(Math.round(sum * 100) / 100) : '';
+  }
+
   function fullAddr(r) {
     return [r.address, r.city, [r.state, r.zip].filter(Boolean).join(' ')]
              .filter(Boolean).join(', ');
@@ -2932,11 +2968,11 @@ async function findComps() {
       var map = target === comps
         ? { address:'address', soldDate:'soldDate', salePrice:'salePrice', gla:'gla', lotSize:'lotSize',
             beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
-            garageSpaces:'garageSpaces', drivewaySpaces:'drivewaySpaces', hoaMonthly:'hoaMonthly', dom:'dom',
+            garageSpaces:'garageSpaces', drivewaySpaces:'drivewaySpaces', dom:'dom',
             concessions:'concessions' }
         : { address:'address', date:'listDate', listPrice:'listPrice', gla:'gla', lotSize:'lotSize',
             beds:'beds', fullBaths:'fullBaths', halfBaths:'halfBaths', below:'below',
-            garageSpaces:'garageSpaces', hoaMonthly:'hoaMonthly', dom:'dom' };
+            garageSpaces:'garageSpaces', dom:'dom' };
 
       Object.keys(map).forEach(function (rowField) {
         var v = r[map[rowField]];
@@ -2946,6 +2982,17 @@ async function findComps() {
         // A value just re-read from the MLS sheet has not been reviewed yet.
         if (row._rev) delete row._rev[rowField];
       });
+      // The monthly fee. A Bright sheet prints a condo's fee as a condo fee and a house's
+      // as an HOA fee. The subject adds the two (recalcAll: s_hoaMonthly + s_condoFee), so a
+      // comp must too. Until Oct 4, 2026 a comp took the HOA fee only, so every condo comp
+      // came in blank, blank counted as $0, and the subject's whole fee times the multiplier
+      // was added to each comp (601 Pennsylvania Ave NW #1103N: +$86,500 on all three).
+      var fee = importedFee(r);
+      if (fee !== '') {
+        row.hoaMonthly = fee;
+        row._src.hoaMonthly = 'mls';
+        if (row._rev) delete row._rev.hoaMonthly;
+      }
       AGENT_ONLY_COMP.forEach(function (f) { row._src[f] = 'needs'; });
       if (!row.proximity) row._src.proximity = 'needs';
       if (fullAddr(r)) prox.push({ row: row, addr: fullAddr(r) });

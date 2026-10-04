@@ -20,6 +20,16 @@
  *   - what was reviewed is saved with the draft and stays clear after a reload;
  *   - reviewing a box changes no value and no adjusted price.
  *
+ * COMP FEES (HOA and condo fee)
+ *   - an imported comp gets its monthly fee from the MLS sheet: HOA fee plus condo
+ *     fee, the same sum the subject uses. Until Oct 4, 2026 a comp took the HOA fee
+ *     only, so every condo comp came in blank and counted as $0, and the subject's
+ *     whole fee times the multiplier was added to each comp (+$86,500 on all three
+ *     comps of 601 Pennsylvania Ave NW #1103N);
+ *   - a closed sale whose fee is still blank, when the subject has one, is orange
+ *     until the agent types the fee or clicks the box. That covers comps typed by
+ *     hand and CMAs saved before the fix.
+ *
  * BACK TO LISTING
  *   - with the FORWARD OS tab still open: that tab is told which listing to show
  *     and the builder closes;
@@ -49,6 +59,7 @@ let table = [];        // cma_sessions rows
 let writes = [];       // every write the page attempted
 let loadFails = false; // cma_sessions reads answer 500
 let properties = [];   // rows of the properties table (for the way back)
+let parseResults = []; // what the MLS sheet reader answers
 
 function inList(u) {
   const m = /property_address=in\.([^&]+)/.exec(u);
@@ -63,6 +74,7 @@ function match(u) {
 function api(route) {
   const req = route.request(), u = req.url(), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
+  if (m === 'POST' && /\/api\/cma\/parse-listings/.test(u)) return J(route, 200, { success: true, results: parseResults });
   if (/\/rest\/v1\/cma_sessions/.test(u)) {
     if (m === 'GET') {
       if (loadFails) return J(route, 500, { message: 'mock outage' });
@@ -310,6 +322,100 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   h = await hl(page);
   ok(h.count === 0 && !h.bannerShown, 'when every box has been reviewed the notice goes away', [h.count, h.orange]);
   await page.context().close();
+
+  // ════════════════ COMP FEES ════════════════
+  console.log('Comp fees (HOA and condo fee)');
+  const fees = (page) => page.evaluate(() => {
+    const cls = (td) => (td ? ['f-needs', 'f-check', 'f-mls', 'f-ok'].filter((c) => td.classList.contains(c)).join(',') : 'NO CELL');
+    const b = document.getElementById('needsBanner');
+    const m = /(\d+) field/.exec(b.textContent || '');
+    return {
+      hoa: comps.map((c, i) => cls(document.querySelector('#comp-row-' + i + ' td[data-label="HOA/Mo"]'))),
+      active: Array.prototype.map.call(document.querySelectorAll('#activeBody tr'), (tr) => cls(tr.querySelector('td[data-label="HOA/Mo"]'))),
+      vals: comps.map((c) => c.hoaMonthly),
+      activeVals: activeComps.map((c) => c.hoaMonthly),
+      adj: comps.map((c) => (c._adj ? c._adj.hoa : null)),
+      orange: document.querySelectorAll('.f-needs, .f-check').length,
+      count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
+    };
+  });
+  const condo = (agentName, comps, active) => Object.assign(draft(agentName, comps), { subject: Object.assign(subject(agentName), { propType: 'Condo', hoaMonthly: '', condoFee: '865' }), activeComps: active || [] });
+  const blankFee = (a) => comp(a, { hoaMonthly: '', condition: 'A' });
+
+  // A CMA saved before the fix: the subject has a condo fee, the three comps have none.
+  table = [row('Charlotte Lee', LISTING, '2026-10-03T10:00:00Z', condo('Charlotte Lee', [blankFee('601 Penn #612'), blankFee('601 Penn #100'), blankFee('601 Penn #111')],
+    [{ address: '9 Active St', date: '2026-09-01', listPrice: 500000, gla: 800, lotSize: '', beds: 1, fullBaths: 1, halfBaths: 0, below: 0, garageSpaces: 0, condition: 'A', hoaMonthly: '', proximity: '0.1 mi', dom: 5 }]))];
+  writes = [];
+  page = await builder('Charlotte Lee');
+  let f = await fees(page);
+  ok(f.hoa.join('|') === 'f-needs|f-needs|f-needs', 'a saved CMA whose subject has a fee and whose comps have none shows HOA/Mo in orange on every closed sale', f.hoa);
+  ok(f.adj.every((a) => a === 86500), 'that is the case where the subject\'s whole fee lands on each comp (865 x 100)', f.adj);
+  ok(f.active.join('|') === '', 'an active listing is not flagged: it is not adjusted', f.active);
+  ok(f.count === f.orange && f.count === 3, 'the number in the banner equals the orange boxes (3)', [f.count, f.orange]);
+
+  const feeMoney = (page) => page.evaluate(() => JSON.stringify({ adj: comps.map((c) => c._adj), vals: comps.map((c) => c.hoaMonthly) }));
+  const feeBefore = await feeMoney(page);
+  await page.click('#comp-row-0 td[data-label="HOA/Mo"] input');
+  f = await fees(page);
+  ok(f.hoa[0] === 'f-ok' && f.count === 2, 'clicking the box (this comp really has no fee) marks it reviewed', [f.hoa[0], f.count]);
+  ok((await feeMoney(page)) === feeBefore, 'and changes no value and no adjustment');
+  await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '917');
+  await page.waitForTimeout(1900);
+  f = await fees(page);
+  ok(f.vals[1] === 917 && f.hoa[1] === '' && Math.abs(f.adj[1]) === 5200, 'typing the comp\'s fee clears the box and the adjustment is the difference, not the whole fee', [f.vals[1], f.hoa[1], f.adj[1]]);
+  ok(f.hoa[0] === '' && f.hoa[2] === 'f-needs' && f.count === f.orange && f.count === 1, 'the one not looked at yet is still orange', [f.hoa, f.count, f.orange]);
+
+  await page.fill('#s_condoFee', '');
+  await page.waitForTimeout(150);
+  f = await fees(page);
+  ok(f.hoa[2] === '' && f.count === 0, 'with no fee on the subject a blank comp fee is not flagged (nothing is added)', [f.hoa, f.count, f.adj[2]]);
+  await page.fill('#s_condoFee', '865');
+  await page.waitForTimeout(150);
+  f = await fees(page);
+  ok(f.hoa[2] === 'f-needs' && f.hoa[0] === '' && f.hoa[1] === '', 'typing the subject\'s fee flags the blank comp at once, and not the ones already reviewed', f.hoa);
+  await page.waitForTimeout(2800);
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  f = await fees(page);
+  ok(f.hoa.join('|') === '||f-needs' && f.count === f.orange && f.count === 1, 'after a reload the reviewed boxes stay clear and the open one stays orange', [f.hoa, f.count, f.orange]);
+  await page.context().close();
+
+  // Importing MLS sheets.
+  table = []; writes = [];
+  const sheet = (address, status, extra) => Object.assign({ ok: true, file: 'sheets.pdf', status, status_raw: status, address, city: 'Washington', state: 'DC', zip: '20004', propType: 'Condo', beds: '1', fullBaths: '1', halfBaths: '0', gla: '861', below: '', lotSize: '', yearBuilt: '1991', garageSpaces: '0', drivewaySpaces: '0', hoaMonthly: '', condoFee: '', listPrice: '500000', salePrice: status === 'closed' ? '500000' : '', soldDate: status === 'closed' ? '2026-09-10' : '', listDate: '2026-08-01', dom: '14', concessions: '0', flags: {} }, extra || {});
+  parseResults = [
+    sheet('601 Penn #612', 'closed', { condoFee: '917' }),
+    sheet('20 House Ln', 'closed', { hoaMonthly: '300' }),
+    sheet('30 Both Ct', 'closed', { hoaMonthly: '50', condoFee: '700' }),
+    sheet('40 Nothing Printed Rd', 'closed'),
+    sheet('50 Printed Zero Way', 'closed', { hoaMonthly: '0' }),
+    sheet('60 Active Condo St', 'active', { condoFee: '640' }),
+  ];
+  page = await builder('Charlotte Lee');
+  await page.fill('#s_condoFee', '865');
+  const doImport = async () => {
+    await page.evaluate(() => cmaUploadPDFs([new File(['x'], 'sheets.pdf', { type: 'application/pdf' })]));
+    await page.waitForFunction(() => document.getElementById('cmaImportModal').style.display === 'flex', null, { timeout: 5000 });
+    await page.evaluate(() => cmaApplyImport());
+    await page.waitForTimeout(400);
+  };
+  await doImport();
+  f = await fees(page);
+  ok(f.vals[0] === '917', 'a condo comp gets its condo fee from the sheet (it came in blank before)', f.vals);
+  ok(f.vals[1] === '300', 'a comp with an HOA fee still gets it', f.vals);
+  ok(f.vals[2] === '750', 'a comp with both gets the two added, as the subject does', f.vals);
+  ok(f.vals[4] === '0' && f.hoa[4] === 'f-mls', 'a fee printed as 0 comes in as 0, in blue, not flagged', [f.vals[4], f.hoa[4]]);
+  ok(f.activeVals[0] === '640', 'active listings get the fee too', f.activeVals);
+  ok(f.hoa[0] === 'f-mls' && f.hoa[1] === 'f-mls' && f.hoa[2] === 'f-mls', 'fees read from the sheet show in blue', f.hoa);
+  ok(Math.abs(f.adj[0]) === 5200 && Math.abs(f.adj[1]) === 56500 && Math.abs(f.adj[2]) === 11500, 'each adjustment is the difference from the subject\'s fee', f.adj);
+  ok(f.vals[3] === '' && f.hoa[3] === 'f-needs', 'a sheet that prints no fee leaves the box blank and orange', [f.vals[3], f.hoa[3]]);
+  ok(f.count === f.orange, 'the number in the banner equals the orange boxes', [f.count, f.orange]);
+  await page.fill('#comp-row-3 td[data-label="HOA/Mo"] input', '700');
+  await doImport();
+  f = await fees(page);
+  ok(f.vals.length === 5 && String(f.vals[3]) === '700' && f.hoa[3] !== 'f-needs', 'reading the same sheets again keeps the fee the agent typed and adds no duplicate', [f.vals, f.hoa[3]]);
+  ok(errors.length === 0, 'no script errors', errors);
+  await page.context().close();
+  parseResults = [];
 
   // ════════════════ BACK TO LISTING ════════════════
   console.log('Back to Listing');
