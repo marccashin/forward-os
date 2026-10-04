@@ -28,9 +28,19 @@
  *     comps of 601 Pennsylvania Ave NW #1103N);
  *   - a comp with a higher fee than the subject is adjusted up, a lower fee down
  *     (until Oct 4, 2026 it was the other way round);
+ *   - when the HOA adjustment on a closed sale is more than 5% of its sale price, a
+ *     notice under the table names that comp; it changes no value;
  *   - a closed sale whose fee is still blank, when the subject has one, is orange
  *     until the agent types the fee or clicks the box. That covers comps typed by
  *     hand and CMAs saved before the fix.
+ *
+ * WHAT THE PDF SAYS ABOUT ITS METHOD
+ *   - it says the structure follows the Fannie Mae sales comparison approach and that
+ *     the dollar amounts are FORWARD's estimates; it no longer says 'per Fannie Mae
+ *     UAD standards';
+ *   - it says what the range is built on: the median adjusted price, or the agent's
+ *     own price when they entered one. Never a 'weighted average';
+ *   - the footer fits the page.
  *
  * BACK TO LISTING
  *   - with the FORWARD OS tab still open: that tab is told which listing to show
@@ -339,6 +349,8 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
       adj: comps.map((c) => (c._adj ? c._adj.hoa : null)),
       orange: document.querySelectorAll('.f-needs, .f-check').length,
       count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
+      warn: (() => { const w = document.getElementById('hoaWarn'); return !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('li'), (li) => li.textContent); })(),
+      warnText: (document.getElementById('hoaWarn') || {}).textContent || '',
     };
   });
   const condo = (agentName, comps, active) => Object.assign(draft(agentName, comps), { subject: Object.assign(subject(agentName), { propType: 'Condo', hoaMonthly: '', condoFee: '865' }), activeComps: active || [] });
@@ -354,6 +366,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(f.adj.every((a) => a === -86500), 'that is the case where the subject\'s whole fee lands on each comp (865 x 100, taken off)', f.adj);
   ok(f.active.join('|') === '', 'an active listing is not flagged: it is not adjusted', f.active);
   ok(f.count === f.orange && f.count === 3, 'the number in the banner equals the orange boxes (3)', [f.count, f.orange]);
+  ok(f.warn.length === 0, 'no large-adjustment notice while the fee boxes are still orange: the box is the message', f.warn);
 
   const feeMoney = (page) => page.evaluate(() => JSON.stringify({ adj: comps.map((c) => c._adj), vals: comps.map((c) => c.hoaMonthly) }));
   const feeBefore = await feeMoney(page);
@@ -361,6 +374,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   f = await fees(page);
   ok(f.hoa[0] === 'f-ok' && f.count === 2, 'clicking the box (this comp really has no fee) marks it reviewed', [f.hoa[0], f.count]);
   ok((await feeMoney(page)) === feeBefore, 'and changes no value and no adjustment');
+  ok(f.warn.length === 1 && /601 Penn #612: -\$86,500/.test(f.warn[0]), 'once the agent confirms a comp has no fee, the notice names it: the adjustment is more than 5% of its price', f.warn);
   await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '917');
   await page.waitForTimeout(1900);
   f = await fees(page);
@@ -414,11 +428,61 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(net.every((n) => n[0] === n[1]), 'and it carries into the net adjustment and the adjusted price', net);
   ok(f.vals[3] === '' && f.hoa[3] === 'f-needs', 'a sheet that prints no fee leaves the box blank and orange', [f.vals[3], f.hoa[3]]);
   ok(f.count === f.orange, 'the number in the banner equals the orange boxes', [f.count, f.orange]);
+
+  // The notice: sale price 500,000, so the line is 25,000.
+  ok(f.warn.length === 2 && /20 House Ln: -\$56,500/.test(f.warn[0]) && /50 Printed Zero Way: -\$86,500/.test(f.warn[1]), 'the notice names the two comps whose HOA adjustment is over 5% of the sale price', f.warn);
+  ok(/Check the HOA adjustment/.test(f.warnText) && /Confirm what each fee includes/.test(f.warnText) && /Step 2/.test(f.warnText), 'and says what to check and where to change it', f.warnText);
+  ok(!/601 Penn|30 Both Ct|40 Nothing/.test(f.warn.join(' ')), 'small adjustments (5,200 and 11,500) and the comp still waiting for its fee are not named', f.warn);
+  const warnBefore = await feeMoney(page);
+  await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '615');
+  f = await fees(page);
+  ok(f.adj[1] === -25000 && !/20 House Ln/.test(f.warn.join(' ')), 'exactly 5% (25,000 on 500,000) is not named', [f.adj[1], f.warn]);
+  await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '614');
+  f = await fees(page);
+  ok(f.adj[1] === -25100 && /20 House Ln: -\$25,100/.test(f.warn.join(' ')), 'one dollar a month past it is', [f.adj[1], f.warn]);
+  await page.fill('#adj_hoa', '0');
+  f = await fees(page);
+  ok(f.warn.length === 0, 'with the HOA multiplier set to 0 the notice goes away', f.warn);
+  await page.fill('#adj_hoa', '100');
+  await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '300');
+  await page.waitForTimeout(1900);
+  f = await fees(page);
+  ok(f.warn.length === 2, 'and comes back when the multiplier and the fee are put back', f.warn);
+  ok((await page.evaluate(() => JSON.stringify(comps.map((c) => c._adj)))) === JSON.stringify(JSON.parse(warnBefore).adj), 'showing the notice changed no adjustment', null);
   await page.fill('#comp-row-3 td[data-label="HOA/Mo"] input', '700');
   await doImport();
   f = await fees(page);
   ok(f.vals.length === 5 && String(f.vals[3]) === '700' && f.hoa[3] !== 'f-needs', 'reading the same sheets again keeps the fee the agent typed and adds no duplicate', [f.vals, f.hoa[3]]);
   ok(errors.length === 0, 'no script errors', errors);
+
+  // ════════════════ WHAT THE PDF SAYS ABOUT ITS METHOD ════════════════
+  console.log('What the PDF says about its method');
+  // Draws the real PDF with the real jsPDF and records every piece of text put on a page.
+  const pdfText = (page) => page.evaluate(() => {
+    const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const out = [], wide = [];
+    const orig = doc.text.bind(doc);
+    doc.text = function (t, x, y, o) {
+      [].concat(t).forEach((line) => { out.push(String(line)); if (/Fannie Mae sales comparison structure/.test(String(line))) wide.push([doc.getTextWidth(String(line)), doc.getFontSize(), x]); });
+      return orig(t, x, y, o);
+    };
+    _fillPDFDoc(doc);
+    return { text: out.join(' ').replace(/\s+/g, ' '), wide, pages: doc.getNumberOfPages() };
+  });
+  await page.fill('#agentPriceOverride', '');
+  let pdf = await pdfText(page);
+  ok(/follows the structure of the Fannie Mae sales comparison approach/.test(pdf.text) && /in line with the ANSI measuring standard, counts above-grade living area separately/.test(pdf.text), 'the method paragraph says the STRUCTURE follows Fannie Mae and ANSI', pdf.text.slice(-900));
+  ok(/The dollar amount of each adjustment is FORWARD\u2019s estimate/.test(pdf.text), 'and that the dollar amounts are FORWARD\'s', null);
+  ok(!/per Fannie Mae UAD standards/.test(pdf.text) && !/appraiser-grade/.test(pdf.text) && !/weighted average/.test(pdf.text), 'the old claims are gone: per Fannie Mae UAD standards, appraiser-grade, weighted average', null);
+  ok(/range is 3% above and below the median adjusted price\./.test(pdf.text), 'with no agent price, the range is described as built on the median adjusted price', null);
+  ok(pdf.wide.length === 1 && pdf.wide[0][0] + pdf.wide[0][2] <= 612 - 50, 'the new Adjustment Grid footer fits inside the page margins (real jsPDF width)', pdf.wide);
+  ok(/Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden\./.test(pdf.text) && /All comparable sales are of the same property type/.test(pdf.text) && /seller objectives\./.test(pdf.text), 'the rest of the paragraph is unchanged', null);
+  const pagesBefore = pdf.pages;
+  await page.fill('#agentPriceOverride', '450000');
+  pdf = await pdfText(page);
+  ok(/range is 3% above and below the agent\u2019s recommended price\./.test(pdf.text) && !/median adjusted price\./.test(pdf.text), 'with an agent price entered, the range is described as built on the agent\'s price', null);
+  ok(pdf.pages === pagesBefore, 'the page count is the same either way', [pagesBefore, pdf.pages]);
+  ok(errors.length === 0, 'no script errors drawing the PDF', errors);
   await page.context().close();
   parseResults = [];
 
