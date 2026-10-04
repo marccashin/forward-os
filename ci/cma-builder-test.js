@@ -30,9 +30,19 @@
  *     (until Oct 4, 2026 it was the other way round);
  *   - when the HOA adjustment on a closed sale is more than 5% of its sale price, a
  *     notice under the table names that comp; it changes no value;
+ *   - a blank comp fee means "not known yet" and gets no HOA adjustment; a typed 0
+ *     means the comp has no fee and is adjusted in full, and stays shown as 0;
  *   - a closed sale whose fee is still blank, when the subject has one, is orange
- *     until the agent types the fee or clicks the box. That covers comps typed by
- *     hand and CMAs saved before the fix.
+ *     until the agent types a number. A click does not clear it. The box says to
+ *     type 0 when there is no monthly fee. That covers comps typed by hand and
+ *     CMAs saved before the fix.
+ *
+ * LAYOUT ON A COMPUTER
+ *   - at 1280, 1440 and 1920 wide the three comps tables fit their cards: nothing
+ *     scrolls sideways, no header is cut off, no box spills out of its cell;
+ *   - the Parking cell labels its two boxes Garage and Driveway;
+ *   - every orange box except a blank fee has a Confirm button, and pressing it
+ *     clears the box.
  *
  * WHAT THE PDF SAYS ABOUT ITS METHOD
  *   - it says the structure follows the Fannie Mae sales comparison approach and that
@@ -363,20 +373,27 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   page = await builder('Charlotte Lee');
   let f = await fees(page);
   ok(f.hoa.join('|') === 'f-needs|f-needs|f-needs', 'a saved CMA whose subject has a fee and whose comps have none shows HOA/Mo in orange on every closed sale', f.hoa);
-  ok(f.adj.every((a) => a === -86500), 'that is the case where the subject\'s whole fee lands on each comp (865 x 100, taken off)', f.adj);
+  ok(f.adj.every((a) => a === 0), 'a blank fee means not known yet: no HOA adjustment (it used to move each comp by 865 x 100)', f.adj);
+  const flagText = await page.evaluate(() => { const td = document.querySelector('#comp-row-0 td[data-label="HOA/Mo"]'); return { text: td.querySelector('.fieldflag').textContent, btn: !!td.querySelector('button.fieldok'), shown: td.querySelector('input').value }; });
+  ok(/YOU FILL IN/.test(flagText.text) && /No monthly fee\? Type 0/.test(flagText.text) && !flagText.btn, 'the orange fee box says to type 0 when there is no monthly fee, and has no Confirm button', flagText);
   ok(f.active.join('|') === '', 'an active listing is not flagged: it is not adjusted', f.active);
   ok(f.count === f.orange && f.count === 3, 'the number in the banner equals the orange boxes (3)', [f.count, f.orange]);
-  ok(f.warn.length === 0, 'no large-adjustment notice while the fee boxes are still orange: the box is the message', f.warn);
+  ok(f.warn.length === 0, 'no large-adjustment notice for blank fees: nothing is being adjusted', f.warn);
 
   const feeMoney = (page) => page.evaluate(() => JSON.stringify({ adj: comps.map((c) => c._adj), vals: comps.map((c) => c.hoaMonthly) }));
   const feeBefore = await feeMoney(page);
   await page.click('#comp-row-0 td[data-label="HOA/Mo"] input');
   f = await fees(page);
-  ok(f.hoa[0] === 'f-ok' && f.count === 2, 'clicking the box (this comp really has no fee) marks it reviewed', [f.hoa[0], f.count]);
+  ok(f.hoa[0] === 'f-needs' && f.count === 3, 'clicking a blank fee box does not clear it: only a number does', [f.hoa[0], f.count]);
   ok((await feeMoney(page)) === feeBefore, 'and changes no value and no adjustment');
-  ok(f.warn.length === 1 && /601 Penn #612: -\$86,500/.test(f.warn[0]), 'once the agent confirms a comp has no fee, the notice names it: the adjustment is more than 5% of its price', f.warn);
+  await page.fill('#comp-row-0 td[data-label="HOA/Mo"] input', '0');
+  await page.waitForTimeout(150);
+  f = await fees(page);
+  ok(f.vals[0] === 0 && f.hoa[0] === '' && f.adj[0] === -86500, 'typing 0 says the comp has no fee: the box clears and the comp is adjusted in full', [f.vals[0], f.hoa[0], f.adj[0]]);
+  ok(f.warn.length === 1 && /601 Penn #612: -\$86,500/.test(f.warn[0]), 'and the large-adjustment notice names it (more than 5% of its price)', f.warn);
+  ok(f.adj[1] === 0 && f.adj[2] === 0 && f.count === f.orange && f.count === 2, 'the other two are still blank, orange and unadjusted', [f.adj, f.count, f.orange]);
   await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '917');
-  await page.waitForTimeout(1900);
+  await page.waitForTimeout(150);
   f = await fees(page);
   ok(f.vals[1] === 917 && f.hoa[1] === '' && f.adj[1] === 5200, 'typing the comp\'s fee clears the box and the adjustment is the difference, not the whole fee', [f.vals[1], f.hoa[1], f.adj[1]]);
   ok(f.adj[1] > 0, 'a comp with a HIGHER fee than the subject is adjusted UP (it is the inferior one)', f.adj[1]);
@@ -393,7 +410,13 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.waitForTimeout(2800);
   await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
   f = await fees(page);
-  ok(f.hoa.join('|') === '||f-needs' && f.count === f.orange && f.count === 1, 'after a reload the reviewed boxes stay clear and the open one stays orange', [f.hoa, f.count, f.orange]);
+  ok(f.hoa.join('|') === '||f-needs' && f.count === f.orange && f.count === 1, 'after a reload the filled boxes stay clear and the blank one stays orange', [f.hoa, f.count, f.orange]);
+  const shown = await page.evaluate(() => [0, 1, 2].map((i) => document.querySelector('#comp-row-' + i + ' td[data-label="HOA/Mo"] input').value));
+  ok(shown.join('|') === '0|917|' && f.adj[0] === -86500 && f.adj[1] === 5200 && f.adj[2] === 0, 'a typed 0 is still shown as 0 after a reload (it used to show as an empty box), and the adjustments are the same', [shown, f.adj]);
+  await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '');
+  await page.waitForTimeout(150);
+  f = await fees(page);
+  ok(f.vals[1] === '' && f.adj[1] === 0 && f.hoa[1] === 'f-needs', 'emptying a fee box makes it blank again, not 0: no adjustment, and orange', [f.vals[1], f.adj[1], f.hoa[1]]);
   await page.context().close();
 
   // Importing MLS sheets.
@@ -426,7 +449,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(f.adj[0] === 5200 && f.adj[1] === -56500 && f.adj[2] === -11500, 'each adjustment is the difference from the subject\'s fee: up for a higher fee (917), down for a lower one (300, 750)', f.adj);
   const net = await page.evaluate(() => comps.slice(0, 3).map((c) => [c._adj.net, c._adj.adjusted - parseFloat(c.salePrice)]));
   ok(net.every((n) => n[0] === n[1]), 'and it carries into the net adjustment and the adjusted price', net);
-  ok(f.vals[3] === '' && f.hoa[3] === 'f-needs', 'a sheet that prints no fee leaves the box blank and orange', [f.vals[3], f.hoa[3]]);
+  ok(f.vals[3] === '' && f.hoa[3] === 'f-needs' && f.adj[3] === 0, 'a sheet that prints no fee leaves the box blank, orange and unadjusted', [f.vals[3], f.hoa[3], f.adj[3]]);
   ok(f.count === f.orange, 'the number in the banner equals the orange boxes', [f.count, f.orange]);
 
   // The notice: sale price 500,000, so the line is 25,000.
@@ -454,6 +477,48 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   f = await fees(page);
   ok(f.vals.length === 5 && String(f.vals[3]) === '700' && f.hoa[3] !== 'f-needs', 'reading the same sheets again keeps the fee the agent typed and adds no duplicate', [f.vals, f.hoa[3]]);
   ok(errors.length === 0, 'no script errors', errors);
+
+  // ════════════════ LAYOUT ON A COMPUTER ════════════════
+  console.log('Layout on a computer');
+  await page.evaluate(() => { comps[0].address = '601 Pennsylvania Ave NW #1003'; comps[1]._src = Object.assign({}, comps[1]._src, { gla: 'check', garageSpaces: 'check' }); if (comps[1]._rev) { delete comps[1]._rev.gla; delete comps[1]._rev.garageSpaces; delete comps[1]._rev.drivewaySpaces; } buildCompsTable(); recalcAll(); });
+  const layout = (page) => page.evaluate(() => {
+    const r = {};
+    r.wrappers = Array.prototype.map.call(document.querySelectorAll('.comps-wrapper'), (w) => w.scrollWidth - w.clientWidth);
+    r.pageScroll = document.documentElement.scrollWidth - window.innerWidth;
+    r.cutHeaders = Array.prototype.filter.call(document.querySelectorAll('.comps-table th'), (th) => th.scrollWidth > th.clientWidth).map((th) => th.textContent);
+    r.spill = [];
+    document.querySelectorAll('#compsBody td, #activeBody td').forEach((td) => { const t = td.getBoundingClientRect(); td.querySelectorAll('input, select, button, label').forEach((el) => { const e = el.getBoundingClientRect(); if (e.right > t.right + 0.5 || e.left < t.left - 0.5) r.spill.push((td.getAttribute('data-label') || 'remove') + ':' + el.tagName); }); });
+    const a = document.querySelector('#comp-row-0 td[data-label="Address"] input');
+    r.addrCut = a.scrollWidth - a.clientWidth; r.addrTitle = a.title;
+    r.tableWidth = document.getElementById('compsTable').getBoundingClientRect().width;
+    r.cardWidth = document.getElementById('compsTable').closest('.card').getBoundingClientRect().width;
+    return r;
+  });
+  for (const w of [1280, 1440, 1920]) {
+    await page.setViewportSize({ width: w, height: 900 });
+    await page.waitForTimeout(250);
+    const L = await layout(page);
+    ok(L.wrappers.every((d) => d <= 0) && L.pageScroll <= 0, 'at ' + w + ' wide nothing scrolls sideways', [L.wrappers, L.pageScroll]);
+    ok(L.cutHeaders.length === 0, 'at ' + w + ' wide no column header is cut off', L.cutHeaders);
+    ok(L.spill.length === 0, 'at ' + w + ' wide no box spills out of its cell', L.spill);
+    if (w >= 1440) ok(L.addrCut <= 0, 'at ' + w + ' wide a full condo address with its unit number fits in the Address box', L.addrCut);
+    if (w === 1920) ok(L.cardWidth > 1400 && L.tableWidth > 1350, 'at 1920 wide the table uses the screen (it stopped at about 1100 before)', [L.cardWidth, L.tableWidth]);
+    if (w === 1280) ok(L.addrTitle === '601 Pennsylvania Ave NW #1003', 'the full address shows when you point at the box', L.addrTitle);
+  }
+  await page.setViewportSize({ width: 1280, height: 720 });
+  const pk = await page.evaluate(() => { const td = document.querySelector('#comp-row-1 td[data-label="Parking"]'); return { labels: Array.prototype.map.call(td.querySelectorAll('label'), (l) => l.childNodes[0].textContent), placeholders: Array.prototype.map.call(td.querySelectorAll('input'), (i) => i.placeholder), header: Array.prototype.map.call(document.querySelectorAll('#compsTable th'), (th) => th.textContent).filter((t) => /Parking/.test(t)), btn: (td.querySelector('button.fieldok') || {}).textContent || '', cls: td.className }; });
+  ok(pk.labels.join('|') === 'Garage|Driveway' && pk.header.join('') === 'Parking spaces' && !/gar|dw/.test(pk.placeholders.join('')), 'the Parking cell labels its two boxes Garage and Driveway, under a header that reads Parking spaces', pk);
+  ok(/Confirm/.test(pk.btn) && /f-check/.test(pk.cls), 'an orange CHECK THIS box has a Confirm button', pk);
+  const layoutMoney = await feeMoney(page);
+  await page.click('#comp-row-1 td[data-label="Parking"] button.fieldok');
+  let pkAfter = await page.evaluate(() => { const td = document.querySelector('#comp-row-1 td[data-label="Parking"]'); return { cls: td.className, text: td.textContent }; });
+  ok(/f-ok/.test(pkAfter.cls) && /REVIEWED/.test(pkAfter.text), 'pressing Confirm turns the box green and says REVIEWED', pkAfter);
+  await page.waitForTimeout(1900);
+  pkAfter = await page.evaluate(() => { const td = document.querySelector('#comp-row-1 td[data-label="Parking"]'); return { cls: td.className, btn: !!td.querySelector('button.fieldok') }; });
+  ok(!/f-check|f-needs|f-ok/.test(pkAfter.cls) && !pkAfter.btn, 'then the box clears and the button goes', pkAfter);
+  ok((await feeMoney(page)) === layoutMoney, 'pressing Confirm changed no value and no adjustment');
+  const bannerText = await page.evaluate(() => document.getElementById('needsBanner').textContent);
+  ok(/Press Confirm on a box/.test(bannerText), 'the notice at the top says to press Confirm', bannerText);
 
   // ════════════════ WHAT THE PDF SAYS ABOUT ITS METHOD ════════════════
   console.log('What the PDF says about its method');
