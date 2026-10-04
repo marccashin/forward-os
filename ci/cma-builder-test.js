@@ -55,7 +55,9 @@
  *   - it says the structure follows the Fannie Mae sales comparison approach and that
  *     the dollar amounts are FORWARD's estimates; it no longer says 'per Fannie Mae
  *     UAD standards';
- *   - it says what the range is built on: the median adjusted price, or the agent's
+ *   - the cover and the method paragraph mention the agent's own price only when it
+ *     differs from what the builder recommends;
+ *   - it says what the range is built on: the median indicated value, or the agent's
  *     own price when they entered one. Never a 'weighted average';
  *   - the footer fits the page.
  *
@@ -557,13 +559,19 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(/follows the structure of the Fannie Mae sales comparison approach/.test(pdf.text) && /in line with the ANSI measuring standard, counts above-grade living area separately/.test(pdf.text), 'the method paragraph says the STRUCTURE follows Fannie Mae and ANSI', pdf.text.slice(-900));
   ok(/The dollar amount of each adjustment is FORWARD\u2019s estimate/.test(pdf.text), 'and that the dollar amounts are FORWARD\'s', null);
   ok(!/per Fannie Mae UAD standards/.test(pdf.text) && !/appraiser-grade/.test(pdf.text) && !/weighted average/.test(pdf.text), 'the old claims are gone: per Fannie Mae UAD standards, appraiser-grade, weighted average', null);
-  ok(/range is 3% above and below the median adjusted price\./.test(pdf.text), 'with no agent price, the range is described as built on the median adjusted price', null);
+  ok(/range is 3% above and below the median indicated value\./.test(pdf.text), 'with no agent price, the range is described as built on the median indicated value', null);
+  ok(/Based on 5 adjusted comparable sales/.test(pdf.text) && !/agent\u2019s recommended price/.test(pdf.text), 'and the cover says Based on 5 adjusted comparable sales, with no mention of an agent price', null);
+  const auto = await page.evaluate(() => parseInt(document.getElementById('vRecommended').textContent.replace(/[^0-9]/g, ''), 10));
+  await page.fill('#agentPriceOverride', String(auto));
+  pdf = await pdfText(page);
+  ok(auto > 0 && /Based on 5 adjusted comparable sales/.test(pdf.text) && /the median indicated value\./.test(pdf.text) && !/agent\u2019s recommended price/.test(pdf.text), 'an agent price equal to the builder\'s own figure changes nothing, so the PDF says nothing about it', auto);
   ok(pdf.wide.length === 1 && pdf.wide[0][0] + pdf.wide[0][2] <= 612 - 50, 'the new Adjustment Grid footer fits inside the page margins (real jsPDF width)', pdf.wide);
   ok(/Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden\./.test(pdf.text) && /All comparable sales are of the same property type/.test(pdf.text) && /seller objectives\./.test(pdf.text), 'the rest of the paragraph is unchanged', null);
   const pagesBefore = pdf.pages;
   await page.fill('#agentPriceOverride', '450000');
   pdf = await pdfText(page);
-  ok(/range is 3% above and below the agent\u2019s recommended price\./.test(pdf.text) && !/median adjusted price\./.test(pdf.text), 'with an agent price entered, the range is described as built on the agent\'s price', null);
+  ok(/Based on the agent\u2019s recommended price, informed by 5 comparable sales/.test(pdf.text) && !/Based on 5 adjusted comparable sales/.test(pdf.text), 'with a different agent price, the cover says the range is based on the agent\'s price, informed by the sales', null);
+  ok(/range is 3% above and below the agent\u2019s recommended price\./.test(pdf.text) && !/median indicated value\./.test(pdf.text), 'with an agent price entered, the range is described as built on the agent\'s price', null);
   ok(pdf.pages === pagesBefore, 'the page count is the same either way', [pagesBefore, pdf.pages]);
   ok(errors.length === 0, 'no script errors drawing the PDF', errors);
   await page.context().close();

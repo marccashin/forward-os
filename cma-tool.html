@@ -1659,6 +1659,10 @@ function _fillPDFDoc(doc) {
   const recommendedAuto = Math.round(median / 1000) * 1000;
   const agentOverrideVal = parseFloat(document.getElementById('agentPriceOverride').value) || 0;
   const recommended = agentOverrideVal > 0 ? agentOverrideVal : recommendedAuto;
+  // True only when the agent's own price differs from what the builder recommends. The PDF
+  // mentions the agent's price only then (Marc, Oct 4, 2026): an Agent Override equal to the
+  // builder's own figure changes nothing, so nothing is said about it.
+  const agentChangedValue = agentOverrideVal > 0 && agentOverrideVal !== recommendedAuto;
   const rangeLow    = Math.round(recommended * 0.97 / 1000) * 1000;
   const rangeHigh   = Math.round(recommended * 1.03 / 1000) * 1000;
 
@@ -1782,7 +1786,11 @@ function _fillPDFDoc(doc) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(...GRAY);
-    doc.text('Based on ' + validComps.length + ' adjusted comparable sale' + (validComps.length !== 1 ? 's' : ''), W/2, cy, { align: 'center' });
+    // Until Oct 4, 2026 this always read 'Based on N adjusted comparable sales', even when the range
+    // above it was built around a price the agent typed in (601 Pennsylvania Ave NW #1103N: a range of
+    // 437,000 to 464,000 over comps that indicated 504,600 to 566,400).
+    const nSales = validComps.length + ' comparable sale' + (validComps.length !== 1 ? 's' : '');
+    doc.text(agentChangedValue ? 'Based on the agent\u2019s recommended price, informed by ' + nSales : 'Based on ' + validComps.length + ' adjusted comparable sale' + (validComps.length !== 1 ? 's' : ''), W/2, cy, { align: 'center' });
   }
 
   // Cover footer
@@ -2353,7 +2361,7 @@ function _fillPDFDoc(doc) {
     // What the range is really built on: the median adjusted price, or the agent's own price
     // when they entered one (see recommended / rangeLow / rangeHigh above). It said 'weighted
     // average' until Oct 4, 2026, which the builder has never used.
-    const rangeBasis = agentOverrideVal > 0 ? 'the agent\u2019s recommended price' : 'the median adjusted price';
+    const rangeBasis = agentChangedValue ? 'the agent\u2019s recommended price' : 'the median indicated value';
     const methodology = 'This Comparative Market Analysis follows the structure of the Fannie Mae sales comparison approach and, in line with the ANSI measuring standard, counts above-grade living area separately from below-grade space. The dollar amount of each adjustment is FORWARD\u2019s estimate and is shown on the Adjustment Grid. Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden. The recommended list price range is 3% above and below ' + rangeBasis + '. All comparable sales are of the same property type and are drawn from within the market-appropriate radius. The final recommended price reflects the agent\u2019s professional judgment and should be reviewed in the context of current market conditions, days-on-market trends, and seller objectives.';
     const methLines = doc.splitTextToSize(methodology, CW);
     doc.text(methLines, ML, y);
