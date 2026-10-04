@@ -566,7 +566,8 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   pdf = await pdfText(page);
   ok(auto > 0 && /Based on 5 adjusted comparable sales/.test(pdf.text) && /the median indicated value\./.test(pdf.text) && !/agent\u2019s recommended price/.test(pdf.text), 'an agent price equal to the builder\'s own figure changes nothing, so the PDF says nothing about it', auto);
   ok(pdf.wide.length === 1 && pdf.wide[0][0] + pdf.wide[0][2] <= 612 - 50, 'the new Adjustment Grid footer fits inside the page margins (real jsPDF width)', pdf.wide);
-  ok(/Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden\./.test(pdf.text) && /All comparable sales are of the same property type/.test(pdf.text) && /seller objectives\./.test(pdf.text), 'the rest of the paragraph is unchanged', null);
+  ok(/Adjustments are applied to each comparable sale to normalize differences in gross living area, bedroom and bathroom count, parking spaces, below-grade finished area, condition, and HOA burden\./.test(pdf.text) && /seller objectives\./.test(pdf.text), 'the rest of the paragraph is unchanged', null);
+  ok(/The comparable sales were selected by the agent as the recent sales most relevant to this property, based on location, property type and features\./.test(pdf.text) && !/market-appropriate radius/.test(pdf.text), 'the paragraph says the agent selected the comps; it no longer claims a property type and radius the builder does not check', null);
   const pagesBefore = pdf.pages;
   await page.fill('#agentPriceOverride', '450000');
   pdf = await pdfText(page);
