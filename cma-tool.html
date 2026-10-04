@@ -47,7 +47,8 @@
     .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
 
     /* ── LAYOUT ── */
-    .page { max-width: 1200px; margin: 0 auto; padding: 24px 20px 80px; }
+    /* Was 1200px: on a wide screen half the window was empty while the comps table scrolled sideways. */
+    .page { max-width: 1640px; margin: 0 auto; padding: 24px 20px 80px; }
 
     /* ── CARDS ── */
     .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; }
@@ -69,7 +70,24 @@
     table.comps-table { width: 100%; border-collapse: collapse; font-size: 11px; table-layout: fixed; }
     .comps-table th { background: var(--navy); color: white; padding: 6px 6px; text-align: left; font-size: 9px; font-weight: 600; letter-spacing: .3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .comps-table th.gold { background: var(--gold); color: var(--navy); }
-    .comps-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .comps-table td { padding: 5px 4px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .comps-table th.xcol { background: transparent; }
+    /* Column widths are shares of the table (see the th widths), so a table always fits its card and
+       never scrolls sideways on a computer. Below about 1280px wide the table keeps a workable width
+       and scrolls instead of squashing its boxes. Phones use the stacked layout further down. */
+    @media (min-width: 641px) {
+      table.comps-table { min-width: 1000px; }
+      table#compsTable { min-width: 1180px; }
+    }
+    /* Two or three small boxes in one cell share the cell's width. */
+    .pk2 { display: flex; gap: 4px; }
+    .pk2 label { flex: 1 1 0; min-width: 0; display: block; font-size: 9px; font-weight: 600; color: #64748b; text-align: center; line-height: 1.3; white-space: nowrap; }
+    .pk2 label input { display: block; text-align: center; padding: 3px 2px; }
+    /* The button on an orange box. A click anywhere in the box still counts; the button says so. */
+    .fieldok { display: inline-block; margin-top: 3px; font-size: 10px; font-weight: 700; color: #fff; background: #d97706; border: none; border-radius: 4px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+    .fieldok:hover { background: #b45309; }
+    .comps-table .fieldok { display: block; width: 100%; padding: 3px 2px; font-size: 9px; }
+    .fieldnote { display: block; margin-top: 2px; font-size: 9px; font-weight: 600; line-height: 1.25; color: #92400e; }
     .comps-table tr:nth-child(even) td { background: #f9fafc; }
     .comps-table tr:hover td { background: #f0f4ff; }
     .comps-table td input, .comps-table td select { border: 1px solid #dde3ef; border-radius: 4px; padding: 3px 5px; font-size: 11px; width: 100%; background: white; }
@@ -428,7 +446,7 @@
       <div class="adj-row">
         <div class="adj-row-info">
           <div class="adj-row-label">HOA Adjustment (monthly)</div>
-          <div class="adj-row-desc">Monthly fee difference × this multiplier. A comp with a higher fee than the subject is adjusted up; a lower fee, down.</div>
+          <div class="adj-row-desc">Monthly fee difference × this multiplier. A comp with a higher fee than the subject is adjusted up; a lower fee, down. A comp whose fee box is blank gets no HOA adjustment; type 0 for a comp with no fee.</div>
         </div>
         <div class="adj-row-controls">
           <input type="number" id="adj_hoa" value="100" step="10" oninput="recalcAll()" />
@@ -517,19 +535,20 @@
       <table class="comps-table" id="activeTable">
         <thead>
           <tr>
-            <th style="width:162px;">Address</th>
-            <th style="width:90px;">Date</th>
-            <th style="width:96px;">List Price</th>
-            <th style="width:72px;">Sq Ft</th>
-            <th style="width:80px;">Lot Size</th>
-            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Parking</th>
-            <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
-            <th style="width:78px;">HOA/Mo</th>
-            <th style="width:112px;">Proximity</th>
-            <th style="width:60px;">DOM</th>
-            <th class="gold" style="width:64px;">$/SqFt</th>
+            <th style="width:16.920%;">Address</th>
+            <th style="width:7.615%;">Date</th>
+            <th style="width:8.122%;">List Price</th>
+            <th style="width:6.091%;">Sq Ft</th>
+            <th style="width:6.768%;">Lot Size</th>
+            <th style="width:9.137%;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:4.568%;">Bel Gr</th>
+            <th style="width:4.568%;">Parking</th>
+            <th style="width:6.768%;" title="Condition at time of listing.">Condition ⓘ</th>
+            <th style="width:6.599%;">HOA/Mo</th>
+            <th style="width:9.476%;">Proximity</th>
+            <th style="width:5.076%;">DOM</th>
+            <th class="gold" style="width:5.415%;">$/SqFt</th>
+            <th class="xcol" style="width:2.876%;"></th>
           </tr>
         </thead>
         <tbody id="activeBody">
@@ -555,19 +574,20 @@
       <table class="comps-table" id="pendingTable">
         <thead>
           <tr>
-            <th style="width:162px;">Address</th>
-            <th style="width:90px;">Date</th>
-            <th style="width:96px;">List Price</th>
-            <th style="width:72px;">Sq Ft</th>
-            <th style="width:80px;">Lot Size</th>
-            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:54px;">Bel Gr</th>
-            <th style="width:54px;">Parking</th>
-            <th style="width:80px;" title="Condition at time of listing.">Condition ⓘ</th>
-            <th style="width:78px;">HOA/Mo</th>
-            <th style="width:112px;">Proximity</th>
-            <th style="width:60px;">DOM</th>
-            <th class="gold" style="width:64px;">$/SqFt</th>
+            <th style="width:16.920%;">Address</th>
+            <th style="width:7.615%;">Date</th>
+            <th style="width:8.122%;">List Price</th>
+            <th style="width:6.091%;">Sq Ft</th>
+            <th style="width:6.768%;">Lot Size</th>
+            <th style="width:9.137%;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:4.568%;">Bel Gr</th>
+            <th style="width:4.568%;">Parking</th>
+            <th style="width:6.768%;" title="Condition at time of listing.">Condition ⓘ</th>
+            <th style="width:6.599%;">HOA/Mo</th>
+            <th style="width:9.476%;">Proximity</th>
+            <th style="width:5.076%;">DOM</th>
+            <th class="gold" style="width:5.415%;">$/SqFt</th>
+            <th class="xcol" style="width:2.876%;"></th>
           </tr>
         </thead>
         <tbody id="pendingBody">
@@ -622,22 +642,23 @@
       <table class="comps-table" id="compsTable">
         <thead>
           <tr>
-            <th style="width:162px;">Address</th>
-            <th style="width:90px;">Sold Date</th>
-            <th style="width:96px;">Sale Price</th>
-            <th style="width:72px;">Sq Ft</th>
-            <th style="width:80px;">Lot Size</th>
-            <th style="width:108px;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
-            <th style="width:54px;">Bel Gr</th>
-            <th style="width:80px;" title="Garage spaces / driveway spaces">Parking (gar / dw)</th>
-            <th style="width:80px;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
-            <th style="width:78px;">HOA/Mo</th>
-            <th style="width:70px;">Concess.</th>
-            <th style="width:112px;">Proximity</th>
-            <th style="width:60px;">DOM</th>
-            <th class="gold" style="width:64px;">$/SqFt</th>
-            <th class="gold" style="width:86px;">Net Adj</th>
-            <th class="gold" style="width:94px;">Adj Price</th>
+            <th style="width:14.003%;">Address</th>
+            <th style="width:6.931%;">Sold Date</th>
+            <th style="width:6.223%;">Sale Price</th>
+            <th style="width:4.668%;">Sq Ft</th>
+            <th style="width:4.385%;">Lot Size</th>
+            <th style="width:7.355%;" title="Bedrooms / Full Baths / Half Baths">Bd / Fb / Hb</th>
+            <th style="width:3.395%;">Bel Gr</th>
+            <th style="width:8.487%;" title="Garage spaces and driveway spaces. Driveway spaces are valued in DC only.">Parking spaces</th>
+            <th style="width:6.082%;" title="Set each comp's actual condition at time of sale. Differs from subject = adjustment applied.">Condition ⓘ</th>
+            <th style="width:5.941%;">HOA/Mo</th>
+            <th style="width:4.809%;">Concess.</th>
+            <th style="width:5.658%;">Proximity</th>
+            <th style="width:3.253%;">DOM</th>
+            <th class="gold" style="width:4.243%;">$/SqFt</th>
+            <th class="gold" style="width:5.799%;">Net Adj</th>
+            <th class="gold" style="width:6.365%;">Adj Price</th>
+            <th class="xcol" style="width:2.405%;"></th>
           </tr>
         </thead>
         <tbody id="compsBody">
@@ -999,7 +1020,10 @@ function _removeBtn(fn) {
   const td = document.createElement('td');
   const btn = document.createElement('button');
   btn.textContent = '✕';
-  btn.style.cssText = 'background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 6px;';
+  // Fills its own narrow column, so its size does not depend on which font draws the X.
+  btn.style.cssText = 'display:block;width:100%;background:none;border:none;color:#999;cursor:pointer;font-size:14px;padding:2px 0;text-align:center;overflow:hidden;';
+  td.style.cssText = 'padding-left:0;padding-right:0;';
+  btn.title = 'Remove this property';
   btn.onclick = fn;
   td.appendChild(btn);
   return td;
@@ -1020,16 +1044,16 @@ function buildCompRow(i) {
   const c = comps[i];
   const condOpts = ['A+','A','B','C','D'].map(v => `<option value="${v}"${c.condition===v?' selected':''}>${v}</option>`).join('');
   tr.innerHTML = `
-    <td data-label="Address"><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="compChange(${i},'address',this.value)" /></td>
+    <td data-label="Address"><input type="text" value="${c.address||''}" title="${c.address||''}" placeholder="123 Comp St" onchange="compChange(${i},'address',this.value);this.title=this.value" /></td>
     <td data-label="Sold Date"><input type="text" value="${c.soldDate||''}" placeholder="YYYY-MM-DD" onchange="compChange(${i},'soldDate',this.value)" /></td>
     <td data-label="Sale Price"><input type="number" value="${c.salePrice||''}" placeholder="350000" min="0" step="1000" oninput="compChange(${i},'salePrice',+this.value);recalcAll()" /></td>
     <td data-label="Sq Ft"><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="compChange(${i},'gla',+this.value);recalcAll()" /></td>
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="compChange(${i},'lotSize',this.value)" /></td>
-    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
+    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
-    <td data-label="Parking"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.garageSpaces||''}" placeholder="gar" title="Garage spaces" min="0" style="width:34px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /><input type="number" value="${c.drivewaySpaces == null ? '' : c.drivewaySpaces}" placeholder="dw" title="Driveway spaces. Blank means unknown: no driveway adjustment." min="0" style="width:34px;padding:3px 2px;font-size:11px;text-align:center;" oninput="compChange(${i},'drivewaySpaces',this.value);recalcAll()" /></div></td>
+    <td data-label="Parking"><div class="pk2"><label title="Garage spaces">Garage<input type="number" value="${c.garageSpaces||''}" placeholder="0" title="Garage spaces" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></label><label title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment.">Driveway<input type="number" value="${c.drivewaySpaces == null ? '' : c.drivewaySpaces}" placeholder="" title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment." min="0" oninput="compChange(${i},'drivewaySpaces',this.value);recalcAll()" /></label></div></td>
     <td data-label="Condition"><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
-    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="compChange(${i},'hoaMonthly',+this.value);recalcAll()" /></td>
+    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly == null ? '' : c.hoaMonthly}" placeholder="" title="This comp's monthly HOA or condo fee. Blank means not known yet: no HOA adjustment. If it has no monthly fee, type 0." min="0" oninput="compChange(${i},'hoaMonthly',this.value === '' ? '' : +this.value);recalcAll()" /></td>
     <td data-label="Concess."><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
     <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="compChange(${i},'proximity',this.value)" /></td>
     <td data-label="DOM"><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="compChange(${i},'dom',+this.value)" /></td>
@@ -1085,16 +1109,16 @@ function buildInfoRow(type, i) {
   const tr = document.createElement('tr');
   tr.id = prefix + '-row-' + i;
   tr.innerHTML = `
-    <td data-label="Address"><input type="text" value="${c.address||''}" placeholder="123 Comp St" onchange="${prefix}Change(${i},'address',this.value)" /></td>
+    <td data-label="Address"><input type="text" value="${c.address||''}" title="${c.address||''}" placeholder="123 Comp St" onchange="${prefix}Change(${i},'address',this.value);this.title=this.value" /></td>
     <td data-label="Date"><input type="text" value="${c.date||''}" placeholder="YYYY-MM-DD" onchange="${prefix}Change(${i},'date',this.value)" /></td>
     <td data-label="List Price"><input type="number" value="${c.listPrice||''}" placeholder="350000" min="0" step="1000" oninput="${prefix}Change(${i},'listPrice',+this.value);${prefix}RecalcPsf(${i})" /></td>
     <td data-label="Sq Ft"><input type="number" value="${c.gla||''}" placeholder="1800" min="0" oninput="${prefix}Change(${i},'gla',+this.value);${prefix}RecalcPsf(${i})" /></td>
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="${prefix}Change(${i},'lotSize',this.value)" /></td>
-    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'beds',+this.value)" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'fullBaths',+this.value)" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="width:32px;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'halfBaths',+this.value)" /></div></td>
+    <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'beds',+this.value)" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'fullBaths',+this.value)" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="${prefix}Change(${i},'halfBaths',+this.value)" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'below',+this.value)" /></td>
     <td data-label="Parking"><input type="number" value="${c.garageSpaces||''}" placeholder="2" min="0" oninput="${prefix}Change(${i},'garageSpaces',+this.value)" /></td>
     <td data-label="Condition"><select onchange="${prefix}Change(${i},'condition',this.value)">${condOpts}</select></td>
-    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly||''}" placeholder="0" min="0" oninput="${prefix}Change(${i},'hoaMonthly',+this.value)" /></td>
+    <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly == null ? '' : c.hoaMonthly}" placeholder="" min="0" oninput="${prefix}Change(${i},'hoaMonthly',this.value === '' ? '' : +this.value)" /></td>
     <td data-label="Proximity"><input type="text" value="${c.proximity||''}" placeholder="0.3 mi" onchange="${prefix}Change(${i},'proximity',this.value)" /></td>
     <td data-label="DOM"><input type="number" value="${c.dom||''}" placeholder="—" min="0" onchange="${prefix}Change(${i},'dom',+this.value)" /></td>
     <td class="calc" data-label="$/SqFt" id="${prefix}${i}_psf">—</td>
@@ -1222,6 +1246,11 @@ function recalcAll() {
     const cBaths     = parseFloat(c.fullBaths) || 0;
     const cHalfBaths = parseFloat(c.halfBaths) || 0;
     const cHoa       = parseFloat(c.hoaMonthly) || 0;
+    // Blank is not zero. A blank HOA/Mo box means the comp's fee is not known yet, so the comp
+    // gets no HOA adjustment until someone types it; a typed 0 means the comp has no fee and is
+    // adjusted in full (Marc, Oct 4, 2026). Before, blank counted as $0 and the subject's whole
+    // fee times the multiplier landed on the comp: 86,500 on each comp of a condo CMA.
+    const cHoaKnown  = !(c.hoaMonthly === undefined || c.hoaMonthly === null || String(c.hoaMonthly).trim() === '');
     const cCond      = c.condition || 'C';
     const cConcess   = parseFloat(c.concessions) || 0;
 
@@ -1238,7 +1267,7 @@ function recalcAll() {
     // A monthly fee is a cost to the buyer. A comp with a HIGHER fee than the subject is
     // the inferior one, so its price is adjusted UP; a comp with a lower fee is adjusted
     // DOWN. Until Oct 4, 2026 this line ended in * -1 and did the opposite (Marc, Oct 4).
-    const hoaAdj      = (cHoa - subHoa) * adjHoaMult;
+    const hoaAdj      = cHoaKnown ? (cHoa - subHoa) * adjHoaMult : 0;
     const concessAdj  = -cConcess; // concessions reduce effective comp price
 
     const netAdj   = glaAdj + belowAdj + condAdj + bedroomAdj + bathAdj + halfBathAdj + garageAdj + drivewayAdj + hoaAdj + concessAdj;
@@ -2581,6 +2610,9 @@ async function findComps() {
   // 'needs' | 'check' | 'mls' | '' for one field of one row.
   function fieldState(c, field) {
     if (!c) return '';
+    // A blank fee is cleared only by typing a number (0 for no fee), never by a click: a click
+    // would leave the fee unknown and the comp quietly without an HOA adjustment.
+    if (field === 'hoaMonthly' && feeMissing(c)) return 'needs';
     if (c._rev && c._rev[field]) return '';
     if (AGENT_ONLY_COMP.indexOf(field) > -1) {
       // Only the agent can judge it, so it is flagged on every row in use, imported or typed.
@@ -2588,15 +2620,15 @@ async function findComps() {
       if (!rowInUse(c)) return '';
       return (!c[field] || c[field] === 'C') ? 'needs' : '';
     }
-    if (field === 'hoaMonthly' && feeMissing(c)) return 'needs';
     return (c._src || {})[field] || '';
   }
 
   // A closed sale with a blank HOA/Mo box, when the subject has a monthly fee. recalcAll
-  // counts a blank as $0, so the subject's whole fee times the multiplier lands on that
-  // comp. The box is orange until the agent types the fee or clicks it to confirm there
-  // is none. This covers comps typed by hand and CMAs saved before Oct 4, 2026 as well as
-  // imports. Active and pending rows are not adjusted, so they are not flagged.
+  // gives a blank fee no HOA adjustment (blank = not known yet), so the comp is being
+  // compared as if its fee equalled the subject's. The box is orange until the agent types
+  // the fee, or 0 if the comp has none. This covers comps typed by hand and CMAs saved
+  // before Oct 4, 2026 as well as imports. Active and pending rows are not adjusted, so
+  // they are not flagged.
   function subjectFee() {
     var g = function (id) { return parseFloat((document.getElementById(id) || {}).value) || 0; };
     return g('s_hoaMonthly') + g('s_condoFee');
@@ -2614,6 +2646,13 @@ async function findComps() {
     return best;
   }
 
+  // The button shown on an orange box. Agents did not know a click clears the box (Marc,
+  // Oct 4, 2026): CHECK THIS reads as a warning, not as something to press. The button has
+  // no handler of its own. It sits inside the box, and reviewed() below already treats a
+  // click anywhere in the box as "I looked at this". A blank HOA/Mo has no button: it needs
+  // a number, and says to type 0 when the comp has no fee.
+  function okBtn(text) { return '<button type="button" class="fieldok" title="Click when this is right. Changing the value also clears the box.">' + text + ' \u2713</button>'; }
+
   function paintRow(tr, c) {
     if (!tr) return;
     Array.prototype.forEach.call(tr.querySelectorAll('td[data-label]'), function (td) {
@@ -2625,8 +2664,8 @@ async function findComps() {
       var state = cellState(c, label);
       if (!state) return;
       if (state === 'mls')       { td.classList.add('f-mls'); }
-      else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS</span>'); }
-      else if (state === 'needs'){ td.classList.add('f-needs'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN</span>'); }
+      else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS' + okBtn('Confirm') + '</span>'); }
+      else if (state === 'needs'){ td.classList.add('f-needs'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN' + (label === 'HOA/Mo' ? '<span class="fieldnote">No monthly fee? Type 0</span>' : okBtn('Confirm')) + '</span>'); }
     });
   }
 
@@ -2652,8 +2691,7 @@ async function findComps() {
   // that sale's price, a notice under the table names the comp and says what to check.
   // The 5% is FORWARD's own line (Marc, Oct 4, 2026), not an appraisal standard.
   //
-  // A blank fee box that is still orange is left to that box: the agent has not said
-  // yet whether there is a fee. Once they confirm there is none, the notice applies.
+  // A blank fee box gets no HOA adjustment, so it never appears here. A typed 0 does.
   //
   // DISPLAY ONLY. It reads c._adj and writes nothing: no value, no price, no PDF.
   var HOA_WARN_SHARE = 0.05;
@@ -2713,6 +2751,12 @@ async function findComps() {
         var label = td.getAttribute('data-label');
         var st = c ? cellState(c, label) : '';
         var edited = e.type === 'change' || e.type === 'input';
+        if (label === 'HOA/Mo' && c && feeMissing(c)) {
+          // Only a number clears this box. Repaint once the typing has been stored, so the
+          // box goes clear with a fee in it and back to orange if it is emptied again.
+          if (edited) setTimeout(paintAll, 0);
+          return;
+        }
         if (c && fieldsOf(label).length && (st === 'needs' || st === 'check' || edited)) {
           // An edit always counts, flagged or not: this runs before the box's own handler
           // stores the new value, so a Condition moved back to C must not be flagged again.
@@ -2743,6 +2787,7 @@ async function findComps() {
   document.addEventListener('input', function (e) {
     var id = e.target && e.target.id;
     if (id === 's_hoaMonthly' || id === 's_condoFee') setTimeout(paintAll, 0);
+    else if (e.target && e.target.closest && e.target.closest('#compsBody td[data-label="HOA/Mo"]')) setTimeout(paintAll, 0);
   }, true);
 
   // Saved with the draft (see _buildDraft / _applyDraft), so a flag nobody has
@@ -2764,8 +2809,8 @@ async function findComps() {
       var old = w.querySelector('.fieldflag'); if (old) old.remove();
       var s = subjectSrc[id];
       if (s === 'mls')        w.classList.add('f-mls');
-      else if (s === 'check') { w.classList.add('f-check'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS</span>'); }
-      else if (s === 'needs') { w.classList.add('f-needs'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN</span>'); }
+      else if (s === 'check') { w.classList.add('f-check'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS ' + okBtn('Confirm') + '</span>'); }
+      else if (s === 'needs') { w.classList.add('f-needs'); w.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN ' + okBtn('Confirm') + '</span>'); }
     });
   }
 
@@ -2786,7 +2831,7 @@ async function findComps() {
     if (!el) return;
     el.style.display = n ? '' : 'none';
     el.innerHTML = '<strong>' + n + ' field' + (n === 1 ? '' : 's') + ' need your input.</strong> ' +
-      'Orange boxes are yours to fill in or double-check. Click a box, or change it, to mark it reviewed. Blue came straight from the MLS sheet.';
+      'Orange boxes are yours to fill in or double-check. Press Confirm on a box when it is right, or change its value, and the box clears. Blue came straight from the MLS sheet.';
   }
 
   // wrap the existing renderers so highlighting survives every redraw
