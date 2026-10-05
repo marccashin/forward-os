@@ -6154,6 +6154,22 @@ body {
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.cma)" style="font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy</button>
                       <a v-if="lstSubfolderFiles('cma')[0]?.drive_link" :href="lstSubfolderFiles('cma')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg> View File →</a>
                     </div>
+                    <div v-if="lstHistCurrent('cma')" data-hist-current="cma" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('cma') }}</div>
+                    <div v-if="lstHistError" data-hist-error="cma" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The CMA summary above is the current one.</div>
+                    <div v-if="lstHistFor('cma').length" data-hist="cma" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='cma' ? null : 'cma'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('cma').length }}) {{ lstHistOpen==='cma' ? '▲' : '▼' }}</div>
+                      <div v-if="lstHistOpen==='cma'" style="margin-top:6px;">
+                        <div v-for="h in lstHistFor('cma')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                          <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                            <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                          </div>
+                          <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                            <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                            <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                   <!-- Persona gate -->
                   <div v-if="!lstPersonaExists" style="background:#fef3c7;border:1.5px solid #f59e0b;border-radius:10px;padding:14px;margin-bottom:14px;">
@@ -6220,6 +6236,22 @@ body {
                         <button class="btn-sm" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescSave()">Save</button>
                         <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescEditing=false">Cancel</button>
                       </template>
+                    </div>
+                    <div v-if="lstHistCurrent('listing_remarks')" data-hist-current="listing_remarks" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('listing_remarks') }}</div>
+                    <div v-if="lstHistError" data-hist-error="listing_remarks" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The description above is the current one.</div>
+                    <div v-if="lstHistFor('listing_remarks').length" data-hist="listing_remarks" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='listing_remarks' ? null : 'listing_remarks'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('listing_remarks').length }}) {{ lstHistOpen==='listing_remarks' ? '▲' : '▼' }}</div>
+                      <div v-if="lstHistOpen==='listing_remarks'" style="margin-top:6px;">
+                        <div v-for="h in lstHistFor('listing_remarks')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                          <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                            <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                          </div>
+                          <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                            <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                            <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div style="text-align:center;padding:4px 0 8px;">
@@ -6298,6 +6330,22 @@ body {
                     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.seller_net_sheet)" style="font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy</button>
                       <a v-if="lstSubfolderFiles('seller_net_sheet')[0]?.drive_link" :href="lstSubfolderFiles('seller_net_sheet')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg> View PDF →</a>
+                    </div>
+                    <div v-if="lstHistCurrent('seller_net_sheet')" data-hist-current="seller_net_sheet" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('seller_net_sheet') }}</div>
+                    <div v-if="lstHistError" data-hist-error="seller_net_sheet" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The net sheet above is the current one.</div>
+                    <div v-if="lstHistFor('seller_net_sheet').length" data-hist="seller_net_sheet" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='seller_net_sheet' ? null : 'seller_net_sheet'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('seller_net_sheet').length }}) {{ lstHistOpen==='seller_net_sheet' ? '▲' : '▼' }}</div>
+                      <div v-if="lstHistOpen==='seller_net_sheet'" style="margin-top:6px;">
+                        <div v-for="h in lstHistFor('seller_net_sheet')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                          <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                            <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                          </div>
+                          <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                            <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                            <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   <div v-if="ns._voicePrefill" class="voice-prefill-badge" style="margin-bottom:10px;">✦ Voice pre-filled · Review before generating</div>
@@ -8472,11 +8520,27 @@ const supaRest = {
   // and writes the new one together; if anything fails, the old note is still there.
   // Throws with the database's own words. Never use this for voice notes: a listing
   // has many of those, and the function refuses them.
+  // Since Oct 5 2026 the save goes through save_property_note_by, the same function
+  // plus the name of the agent who saved. The database keeps every saved version in
+  // property_note_history (a trigger writes it in the same step as the save), and the
+  // name is what the listing shows beside each version. If that function is missing
+  // the older one is used, so a note is still saved, only without a name.
   async saveNote(propertyId, subfolder, content) {
-    const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/save_property_note', {
+    let who = '';
+    try { who = localStorage.getItem('fos_agent') || ''; } catch (e) {}
+    let res = await fetch(SUPABASE_URL + '/rest/v1/rpc/save_property_note_by', {
       method: 'POST', headers: this.headers(),
-      body: JSON.stringify({ p_property_id: propertyId, p_subfolder: subfolder, p_content: content })
+      body: JSON.stringify({ p_property_id: propertyId, p_subfolder: subfolder, p_content: content, p_saved_by: who })
     });
+    if (res.status === 404) {
+      res = await fetch(SUPABASE_URL + '/rest/v1/rpc/save_property_note', {
+        method: 'POST', headers: this.headers(),
+        body: JSON.stringify({ p_property_id: propertyId, p_subfolder: subfolder, p_content: content })
+      });
+    }
+    if (res.ok) {
+      try { window.dispatchEvent(new CustomEvent('fos-note-saved', { detail: { propertyId: propertyId, subfolder: subfolder } })); } catch (e) {}
+    }
     if (!res.ok) {
       let detail = 'note save error ' + res.status, code = '';
       try { const e = await res.json(); code = e.code || ''; detail = e.message || e.hint || e.details || detail; } catch {}
@@ -11012,6 +11076,53 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       { key:'mls_data',        label:'MLS Data',          icon:'🏷️', accept:'.pdf,.xlsx,.csv',           hasNotes:true,  open:false },
     ]);
 
+    // ── Earlier versions of a listing's saved items ───────────────────────────
+    // property_note_history holds every saved version of a note (newest first here).
+    // The app only reads it; the database writes it. lstHistError is shown on screen:
+    // an agent must be able to tell "no earlier versions" from "could not load them".
+    const lstHistory   = ref([]);
+    const lstHistError = ref('');
+    const lstHistOpen  = ref(null);   // which item's list is expanded
+    const lstHistView  = ref(null);   // which version is open to read
+    async function lstLoadHistory(propId) {
+      if (!propId) return;
+      try {
+        const rows = await supaRest.select('property_note_history', 'select=id,subfolder,content,saved_by,saved_at&property_id=eq.' + propId + '&order=saved_at.desc,id.desc');
+        // The agent may have moved to another listing while this was loading.
+        if (!lstActiveProp.value || lstActiveProp.value.id !== propId) return;
+        lstHistory.value = Array.isArray(rows) ? rows : [];
+        lstHistError.value = '';
+      } catch (e) {
+        if (!lstActiveProp.value || lstActiveProp.value.id !== propId) return;
+        lstHistory.value = [];
+        lstHistError.value = (e && e.message) ? e.message : 'unknown error';
+      }
+    }
+    function _lstHistAll(key) { return lstHistory.value.filter(function (h) { return h.subfolder === key; }); }
+    // Earlier versions only: the newest row is left out when it is the text on screen.
+    function lstHistFor(key) {
+      const all = _lstHistAll(key);
+      if (all.length && all[0].content === lstNotes[key]) return all.slice(1);
+      return all;
+    }
+    function lstHistWhen(h) {
+      if (!h || !h.saved_at) return 'Date not recorded';
+      const d = new Date(h.saved_at);
+      if (isNaN(d.getTime())) return 'Date not recorded';
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    function lstHistWho(h) { return (h && h.saved_by) ? h.saved_by : 'agent not recorded'; }
+    // 'Saved Oct 5, 2026, 7:02 PM by Marc Cashin' for the version on screen, or ''.
+    function lstHistCurrent(key) {
+      const all = _lstHistAll(key);
+      if (!all.length || all[0].content !== lstNotes[key]) return '';
+      return 'Saved ' + lstHistWhen(all[0]) + ' by ' + lstHistWho(all[0]);
+    }
+    window.addEventListener('fos-note-saved', function (ev) {
+      const pid = ev && ev.detail && ev.detail.propertyId;
+      if (pid && lstActiveProp.value && lstActiveProp.value.id === pid) lstLoadHistory(pid);
+    });
+
     function lstSubfolderFiles(key) {
       return lstActiveFiles.value.filter(f => f.subfolder === key);
     }
@@ -11252,6 +11363,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // The Price Reduction Planner's two boxes are not saved anywhere, so they
       // can only ever be the last card's. Start each card blank.
       pr.listDate = ''; pr.price = '';
+      // Earlier versions belong to one listing: empty the list before the new one loads.
+      lstHistory.value = []; lstHistError.value = ''; lstHistOpen.value = null; lstHistView.value = null;
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -11299,6 +11412,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           }
         }
       } catch {}
+      lstLoadHistory(prop.id);
       // Load revision requests
       lstRevisionRequests.value = []; lstRevSelectedVersion.value = 'original';
       lstRevNotes.value = ''; lstRevActiveStatus.value = ''; lstRevLatestNumber.value = 0;
@@ -21037,6 +21151,10 @@ const CHANGELOG = [
       {
         title: 'The Net Sheet Starts With the List Price From MLS Data',
         detail: 'When you open the Seller Net Sheet inside a listing, the Sale Price now starts at the List Price saved in that listing\'s MLS Data, alongside the address and HOA fee it already brought in. It only fills an empty box, so a price you typed is never replaced.\n\nHow to use: Save MLS Data on the listing first, with the List Price as a plain dollar figure such as $500,000. Then open Seller Net Sheet. Change the Sale Price to the number you are actually discussing with the seller.\n\nBest practice: The list price is a starting point, not a forecast. Run the sheet at the price you expect the home to sell for, and consider a second sheet at a lower price so the seller sees both.'
+      },
+      {
+        title: 'Every Save Is Kept: Previous Versions on the Listing',
+        detail: 'Until now, saving a net sheet, a CMA or a listing description to a listing replaced the one before it, and the earlier one was gone. Starting October 5, every save is kept. Under the saved net sheet, the saved CMA and the saved listing description on a listing you will see a line saying when it was saved and by whom, and a Previous versions list with every earlier save, newest first.\n\nWhat was already saved on each listing on October 5 is the first version on the list. Versions from before that date do not exist and cannot be brought back. Saves from before October 5 show agent not recorded, because the name was not kept then.\n\nThis keeps the text of each save. Keeping the PDF with each version is the next update.\n\nHow to use: Open a listing, open Seller Net Sheet (or CMA, or Listing Description), and click Previous versions under the saved copy. Click a date to read that version. Copy this version copies it.\n\nBest practice: Before you tell a seller a number changed, open the earlier net sheet and compare the two line by line, so you can say exactly which line moved and why.'
       }
     ]
   }
@@ -23706,7 +23824,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,

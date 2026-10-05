@@ -1474,7 +1474,14 @@ window.addEventListener('pagehide', () => {
 // copy on every save, with any failure swallowed.
 function _saveCmaNote(propId, summary) {
   if (!summary || !String(summary).trim()) return;
-  fetch(_SUPA_URL + '/rest/v1/rpc/save_property_note', { method: 'POST', headers: _supaHdrs(), body: JSON.stringify({ p_property_id: propId, p_subfolder: 'cma', p_content: summary }) })
+  // Since Oct 5, 2026: save_property_note_by, the same save plus the agent's name, so
+  // the listing can show who saved each version. The older function is the fallback.
+  var who = ''; try { who = localStorage.getItem('fos_agent') || ''; } catch (e) {}
+  fetch(_SUPA_URL + '/rest/v1/rpc/save_property_note_by', { method: 'POST', headers: _supaHdrs(), body: JSON.stringify({ p_property_id: propId, p_subfolder: 'cma', p_content: summary, p_saved_by: who }) })
+    .then(function (r) {
+      if (r.status !== 404) return r;
+      return fetch(_SUPA_URL + '/rest/v1/rpc/save_property_note', { method: 'POST', headers: _supaHdrs(), body: JSON.stringify({ p_property_id: propId, p_subfolder: 'cma', p_content: summary }) });
+    })
     .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); })
     .catch(function (e) { console.warn('CMA summary note save failed:', e); showToast('The CMA summary was NOT saved to the listing (' + (e && e.message ? e.message : 'network error') + '). Your PDF is not affected.', 8000); });
 }
