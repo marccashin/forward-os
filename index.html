@@ -11133,6 +11133,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         // every open, not only on a property change, so an MLS save made after the net
         // sheet was first opened still reaches it. Never overwrites an amount the agent
         // already has in the form.
+        // Sale price starts at this listing's MLS Data list price. Same rules as the
+        // HOA fee below: only when the box is empty, checked on every open.
+        if (!String(ns.salePrice || '').trim()) {
+          const _lp = nsListPriceFromMls(lstNotes.mls_data);
+          if (_lp) ns.salePrice = _lp;
+        }
         if (!String(ns.hoaAmount || '').trim()) {
           const _hoa = nsHoaFromMls(lstNotes.mls_data);
           if (_hoa) {
@@ -11234,6 +11240,18 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     async function lstOpenProperty(prop) {
+      // Every card opens its own tools. A tool panel left open on the last listing
+      // used to stay open here, still holding that listing's form: the net sheet's
+      // listing check only runs in lstOpenTool(), on a click of its header, so it
+      // was skipped and one card's address and figures showed under another card's
+      // name (Oct 5, 2026: 7532 Coxton Ct on 1415 Riverside Ave). Close the panel
+      // and clear any net sheet that belongs to a different card before anything
+      // else. Callers that want a panel open set lstToolOpen after this call.
+      lstToolOpen.value = null;
+      if (ns._propId && ns._propId !== prop.id) resetToolForm('net-sheet');
+      // The Price Reduction Planner's two boxes are not saved anywhere, so they
+      // can only ever be the last card's. Start each card blank.
+      pr.listDate = ''; pr.price = '';
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -13683,6 +13701,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // Tool: Listing Package
     const lpActivePanel = ref(null);
     function lpOpen(panel) {
+      // A net sheet started inside a listing belongs to that listing. Do not let
+      // it show in the standalone net sheet, where nothing says whose it is.
+      if (panel === 'netsheet' && ns._propId) resetToolForm('net-sheet');
       lpActivePanel.value = panel;
       if (panel === 'netsheet') nextTick(() => initAddressAutocomplete());
     }
@@ -14355,6 +14376,21 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (/quarter|qtr|\/\s*q\b/.test(low)) freq = 'quarterly';
       else if (/annual|year|yr|\/\s*y\b/.test(low)) freq = 'annual';
       return { amount: String(amount), freq: freq };
+    }
+    // List price from the listing's saved MLS Data note (line 'List Price : <value>').
+    // The MLS form field is free text. Accept only a plain dollar figure: '500000',
+    // '$500,000', '$500,000.00'. Anything else ('1.2M', '500k', a range, two numbers)
+    // returns null and the sale price stays blank: a misread price moves every line
+    // of the sheet.
+    function nsListPriceFromMls(text) {
+      if (!text) return null;
+      const m = String(text).match(/List Price\s*:\s*(.+)/);
+      if (!m) return null;
+      const raw = m[1].trim();
+      if (!/^\$?\s*\d{1,3}(,\d{3})*(\.\d{1,2})?$/.test(raw) && !/^\$?\s*\d+(\.\d{1,2})?$/.test(raw)) return null;
+      const n = Math.round(parseFloat(raw.replace(/[$,\s]/g, '')));
+      if (!(n >= 1000)) return null;
+      return String(n);
     }
     // Auto-detect jurisdiction from address
     function nsDetectJurisdiction() {
@@ -20985,6 +21021,22 @@ const CHANGELOG = [
       {
         title: 'The CMA Cover Says When the Price Is Yours',
         detail: 'When you type your own price into Agent Override, the recommended range on the cover of the PDF is built around your price. The line under it used to say Based on 3 adjusted comparable sales no matter what, even when your price was well away from what the sales indicated. It now reads Based on the agent\'s recommended price, informed by 3 comparable sales. The Methodology paragraph says the same. That paragraph also now says the comparable sales were selected by the agent as the recent sales most relevant to the property. It used to say all comps were the same property type and within a set radius, which the builder never checked.\n\nIf you leave Agent Override empty, or type the same figure the builder recommends, nothing changes: the cover says Based on 3 adjusted comparable sales as before.\n\nHow to use: Nothing new to do. Decide whether you want your own price on the CMA, and the PDF words itself to match.\n\nBest practice: If your price differs from the Indicated Values on the Pricing page, say why in Agent Notes. The client will see both numbers, and the reason should be on the page with them.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-10-05',
+    date: 'October 5, 2026',
+    title: 'Each Listing Opens Its Own Net Sheet',
+    summary: 'A net sheet left open on one listing was showing up on the next listing you opened, with the first listing\'s address and numbers. Every listing now opens its own.',
+    updates: [
+      {
+        title: 'Each Listing Opens Its Own Net Sheet',
+        detail: 'If you left the Seller Net Sheet open on one listing and then opened a different listing, the net sheet was still open and still showed the first listing\'s address, price and figures. Nothing saved was wrong, but a sheet downloaded or saved in that state carried the wrong property. Now every listing opens with its tools closed, and the net sheet always fills from the listing you are in.\n\nThe same went for the Price Reduction Planner: its List Date and Current List Price stayed filled in from the last listing. It now starts blank on each listing.\n\nHow to use: Open a listing and click Seller Net Sheet. Check the address at the top of the form matches the listing before you send anything.\n\nBest practice: If you downloaded or saved a net sheet in the last few weeks after moving from one listing to another, open the PDF and check the address and sale price on it.'
+      },
+      {
+        title: 'The Net Sheet Starts With the List Price From MLS Data',
+        detail: 'When you open the Seller Net Sheet inside a listing, the Sale Price now starts at the List Price saved in that listing\'s MLS Data, alongside the address and HOA fee it already brought in. It only fills an empty box, so a price you typed is never replaced.\n\nHow to use: Save MLS Data on the listing first, with the List Price as a plain dollar figure such as $500,000. Then open Seller Net Sheet. Change the Sale Price to the number you are actually discussing with the seller.\n\nBest practice: The list price is a starting point, not a forecast. Run the sheet at the price you expect the home to sell for, and consider a second sheet at a lower price so the seller sees both.'
       }
     ]
   }

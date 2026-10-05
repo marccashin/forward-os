@@ -27,6 +27,9 @@
 #                        opens and an empty one never hides a full one, orange
 #                        boxes clear once reviewed and the count matches them,
 #                        and Back to Listing returns to the listing.
+#   ci/net-sheet-listing-test.js  every listing opens its own net sheet: a
+#                        panel left open on one listing never shows on the
+#                        next, and the form fills from that listing's MLS Data.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -106,3 +109,7 @@ jobs:
       - name: CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)
         if: always()
         run: node head/ci/cma-builder-test.js head
+
+      - name: Net sheet per listing test (no card shows another card's net sheet)
+        if: always()
+        run: node head/ci/net-sheet-listing-test.js head
