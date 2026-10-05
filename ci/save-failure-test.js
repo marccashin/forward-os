@@ -57,7 +57,7 @@ function api(route) {
   }
   sent.push({ m, u, body: req.postData() || '' });
   if (mode.failWrites) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
-  if (mode.failNotes && (/\/rest\/v1\/property_notes/.test(u) || /\/rpc\/save_property_note$/.test(u) || /\/save-property-note$/.test(u))) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
+  if (mode.failNotes && (/\/rest\/v1\/property_notes/.test(u) || /\/rpc\/save_property_note(_by)?$/.test(u) || /\/save-property-note$/.test(u))) return J(route, 500, { message: 'mock outage', detail: 'mock outage' });
   if (/googleapis\.com\/upload\/drive/.test(u)) return J(route, 200, { id: 'drive-file-1', webViewLink: 'https://drive.example/f1' });
   if (/\/rest\/v1\//.test(u)) return J(route, m === 'POST' ? 201 : 200, [{ id: 1 }]);
   return J(route, 200, { ok: true });
@@ -142,7 +142,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   console.log('Seller Prep Guide save (its text now goes through the same checked save as the PDF)');
   const spFolder = "st.lstActiveProp = { id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_prep: 'folder-1' } }; st.view = 'listing-detail'; st.lstNotes.seller_prep = ''; st.sellerPrepSaved = false; await st.sellerPrepSaveToProperty(); return [st.sellerPrepSaved, st.lstNotes.seller_prep.length > 0];";
   const spNoFolder = spFolder.replace("{ seller_prep: 'folder-1' }", '{}');
-  const noteWrites = () => sent.filter(x => /\/rpc\/save_property_note$/.test(x.u)).map(x => { const b = JSON.parse(x.body); return { property_id: b.p_property_id, subfolder: b.p_subfolder, content: b.p_content }; });
+  const noteWrites = () => sent.filter(x => /\/rpc\/save_property_note(_by)?$/.test(x.u)).map(x => { const b = JSON.parse(x.body); return { property_id: b.p_property_id, subfolder: b.p_subfolder, content: b.p_content }; });
   let r = await run({}, spFolder, { P1 });
   ok(r.ret[0] === true && r.ret[1] === true && r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)), 'everything working: says saved, badge on', r);
   let nw = noteWrites();
@@ -161,7 +161,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const pick = "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_net_sheet: 'folder-2' } }]; st.saveToPropData = { type: 'net-sheet-x', label: 'Net Sheet', data: 'Net to seller: 1', pdfData: null, toolName: 'Seller Net Sheet' }; st.saveToPropSelected = arg.P1; st.showSaveToProp = true; await st.confirmSaveToPropDrive(); return st.showSaveToProp;";
   r = await run({}, pick, { P1 });
   ok(r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)) && r.ret === false, 'everything working: says saved and closes', r);
-  ok(sent.some(x => /\/rpc\/save_property_note$/.test(x.u) && /Net to seller: 1/.test(x.body)), 'the text is written to the listing');
+  ok(sent.some(x => /\/rpc\/save_property_note(_by)?$/.test(x.u) && /Net to seller: 1/.test(x.body)), 'the text is written to the listing');
   r = await run({ failNotes: true }, pick, { P1 });
   ok(r.msgs.some(x => /text was NOT saved to the listing/.test(x)) && !r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)), 'text write fails: says so, no plain saved message', r);
   r = await run({ failWrites: true }, pick, { P1 });

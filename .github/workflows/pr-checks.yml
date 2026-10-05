@@ -30,6 +30,8 @@
 #   ci/net-sheet-listing-test.js  every listing opens its own net sheet: a
 #                        panel left open on one listing never shows on the
 #                        next, and the form fills from that listing's MLS Data.
+#   ci/note-history-test.js  a listing shows when and by whom its net sheet, CMA
+#                        and description were saved, and every earlier version.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -113,3 +115,7 @@ jobs:
       - name: Net sheet per listing test (no card shows another card's net sheet)
         if: always()
         run: node head/ci/net-sheet-listing-test.js head
+
+      - name: Version history test (every earlier save of a listing item can be opened)
+        if: always()
+        run: node head/ci/note-history-test.js head
