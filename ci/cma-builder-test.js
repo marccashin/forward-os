@@ -61,6 +61,19 @@
  *     own price when they entered one. Never a 'weighted average';
  *   - the footer fits the page.
  *
+ * A NUMBER THAT CANNOT BE RIGHT (audit of Oct 6, 2026)
+ *   - a garage count above 4 is orange and asks whether it is right; only Confirm or a
+ *     different number clears it, never a click in the box;
+ *   - a notice names any closed sale whose total adjustment is more than 15% of its
+ *     sale price, with the total and the line that contributes most;
+ *   - neither changes a value.
+ *   - the listing's own garage is read from its MLS Data line ("2 car garage and 8
+ *     car driveway" opened as Street / None), and Parking Type is marked to check
+ *     when the line does not settle it. A saved CMA keeps what was saved.
+ *   - a blank Garage box on a closed sale means "not known yet": no parking
+ *     adjustment, orange until a number is typed (0 for no garage). A click does not
+ *     clear it. A stored 0 is shown as 0 and an emptied box is stored as blank.
+ *
  * BACK TO LISTING
  *   - with the FORWARD OS tab still open: that tab is told which listing to show
  *     and the builder closes;
@@ -693,6 +706,141 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.context().close();
   page = await os('', '/?listing=' + PROP_ID);
   ok(await page.evaluate(() => !document.querySelector('#app').__vue_app__._instance.setupState.loggedIn), 'signed out: nothing opens');
+  await page.context().close();
+
+  // ════════════════ A NUMBER THAT CANNOT BE RIGHT ════════════════
+  console.log('Large adjustments and impossible garage counts');
+  // The audit of Oct 6, 2026: a saved CMA held 32 in a comp's garage box (-$600,000) and nothing questioned it.
+  table = [row('Charlotte Lee', LISTING, '2026-10-05T10:00:00Z', draft('Charlotte Lee', [comp('9201 Bad Garage Way', { salePrice: 1645000, garageSpaces: 32 }), comp('2 Normal St'), comp('3 Smaller St', { gla: 600 })]))];
+  writes = [];
+  page = await builder('Charlotte Lee');
+  const big = (page) => page.evaluate(() => {
+    const cls = (td) => (td ? ['f-needs', 'f-check', 'f-mls', 'f-ok'].filter((c) => td.classList.contains(c)).join(',') : 'NO CELL');
+    const b = document.getElementById('needsBanner'); const m = /(\d+) field/.exec(b.textContent || '');
+    const w = document.getElementById('adjWarn');
+    return {
+      park: comps.map((c, i) => cls(document.querySelector('#comp-row-' + i + ' td[data-label="Parking"]'))),
+      flag: comps.map((c, i) => { const f = document.querySelector('#comp-row-' + i + ' td[data-label="Parking"] .fieldflag'); return f ? f.textContent : ''; }),
+      net: comps.map((c) => (c._adj ? c._adj.net : null)),
+      warn: !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('li'), (li) => li.textContent),
+      warnText: w ? w.textContent : '',
+      orange: document.querySelectorAll('.f-needs, .f-check').length,
+      count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
+      rec: document.getElementById('vRecommended').textContent,
+    };
+  });
+  let g = await big(page);
+  ok(g.net[0] === -590000 && g.net[1] === 10000 && g.net[2] === 80000, 'the arithmetic is unchanged: 32 garage spaces still count as typed (-590,000 in total)', g.net);
+  ok(g.park[0] === 'f-check' && /32 GARAGE SPACES\?/.test(g.flag[0]) && /Confirm/.test(g.flag[0]), 'a garage count of 32 is orange and asks whether it is right', [g.park[0], g.flag[0]]);
+  ok(g.park[1] === '' && g.park[2] === '', 'a believable count (2) is not flagged', g.park);
+  ok(g.warn.length === 1 && /9201 Bad Garage Way: -\$590,000 in total, 36% of its sale price/.test(g.warn[0]) && /Largest line: Parking -\$600,000/.test(g.warn[0]) && /garage box holds 32/.test(g.warn[0]), 'a notice names the comp whose total adjustment is over 15% of its price, the total, and the line that caused it', g.warn);
+  ok(!/Normal St|Smaller St/.test(g.warn.join(' ')), 'a comp at 11% (80,000 on 700,000) is not named', g.warn);
+  ok(/Correct the box, or remove the comp/.test(g.warnText), 'and it says what to do', g.warnText);
+  ok(g.count === g.orange, 'the number in the banner equals the orange boxes', [g.count, g.orange]);
+  const recBefore = g.rec, netBefore = JSON.stringify(g.net);
+
+  await page.click('#comp-row-0 td[data-label="Parking"] input');
+  g = await big(page);
+  ok(g.park[0] === 'f-check', 'clicking into the box does not clear it', g.park[0]);
+  await page.click('#comp-row-0 td[data-label="Parking"] .fieldok');
+  g = await big(page);
+  ok(g.park[0] === 'f-ok', 'pressing Confirm turns it green', g.park[0]);
+  await page.waitForTimeout(1900);
+  g = await big(page);
+  ok(g.park[0] === '' && g.count === g.orange, 'then it clears, and the count still equals the orange boxes', [g.park[0], g.count, g.orange]);
+  ok(g.rec === recBefore && JSON.stringify(g.net) === netBefore, 'confirming changed no value', [g.rec, g.net]);
+  ok(g.warn.length === 1, 'the notice stays while the total is still that large', g.warn);
+  await page.waitForTimeout(2800);
+  ok(table[0].draft_data.comps[0]._garageOk === 32, 'the confirmed number is saved with the draft', table[0].draft_data.comps[0]._garageOk);
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  g = await big(page);
+  ok(g.park[0] === '' && g.warn.length === 1, 'after a reload the confirmed box stays clear and the notice is still there', [g.park[0], g.warn.length]);
+
+  await page.fill('#comp-row-0 td[data-label="Parking"] .pk2 label:first-child input', '2');
+  await page.waitForTimeout(150);
+  g = await big(page);
+  ok(g.net[0] === 10000 && g.warn.length === 0 && g.warnText === '', 'typing the real count (2) corrects the adjustment and the notice goes away', [g.net[0], g.warn]);
+  await page.fill('#comp-row-1 td[data-label="Parking"] .pk2 label:first-child input', '9');
+  await page.waitForTimeout(150);
+  g = await big(page);
+  ok(g.park[1] === 'f-check' && /9 GARAGE SPACES\?/.test(g.flag[1]), 'a count typed past 4 turns orange as it is typed', [g.park[1], g.flag[1]]);
+  ok(g.warn.length === 1 && /2 Normal St: -\$130,000 in total, 19%/.test(g.warn[0]), 'and the notice names that comp', g.warn);
+  await page.fill('#comp-row-0 td[data-label="Parking"] .pk2 label:first-child input', '32');
+  await page.waitForTimeout(150);
+  g = await big(page);
+  ok(g.park[0] === '' && g.warn.length === 2, 'a count the agent already confirmed (32) is not questioned a second time, but the notice names both comps', [g.park[0], g.warn.length]);
+  await page.context().close();
+
+  // A blank Garage box is "not known yet", not "no garage" (Marc, Oct 6, 2026).
+  console.log('A blank garage box');
+  table = [row('Charlotte Lee', LISTING, '2026-10-05T10:00:00Z', draft('Charlotte Lee', [comp('1 Blank Garage Ct', { garageSpaces: '' }), comp('2 Zero Garage Ct', { garageSpaces: 0 }), comp('3 Two Garage Ct')],
+    { activeComps: [{ address: '9 Active St', date: '2026-09-01', listPrice: 500000, gla: 800, lotSize: '', beds: 1, fullBaths: 1, halfBaths: 0, below: 0, garageSpaces: '', condition: 'A', hoaMonthly: '', proximity: '0.1 mi', dom: 5 }] }))];
+  writes = [];
+  page = await builder('Charlotte Lee');
+  const gar = (page) => page.evaluate(() => {
+    const cls = (td) => (td ? ['f-needs', 'f-check', 'f-mls', 'f-ok'].filter((c) => td.classList.contains(c)).join(',') : 'NO CELL');
+    const b = document.getElementById('needsBanner'); const m = /(\d+) field/.exec(b.textContent || '');
+    return {
+      park: comps.map((c, i) => cls(document.querySelector('#comp-row-' + i + ' td[data-label="Parking"]'))),
+      flag: comps.map((c, i) => { const f = document.querySelector('#comp-row-' + i + ' td[data-label="Parking"] .fieldflag'); return f ? f.textContent : ''; }),
+      shown: comps.map((c, i) => document.querySelector('#comp-row-' + i + ' td[data-label="Parking"] .pk2 label:first-child input').value),
+      active: Array.prototype.map.call(document.querySelectorAll('#activeBody tr'), (tr) => cls(tr.querySelector('td[data-label="Parking"]'))),
+      adj: comps.map((c) => (c._adj ? c._adj.garage : null)),
+      vals: comps.map((c) => c.garageSpaces),
+      orange: document.querySelectorAll('.f-needs, .f-check').length,
+      count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
+    };
+  });
+  let q = await gar(page);
+  ok(q.adj[0] === 0 && q.adj[1] === 40000 && q.adj[2] === 0, 'a blank garage gets no parking adjustment; a typed 0 is adjusted in full (the listing has 2: +40,000); 2 against 2 is 0', q.adj);
+  ok(q.park[0] === 'f-needs' && /No garage\? Type 0/.test(q.flag[0]) && !/Confirm/.test(q.flag[0]), 'the blank box is orange, says to type 0 for no garage, and has no Confirm button', [q.park[0], q.flag[0]]);
+  ok(q.shown[1] === '0' && q.park[1] === '', 'a stored 0 is shown as 0 (it used to show as an empty box) and is not flagged', [q.shown[1], q.park[1]]);
+  ok(q.active[0] === '' , 'an active listing with a blank garage is not flagged: it is not adjusted', q.active);
+  ok(q.count === q.orange, 'the number in the banner equals the orange boxes', [q.count, q.orange]);
+  await page.click('#comp-row-0 td[data-label="Parking"] .pk2 label:first-child input');
+  q = await gar(page);
+  ok(q.park[0] === 'f-needs', 'a click does not clear it', q.park[0]);
+  const gridOf = async () => (await pdfText(page)).text;
+  ok(/unknown/.test(await gridOf()), 'the PDF grid prints the blank count as unknown, not as 0 spaces');
+  await page.fill('#comp-row-0 td[data-label="Parking"] .pk2 label:first-child input', '0');
+  await page.waitForTimeout(150);
+  q = await gar(page);
+  ok(q.vals[0] === 0 && q.adj[0] === 40000 && q.park[0] === '', 'typing 0 stores 0, applies the adjustment and clears the box', [q.vals[0], q.adj[0], q.park[0]]);
+  await page.fill('#comp-row-0 td[data-label="Parking"] .pk2 label:first-child input', '');
+  await page.waitForTimeout(150);
+  q = await gar(page);
+  ok(q.vals[0] === '' && q.adj[0] === 0 && q.park[0] === 'f-needs', 'emptying the box stores a blank (it used to store 0), removes the adjustment and turns it orange again', [q.vals[0], q.adj[0], q.park[0]]);
+  await page.context().close();
+
+  // The listing's own parking, read from its MLS Data when the builder opens.
+  console.log('The listing\'s garage');
+  page = await os('Marc Cashin', '/');
+  const park = await page.evaluate(() => ['2 car garage and 8 car driveway', '1-car garage parking, 2 driveway parking', '2 car detached garage', '8 driveway spaces', 'street', '2', '3 garage spaces'].map((t) => fosParkingFromMls(t)));
+  ok(park[0].parkingType === 'Attached Garage' && park[0].parkingSpaces === '2' && park[0].drivewaySpaces === '8' && park[0].unsure === true, '"2 car garage and 8 car driveway" is a garage with 2 spaces and 8 driveway spaces, marked to check (it opened as Street / None: 1926 Ruxton Rd)', park[0]);
+  ok(park[1].parkingType === 'Attached Garage' && park[1].parkingSpaces === '1' && park[1].drivewaySpaces === '2', '"1-car garage parking, 2 driveway parking" is 1 garage space and 2 driveway (it opened as a driveway with 1)', park[1]);
+  ok(park[2].parkingType === 'Detached Garage' && park[2].parkingSpaces === '2' && park[2].unsure === false, 'a garage called detached is not marked to check', park[2]);
+  ok(park[3].parkingType === 'Driveway' && park[3].parkingSpaces === '8' && park[3].unsure === false, 'a driveway only is still a driveway', park[3]);
+  ok(park[4].parkingType === 'None' && park[4].unsure === false, '"street" is Street / None and is not questioned', park[4]);
+  ok(park[5].parkingType === 'None' && park[5].parkingSpaces === '2' && park[5].unsure === true, 'a bare number is not guessed at: Street / None, marked to check', park[5]);
+  ok(park[6].parkingType === 'Attached Garage' && park[6].parkingSpaces === '3', '"3 garage spaces" is a garage with 3', park[6]);
+  await page.context().close();
+
+  table = []; writes = [];
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { parkingType: 'Attached Garage', parkingSpaces: '2', drivewaySpaces: '8', parkingUnsure: true }));
+  let lpk = await page.evaluate(() => ({ type: document.getElementById('s_parkingType').value, spaces: document.getElementById('s_parkingSpaces').value, drive: document.getElementById('s_drivewaySpaces').value,
+    cls: document.getElementById('s_parkingType').closest('.field').className, flag: (document.getElementById('s_parkingType').closest('.field').querySelector('.fieldflag') || {}).textContent || '' }));
+  ok(lpk.type === 'Attached Garage' && lpk.spaces === '2' && lpk.drive === '8', 'a new CMA opens with the listing\'s garage type, garage count and driveway count', lpk);
+  ok(/f-check/.test(lpk.cls) && /CHECK THIS/.test(lpk.flag), 'and Parking Type is marked CHECK THIS when the MLS Data did not settle it', lpk);
+  await page.context().close();
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { parkingType: 'Detached Garage', parkingSpaces: '2', parkingUnsure: false }));
+  lpk = await page.evaluate(() => document.getElementById('s_parkingType').closest('.field').className);
+  ok(!/f-check/.test(lpk), 'it is not marked when the MLS Data was clear', lpk);
+  await page.context().close();
+  // A saved CMA keeps what was saved, whatever the listing's MLS Data now says.
+  table = [row('Charlotte Lee', LISTING, '2026-10-05T10:00:00Z', draft('Charlotte Lee', [comp('1 A St')], { subject: Object.assign(subject('Charlotte Lee'), { parkingType: 'None', parkingSpaces: '2' }) }))];
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { parkingType: 'Attached Garage', parkingSpaces: '2', drivewaySpaces: '8', parkingUnsure: true }));
+  lpk = await page.evaluate(() => ({ type: document.getElementById('s_parkingType').value, cls: document.getElementById('s_parkingType').closest('.field').className }));
+  ok(lpk.type === 'None' && !/f-check/.test(lpk.cls), 'a CMA saved earlier keeps the parking type that was saved', lpk);
   await page.context().close();
 
   ok(errors.length === 0, 'no page errors in any case', errors.slice(0, 5));

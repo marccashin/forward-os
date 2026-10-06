@@ -667,6 +667,7 @@
       </table>
     </div>
     <div id="hoaWarn" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
+    <div id="adjWarn" style="display:none;font-size:12px;color:#991b1b;background:#fef2f2;border:1px solid #f87171;border-radius:6px;padding:8px 12px;margin-top:12px;"></div>
     <div style="margin-top:12px;display:flex;gap:10px;">
       <button class="btn-navy" onclick="addComp()" id="addCompBtn">+ Add Closed Sale</button>
     </div>
@@ -915,6 +916,11 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   } else {
     loadPrefill();
+    // A new CMA opened from a listing whose MLS Data did not settle the parking (a garage not
+    // called attached or detached, a bare number, wording the OS does not know): Parking Type
+    // is marked CHECK THIS. It prints on the client's PDF and decides whether the listing's
+    // spaces count as garages. (1926 Ruxton Rd opened as Street / None with a 2-car garage.)
+    if (_cmaPrefillObj().parkingUnsure && typeof window._cmaSetSubjectFlags === 'function') window._cmaSetSubjectFlags({ s_parkingType: 'check' });
     if (_URL_ADDRESS) {
       // Parse full address string into separate fields
       (function parseAndFill(raw) {
@@ -963,6 +969,7 @@ function _applyPrefill(d) {
   if (d.propType) set('s_propType', d.propType);
   if (d.parkingType) set('s_parkingType', d.parkingType);
   if (d.parkingSpaces) set('s_parkingSpaces', d.parkingSpaces);
+  if (d.drivewaySpaces) set('s_drivewaySpaces', d.drivewaySpaces);
   const addr = d.address || '';
   if (addr) {
     document.getElementById('headerSub').textContent = addr;
@@ -1051,7 +1058,7 @@ function buildCompRow(i) {
     <td data-label="Lot Size"><input type="text" value="${c.lotSize||''}" placeholder="0.25 ac" onchange="compChange(${i},'lotSize',this.value)" /></td>
     <td data-label="Bd / Fb / Hb"><div style="display:flex;gap:2px;align-items:center;"><input type="number" value="${c.beds||''}" placeholder="bd" title="Bedrooms" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'beds',+this.value);recalcAll()" /><input type="number" value="${c.fullBaths||''}" placeholder="fb" title="Full Baths" min="0" step="0.5" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'fullBaths',+this.value);recalcAll()" /><input type="number" value="${c.halfBaths||''}" placeholder="hb" title="Half Baths" min="0" style="flex:1 1 0;min-width:0;width:auto;padding:3px 2px;font-size:11px;text-align:center;-webkit-appearance:none;-moz-appearance:textfield;" oninput="compChange(${i},'halfBaths',+this.value);recalcAll()" /></div></td>
     <td data-label="Bel Gr"><input type="number" value="${c.below||''}" placeholder="0" min="0" oninput="compChange(${i},'below',+this.value);recalcAll()" /></td>
-    <td data-label="Parking"><div class="pk2"><label title="Garage spaces">Garage<input type="number" value="${c.garageSpaces||''}" placeholder="0" title="Garage spaces" min="0" oninput="compChange(${i},'garageSpaces',+this.value);recalcAll()" /></label><label title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment.">Driveway<input type="number" value="${c.drivewaySpaces == null ? '' : c.drivewaySpaces}" placeholder="" title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment." min="0" oninput="compChange(${i},'drivewaySpaces',this.value);recalcAll()" /></label></div></td>
+    <td data-label="Parking"><div class="pk2"><label title="Garage spaces. Blank means not known yet: no parking adjustment. If it has no garage, type 0.">Garage<input type="number" value="${(c.garageSpaces == null || String(c.garageSpaces).trim() === '') ? '' : c.garageSpaces}" placeholder="" title="Garage spaces. Blank means not known yet: no parking adjustment. If it has no garage, type 0." min="0" oninput="compChange(${i},'garageSpaces',this.value === '' ? '' : +this.value);recalcAll()" /></label><label title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment.">Driveway<input type="number" value="${c.drivewaySpaces == null ? '' : c.drivewaySpaces}" placeholder="" title="Driveway spaces. Valued in DC only. Blank means unknown: no driveway adjustment." min="0" oninput="compChange(${i},'drivewaySpaces',this.value);recalcAll()" /></label></div></td>
     <td data-label="Condition"><select onchange="compChange(${i},'condition',this.value);recalcAll()">${condOpts}</select><div id="c${i}_condBadge" class="cond-adj-badge zero">—</div></td>
     <td data-label="HOA/Mo"><input type="number" value="${c.hoaMonthly == null ? '' : c.hoaMonthly}" placeholder="" title="This comp's monthly HOA or condo fee. Blank means not known yet: no HOA adjustment. If it has no monthly fee, type 0." min="0" oninput="compChange(${i},'hoaMonthly',this.value === '' ? '' : +this.value);recalcAll()" /></td>
     <td data-label="Concess."><input type="number" value="${c.concessions||''}" placeholder="0" min="0" oninput="compChange(${i},'concessions',+this.value);recalcAll()" /></td>
@@ -1260,7 +1267,12 @@ function recalcAll() {
     const bedroomAdj  = subBeds && cBeds ? (subBeds - cBeds) * adjBedroom : 0;
     const bathAdj     = (subBaths - cBaths) * adjBath;
     const halfBathAdj = (subHalfBaths - cHalfBaths) * adjHalfBath;
-    const garageAdj   = (subGarage - cGarage) * adjGarage;
+    // Blank is not zero (Marc, Oct 6, 2026). A blank Garage box means the comp's garage count
+    // is not known yet, so the comp gets no parking adjustment until someone types it; a typed
+    // 0 means the comp has no garage and is adjusted in full. Before, blank counted as no
+    // garage: 9126 Potomac Ridge got +$40,000 for a garage count nobody had entered.
+    const cGarageKnown = !(c.garageSpaces === undefined || c.garageSpaces === null || String(c.garageSpaces).trim() === '');
+    const garageAdj   = cGarageKnown ? (subGarage - cGarage) * adjGarage : 0;
     const cDriveRaw   = (c.drivewaySpaces === undefined || c.drivewaySpaces === null) ? '' : String(c.drivewaySpaces).trim();
     const drivewayAdj = (drvRate && cDriveRaw !== '')
       ? (subDrive - Math.min(parseFloat(cDriveRaw) || 0, DRIVEWAY_MAX_SPACES)) * drvRate : 0;
@@ -2129,7 +2141,7 @@ function _fillPDFDoc(doc) {
     { label: 'Below-Grade',      subVal: getVal('s_below') && getVal('s_below')!=='0' ? getVal('s_below') + ' sqft' : '—', fn: c => c.below && c.below!=='0' ? c.below + ' sqft' : '—', adjFn: null },
     { label: 'Condition',        subVal: getVal('s_condition')||'—',                  fn: c => c.condition||'—',      adjFn: null },
     { label: 'Beds / Baths',     subVal: (getVal('s_beds')||'—') + 'bd / ' + (getVal('s_fullBaths')||'—') + 'fb' + (getVal('s_halfBaths')&&getVal('s_halfBaths')!=='0'?' / '+getVal('s_halfBaths')+'hb':''), fn: c => (c.beds||'—') + 'bd / ' + (c.fullBaths||'—') + 'fb' + (c.halfBaths&&c.halfBaths!=='0'?' / '+c.halfBaths+'hb':''), adjFn: null },
-    { label: 'Parking',          subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces||'0') + ' space(s)', adjFn: null },
+    { label: 'Parking',          subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces == null || String(c.garageSpaces).trim() === '') ? 'unknown' : String(c.garageSpaces) + ' space(s)', adjFn: null },
     { label: 'Concessions',      subVal: '—', fn: c => (parseFloat(c.concessions)||0) > 0 ? '-$' + parseFloat(c.concessions).toLocaleString() : '—', adjFn: null, isAdj: true },
     { label: 'GLA Adjustment',   subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.gla) : '—', isAdj: true },
     { label: 'Below-Grade Adj',  subVal: '—', fn: null, adjFn: c => c._adj ? adjStr(c._adj.below) : '—', isAdj: true },
@@ -2630,6 +2642,10 @@ async function findComps() {
     // A blank fee is cleared only by typing a number (0 for no fee), never by a click: a click
     // would leave the fee unknown and the comp quietly without an HOA adjustment.
     if (field === 'hoaMonthly' && feeMissing(c)) return 'needs';
+    // A garage count above GARAGE_PLAUSIBLE_MAX is cleared only by the Confirm button or by
+    // typing a believable number, never by a click in the box (see garageOdd below).
+    if (field === 'garageSpaces' && garageMissing(c)) return 'needs';
+    if (field === 'garageSpaces' && garageOdd(c)) return 'check';
     if (c._rev && c._rev[field]) return '';
     if (AGENT_ONLY_COMP.indexOf(field) > -1) {
       // Only the agent can judge it, so it is flagged on every row in use, imported or typed.
@@ -2656,6 +2672,28 @@ async function findComps() {
     if (!(v === undefined || v === null || String(v).trim() === '')) return false;
     return subjectFee() > 0;
   }
+  // ══ IMPLAUSIBLE GARAGE COUNT ══
+  // The audit of Oct 6, 2026 found a saved CMA whose comp had 32 in the garage box and
+  // another with 8. At $20,000 a space that put -$600,000 and -$160,000 on those comps,
+  // and nothing on the screen questioned it. A count above 4 is now orange until the
+  // agent presses Confirm (the number is right) or types a different one. The confirmed
+  // number is kept on the row (c._garageOk), so it is saved with the draft; a different
+  // number typed later is questioned again.
+  // DISPLAY ONLY: recalcAll still uses whatever number is in the box.
+  // A closed sale with a blank Garage box. recalcAll gives it no parking adjustment (blank =
+  // not known yet), so the box is orange until the agent types the count, or 0 for no garage.
+  // A click does not clear it. Active and pending rows are not adjusted, so are not flagged.
+  function garageMissing(c) {
+    if (!c || (comps || []).indexOf(c) === -1 || !rowInUse(c)) return false;
+    var v = c.garageSpaces;
+    return v === undefined || v === null || String(v).trim() === '';
+  }
+  var GARAGE_PLAUSIBLE_MAX = 4;
+  function garageOdd(c) {
+    if (!c || !rowInUse(c)) return false;
+    var n = parseFloat(c.garageSpaces) || 0;
+    return n > GARAGE_PLAUSIBLE_MAX && parseFloat(c._garageOk) !== n;
+  }
   var RANK = { needs: 3, check: 2, mls: 1, '': 0 };
   function cellState(c, label) {
     var best = '';
@@ -2681,8 +2719,8 @@ async function findComps() {
       var state = cellState(c, label);
       if (!state) return;
       if (state === 'mls')       { td.classList.add('f-mls'); }
-      else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">CHECK THIS' + okBtn('Confirm') + '</span>'); }
-      else if (state === 'needs'){ td.classList.add('f-needs'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN' + (label === 'HOA/Mo' ? '<span class="fieldnote">No monthly fee? Type 0</span>' : okBtn('Confirm')) + '</span>'); }
+      else if (state === 'check'){ td.classList.add('f-check'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag check">' + ((label === 'Parking' || label === 'Garage') && garageOdd(c) ? esc(String(parseFloat(c.garageSpaces))) + ' GARAGE SPACES?' : 'CHECK THIS') + okBtn('Confirm') + '</span>'); }
+      else if (state === 'needs'){ td.classList.add('f-needs'); td.insertAdjacentHTML('beforeend', '<span class="fieldflag needs">YOU FILL IN' + (label === 'HOA/Mo' ? '<span class="fieldnote">No monthly fee? Type 0</span>' : ((label === 'Parking' || label === 'Garage') && garageMissing(c)) ? '<span class="fieldnote">No garage? Type 0</span>' : okBtn('Confirm')) + '</span>'); }
     });
   }
 
@@ -2695,6 +2733,7 @@ async function findComps() {
       paintSubject();
       updateNeedsCount();
       updateHoaWarning();
+      updateAdjWarning();
     } catch (e) { /* highlighting must never break the tool */ }
   }
   window._cmaPaintAll = paintAll;
@@ -2731,6 +2770,44 @@ async function findComps() {
         '<ul style="margin:4px 0 4px 18px;padding:0;">' + items.join('') + '</ul>' +
         'A fee gap this large usually means the two fees do not cover the same things (utilities, front desk, parking, amenities). ' +
         'Confirm what each fee includes. If they are not like for like, lower the HOA multiplier in Step 2 for this CMA.';
+    } catch (e) { /* a notice must never break the tool */ }
+  }
+
+  // ══ 1c. LARGE TOTAL ADJUSTMENT NOTICE ══
+  // When everything added to or taken off one closed sale comes to more than 15% of its
+  // sale price, a notice under the table names the comp, the total, and the line that
+  // contributes most. A total that large means one of two things: a wrong number in a box
+  // (32 garage spaces), or a sale that is not comparable to this listing (a 2,400 sq ft
+  // house against a 5,700 sq ft one). The agent should see it before the client does.
+  // The 15% is FORWARD's own line (Oct 6, 2026), not an appraisal standard.
+  //
+  // DISPLAY ONLY. It reads c._adj and writes nothing: no value, no price, no PDF.
+  var ADJ_WARN_SHARE = 0.15;
+  var ADJ_LINES = [['gla', 'Sq Ft'], ['below', 'Below grade'], ['bedroom', 'Bedrooms'], ['fullBath', 'Full baths'], ['halfBath', 'Half baths'],
+                   ['garage', 'Parking'], ['driveway', 'Driveway'], ['condition', 'Condition'], ['hoa', 'HOA'], ['concessions', 'Seller credit']];
+  function updateAdjWarning() {
+    try {
+      var el = document.getElementById('adjWarn'); if (!el) return;
+      var money = function (n) { return (n > 0 ? '+' : '-') + '$' + Math.round(Math.abs(n)).toLocaleString('en-US'); };
+      var items = [];
+      (comps || []).forEach(function (c) {
+        var sp = parseFloat(c.salePrice) || 0;
+        if (!sp || !c._adj) return;
+        var net = c._adj.net || 0;
+        if (Math.abs(net) <= sp * ADJ_WARN_SHARE) return;
+        var top = null;
+        ADJ_LINES.forEach(function (l) { var v = c._adj[l[0]] || 0; if (!top || Math.abs(v) > Math.abs(top[1])) top = [l[1], v]; });
+        var why = top && top[1] ? ' Largest line: ' + top[0] + ' ' + money(top[1]) + '.' : '';
+        if (top && top[0] === 'Parking' && (parseFloat(c.garageSpaces) || 0) > GARAGE_PLAUSIBLE_MAX) why += ' The garage box holds ' + esc(String(parseFloat(c.garageSpaces))) + '.';
+        items.push('<li>' + esc(c.address || 'A comp with no address') + ': ' + money(net) + ' in total, ' +
+                   Math.round(Math.abs(net) / sp * 100) + '% of its sale price.' + why + '</li>');
+      });
+      if (!items.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
+      el.style.display = '';
+      el.innerHTML = '<strong>Check ' + (items.length === 1 ? 'this comp' : 'these comps') + ' before you use the value.</strong> The total adjustment is more than 15% of the sale price on:' +
+        '<ul style="margin:4px 0 4px 18px;padding:0;">' + items.join('') + '</ul>' +
+        'A total this large usually means a wrong number in one of the boxes, or a sale that is not comparable to this listing. ' +
+        'Correct the box, or remove the comp and use a closer one.';
     } catch (e) { /* a notice must never break the tool */ }
   }
 
@@ -2774,6 +2851,18 @@ async function findComps() {
           if (edited) setTimeout(paintAll, 0);
           return;
         }
+        if ((label === 'Parking' || label === 'Garage') && c && garageMissing(c)) {
+          // Only a number in the Garage box clears this. Repaint once the typing has been stored.
+          if (edited) setTimeout(paintAll, 0);
+          return;
+        }
+        if ((label === 'Parking' || label === 'Garage') && c && garageOdd(c) && !(t.closest('.fieldok'))) {
+          // An unbelievable garage count is cleared by the Confirm button or by typing another
+          // number, not by clicking into the box. Repaint once the typing has been stored.
+          if (edited) setTimeout(paintAll, 0);
+          return;
+        }
+        if ((label === 'Parking' || label === 'Garage') && c && garageOdd(c)) c._garageOk = parseFloat(c.garageSpaces) || 0;
         if (c && fieldsOf(label).length && (st === 'needs' || st === 'check' || edited)) {
           // An edit always counts, flagged or not: this runs before the box's own handler
           // stores the new value, so a Condition moved back to C must not be flagged again.
@@ -2796,6 +2885,7 @@ async function findComps() {
       if (changed) {
         updateNeedsCount();
         updateHoaWarning();
+        updateAdjWarning();
         if (typeof _scheduleAutoSave === 'function') _scheduleAutoSave();
       }
     } catch (err) { /* highlighting must never break the tool */ }
@@ -2805,6 +2895,8 @@ async function findComps() {
     var id = e.target && e.target.id;
     if (id === 's_hoaMonthly' || id === 's_condoFee') setTimeout(paintAll, 0);
     else if (e.target && e.target.closest && e.target.closest('#compsBody td[data-label="HOA/Mo"]')) setTimeout(paintAll, 0);
+    // A garage count typed past the believable limit must turn orange as it is typed.
+    else if (e.target && e.target.closest && e.target.closest('td[data-label="Parking"]')) setTimeout(paintAll, 0);
   }, true);
 
   // Saved with the draft (see _buildDraft / _applyDraft), so a flag nobody has
@@ -2860,7 +2952,7 @@ async function findComps() {
   // recalcAll() is where c._adj is worked out, so the notice is refreshed after each run.
   if (typeof window.recalcAll === 'function') {
     var origRecalc = window.recalcAll;
-    window.recalcAll = function () { var r = origRecalc.apply(this, arguments); updateHoaWarning(); return r; };
+    window.recalcAll = function () { var r = origRecalc.apply(this, arguments); updateHoaWarning(); updateAdjWarning(); return r; };
   }
 
   // ══ 2. UPLOAD ══
