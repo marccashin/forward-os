@@ -8430,6 +8430,61 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEff
 let _fosApiKey = '';
 // Shown by every AI tool when this device has no AI key. There is no demo or
 // sample output anywhere in the app: a tool with no key says this and stops.
+// What a listing's MLS Data "Parking" line says, for the CMA Builder.
+//
+// Until Oct 6, 2026 openCMABuilder called a listing a garage only when the text said
+// "attached" or "detached", and took the first number in the text as the space count.
+// Real MLS Data lines (read from production that day) say "2 car garage and 8 car
+// driveway", "3 garage spaces", "1-car garage parking, 2 driveway parking". So:
+//   - 1926 Ruxton Rd ("2 car garage and 8 car driveway") opened as Street / None with 2
+//     spaces. The builder gives Street / None no garage value, so every comp with a garage
+//     was marked down $40,000 to $80,000 against a listing that has a 2-car garage;
+//   - "1-car garage parking, 2 driveway parking" opened as a Driveway with 1 space.
+// The Bright sheet for 1926 Ruxton prints "Detached Garage - # of Spaces 2" and
+// "Driveway - # of Spaces 8".
+//
+// Returns { parkingType, parkingSpaces, drivewaySpaces, unsure }. parkingSpaces is the
+// GARAGE (or carport) count, or the driveway count when the listing only has a driveway,
+// which is how the builder's Parking Spaces box has always been read. unsure is true when
+// the text did not settle the answer (a garage that is not called attached or detached, a
+// garage with no count, a bare number, wording this does not know): the builder then
+// marks Parking Type CHECK THIS, because it prints on the client's PDF.
+// Nothing is guessed silently, and a line that only says "street" stays Street / None.
+function fosParkingFromMls(text) {
+  var t = String(text == null ? '' : text).toLowerCase().replace(/[\u2014\u2013]/g, ' ').replace(/\s+/g, ' ').trim();
+  var out = { parkingType: 'None', parkingSpaces: '', drivewaySpaces: '', unsure: false };
+  if (!t || t === '-') return out;
+  var num = function (re) { var m = re.exec(t); return m ? m[1] : ''; };
+  var hasGarage  = /garage/.test(t) && !/\bno garage\b/.test(t);
+  var hasCarport = /carport/.test(t);
+  var hasDrive   = /driveway|off[\s-]?street/.test(t);
+  var driveN     = hasDrive ? num(/(\d+)\s*-?\s*(?:car\s+)?(?:driveway|off[\s-]?street)/) : '';
+  if (hasGarage) {
+    var named = /detached/.test(t) ? 'Detached Garage' : /attached/.test(t) ? 'Attached Garage' : '';
+    out.parkingType = named || 'Attached Garage';
+    out.parkingSpaces = num(/(\d+)\s*-?\s*(?:car\s+)?(?:attached\s+|detached\s+)?garage/);
+    out.drivewaySpaces = driveN;
+    out.unsure = !named || !out.parkingSpaces;
+  } else if (hasCarport) {
+    out.parkingType = 'Carport';
+    out.parkingSpaces = num(/(\d+)\s*-?\s*(?:car\s+)?carport/);
+    out.drivewaySpaces = driveN;
+    out.unsure = !out.parkingSpaces;
+  } else if (hasDrive) {
+    out.parkingType = 'Driveway';
+    out.parkingSpaces = driveN;
+    out.drivewaySpaces = driveN;
+    out.unsure = !driveN;
+  } else if (/^(on[\s-]?)?street( parking)?( only)?$/.test(t) || /^none$/.test(t) || /^no parking$/.test(t)) {
+    out.parkingType = 'None';
+  } else {
+    out.parkingType = 'None';
+    out.parkingSpaces = num(/(\d+)/);
+    out.unsure = true;
+  }
+  return out;
+}
+
 const FOS_NO_AI_KEY = 'No AI key on this device, so nothing was generated. See the red notice at the top of the screen.';
 
 // ── Campaign PDF font cache (module-level, survives across PDF generations) ──
@@ -13702,14 +13757,10 @@ async function lstSubmitToPipeline() {
       // Parse baths (mlsForm.baths is e.g. "2" or "2.5")
       const baths = _parseBaths(mlsForm.baths);
 
-      // Parking
-      const parkText = (mlsForm.parking || '').toLowerCase();
-      let parkingType = 'None';
-      if (/attached/i.test(parkText)) parkingType = 'Attached Garage';
-      else if (/detached/i.test(parkText)) parkingType = 'Detached Garage';
-      else if (/carport/i.test(parkText)) parkingType = 'Carport';
-      else if (/driveway/i.test(parkText)) parkingType = 'Driveway';
-      const parkingSpaces = (parkText.match(/(\d+)/) || [])[1] || '';
+      // Parking (see fosParkingFromMls: a garage was dropped unless the text said attached or detached)
+      const park = fosParkingFromMls(mlsForm.parking);
+      const parkingType = park.parkingType;
+      const parkingSpaces = park.parkingSpaces;
 
       // Property type
       const ptMap = { 'Single Family': 'Single Family', 'SFD': 'Single Family', 'Townhouse': 'Townhouse', 'TH': 'Townhouse', 'Condominium': 'Condominium', 'Condo': 'Condominium', 'Multi-Family': 'Multi-Family' };
@@ -13734,6 +13785,8 @@ async function lstSubmitToPipeline() {
         condition: 'C',
         parkingType: parkingType,
         parkingSpaces: parkingSpaces,
+        drivewaySpaces: park.drivewaySpaces,
+        parkingUnsure: park.unsure,
         hoaMonthly: isCondo ? '0' : hoaNum,
         condoFee: isCondo ? hoaNum : '0',
         lotSize: '',
@@ -21072,6 +21125,30 @@ const CHANGELOG = [
       {
         title: 'Every Save Is Kept: Previous Versions on the Listing',
         detail: 'Until now, saving a net sheet, a CMA or a listing description to a listing replaced the one before it, and the earlier one was gone. Starting October 5, every save is kept. Under the saved net sheet, the saved CMA and the saved listing description on a listing you will see a line saying when it was saved and by whom, and a Previous versions list with every earlier save, newest first.\n\nWhat was already saved on each listing on October 5 is the first version on the list. Versions from before that date do not exist and cannot be brought back. Saves from before October 5 show agent not recorded, because the name was not kept then.\n\nThis keeps the text of each save. Keeping the PDF with each version is the next update.\n\nHow to use: Open a listing, open Seller Net Sheet (or CMA, or Listing Description), and click Previous versions under the saved copy. Click a date to read that version. Copy this version copies it.\n\nBest practice: Before you tell a seller a number changed, open the earlier net sheet and compare the two line by line, so you can say exactly which line moved and why.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-10-06',
+    date: 'October 6, 2026',
+    title: 'The CMA Builder Questions Numbers That Cannot Be Right',
+    summary: 'A review of every saved CMA found comps with 32 and 8 typed in the garage box, which took hundreds of thousands of dollars off those comps without a word. The builder now questions numbers like that, and tells you when one comp is being adjusted by a very large amount.',
+    updates: [
+      {
+        title: 'A Notice When One Comp Is Adjusted by a Very Large Amount',
+        detail: 'When everything added to or taken off one closed sale comes to more than 15% of its sale price, a red notice under the Closed Sales table now names that comp, shows the total, and says which line caused most of it.\n\nA total that large almost always means one of two things: a wrong number in one of the boxes, or a sale that is not really comparable to your listing. One saved CMA had 32 in a comp\'s garage box, which took $600,000 off a $1,645,000 sale. Another compared a 5,700 square foot listing with 2,400 square foot comps, which added about $170,000 to each.\n\nThe notice changes no number. It is there so you see the problem before your client does.\n\nHow to use: When the notice appears, read the line it names. Correct the box if the number is wrong. If the number is right, ask whether that sale is close enough to your listing to use.\n\nBest practice: A good comp needs small adjustments. If every comp on your CMA is in the notice, pick comps closer to the listing in size and type before you trust the value.'
+      },
+      {
+        title: 'A Garage Count Above 4 Is Questioned',
+        detail: 'If a comp\'s Garage box holds a number above 4, the Parking box turns orange and asks, for example, "32 GARAGE SPACES?". It stays orange until you press Confirm or type the real number. Clicking in the box does not clear it.\n\nThis usually happens when the sheet\'s total parking count, or a typing slip, ends up in the garage box. Each garage space is worth $20,000 in the builder, so a wrong count moves the value a long way.\n\nHow to use: Check the MLS sheet. Type the real garage count, or press Confirm if the number really is right.\n\nBest practice: The Garage box is for garage spaces only. Driveway spaces go in the Driveway box beside it.'
+      },
+      {
+        title: 'A Blank Garage Box Now Means Not Known Yet',
+        detail: 'Until today a comp with an empty Garage box was treated as having no garage. If your listing had a 2-car garage, that comp was given $40,000 for a garage count nobody had entered.\n\nNow an empty Garage box on a closed sale means not known yet. That comp gets no parking adjustment, and the box is orange and says "No garage? Type 0" until you type a number. A typed 0 means the comp has no garage and is adjusted in full. This is the same rule the HOA box has used since October 4.\n\nIf you reopen a CMA you saved earlier and one of its comps has an empty Garage box, that comp\'s Indicated Value will change until you type the count.\n\nHow to use: For every closed sale, type the garage count from the MLS sheet. Type 0 when it has no garage.\n\nBest practice: Do not leave the box blank because the comp has no garage. Blank tells the builder you do not know.'
+      },
+      {
+        title: 'Your Listing\'s Garage Is No Longer Dropped When the Builder Opens',
+        detail: 'When you open the CMA Builder from a listing, it reads the Parking line of that listing\'s MLS Data. Until today it only recognised a garage when the line said "attached" or "detached". A line such as "2 car garage and 8 car driveway" opened as Street / None, and the builder gives Street / None no garage value. So every comp with a garage was marked down $40,000 or more against a listing that has a garage of its own.\n\nThe builder now reads the garage count and the driveway count from lines like that. When the line does not say whether the garage is attached or detached, or is not clear, Parking Type is marked CHECK THIS so you set it yourself.\n\nThis applies to a new CMA. A CMA you already saved keeps what was saved: open it and correct Parking Type and Parking Spaces by hand.\n\nHow to use: When you open the builder, look at Parking Type, Parking Spaces and Driveway Spaces in Step 1 before you add comps. Correct them and press Confirm.\n\nBest practice: In MLS Data, write the Parking line the way the sheet prints it, for example "2 car detached garage, 8 driveway spaces".'
       }
     ]
   }
