@@ -32,6 +32,9 @@
 #                        next, and the form fills from that listing's MLS Data.
 #   ci/note-history-test.js  a listing shows when and by whom its net sheet, CMA
 #                        and description were saved, and every earlier version.
+#   ci/net-sheet-numbers-test.js  the seller net sheet's numbers: two executed
+#                        settlement statements to the penny, 116 recorded sheets
+#                        across all 28 jurisdictions, and one calculator.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -119,3 +122,7 @@ jobs:
       - name: Version history test (every earlier save of a listing item can be opened)
         if: always()
         run: node head/ci/note-history-test.js head
+
+      - name: Net sheet numbers test (executed statements to the penny, every jurisdiction)
+        if: always()
+        run: node head/ci/net-sheet-numbers-test.js head

@@ -14899,52 +14899,40 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const raw = e.target.value.replace(/[^0-9.]/g, '');
       ns[field] = raw;
     }
-    function calcNetSheet() {
-      const price = Number(ns.salePrice) || 0;
-      if (!price) { showToast('Please enter a Sale Price to calculate.', 3000); return; }
+    // ── THE net sheet calculation. One copy. ─────────────────────────────────
+    // Until Oct 5, 2026 this math existed twice: calcNetSheet() (the Calculate button)
+    // and nsRecalcSilent() (run again as the PDF is built). They had drifted: the two
+    // labelled a flat commission and a concession differently, read a typed price and
+    // percent differently, and one skipped a zero transfer line the other printed. A
+    // tax fix made in only one would have put a different number on the PDF than on
+    // the screen. Both now call this. It reads the form (ns) and returns the lines and
+    // the net; it changes nothing. Returns null when there is no sale price.
+    // The body is the old nsRecalcSilent() line for line: that is the version whose
+    // output reached the screen, the PDF and the saved note whenever a closing date
+    // was set, because it ran straight after calcNetSheet() and replaced its result.
+    function nsCompute() {
+      const price = Number(String(ns.salePrice).replace(/[^0-9.]/g, ''));
+      if (!price) return null;
       const items = [];
       const j = ns.jurisdiction;
-
-      // ── 1. Transfer / Grantor Tax ──
-      // Rates verified against KVS Title (kvstitle.titlecapture.com) Mar 2026
-      let transferTax = 0;
-      let transferLabel = '';
+      // Transfer tax
+      let transferTax = 0, transferLabel = '';
       if (j === 'dc') {
-        // DC first-time homebuyer: reduced rate 0.725% under $400K, otherwise standard
         const ftb = ns.firstTimeHomebuyerDC === 'yes';
-        let rate;
-        if (ftb && price < 400000) { rate = 0.00725; }
-        else if (price < 400000) { rate = 0.011; }
-        else { rate = 0.0145; }
+        let rate = (ftb && price < 400000) ? 0.00725 : (price < 400000 ? 0.011 : 0.0145);
         transferTax = Math.round(price * rate);
-        transferLabel = ftb && price < 400000
-          ? 'DC Transfer Tax — First-Time Buyer (0.725%)'
-          : `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
-      } else if (j === 'va-nova') {
-        transferTax = Math.round(price * 0.003);
-        transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)';
-      } else if (j === 'va-other') {
-        transferTax = Math.round(price * 0.001);
-        transferLabel = 'VA Grantor Tax (0.1%)';
-      } else if (j === 'md-montgomery') {
-        let recTax = 0;
-        if (price <= 500000) { recTax = price * 0.0089; }
-        else { recTax = (500000 * 0.0089) + ((price - 500000) * 0.0135); }
-        const totalTransfer = price * 0.015;
-        transferTax = Math.round((totalTransfer + recTax) * 0.5);
+        transferLabel = ftb && price < 400000 ? 'DC Transfer Tax — First-Time Buyer (0.725%)' : `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
+      } else if (j === 'va-nova') { transferTax = Math.round(price * 0.003); transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)'; }
+      else if (j === 'va-other') { transferTax = Math.round(price * 0.001); transferLabel = 'VA Grantor Tax (0.1%)'; }
+      else if (j === 'md-montgomery') {
+        let recTax = price <= 500000 ? price * 0.0089 : (500000 * 0.0089) + ((price - 500000) * 0.0135);
+        transferTax = Math.round((price * 0.015 + recTax) * 0.5);
         transferLabel = 'MD Transfer & Recordation — Seller’s Half';
-      } else if (MD_RATES[j]) {
-        const _md = nsMDTransfer(price, j);
-        transferTax = _md.amount; transferLabel = _md.label;
-      } else if (j === 'md-other') {
-        // MD Other counties: State transfer 0.5% + avg county transfer ~1.5% + recordation ~0.5% = ~2.5% total, seller pays half
-        const totalAll = price * 0.025;
-        transferTax = Math.round(totalAll * 0.5);
-        transferLabel = 'MD Transfer & Recordation — Seller’s Half';
-      }
-      items.push({ label:transferLabel, amount:transferTax });
-
-      // ── 2. Settlement & Title Charges ──
+      } else if (MD_RATES[j]) { const _md = nsMDTransfer(price, j); transferTax = _md.amount; transferLabel = _md.label; }
+      else if (j === 'md-other') { transferTax = Math.round(price * 0.025 * 0.5); transferLabel = 'MD Transfer & Recordation — Seller’s Half'; }
+      if (transferTax) items.push({ label: transferLabel, amount: transferTax });
+      // Settlement & title charges
+      // Rates for the transfer tax above verified against KVS Title (kvstitle.titlecapture.com) Mar 2026.
       // DC: $485 closing + $150 e-sign + $145 release admin + $400 deed prep + $35 release tracking = $1,215
       // VA: $1,400. Seller title/settlement charges on three executed NoVA ALTAs
       // (Sept 29, 2026 upload): CLA $1,009 (Prince William), KVS $1,385 (Alexandria,
@@ -14954,45 +14942,30 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       let settlementFee = 1215;
       if (j === 'va-nova' || j === 'va-other') settlementFee = 1400;
       else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
-      items.push({ label:'Settlement & Title Charges (est.)', amount:settlementFee });
-
-      // ── 3. Loan Payoffs ──
-      const l1 = Number(ns.loan1) || 0;
-      if (l1 > 0) items.push({ label:'1st Loan Payoff', amount:l1 });
-      const l2 = Number(ns.loan2) || 0;
-      if (l2 > 0) items.push({ label:'2nd Loan Payoff', amount:l2 });
-
-      // ── 4. Real Estate Compensation ──
-      const sellerComp = ns.sellerCompMode === 'pct'
-        ? Math.round(price * (Number(ns.sellerCompVal) || 0) / 100)
-        : Number(ns.sellerCompVal) || 0;
-      if (sellerComp > 0) {
-        const sl = ns.sellerCompMode === 'pct' ? `Seller’s Agent (${ns.sellerCompVal}%)` : 'Seller’s Agent Compensation';
-        items.push({ label:sl, amount:sellerComp });
+      items.push({ label: 'Settlement & Title Charges (est.)', amount: settlementFee });
+      // Loans
+      const l1 = Number(ns.loan1) || 0; if (l1 > 0) items.push({ label: '1st Loan Payoff', amount: l1 });
+      const l2 = Number(ns.loan2) || 0; if (l2 > 0) items.push({ label: '2nd Loan Payoff', amount: l2 });
+      // Seller comp
+      const sellerVal = Number(String(ns.sellerCompVal).replace(/[^0-9.]/g, '')) || 0;
+      if (sellerVal > 0) {
+        const sc = ns.sellerCompMode === 'pct' ? Math.round(price * sellerVal / 100) : sellerVal;
+        items.push({ label: `Seller’s Agent (${sellerVal}${ns.sellerCompMode === 'pct' ? '%' : ' flat'})`, amount: sc });
       }
-      const buyerComp = ns.buyerCompMode === 'pct'
-        ? Math.round(price * (Number(ns.buyerCompVal) || 0) / 100)
-        : Number(ns.buyerCompVal) || 0;
-      if (buyerComp > 0) {
-        const bl = ns.buyerCompMode === 'pct' ? `Buyer’s Agent (${ns.buyerCompVal}%)` : 'Buyer’s Agent Compensation';
-        items.push({ label:bl, amount:buyerComp });
+      const buyerVal = Number(String(ns.buyerCompVal).replace(/[^0-9.]/g, '')) || 0;
+      if (buyerVal > 0) {
+        const bc = ns.buyerCompMode === 'pct' ? Math.round(price * buyerVal / 100) : buyerVal;
+        items.push({ label: `Buyer’s Agent (${buyerVal}${ns.buyerCompMode === 'pct' ? '%' : ' flat'})`, amount: bc });
       }
-      const txnFee = Number(ns.transactionFee) || 0;
-      if (txnFee > 0) items.push({ label:'Transaction Fee', amount:txnFee });
-
-      // ── 5. Seller Concession ──
-      const concession = ns.concessionMode === 'pct'
-        ? Math.round(price * (Number(ns.concessionVal) || 0) / 100)
-        : Number(ns.concessionVal) || 0;
-      if (concession > 0) {
-        const cl = ns.concessionMode === 'pct' ? `Seller Concession (${ns.concessionVal}%)` : 'Seller Concession';
-        items.push({ label:cl, amount:concession });
+      const tf = Number(ns.transactionFee) || 0; if (tf > 0) items.push({ label: 'Transaction Fee', amount: tf });
+      const conVal = Number(String(ns.concessionVal).replace(/[^0-9.]/g, '')) || 0;
+      if (conVal > 0) {
+        const cv = ns.concessionMode === 'pct' ? Math.round(price * conVal / 100) : conVal;
+        items.push({ label: 'Seller Concession', amount: cv });
       }
-
-      // -- 6. HOA / Condo Dues --
+      // HOA -- shared helper, identical to calcNetSheet
       nsHoaItems(ns, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
-
-      // -- 7. Property Taxes --
+      // Property taxes -- shared helper, identical to calcNetSheet
       // DC is due-date driven (see nsDCTaxItems). MD/VA logic is unchanged.
       const annualTax = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
       if (annualTax > 0 && ns.closingDate) {
@@ -15005,14 +14978,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         }
       }
 
-            // ── 8. Other Costs ──
-      const other = Number(ns.otherCosts) || 0;
-      if (other > 0) items.push({ label:'Other Costs (repairs, warranty, etc.)', amount:other });
-
-      // Calculate net
+            const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
       const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
-      ns.breakdown = items;
-      ns.result = Math.round((price - totalCosts) * 100) / 100;
+      return { items: items, result: Math.round((price - totalCosts) * 100) / 100 };
+    }
+    function calcNetSheet() {
+      const r = nsCompute();
+      if (!r) { showToast('Please enter a Sale Price to calculate.', 3000); return; }
+      ns.breakdown = r.items;
+      ns.result = r.result;
       // Open PDF directly in a new window
       nextTick(() => { nsDownloadPDF(); });
     }
@@ -15205,71 +15179,14 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       return doc;
     }
     function nsRecalcSilent() {
-      // Recalculate breakdown without triggering PDF download
-      const price = Number(String(ns.salePrice).replace(/[^0-9.]/g, ''));
-      if (!price || !ns.closingDate) return;
-      const items = [];
-      const j = ns.jurisdiction;
-      // Transfer tax
-      let transferTax = 0, transferLabel = '';
-      if (j === 'dc') {
-        const ftb = ns.firstTimeHomebuyerDC === 'yes';
-        let rate = (ftb && price < 400000) ? 0.00725 : (price < 400000 ? 0.011 : 0.0145);
-        transferTax = Math.round(price * rate);
-        transferLabel = ftb && price < 400000 ? 'DC Transfer Tax — First-Time Buyer (0.725%)' : `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
-      } else if (j === 'va-nova') { transferTax = Math.round(price * 0.003); transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)'; }
-      else if (j === 'va-other') { transferTax = Math.round(price * 0.001); transferLabel = 'VA Grantor Tax (0.1%)'; }
-      else if (j === 'md-montgomery') {
-        let recTax = price <= 500000 ? price * 0.0089 : (500000 * 0.0089) + ((price - 500000) * 0.0135);
-        transferTax = Math.round((price * 0.015 + recTax) * 0.5);
-        transferLabel = 'MD Transfer & Recordation — Seller’s Half';
-      } else if (MD_RATES[j]) { const _md = nsMDTransfer(price, j); transferTax = _md.amount; transferLabel = _md.label; }
-      else if (j === 'md-other') { transferTax = Math.round(price * 0.025 * 0.5); transferLabel = 'MD Transfer & Recordation — Seller’s Half'; }
-      if (transferTax) items.push({ label: transferLabel, amount: transferTax });
-      // Settlement fee
-      let settlementFee = 1215;
-      if (j === 'va-nova' || j === 'va-other') settlementFee = 1400;
-      else if (j === 'md-montgomery' || j === 'md-other' || MD_RATES[j]) settlementFee = 670;
-      items.push({ label: 'Settlement & Title Charges (est.)', amount: settlementFee });
-      // Loans
-      const l1 = Number(ns.loan1) || 0; if (l1 > 0) items.push({ label: '1st Loan Payoff', amount: l1 });
-      const l2 = Number(ns.loan2) || 0; if (l2 > 0) items.push({ label: '2nd Loan Payoff', amount: l2 });
-      // Seller comp
-      const sellerVal = Number(String(ns.sellerCompVal).replace(/[^0-9.]/g, '')) || 0;
-      if (sellerVal > 0) {
-        const sc = ns.sellerCompMode === 'pct' ? Math.round(price * sellerVal / 100) : sellerVal;
-        items.push({ label: `Seller’s Agent (${sellerVal}${ns.sellerCompMode === 'pct' ? '%' : ' flat'})`, amount: sc });
-      }
-      const buyerVal = Number(String(ns.buyerCompVal).replace(/[^0-9.]/g, '')) || 0;
-      if (buyerVal > 0) {
-        const bc = ns.buyerCompMode === 'pct' ? Math.round(price * buyerVal / 100) : buyerVal;
-        items.push({ label: `Buyer’s Agent (${buyerVal}${ns.buyerCompMode === 'pct' ? '%' : ' flat'})`, amount: bc });
-      }
-      const tf = Number(ns.transactionFee) || 0; if (tf > 0) items.push({ label: 'Transaction Fee', amount: tf });
-      const conVal = Number(String(ns.concessionVal).replace(/[^0-9.]/g, '')) || 0;
-      if (conVal > 0) {
-        const cv = ns.concessionMode === 'pct' ? Math.round(price * conVal / 100) : conVal;
-        items.push({ label: 'Seller Concession', amount: cv });
-      }
-      // HOA -- shared helper, identical to calcNetSheet
-      nsHoaItems(ns, nsParseDate(ns.closingDate)).forEach(function (it) { items.push(it); });
-      // Property taxes -- shared helper, identical to calcNetSheet
-      // DC is due-date driven (see nsDCTaxItems). MD/VA logic is unchanged.
-      const annualTax = Number(String(ns.propTaxAnnual).replace(/[^0-9.]/g, '')) || 0;
-      if (annualTax > 0 && ns.closingDate) {
-        if (j === 'dc') {
-          nsDCTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
-        } else if (j === 'va-nova' || j === 'va-other') {
-          nsVATaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
-        } else {
-          nsMDTaxItems(annualTax, nsParseDate(ns.closingDate), ns).forEach(function (it) { items.push(it); });
-        }
-      }
-
-            const other = Number(ns.otherCosts) || 0; if (other > 0) items.push({ label: 'Other Costs (repairs, warranty, etc.)', amount: other });
-      const totalCosts = items.reduce((sum, i) => sum + i.amount, 0);
-      ns.breakdown = items;
-      ns.result = Math.round((price - totalCosts) * 100) / 100;
+      // Recalculate breakdown without triggering PDF download. Same calculation as
+      // the Calculate button (nsCompute). As before, it leaves the sheet alone when
+      // there is no closing date.
+      if (!ns.closingDate) return;
+      const r = nsCompute();
+      if (!r) return;
+      ns.breakdown = r.items;
+      ns.result = r.result;
     }
     function nsDownloadPDF() {
       if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
