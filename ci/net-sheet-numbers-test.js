@@ -18,6 +18,11 @@
  *      $2,000,000, annual tax $25,146.72, settlement 9/22/2026: first-half bill
  *      $12,573.36 debited, $6,901.68 credited back for the buyer's 101 of 184 days.
  *
+ *    Virginia (seller columns of three executed ALTA Combined Settlement
+ *    Statements: CLA Title, Prince William, 9/29/2026; KVS Title, Alexandria,
+ *    4/1/2025; Pruitt Title, Fairfax, 6/2/2025): transfer tax exact, tax debit and
+ *    net held to the safe side within a stated tolerance. See section 1b.
+ *
  * 2. EVERY JURISDICTION, LOCKED. ci/net-sheet-golden.json holds 116 cases (the
  *    four above plus four for each of the 28 jurisdictions) with every line and
  *    the net, recorded on Oct 5, 2026 from the app BEFORE the two calculators
@@ -106,6 +111,47 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(line(r, /Collection - 1st Half/) === 12573.36, 'Universal Title 9/22: first-half bill $12,573.36 debited', taxLines(r));
   ok(line(r, /Proration - 1st Half/) === -6901.68, 'Universal Title 9/22: $6,901.68 credited back (buyer 101 of 184 days)', taxLines(r));
   ok(taxLines(r).length === 2 && Math.round((12573.36 - 6901.68) * 100) / 100 === 5671.68, 'Universal Title 9/22: two tax lines, seller cost $5,671.68', taxLines(r));
+
+  // ── Virginia: three executed ALTA Combined Settlement Statements, seller columns ──
+  // (uploaded by Marc Oct 5, 2026). Virginia title companies do not prorate the same
+  // way: CLA counts the closing day as the seller's on a 184-day half; Pruitt stops
+  // the day before closing; KVS uses a 30/360 year. The net sheet uses one rule
+  // (closing day to the seller, half bill over the real days in the half) and a
+  // $1,400 title estimate. So Virginia is held to this: the transfer tax is exact,
+  // the seller's tax debit is never BELOW the statement's and never more than $25
+  // above it, and the net is never ABOVE the statement's and never more than $600
+  // below it. A seller is never told a number higher than what they actually got.
+  console.log('1b. Virginia: three executed settlement statements (seller side)');
+  const VA = [
+    { name: 'CLA Title VA-26-32342, 4308 Marquis Pl, Woodbridge (Prince William), 9/29/2026', transfer: 2520, taxDebit: 1819.44, hoa: -3.17, net: 667331.73,
+      input: { jurisdiction: 'va-nova', salePrice: 840000, closingDate: '2026-09-29', loan1: 110323, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2.5, concessionMode: 'flat', concessionVal: 15000, propTaxAnnual: 7357.74, nsTaxH1Paid: 'yes', nsTaxH2Paid: 'no', hoaAmount: 292, hoaFreq: 'quarterly', hoaPaidCurrent: 'yes' } },
+    { name: 'KVS Title 25-KVS-6920, 3013 King St, Alexandria, 4/1/2025', transfer: 3600, taxDebit: 3024.90, hoa: null, net: 259969.76,
+      input: { jurisdiction: 'va-nova', salePrice: 1200000, closingDate: '2025-04-01', loan1: 761421.79, loan2: 90598.55, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2.5, concessionMode: 'flat', concessionVal: 20000, propTaxAnnual: 12099.60, nsTaxH1Paid: 'no', nsTaxH2Paid: 'no' } },
+    { name: 'Pruitt Title 25-VA-7186, 5008 Woodland Way, Annandale (Fairfax), 6/2/2025', transfer: 2460, taxDebit: 3649.52, hoa: null, net: 530928.07,
+      input: { jurisdiction: 'va-nova', salePrice: 820000, closingDate: '2025-06-02', loan1: 245018.41, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2, transactionFee: 150, propTaxAnnual: 8691.94, nsTaxH1Paid: 'no', nsTaxH2Paid: 'no' } }
+  ];
+  const vaGot = await page.evaluate(async (cases) => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    const base = { address: '1 Test St', unit: '', firstTimeHomebuyerDC: 'no', loan1: '', loan2: '', sellerCompMode: 'pct', sellerCompVal: '', buyerCompMode: 'pct', buyerCompVal: '', transactionFee: '', concessionMode: 'pct', concessionVal: '', hoaFreq: 'monthly', hoaAmount: '', hoaPaidCurrent: 'no', hoaResaleCert: '', hoaTransferFee: '', propTaxAnnual: '', otherCosts: '', nsTaxH1Touched: true, nsTaxH2Touched: true };
+    const out = [];
+    for (const c of cases) {
+      Object.assign(st.ns, base, c.input, { result: null, breakdown: [], _propId: null });
+      await tick(); await tick();
+      Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid, nsTaxH2Paid: c.input.nsTaxH2Paid });
+      st.calcNetSheet(); await tick(); await tick(); await tick();
+      out.push(JSON.parse(JSON.stringify({ lines: st.ns.breakdown, net: st.ns.result })));
+    }
+    return out;
+  }, VA);
+  VA.forEach((v, i) => {
+    const g = vaGot[i], tl = taxLines(g), tax = tl.reduce((a, l) => a + l.amount, 0);
+    const short = v.name.split(',')[0];
+    ok(line(g, /Grantor/) === v.transfer, short + ': grantor tax and regional fees $' + v.transfer.toLocaleString('en-US') + ', exact', g.lines[0]);
+    ok(tl.length === 1 && tax >= v.taxDebit && tax - v.taxDebit <= 25, short + ': one tax line, a debit of the seller\'s own days, within $25 above the statement\'s $' + v.taxDebit.toFixed(2) + ' (app ' + tax.toFixed(2) + ')', tl);
+    if (v.hoa !== null) ok(line(g, /HOA/) === v.hoa, short + ': HOA credit $' + Math.abs(v.hoa).toFixed(2) + ', exact', g.lines.filter(l => /HOA/.test(l.label)));
+    ok(g.net <= v.net && v.net - g.net <= 600, short + ': net never above the statement\'s $' + v.net.toFixed(2) + ', and within $600 below (app ' + g.net.toFixed(2) + ')', g.net);
+  });
 
   console.log('2. Every jurisdiction reproduces its recorded sheet');
   const byJur = {};
