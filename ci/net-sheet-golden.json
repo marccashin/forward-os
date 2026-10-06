@@ -1,0 +1,7702 @@
+[
+ {
+  "name": "KVS Title, DC, 4200 Massachusetts Ave NW #106, closing 6/15/2026, before the due date, HOA paid",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 755500,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": 5176,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 10526.64,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 1100000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.45%)",
+    "amount": 15950
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 755500
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 27500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 27500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -2588
+   },
+   {
+    "label": "Prorated Property Taxes",
+    "amount": 2191.85
+   }
+  ],
+  "net": 272236.15
+ },
+ {
+  "name": "KVS Title, DC, same sale, closing 9/30/2026, second half UNPAID",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 755500,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 10526.64,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 1100000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.45%)",
+    "amount": 15950
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 755500
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 27500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 27500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 5263.32
+   }
+  ],
+  "net": 266576.68
+ },
+ {
+  "name": "KVS Title, DC, same sale, closing 9/30/2026, second half PAID",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": "",
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 10526.64,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 1100000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.45%)",
+    "amount": 15950
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   }
+  ],
+  "net": 1082835
+ },
+ {
+  "name": "Universal Title 43-2026-10055, MD Baltimore County, 1926 Ruxton Rd, closing 9/22/2026, first half unpaid",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": "",
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimoreco",
+   "salePrice": 2000000,
+   "closingDate": "2026-09-22"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore County)",
+    "amount": 25000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 12573.36
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6901.68
+   }
+  ],
+  "net": 1968658.32
+ },
+ {
+  "name": "dc #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 325000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.1%)",
+    "amount": 3575
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Prorated Property Taxes",
+    "amount": 3060.82
+   }
+  ],
+  "net": 309024.18
+ },
+ {
+  "name": "dc #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 500000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.45%)",
+    "amount": 7250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -210.52
+   }
+  ],
+  "net": 158750.52
+ },
+ {
+  "name": "dc #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 1000000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.45%)",
+    "amount": 14500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1696.44
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 942238.56
+ },
+ {
+  "name": "dc #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 239999,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "dc",
+   "salePrice": 399999,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "DC Transfer Tax (1.1%)",
+    "amount": 4400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1215
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 99890
+ },
+ {
+  "name": "va-nova #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-nova",
+   "salePrice": 399999,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax + NoVA Regional Fees (0.3%)",
+    "amount": 1200
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   }
+  ],
+  "net": 387399
+ },
+ {
+  "name": "va-nova #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300001,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-nova",
+   "salePrice": 500001,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax + NoVA Regional Fees (0.3%)",
+    "amount": 1500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -439.37
+   },
+   {
+    "label": "Prorated Property Taxes - 1st Half (unpaid)",
+    "amount": 1398.27
+   }
+  ],
+  "net": 163146.1
+ },
+ {
+  "name": "va-nova #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-nova",
+   "salePrice": 2400000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax + NoVA Regional Fees (0.3%)",
+    "amount": 7200
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 2242.19
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -1640
+   }
+  ],
+  "net": 2315447.81
+ },
+ {
+  "name": "va-nova #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 240000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-nova",
+   "salePrice": 400000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax + NoVA Regional Fees (0.3%)",
+    "amount": 1200
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Prorated Property Taxes - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Prorated Property Taxes - 2nd Half (unpaid)",
+    "amount": 1757.61
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 97102.39
+ },
+ {
+  "name": "va-other #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-other",
+   "salePrice": 400000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax (0.1%)",
+    "amount": 400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Prorated Property Taxes - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -3052.87
+   }
+  ],
+  "net": 385080.03
+ },
+ {
+  "name": "va-other #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 525000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-other",
+   "salePrice": 875000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax (0.1%)",
+    "amount": 875
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -561.39
+   },
+   {
+    "label": "Prorated Property Taxes - 2nd Half (unpaid)",
+    "amount": 1913.34
+   }
+  ],
+  "net": 294628.05
+ },
+ {
+  "name": "va-other #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-other",
+   "salePrice": 325000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax (0.1%)",
+    "amount": 325
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 269.59
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Prorated Property Taxes - 1st Half (unpaid)",
+    "amount": 951.38
+   }
+  ],
+  "net": 298579.03
+ },
+ {
+  "name": "va-other #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "va-other",
+   "salePrice": 500000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "VA Grantor Tax (0.1%)",
+    "amount": 500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 1400
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -240
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 137345
+ },
+ {
+  "name": "md-montgomery #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-montgomery",
+   "salePrice": 500000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 5975
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   }
+  ],
+  "net": 492455.83
+ },
+ {
+  "name": "md-montgomery #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 600000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-montgomery",
+   "salePrice": 1000000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 13100
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -798.23
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   }
+  ],
+  "net": 326933.23
+ },
+ {
+  "name": "md-montgomery #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-montgomery",
+   "salePrice": 399999,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 4780
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1374.25
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 367824.75
+ },
+ {
+  "name": "md-montgomery #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300001,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-montgomery",
+   "salePrice": 500001,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 5975
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -199.29
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -4808.68
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 125022.29
+ },
+ {
+  "name": "md-pgcounty #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-pgcounty",
+   "salePrice": 500001,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Prince George's)",
+    "amount": 6125
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   }
+  ],
+  "net": 476877.27
+ },
+ {
+  "name": "md-pgcounty #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 1440000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-pgcounty",
+   "salePrice": 2400000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Prince George's)",
+    "amount": 29400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -672.5
+   }
+  ],
+  "net": 802607.5
+ },
+ {
+  "name": "md-pgcounty #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-pgcounty",
+   "salePrice": 400000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Prince George's)",
+    "amount": 4900
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1801.64
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3086.42
+   }
+  ],
+  "net": 364191.94
+ },
+ {
+  "name": "md-pgcounty #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 525000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-pgcounty",
+   "salePrice": 875000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Prince George's)",
+    "amount": 10719
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 13125
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -30
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -10728.36
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 263999.36
+ },
+ {
+  "name": "md-baltimoreco #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimoreco",
+   "salePrice": 875000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore County)",
+    "amount": 10938
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   }
+  ],
+  "net": 841517
+ },
+ {
+  "name": "md-baltimoreco #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 195000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimoreco",
+   "salePrice": 325000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore County)",
+    "amount": 4063
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -133.02
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   }
+  ],
+  "net": 89355.01
+ },
+ {
+  "name": "md-baltimoreco #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimoreco",
+   "salePrice": 500000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore County)",
+    "amount": 6250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 98.63
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   }
+  ],
+  "net": 476732.2
+ },
+ {
+  "name": "md-baltimoreco #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 600000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimoreco",
+   "salePrice": 1000000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore County)",
+    "amount": 12500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 15000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -300
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 291535
+ },
+ {
+  "name": "md-baltimorecity #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimorecity",
+   "salePrice": 1000000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore City)",
+    "amount": 15000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -33.55
+   }
+  ],
+  "net": 953190.71
+ },
+ {
+  "name": "md-baltimorecity #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 239999,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimorecity",
+   "salePrice": 399999,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore City)",
+    "amount": 6000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6355.01
+   }
+  ],
+  "net": 131690.01
+ },
+ {
+  "name": "md-baltimorecity #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimorecity",
+   "salePrice": 500001,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore City)",
+    "amount": 7500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1091.51
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   }
+  ],
+  "net": 459060.76
+ },
+ {
+  "name": "md-baltimorecity #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 1440000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-baltimorecity",
+   "salePrice": 2400000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Baltimore City)",
+    "amount": 36000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 36000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -160
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 738995
+ },
+ {
+  "name": "md-howard #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-howard",
+   "salePrice": 2400000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Howard)",
+    "amount": 27000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -6390.88
+   }
+  ],
+  "net": 2318720.88
+ },
+ {
+  "name": "md-howard #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 240000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-howard",
+   "salePrice": 400000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Howard)",
+    "amount": 4500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -22.83
+   }
+  ],
+  "net": 122657.83
+ },
+ {
+  "name": "md-howard #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-howard",
+   "salePrice": 875000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Howard)",
+    "amount": 9844
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1795.07
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 825465.93
+ },
+ {
+  "name": "md-howard #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 195000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-howard",
+   "salePrice": 325000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Howard)",
+    "amount": 3656
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 4875
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 64408.99
+ },
+ {
+  "name": "md-annearundel #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-annearundel",
+   "salePrice": 325000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Anne Arundel)",
+    "amount": 3575
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2465.22
+   }
+  ],
+  "net": 310895.22
+ },
+ {
+  "name": "md-annearundel #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-annearundel",
+   "salePrice": 500000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Anne Arundel)",
+    "amount": 5500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   }
+  ],
+  "net": 160835
+ },
+ {
+  "name": "md-annearundel #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-annearundel",
+   "salePrice": 1000000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Anne Arundel)",
+    "amount": 13500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 2400
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -33.55
+   }
+  ],
+  "net": 936940.71
+ },
+ {
+  "name": "md-annearundel #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 239999,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-annearundel",
+   "salePrice": 399999,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Anne Arundel)",
+    "amount": 4400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6355.01
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 106790.01
+ },
+ {
+  "name": "md-frederick #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-frederick",
+   "salePrice": 399999,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Frederick)",
+    "amount": 3800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   }
+  ],
+  "net": 385529
+ },
+ {
+  "name": "md-frederick #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300001,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-frederick",
+   "salePrice": 500001,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Frederick)",
+    "amount": 4750
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -131.58
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3623.19
+   }
+  ],
+  "net": 159166.93
+ },
+ {
+  "name": "md-frederick #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-frederick",
+   "salePrice": 2400000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Frederick)",
+    "amount": 22800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 591.78
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -6390.88
+   }
+  ],
+  "net": 2306979.1
+ },
+ {
+  "name": "md-frederick #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 240000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-frederick",
+   "salePrice": 400000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Frederick)",
+    "amount": 3800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -22.83
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 96857.83
+ },
+ {
+  "name": "md-charles #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-charles",
+   "salePrice": 400000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Charles)",
+    "amount": 4800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -4808.68
+   }
+  ],
+  "net": 383165.84
+ },
+ {
+  "name": "md-charles #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 525000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-charles",
+   "salePrice": 875000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Charles)",
+    "amount": 10500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -210.52
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -1708.34
+   }
+  ],
+  "net": 289003.86
+ },
+ {
+  "name": "md-charles #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-charles",
+   "salePrice": 325000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Charles)",
+    "amount": 3900
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1696.44
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2465.22
+   }
+  ],
+  "net": 293523.78
+ },
+ {
+  "name": "md-charles #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-charles",
+   "salePrice": 500000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Charles)",
+    "amount": 6000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 132335
+ },
+ {
+  "name": "md-harford #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-harford",
+   "salePrice": 500000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Harford)",
+    "amount": 5400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -10728.36
+   }
+  ],
+  "net": 492158.36
+ },
+ {
+  "name": "md-harford #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 600000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-harford",
+   "salePrice": 1000000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Harford)",
+    "amount": 10800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -439.37
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -3271.82
+   }
+  ],
+  "net": 325846.19
+ },
+ {
+  "name": "md-harford #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-harford",
+   "salePrice": 399999,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Harford)",
+    "amount": 4320
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 2242.19
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 367416.81
+ },
+ {
+  "name": "md-harford #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300001,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-harford",
+   "salePrice": 500001,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Harford)",
+    "amount": 5400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3623.19
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 130540.35
+ },
+ {
+  "name": "md-carroll #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-carroll",
+   "salePrice": 500001,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Carroll)",
+    "amount": 4500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   }
+  ],
+  "net": 480231
+ },
+ {
+  "name": "md-carroll #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 1440000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-carroll",
+   "salePrice": 2400000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Carroll)",
+    "amount": 21600
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -561.39
+   }
+  ],
+  "net": 810296.39
+ },
+ {
+  "name": "md-carroll #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-carroll",
+   "salePrice": 400000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Carroll)",
+    "amount": 3600
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 269.59
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -4808.68
+   }
+  ],
+  "net": 368746.25
+ },
+ {
+  "name": "md-carroll #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 525000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-carroll",
+   "salePrice": 875000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Carroll)",
+    "amount": 7875
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 13125
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -240
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -1708.34
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 258033.34
+ },
+ {
+  "name": "md-calvert #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-calvert",
+   "salePrice": 875000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Calvert)",
+    "amount": 6563
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   }
+  ],
+  "net": 845892
+ },
+ {
+  "name": "md-calvert #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 195000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-calvert",
+   "salePrice": 325000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Calvert)",
+    "amount": 2438
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -798.23
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3086.42
+   }
+  ],
+  "net": 100358.81
+ },
+ {
+  "name": "md-calvert #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-calvert",
+   "salePrice": 500000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Calvert)",
+    "amount": 3750
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1374.25
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -10728.36
+   }
+  ],
+  "net": 477084.11
+ },
+ {
+  "name": "md-calvert #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 600000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-calvert",
+   "salePrice": 1000000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Calvert)",
+    "amount": 7500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 15000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -199.29
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -3271.82
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 293406.11
+ },
+ {
+  "name": "md-stmarys #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-stmarys",
+   "salePrice": 1000000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (St. Mary's)",
+    "amount": 11500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   }
+  ],
+  "net": 957202.83
+ },
+ {
+  "name": "md-stmarys #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 239999,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-stmarys",
+   "salePrice": 399999,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (St. Mary's)",
+    "amount": 4600
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -672.5
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 12573.36
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   }
+  ],
+  "net": 126434.97
+ },
+ {
+  "name": "md-stmarys #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-stmarys",
+   "salePrice": 500001,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (St. Mary's)",
+    "amount": 5750
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1801.64
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   }
+  ],
+  "net": 461829.36
+ },
+ {
+  "name": "md-stmarys #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 1440000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-stmarys",
+   "salePrice": 2400000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (St. Mary's)",
+    "amount": 27600
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 36000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -30
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 747265
+ },
+ {
+  "name": "md-washington #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-washington",
+   "salePrice": 2400000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Washington)",
+    "amount": 21120
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6355.01
+   }
+  ],
+  "net": 2324565.01
+ },
+ {
+  "name": "md-washington #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 240000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-washington",
+   "salePrice": 400000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Washington)",
+    "amount": 3520
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -133.02
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   }
+  ],
+  "net": 119919.29
+ },
+ {
+  "name": "md-washington #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-washington",
+   "salePrice": 875000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Washington)",
+    "amount": 7700
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 98.63
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 829306.37
+ },
+ {
+  "name": "md-washington #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 195000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-washington",
+   "salePrice": 325000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Washington)",
+    "amount": 2860
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 4875
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -300
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3086.42
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 74063.58
+ },
+ {
+  "name": "md-cecil #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-cecil",
+   "salePrice": 325000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Cecil)",
+    "amount": 2958
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -22.83
+   }
+  ],
+  "net": 309069.83
+ },
+ {
+  "name": "md-cecil #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-cecil",
+   "salePrice": 500000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Cecil)",
+    "amount": 4550
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   }
+  ],
+  "net": 161785
+ },
+ {
+  "name": "md-cecil #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-cecil",
+   "salePrice": 1000000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Cecil)",
+    "amount": 9100
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1091.51
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   }
+  ],
+  "net": 943161.32
+ },
+ {
+  "name": "md-cecil #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 239999,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-cecil",
+   "salePrice": 399999,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Cecil)",
+    "amount": 3640
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -160
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 12573.36
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 100382.47
+ },
+ {
+  "name": "md-queenannes #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-queenannes",
+   "salePrice": 399999,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Queen Anne's)",
+    "amount": 3980
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   }
+  ],
+  "net": 385349
+ },
+ {
+  "name": "md-queenannes #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300001,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-queenannes",
+   "salePrice": 500001,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Queen Anne's)",
+    "amount": 4975
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -33.55
+   }
+  ],
+  "net": 155220.71
+ },
+ {
+  "name": "md-queenannes #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-queenannes",
+   "salePrice": 2400000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Queen Anne's)",
+    "amount": 23880
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1795.07
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6355.01
+   }
+  ],
+  "net": 2304659.94
+ },
+ {
+  "name": "md-queenannes #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 240000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-queenannes",
+   "salePrice": 400000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Queen Anne's)",
+    "amount": 3980
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 92981.27
+ },
+ {
+  "name": "md-talbot #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-talbot",
+   "salePrice": 400000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Talbot)",
+    "amount": 5400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3623.19
+   }
+  ],
+  "net": 381380.35
+ },
+ {
+  "name": "md-talbot #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 525000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-talbot",
+   "salePrice": 875000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Talbot)",
+    "amount": 11813
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 12573.36
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -6390.88
+   }
+  ],
+  "net": 279589.52
+ },
+ {
+  "name": "md-talbot #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-talbot",
+   "salePrice": 325000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Talbot)",
+    "amount": 4388
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 2400
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -22.83
+   }
+  ],
+  "net": 289889.83
+ },
+ {
+  "name": "md-talbot #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-talbot",
+   "salePrice": 500000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Talbot)",
+    "amount": 6750
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 131585
+ },
+ {
+  "name": "md-kent #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-kent",
+   "salePrice": 500000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Kent)",
+    "amount": 4150
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -1708.34
+   }
+  ],
+  "net": 484388.34
+ },
+ {
+  "name": "md-kent #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 600000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-kent",
+   "salePrice": 1000000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Kent)",
+    "amount": 8300
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -131.58
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2465.22
+   }
+  ],
+  "net": 331431.8
+ },
+ {
+  "name": "md-kent #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-kent",
+   "salePrice": 399999,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Kent)",
+    "amount": 3320
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 591.78
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 370067.22
+ },
+ {
+  "name": "md-kent #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300001,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-kent",
+   "salePrice": 500001,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Kent)",
+    "amount": 4150
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -33.55
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 128045.71
+ },
+ {
+  "name": "md-caroline #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-caroline",
+   "salePrice": 500001,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Caroline)",
+    "amount": 5000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -3271.82
+   }
+  ],
+  "net": 480902.82
+ },
+ {
+  "name": "md-caroline #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 1440000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-caroline",
+   "salePrice": 2400000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Caroline)",
+    "amount": 24000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -210.52
+   }
+  ],
+  "net": 807545.52
+ },
+ {
+  "name": "md-caroline #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-caroline",
+   "salePrice": 400000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Caroline)",
+    "amount": 4000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1696.44
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3623.19
+   }
+  ],
+  "net": 365733.91
+ },
+ {
+  "name": "md-caroline #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 525000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-caroline",
+   "salePrice": 875000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Caroline)",
+    "amount": 8750
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 13125
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 12573.36
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -6390.88
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 249027.52
+ },
+ {
+  "name": "md-dorchester #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-dorchester",
+   "salePrice": 875000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Dorchester)",
+    "amount": 9844
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   }
+  ],
+  "net": 842611
+ },
+ {
+  "name": "md-dorchester #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 195000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-dorchester",
+   "salePrice": 325000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Dorchester)",
+    "amount": 3656
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -439.37
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -4808.68
+   }
+  ],
+  "net": 94331.37
+ },
+ {
+  "name": "md-dorchester #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-dorchester",
+   "salePrice": 500000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Dorchester)",
+    "amount": 5625
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 2242.19
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -1708.34
+   }
+  ],
+  "net": 465321.15
+ },
+ {
+  "name": "md-dorchester #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 600000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-dorchester",
+   "salePrice": 1000000,
+   "closingDate": "2026-09-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Dorchester)",
+    "amount": 11250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 15000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2465.22
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 293005.22
+ },
+ {
+  "name": "md-allegany #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-allegany",
+   "salePrice": 1000000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Allegany)",
+    "amount": 8500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3086.42
+   }
+  ],
+  "net": 962743.58
+ },
+ {
+  "name": "md-allegany #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 239999,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-allegany",
+   "salePrice": 399999,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Allegany)",
+    "amount": 3400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -561.39
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -10728.36
+   }
+  ],
+  "net": 139224.75
+ },
+ {
+  "name": "md-allegany #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-allegany",
+   "salePrice": 500001,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Allegany)",
+    "amount": 4250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 269.59
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -3271.82
+   }
+  ],
+  "net": 466033.23
+ },
+ {
+  "name": "md-allegany #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 1440000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-allegany",
+   "salePrice": 2400000,
+   "closingDate": "2026-12-07"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Allegany)",
+    "amount": 20400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 1440000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 36000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -240
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 754675
+ },
+ {
+  "name": "md-garrett #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-garrett",
+   "salePrice": 2400000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Garrett)",
+    "amount": 26400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   }
+  ],
+  "net": 2324530.83
+ },
+ {
+  "name": "md-garrett #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 240000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-garrett",
+   "salePrice": 400000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Garrett)",
+    "amount": 4400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -798.23
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   }
+  ],
+  "net": 125633.23
+ },
+ {
+  "name": "md-garrett #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-garrett",
+   "salePrice": 875000,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Garrett)",
+    "amount": 9625
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1374.25
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 826105.75
+ },
+ {
+  "name": "md-garrett #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 195000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-garrett",
+   "salePrice": 325000,
+   "closingDate": "2026-02-10"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Garrett)",
+    "amount": 3575
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 195000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 4875
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -199.29
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -4808.68
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 68797.29
+ },
+ {
+  "name": "md-somerset #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-somerset",
+   "salePrice": 325000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Somerset)",
+    "amount": 1885
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   }
+  ],
+  "net": 310491.27
+ },
+ {
+  "name": "md-somerset #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-somerset",
+   "salePrice": 500000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Somerset)",
+    "amount": 2900
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -672.5
+   }
+  ],
+  "net": 164107.5
+ },
+ {
+  "name": "md-somerset #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-somerset",
+   "salePrice": 1000000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Somerset)",
+    "amount": 5800
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1801.64
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -3086.42
+   }
+  ],
+  "net": 948291.94
+ },
+ {
+  "name": "md-somerset #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 239999,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 25146.72,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-somerset",
+   "salePrice": 399999,
+   "closingDate": "2026-07-28"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Somerset)",
+    "amount": 2320
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 239999
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -30
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -10728.36
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 113273.36
+ },
+ {
+  "name": "md-wicomico #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-wicomico",
+   "salePrice": 399999,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Wicomico)",
+    "amount": 2400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   }
+  ],
+  "net": 386929
+ },
+ {
+  "name": "md-wicomico #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 300001,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-wicomico",
+   "salePrice": 500001,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Wicomico)",
+    "amount": 3000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -133.02
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   }
+  ],
+  "net": 151668.01
+ },
+ {
+  "name": "md-wicomico #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-wicomico",
+   "salePrice": 2400000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Wicomico)",
+    "amount": 14400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 60000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 98.63
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -11600.83
+   }
+  ],
+  "net": 2321082.2
+ },
+ {
+  "name": "md-wicomico #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 240000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 8400,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-wicomico",
+   "salePrice": 400000,
+   "closingDate": "2026-10-01"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Wicomico)",
+    "amount": 2400
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 240000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 6000
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -300
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -2100
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 100635
+ },
+ {
+  "name": "md-worcester #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 12345.67,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-worcester",
+   "salePrice": 400000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Worcester)",
+    "amount": 3320
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -33.55
+   }
+  ],
+  "net": 379870.71
+ },
+ {
+  "name": "md-worcester #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 525000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-worcester",
+   "salePrice": 875000,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Worcester)",
+    "amount": 7263
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 525000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 21875
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -6355.01
+   }
+  ],
+  "net": 296677.01
+ },
+ {
+  "name": "md-worcester #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-worcester",
+   "salePrice": 325000,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Worcester)",
+    "amount": 2698
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 8125
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1091.51
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -371.27
+   }
+  ],
+  "net": 293236.76
+ },
+ {
+  "name": "md-worcester #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300000,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": "",
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-worcester",
+   "salePrice": 500000,
+   "closingDate": "2027-01-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half (Worcester)",
+    "amount": 4150
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300000
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -160
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 134345
+ },
+ {
+  "name": "md-other #1",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": "",
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "monthly",
+   "hoaAmount": "",
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 25146.72,
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-other",
+   "salePrice": 500000,
+   "closingDate": "2026-03-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 6250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -6390.88
+   }
+  ],
+  "net": 486970.88
+ },
+ {
+  "name": "md-other #2",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "yes",
+   "loan1": 600000,
+   "loan2": "",
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "flat",
+   "concessionVal": 7500,
+   "hoaFreq": "quarterly",
+   "hoaAmount": 807,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": "",
+   "propTaxAnnual": 8400,
+   "otherCosts": "",
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-other",
+   "salePrice": 1000000,
+   "closingDate": "2026-12-31"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 12500
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 600000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 25000
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 4200
+   },
+   {
+    "label": "Property Tax Proration - 1st Half (buyer share)",
+    "amount": -22.83
+   }
+  ],
+  "net": 324657.83
+ },
+ {
+  "name": "md-other #3",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": "",
+   "loan2": "",
+   "sellerCompMode": "flat",
+   "sellerCompVal": 15000,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": "",
+   "concessionMode": "pct",
+   "concessionVal": "",
+   "hoaFreq": "annual",
+   "hoaAmount": 2400,
+   "hoaPaidCurrent": "no",
+   "hoaResaleCert": 350,
+   "hoaTransferFee": "",
+   "propTaxAnnual": "",
+   "otherCosts": "",
+   "nsTaxH1Paid": "yes",
+   "nsTaxH2Paid": "yes",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-other",
+   "salePrice": 399999,
+   "closingDate": "2026-09-30"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 5000
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "Seller’s Agent (15000 flat)",
+    "amount": 15000
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 10000
+   },
+   {
+    "label": "HOA Dues (prorated)",
+    "amount": 1795.07
+   },
+   {
+    "label": "HOA Resale Certificate",
+    "amount": 350
+   }
+  ],
+  "net": 367183.93
+ },
+ {
+  "name": "md-other #4",
+  "input": {
+   "address": "1 Test St",
+   "unit": "",
+   "firstTimeHomebuyerDC": "no",
+   "loan1": 300001,
+   "loan2": 25000,
+   "sellerCompMode": "pct",
+   "sellerCompVal": 2.5,
+   "buyerCompMode": "pct",
+   "buyerCompVal": 2.5,
+   "transactionFee": 495,
+   "concessionMode": "pct",
+   "concessionVal": 1.5,
+   "hoaFreq": "monthly",
+   "hoaAmount": 310,
+   "hoaPaidCurrent": "yes",
+   "hoaResaleCert": "",
+   "hoaTransferFee": 500,
+   "propTaxAnnual": 12345.67,
+   "otherCosts": 2500,
+   "nsTaxH1Paid": "no",
+   "nsTaxH2Paid": "no",
+   "nsTaxH1Touched": true,
+   "nsTaxH2Touched": true,
+   "jurisdiction": "md-other",
+   "salePrice": 500001,
+   "closingDate": "2026-06-15"
+  },
+  "lines": [
+   {
+    "label": "MD Transfer & Recordation — Seller’s Half",
+    "amount": 6250
+   },
+   {
+    "label": "Settlement & Title Charges (est.)",
+    "amount": 670
+   },
+   {
+    "label": "1st Loan Payoff",
+    "amount": 300001
+   },
+   {
+    "label": "2nd Loan Payoff",
+    "amount": 25000
+   },
+   {
+    "label": "Seller’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Buyer’s Agent (2.5%)",
+    "amount": 12500
+   },
+   {
+    "label": "Transaction Fee",
+    "amount": 495
+   },
+   {
+    "label": "Seller Concession",
+    "amount": 7500
+   },
+   {
+    "label": "HOA Dues - Buyer Reimbursement",
+    "amount": -155
+   },
+   {
+    "label": "HOA Transfer Fee",
+    "amount": 500
+   },
+   {
+    "label": "Property Tax Collection - 1st Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Collection - 2nd Half (unpaid)",
+    "amount": 6172.84
+   },
+   {
+    "label": "Property Tax Proration - 2nd Half (buyer share)",
+    "amount": -545.67
+   },
+   {
+    "label": "Other Costs (repairs, warranty, etc.)",
+    "amount": 2500
+   }
+  ],
+  "net": 120439.99
+ }
+]
