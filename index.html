@@ -8454,6 +8454,56 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEff
 let _fosApiKey = '';
 // Shown by every AI tool when this device has no AI key. There is no demo or
 // sample output anywhere in the app: a tool with no key says this and stops.
+// A listing's address, split for the CMA Builder: street, city, state, ZIP.
+//
+// A listing is often saved as "1415 Riverside Ave. Baltimore, MD" or "4202 Woodland Dr
+// Fairfax, VA": no comma between the street and the city. Until Oct 6, 2026 the builder
+// took everything before the first comma as the street and the rest as the city, so the
+// street box read "1415 Riverside Ave. Baltimore", the City box read "MD" and State and
+// ZIP were blank (flagged Sept 22, never fixed; Marc hit it again on Oct 6). That prints on
+// the client's PDF, and a blank State hides a DC listing from the DC driveway rule.
+// Now: a tail that is only a state (with or without a ZIP) goes to State. The city is then
+// looked for at the end of the street part, after the last street word (Ave, St, Rd, Dr...)
+// and any quadrant (NW, SE...). Because that is a reading and not something the listing
+// says outright, unsure is true and the builder marks Address and City CHECK THIS.
+// A fully written address ("601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004")
+// is split exactly as before and is not marked.
+function fosSplitListingAddress(addr) {
+  const parts = String(addr || '').split(',').map(x => x.trim());
+  let street = parts[0] || '', city = '', state = '', zip = '', unsure = false;
+  if (parts.length >= 2) {
+    let rest = parts.slice(1);
+    if (rest.length > 0 && /^(unit|apt|#|suite|ste|floor|fl\s)/i.test(rest[0])) { street = street + ', ' + rest[0]; rest = rest.slice(1); }
+    const csz = rest.join(', ');
+    const m = csz.match(/^(.*?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)\s*$/);
+    // (The comma after the city is dropped: "Washington, DC 20004" used to give the city "Washington,".)
+    if (m) { city = m[1].replace(/,+\s*$/, '').trim(); state = m[2]; zip = m[3]; }
+    else {
+      const t = csz.match(/^(?:(.*?)[\s,]+)?([A-Z]{2})(?:\s+(\d{5}(?:-\d{4})?))?\s*$/);
+      if (t) { city = (t[1] || '').trim(); state = t[2]; zip = t[3] || ''; }
+      else city = csz;
+    }
+    if (state && !city) {
+      unsure = true;
+      const SUFFIX = /^(st|street|ave|avenue|av|rd|road|dr|drive|ln|lane|ct|court|pl|place|blvd|boulevard|way|ter|terrace|cir|circle|pkwy|parkway|hwy|highway|sq|square|trl|trail|aly|alley|row|run|walk|mews|pike|loop)\.?$/i;
+      const QUAD = /^(n|s|e|w|ne|nw|se|sw)\.?$/i;
+      const tok = street.split(/\s+/);
+      let last = -1;
+      tok.forEach((w, i) => { if (i > 0 && SUFFIX.test(w)) last = i; });
+      if (last > -1) {
+        let end = last;
+        while (end + 1 < tok.length && QUAD.test(tok[end + 1])) end++;
+        const tail = tok.slice(end + 1);
+        if (tail.length && tail.length <= 3 && tail.every(w => /^[A-Za-z.'\-]+$/.test(w)) && !/^(unit|apt|suite|ste|floor|fl)$/i.test(tail[0])) {
+          city = tail.join(' ');
+          street = tok.slice(0, end + 1).join(' ');
+        }
+      }
+    }
+  }
+  return { street: street, city: city, state: state, zip: zip, unsure: unsure };
+}
+
 // What a listing's MLS Data "Parking" line says, for the CMA Builder.
 //
 // Until Oct 6, 2026 openCMABuilder called a listing a garage only when the text said
@@ -13890,22 +13940,9 @@ async function lstSubmitToPipeline() {
       const _parseNum = (s) => { if (!s) return ''; const n = parseFloat(String(s).replace(/[$,]/g, '')); return isNaN(n) ? '' : String(Math.round(n)); };
       const _parseBaths = (s) => { const n = parseFloat(s || 0); const full = Math.floor(n); const half = (n - full) >= 0.4 ? 1 : 0; return { full: String(full), half: String(half) }; };
 
-      // Parse address into street / city / state / zip
-      // Handles "601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004"
-      const addrParts = addr.split(',').map(s => s.trim());
-      let street = addrParts[0] || '';
-      let city = '', state = '', zip = '';
-      if (addrParts.length >= 2) {
-        let remaining = addrParts.slice(1);
-        // Detect unit/apt segment (e.g. "Unit #1403", "Apt 4B") and append to street
-        if (remaining.length > 0 && /^(unit|apt|#|suite|ste|floor|fl\s)/i.test(remaining[0])) {
-          street = street + ', ' + remaining[0];
-          remaining = remaining.slice(1);
-        }
-        const csz = remaining.join(', ');
-        const m = csz.match(/^(.*?)\s+([A-Z]{2})\s+(\d{5}(?:-\d{4})?)\s*$/);
-        if (m) { city = m[1].trim(); state = m[2]; zip = m[3]; } else { city = csz; }
-      }
+      // Street, city, state and ZIP out of the listing's address (see fosSplitListingAddress).
+      const _split = fosSplitListingAddress(addr);
+      const street = _split.street, city = _split.city, state = _split.state, zip = _split.zip;
 
       // Parse baths (mlsForm.baths is e.g. "2" or "2.5")
       const baths = _parseBaths(mlsForm.baths);
@@ -13940,6 +13977,7 @@ async function lstSubmitToPipeline() {
         parkingSpaces: parkingSpaces,
         drivewaySpaces: park.drivewaySpaces,
         parkingUnsure: park.unsure,
+        addressUnsure: _split.unsure,
         hoaMonthly: isCondo ? '0' : hoaNum,
         condoFee: isCondo ? hoaNum : '0',
         lotSize: '',
@@ -21318,6 +21356,10 @@ const CHANGELOG = [
       {
         title: 'Your PDFs Are Now Saved on the Listing',
         detail: 'Until today the PDF of a net sheet, a prep guide or a CMA was only kept if the listing had Google Drive folders, and almost no listing does. So the PDF you made was usually kept nowhere, and Save to Folder in the CMA Builder simply downloaded it.\n\nNow the PDF is saved on the listing itself:\n\nSeller Net Sheet and Seller Prep Guide: when you press Save to Property, the PDF is filed on the listing along with the text.\n\nCMA Builder: the button is now called Save to Listing. It files the CMA PDF on the listing and saves the CMA summary with it. Export PDF is still the plain download.\n\nEvery save is a new PDF. Nothing is replaced, so you can open the newest one or any earlier one.\n\nHow to use: Open the listing and open Comparative Market Analysis, Seller Net Sheet or Seller Prep Guide. Saved PDFs are listed with the date and who saved them, newest first. Press Open PDF.\n\nBest practice: Press Save to Listing or Save to Property each time you send a version to a client. Then the listing holds exactly what the client received, and you can open it again when they call about a number.'
+      },
+      {
+        title: 'You Choose the Comps When a File Has Too Many',
+        detail: 'The CMA Builder holds 6 closed sales, 10 pending and 10 active. Until today, if your MLS file had more than that, the builder kept the first ones in the file and dropped the rest, and only told you afterwards. The ones it dropped could have been your best comps.\n\nNow the review window groups the properties into Closed, Pending and Active and says how many each section has room for. Under each address you see the sold date, price, square feet, beds and baths, and the distance from your listing. If you have ticked more than a section holds, Add to CMA is switched off and a red notice says how many to untick.\n\nThe builder never picks for you. The PDF tells your client that you selected the comps, and now that is always true.\n\nAlso fixed: when a listing\'s address has no comma before the city, such as "1415 Riverside Ave. Baltimore, MD", the builder used to put the state in the City box. It now fills street, city and state, and marks Address and City CHECK THIS so you confirm them.\n\nHow to use: Upload your MLS sheets as usual. In the review window, untick the sales you do not want until each section fits, then press Add to CMA. Untick all and Tick all are at the top of each section.\n\nBest practice: Keep the sales most like your listing: the closest, the most recent, and the nearest in size and style. Six close comps give a better value than six plus weaker ones.'
       }
     ]
   }

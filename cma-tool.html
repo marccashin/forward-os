@@ -1165,6 +1165,9 @@ function _cmaFlagNewCma() {
   if (typeof window._cmaSetSubjectFlags !== 'function') return;
   const f = { s_condition: 'needs' };
   if (_cmaPrefillObj().parkingUnsure) f.s_parkingType = 'check';
+  // The listing's address did not say where the street ends and the city begins (see
+  // fosSplitListingAddress in index.html): both boxes are marked to check.
+  if (_cmaPrefillObj().addressUnsure) { f.s_address = 'check'; f.s_city = 'check'; }
   window._cmaSetSubjectFlags(f);
 }
 async function _cmaOpenVersion(id) {
@@ -2907,6 +2910,10 @@ async function findComps() {
                          box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden; }
   .imp-row { display:flex;gap:12px;align-items:flex-start;padding:12px 18px;border-top:1px solid #eef1f5; }
   .imp-tag { font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;white-space:nowrap; }
+  .imp-head { display:flex;gap:10px;align-items:center;padding:9px 18px;background:#f8fafc;border-top:1px solid #e2e8f0;font-size:12px;font-weight:700;color:#1a3a5c; }
+  .imp-head.over { background:#fef2f2;color:#991b1b; }
+  .imp-head button { margin-left:auto;border:1px solid #cbd5e1;background:#fff;border-radius:6px;font-size:11px;padding:3px 9px;cursor:pointer;color:#334155;font-weight:600; }
+  .imp-facts { font-size:12px;color:#334155;margin-top:4px; }
   .t-closed  { background:#dbeafe;color:#1e40af; }
   .t-pending { background:#fef3c7;color:#92400e; }
   .t-active  { background:#dcfce7;color:#166534; }
@@ -2923,10 +2930,11 @@ async function findComps() {
       </div>
     </div>
     <div id="impList" style="max-height:52vh;overflow:auto;"></div>
+    <div id="impOver" style="display:none;padding:10px 20px;background:#fef2f2;border-top:1px solid #fca5a5;color:#991b1b;font-size:12.5px;line-height:1.45;"></div>
     <div style="padding:14px 20px;border-top:1px solid #e5e7eb;display:flex;gap:10px;justify-content:flex-end;align-items:center;">
       <span id="impSummary" style="font-size:12px;color:#64748b;margin-right:auto;"></span>
       <button onclick="cmaCloseImport()" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;font-size:13px;cursor:pointer;">Cancel</button>
-      <button onclick="cmaApplyImport()" style="padding:9px 20px;border:none;background:#c9a227;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Add to CMA</button>
+      <button id="impAddBtn" onclick="cmaApplyImport()" style="padding:9px 20px;border:none;background:#c9a227;color:#fff;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;">Add to CMA</button>
     </div>
   </div>
 </div>
@@ -3394,10 +3402,118 @@ async function findComps() {
                active:['Active listing','t-active'], skip:['Not a comp','t-skip'],
                subject:['Your subject property','t-subject'], error:['Could not read','t-skip'] };
 
+  // ══ THE AGENT CHOOSES THE COMPS ══
+  // The builder holds 6 closed sales (what the PDF grid fits), 10 active and 10 pending.
+  // Until Oct 6, 2026 a file with more than that was cut down in the order the PDF listed
+  // them: the first six closed sales went in and the rest were "Skipped (section is
+  // full)", told to the agent only afterwards. Marc uploaded 16 properties and six were
+  // dropped that way: "what if the ones chosen to leave off were better comps?"
+  // The builder must not choose comps. The PDF says the agent selected them. So the review
+  // window now groups the properties by section, says how many each section has room for,
+  // shows the facts an agent picks by (sold date, price, size, beds and baths, distance
+  // from the listing), and will not add anything while a section has more ticked than it
+  // has room for. Nothing is ranked and nothing is dropped for the agent.
+  var SECTIONS = [
+    { key: 'closed',  label: 'Closed sales',    arr: function () { return comps; },        cap: function () { return MAX_COMPS; } },
+    { key: 'pending', label: 'Pending sales',   arr: function () { return pendingComps; }, cap: function () { return MAX_INFO_COMPS; } },
+    { key: 'active',  label: 'Active listings', arr: function () { return activeComps; },  cap: function () { return MAX_INFO_COMPS; } }
+  ];
+  var impProx = {};   // parsed index -> miles from the listing, looked up while the window is open
+  function impBox(i) { return document.getElementById('imp' + i); }
+  // The section a ticked property would go to ('' for the subject, an unreadable file, or one made the subject).
+  function impSectionOf(r, i) {
+    var subjIdx = (document.querySelector('input[name="impSubject"]:checked') || {}).value;
+    if (String(i) === String(subjIdx)) return '';
+    var route = routeOf(r);
+    if (route === 'error' || route === 'subject') return '';
+    return route === 'closed' ? 'closed' : route === 'pending' ? 'pending' : 'active';   // "Not a comp" goes to active when ticked, as before
+  }
+  // For each section: how many are ticked that are not already in the CMA, and how much room there is.
+  function impCount() {
+    var out = {};
+    SECTIONS.forEach(function (sec) {
+      var target = sec.arr(), found = 0, need = 0;
+      parsed.forEach(function (r, i) {
+        if (!r.ok || impSectionOf(r, i) !== sec.key) return;
+        found++;
+        var box = impBox(i);
+        if (!box || !box.checked) return;
+        var already = target.some(function (c) { return norm(c.address) && norm(c.address) === norm(r.address); });
+        if (!already) need++;
+      });
+      var room = Math.max(0, sec.cap() - target.length);
+      out[sec.key] = { label: sec.label, found: found, need: need, room: room, have: target.length, cap: sec.cap(), over: need > room };
+    });
+    return out;
+  }
+  function impRefresh() {
+    var c = impCount(), over = [];
+    SECTIONS.forEach(function (sec) {
+      var x = c[sec.key], h = document.getElementById('impHead_' + sec.key);
+      if (x.over) over.push(x);
+      if (!h) return;
+      h.classList.toggle('over', x.over);
+      var t = h.querySelector('span');
+      if (t) t.textContent = x.label + ': ' + x.need + ' ticked, room for ' + x.room + (x.have ? ' (the CMA already has ' + x.have + ' of ' + x.cap + ')' : ' (the CMA holds ' + x.cap + ')');
+    });
+    var el = document.getElementById('impOver'), btn = document.getElementById('impAddBtn');
+    if (el) {
+      el.style.display = over.length ? '' : 'none';
+      el.innerHTML = over.length ? '<strong>Choose your comps.</strong> ' + over.map(function (x) {
+        return x.label + ': ' + x.need + ' ticked, room for ' + x.room + '. Untick ' + (x.need - x.room) + '.';
+      }).join(' ') + ' Keep the sales most like your listing: closest, most recent, nearest in size. Nothing is added until each section fits.' : '';
+    }
+    if (btn) { btn.disabled = over.length > 0; btn.style.opacity = over.length ? '.45' : '1'; btn.style.cursor = over.length ? 'not-allowed' : 'pointer'; }
+    return over;
+  }
+  window.cmaImpSet = function (key, on) {
+    parsed.forEach(function (r, i) { if (r.ok && impSectionOf(r, i) === key && routeOf(r) !== 'skip') { var b = impBox(i); if (b) b.checked = !!on; } });
+    impRefresh();
+  };
+  function impMoney(v) { var n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return n > 0 ? '$' + Math.round(n).toLocaleString('en-US') : ''; }
+  function impDate(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || ''));
+    if (!m) return String(v || '');
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
+  }
+  // What the sheet says about one property, copied as read. Blank parts are left out.
+  function impFacts(r, i) {
+    var route = routeOf(r), bits = [];
+    if (route === 'closed') { if (r.soldDate) bits.push('Sold ' + impDate(r.soldDate)); if (impMoney(r.salePrice)) bits.push(impMoney(r.salePrice)); }
+    else { if (impMoney(r.listPrice)) bits.push('List ' + impMoney(r.listPrice)); if (r.listDate) bits.push('Listed ' + impDate(r.listDate)); }
+    if (parseFloat(r.gla) > 0) bits.push(Math.round(parseFloat(r.gla)).toLocaleString('en-US') + ' sq ft');
+    var bb = [];
+    if (r.beds !== undefined && r.beds !== '') bb.push(r.beds + ' bd');
+    if (r.fullBaths !== undefined && r.fullBaths !== '') bb.push(r.fullBaths + ' fb');
+    if (r.halfBaths !== undefined && r.halfBaths !== '' && String(r.halfBaths) !== '0') bb.push(r.halfBaths + ' hb');
+    if (bb.length) bits.push(bb.join(' / '));
+    return '<div class="imp-facts">' + esc(bits.join(' \u00b7 ')) + ' <span id="impDist' + i + '" style="color:#64748b;">' + (impProx[i] ? '\u00b7 ' + esc(impProx[i]) + ' away' : '') + '</span></div>';
+  }
+  // Distance from the listing for every property in the window, so it can be chosen by.
+  // Best effort, in the background: the window is usable while it runs and without it.
+  async function impLookUpDistances() {
+    var subj = subjectFullAddr(); if (!subj) return;
+    var idx = []; parsed.forEach(function (r, i) { if (r.ok && fullAddr(r) && !impProx[i]) idx.push(i); });
+    if (!idx.length) return;
+    idx.forEach(function (i) { var e = document.getElementById('impDist' + i); if (e) e.textContent = '\u00b7 distance: looking up\u2026'; });
+    var d = [];
+    try {
+      var resp = await fetch('/.netlify/functions/cma-proximity', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject: subj, comps: idx.map(function (i) { return fullAddr(parsed[i]); }) }) });
+      d = ((await resp.json()) || {}).distances || [];
+    } catch (e) { d = []; }
+    idx.forEach(function (i, k) {
+      if (d[k]) impProx[i] = d[k];
+      var e = document.getElementById('impDist' + i);
+      if (e) e.textContent = d[k] ? '\u00b7 ' + d[k] + ' away' : '';
+    });
+  }
+
   function showImportModal() {
     var subjHasAddress = (document.getElementById('s_address').value || '').trim();
     var list = document.getElementById('impList');
-    list.innerHTML = parsed.map(function (r, i) {
+    impProx = {};
+    function rowHtml(r, i) {
       var route = routeOf(r), tag = TAGS[route];
       var addr = r.ok ? [r.address, r.city, r.state].filter(Boolean).join(', ') : r.file;
       var note = '';
@@ -3407,18 +3523,28 @@ async function findComps() {
       return '' +
         '<div class="imp-row">' +
           '<input type="checkbox" id="imp' + i + '" ' + (route === 'closed' || route === 'pending' || route === 'active' ? 'checked' : '') +
-            (route === 'error' ? ' disabled' : '') + ' style="margin-top:3px;width:17px;height:17px;">' +
+            (route === 'error' ? ' disabled' : '') + ' onchange="cmaImpChanged()" style="margin-top:3px;width:17px;height:17px;">' +
           '<div style="flex:1;min-width:0;">' +
             '<div style="font-weight:600;font-size:13px;">' + esc(addr || r.file) + '</div>' +
+            (r.ok ? impFacts(r, i) : '') +
             '<div style="font-size:11px;color:#94a3b8;margin-top:2px;">' + esc(r.file) + '</div>' +
             (note ? '<div style="font-size:12px;color:#b45309;margin-top:5px;">' + note + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;">' +
             '<span class="imp-tag ' + tag[1] + '">' + tag[0] + '</span>' +
-            (r.ok && !subjHasAddress ? '<div style="margin-top:6px;font-size:11px;"><label><input type="radio" name="impSubject" value="' + i + '"> use as subject</label></div>' : '') +
+            (r.ok && !subjHasAddress ? '<div style="margin-top:6px;font-size:11px;"><label><input type="radio" name="impSubject" value="' + i + '" onchange="cmaImpChanged()"> use as subject</label></div>' : '') +
           '</div>' +
         '</div>';
-    }).join('') || '<div style="padding:20px;color:#64748b;">Nothing to import.</div>';
+    }
+    // Grouped by where each property will go, in the order the files listed them.
+    var html = '', done = {};
+    parsed.forEach(function (r, i) { if (routeOf(r) === 'subject') { html += rowHtml(r, i); done[i] = 1; } });
+    [['closed', 'closed'], ['pending', 'pending'], ['active', 'active']].forEach(function (g) {
+      var rows = ''; parsed.forEach(function (r, i) { if (!done[i] && routeOf(r) === g[0]) { rows += rowHtml(r, i); done[i] = 1; } });
+      if (rows) html += '<div class="imp-head" id="impHead_' + g[1] + '"><span></span><button type="button" onclick="cmaImpSet(\'' + g[1] + '\', false)">Untick all</button><button type="button" style="margin-left:0;" onclick="cmaImpSet(\'' + g[1] + '\', true)">Tick all</button></div>' + rows;
+    });
+    parsed.forEach(function (r, i) { if (!done[i]) html += rowHtml(r, i); });
+    list.innerHTML = html || '<div style="padding:20px;color:#64748b;">Nothing to import.</div>';
 
     var good = parsed.filter(function (r) { return r.ok; }).length;
     var files = {}; parsed.forEach(function (r) { files[r.file] = 1; });
@@ -3426,7 +3552,10 @@ async function findComps() {
     document.getElementById('impSummary').textContent =
       good + ' propert' + (good === 1 ? 'y' : 'ies') + ' found in ' + nf + ' file' + (nf === 1 ? '' : 's');
     document.getElementById('cmaImportModal').style.display = 'flex';
+    impRefresh();
+    impLookUpDistances();
   }
+  window.cmaImpChanged = function () { impRefresh(); };
 
   window.cmaCloseImport = function () { document.getElementById('cmaImportModal').style.display = 'none'; };
 
@@ -3495,6 +3624,8 @@ async function findComps() {
   }
 
   window.cmaApplyImport = function () {
+    // Never add while a section has more ticked than it has room for: the agent chooses.
+    if (impRefresh().length) return;
     var subjIdx = (document.querySelector('input[name="impSubject"]:checked') || {}).value;
     var added = 0, skipped = [], prox = [];
 
@@ -3548,8 +3679,10 @@ async function findComps() {
         if (row._rev) delete row._rev.hoaMonthly;
       }
       AGENT_ONLY_COMP.forEach(function (f) { row._src[f] = 'needs'; });
+      // The distance looked up in the review window is the one the agent chose by: use it.
+      if (impProx[i]) { row.proximity = impProx[i]; row._src.proximity = 'mls'; if (row._rev) delete row._rev.proximity; }
       if (!row.proximity) row._src.proximity = 'needs';
-      if (fullAddr(r)) prox.push({ row: row, addr: fullAddr(r) });
+      if (fullAddr(r) && !impProx[i]) prox.push({ row: row, addr: fullAddr(r) });
 
       if (existing === -1) { target.push(row); added++; }
     });
