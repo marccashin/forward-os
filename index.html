@@ -21131,8 +21131,8 @@ const CHANGELOG = [
   {
     id: 'v2026-10-06',
     date: 'October 6, 2026',
-    title: 'The CMA Builder Questions Numbers That Cannot Be Right',
-    summary: 'A review of every saved CMA found comps with 32 and 8 typed in the garage box, which took hundreds of thousands of dollars off those comps without a word. The builder now questions numbers like that, and tells you when one comp is being adjusted by a very large amount.',
+    title: 'CMA Builder: New Condition Grades, and Checks on Numbers That Cannot Be Right',
+    summary: 'Condition is now a percent of each comp\'s sale price on the appraisers\' scale, with B as the standard home. The builder also questions numbers that cannot be right, reads your listing\'s garage correctly, and keeps earlier versions of every CMA.',
     updates: [
       {
         title: 'A Notice When One Comp Is Adjusted by a Very Large Amount',
@@ -21149,6 +21149,18 @@ const CHANGELOG = [
       {
         title: 'Your Listing\'s Garage Is No Longer Dropped When the Builder Opens',
         detail: 'When you open the CMA Builder from a listing, it reads the Parking line of that listing\'s MLS Data. Until today it only recognised a garage when the line said "attached" or "detached". A line such as "2 car garage and 8 car driveway" opened as Street / None, and the builder gives Street / None no garage value. So every comp with a garage was marked down $40,000 or more against a listing that has a garage of its own.\n\nThe builder now reads the garage count and the driveway count from lines like that. When the line does not say whether the garage is attached or detached, or is not clear, Parking Type is marked CHECK THIS so you set it yourself.\n\nThis applies to a new CMA. A CMA you already saved keeps what was saved: open it and correct Parking Type and Parking Spaces by hand.\n\nHow to use: When you open the builder, look at Parking Type, Parking Spaces and Driveway Spaces in Step 1 before you add comps. Correct them and press Confirm.\n\nBest practice: In MLS Data, write the Parking line the way the sheet prints it, for example "2 car detached garage, 8 driveway spaces".'
+      },
+      {
+        title: 'Condition Is Now a Percent of the Sale Price, on the Appraisers\' Scale',
+        detail: 'Until today the builder valued condition in fixed dollars: the whole range from A+ to D was $25,000 whether the comp sold for $500,000 or $2,000,000. That was too little on almost every CMA.\n\nA new CMA now values condition as a percent of each comp\'s sale price, and the letters follow the condition ratings appraisers use (C1 to C6):\n\nA+ is C1, new construction: +16%\nA is C2, fully renovated: +8%\nB is C3, the standard, well maintained home: 0\nC is C4, dated or worn: 9% less\nD is C5 or C6, needs major work: 18% less\n\nThe biggest change is that B is now the standard home. Until today most of us graded an ordinary home C. On a new CMA an ordinary home is a B, and C means dated or worn.\n\nThe percents come from FORWARD\'s analysis of more than 37,000 appraisals in our counties. They are the same on every CMA and cannot be changed in Step 2. The key is on screen in Step 1 and again above the comps, and the client\'s PDF carries the key and a note saying where the percents come from.\n\nA CMA you saved before today is not changed. It opens with the dollar grades and the letters it was built with, and a notice at the top says so.\n\nHow to use: Read the key in Step 1 before you grade. Set your listing\'s Condition first, then press Confirm. Then grade each comp as it was on the day it sold.\n\nBest practice: Grade your listing the way a buyer\'s appraiser would, not the way its owner would. A B has to earn an A: one new kitchen does not make a home an A. If your listing is a B and your comps are renovated A homes, the comps will come down by about 7% each, and that is the correct result.'
+      },
+      {
+        title: 'Reset / New CMA Keeps What You Had and Starts From the Listing',
+        detail: 'Reset / New CMA used to wipe the builder and throw away what was on screen. If a teammate had a CMA for the same listing, theirs then opened in its place.\n\nNow Reset keeps the CMA on screen under Earlier Versions, and starts a new one from the listing\'s own MLS Data with no comps. A teammate\'s older CMA no longer comes back over your new one. If a teammate saves a CMA for the listing after your reset, that newer work opens, as before.\n\nHow to use: Press Reset / New CMA at the top of the builder and confirm. Check the listing\'s details in Step 1, then add your comps.\n\nBest practice: Use Reset when you want to price a listing again with the current condition grades. Your earlier CMA is still there to compare against.'
+      },
+      {
+        title: 'Earlier Versions of a CMA',
+        detail: 'The CMA Builder now keeps a copy of the whole CMA, with its comps and settings, each time you export the PDF, save it to the folder, or start a new one. The copies are listed at the bottom of the builder under Earlier Versions of This CMA, with the date, the value and who saved it.\n\nIf you open a teammate\'s newer CMA and change it, your own earlier one used to be lost. It is now kept on that list first.\n\nAn earlier version built with the old dollar condition grades opens with those grades. Nothing is converted.\n\nHow to use: Scroll to the bottom of the builder and press Open this version. What is on screen is kept on the list before it is replaced.\n\nBest practice: Export the PDF whenever you reach a version you may want to come back to. Typing alone does not add a version to the list.'
       }
     ]
   }

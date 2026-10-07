@@ -74,6 +74,26 @@
  *     adjustment, orange until a number is typed (0 for no garage). A click does not
  *     clear it. A stored 0 is shown as 0 and an emptied box is stored as blank.
  *
+ * CONDITION GRADES (Marc, Oct 5 and 6, 2026)
+ *   - a new CMA values condition as a percent of each comp's sale price against a
+ *     standard home: A+ +16%, A +8%, B 0, C -9%, D -18%, checked against an
+ *     independent calculation of comp price x (1 + listing %) / (1 + comp %) - price;
+ *   - the listing and new rows start on B, and the key (grade, appraiser rating,
+ *     meaning, percent) is on screen before a grade is picked;
+ *   - the PDF carries the key and its source note, inside the page;
+ *   - a CMA saved before the change keeps its dollar grades, its letters, its old
+ *     key and its numbers, on screen, in the PDF and after another save.
+ *
+ * EARLIER VERSIONS, AND RESET / NEW CMA
+ *   - a copy of the CMA is kept when a PDF goes out, before Reset, before an earlier
+ *     version is opened, and before an agent's edit of a teammate's newer CMA
+ *     replaces their own older draft; identical copies are not kept twice running;
+ *   - Reset from a listing starts from the listing's details with no comps, deletes
+ *     nothing, and a teammate's OLDER draft no longer reopens over it;
+ *   - an earlier version reopens with the grades it was built with;
+ *   - with no versions table everything else works and the list says so; a real
+ *     failure to keep a copy is said out loud; a kept copy is never changed.
+ *
  * BACK TO LISTING
  *   - with the FORWARD OS tab still open: that tab is told which listing to show
  *     and the builder closes;
@@ -104,6 +124,9 @@ let writes = [];       // every write the page attempted
 let loadFails = false; // cma_sessions reads answer 500
 let properties = [];   // rows of the properties table (for the way back)
 let parseResults = []; // what the MLS sheet reader answers
+let snaps = [];        // cma_snapshots rows (earlier versions)
+let snapMode = 'ok';   // 'ok' | 'missing' (table not created yet) | 'fail'
+let snapBadWrites = []; // any PATCH or DELETE the page tried on a version
 
 function inList(u) {
   const m = /property_address=in\.([^&]+)/.exec(u);
@@ -131,6 +154,24 @@ function api(route) {
     if (m === 'POST') { table.push(Object.assign({ id: 'new-' + table.length }, body)); return J(route, 201, []); }
     if (m === 'PATCH') { match(u).forEach((r) => Object.assign(r, body)); return J(route, 204, []); }
     if (m === 'DELETE') { const gone = match(u); table = table.filter((r) => !gone.includes(r)); return J(route, 204, []); }
+  }
+  if (/\/rest\/v1\/cma_snapshots/.test(u)) {
+    // Earlier versions. Only ever added to and read. Not counted in `writes` (those are the draft's own saves).
+    if (snapMode === 'missing') return J(route, 404, { code: 'PGRST205', message: 'Could not find the table' });
+    if (m === 'GET') {
+      if (snapMode === 'fail') return J(route, 500, { message: 'mock outage' });
+      const list = inList(u), id = eq(u, 'id');
+      const rows = snaps.filter((r) => (!list || list.includes(r.property_address)) && (id === null || r.id === id)).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+      return J(route, 200, rows);
+    }
+    if (m === 'POST') {
+      if (snapMode === 'fail') return J(route, 500, { message: 'mock outage' });
+      const b = JSON.parse(req.postData() || '{}');
+      snaps.push(Object.assign({ id: 'snap-' + (snaps.length + 1), created_at: new Date(Date.now() + snaps.length).toISOString() }, b));
+      return J(route, 201, []);
+    }
+    snapBadWrites.push(m);   // the app must never change or delete a version
+    return J(route, 403, {});
   }
   if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) {
     const id = eq(u, 'id');
@@ -841,6 +882,215 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { parkingType: 'Attached Garage', parkingSpaces: '2', drivewaySpaces: '8', parkingUnsure: true }));
   lpk = await page.evaluate(() => ({ type: document.getElementById('s_parkingType').value, cls: document.getElementById('s_parkingType').closest('.field').className }));
   ok(lpk.type === 'None' && !/f-check/.test(lpk.cls), 'a CMA saved earlier keeps the parking type that was saved', lpk);
+  await page.context().close();
+
+  // ════════════════ CONDITION GRADES ════════════════
+  console.log('Condition grades: percent for a new CMA, dollars kept on a saved one');
+  const expectPct = (price, subj, cmp) => { const P = { 'A+': 16, A: 8, B: 0, C: -9, D: -18 }; return Math.round(price * (1 + P[subj] / 100) / (1 + P[cmp] / 100) - price); };
+  const gradeState = (page) => page.evaluate(() => ({
+    flat: document.body.classList.contains('cma-flat'),
+    sCond: document.getElementById('s_condition').value,
+    sLabel: document.getElementById('s_condition').selectedOptions[0].textContent,
+    sFlag: document.getElementById('s_condition').closest('.field').className,
+    keyRows: Array.prototype.map.call(document.querySelectorAll('#gradeKeySubject tbody tr'), (tr) => tr.innerText.replace(/\s+/g, ' ').trim()),
+    keyShown: !!document.getElementById('gradeKeySubject').offsetParent,
+    key2Shown: !!document.getElementById('gradeKeyComps').offsetParent,
+    flatNotice: !!document.getElementById('flatNotice').offsetParent,
+    flatBoxes: !!document.getElementById('adj_condAplus').offsetParent,
+    cond: comps.map((c) => (c._adj ? c._adj.condition : null)),
+    grades: comps.map((c) => c.condition),
+    rec: document.getElementById('vRecommended').textContent,
+  }));
+
+  // A new CMA, opened from a listing whose prefill still carries the old letter C.
+  table = []; writes = []; snaps = []; snapMode = 'ok';
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { condition: 'C', state: 'VA', city: 'Fairfax', zip: '22030', gla: '2100', beds: '4', fullBaths: '2', halfBaths: '1' }));
+  let gs = await gradeState(page);
+  ok(!gs.flat && gs.sCond === 'B', 'a new CMA uses the percent grades and the listing starts on B, the standard home (the old C from the listing is not used)', gs);
+  ok(/^B: Standard \(C3\)$/.test(gs.sLabel), 'the grade names the appraiser rating it stands for', gs.sLabel);
+  ok(/f-needs/.test(gs.sFlag), 'the listing\'s Condition is marked YOU FILL IN: B has to be the agent\'s decision', gs.sFlag);
+  ok(gs.keyShown && gs.key2Shown && gs.keyRows.length === 5, 'the key is on screen before any grade is picked, in Step 1 and again above the comps', [gs.keyShown, gs.key2Shown, gs.keyRows.length]);
+  ok(/^A\+ C1 .*\+16%$/.test(gs.keyRows[0]) && /^A C2 .*\+8%$/.test(gs.keyRows[1]) && /^B C3 .*Standard: 0%$/.test(gs.keyRows[2]) && /^C C4 .*9%$/.test(gs.keyRows[3]) && /^D C5 or C6 .*18%$/.test(gs.keyRows[4]), 'the key shows each grade, its rating and its percent: +16, +8, 0, -9, -18', gs.keyRows);
+  ok(!gs.flatNotice && !gs.flatBoxes, 'the dollar grade boxes are not shown on a new CMA', [gs.flatNotice, gs.flatBoxes]);
+  await page.evaluate(() => { addComp(); addComp(); addComp(); });
+  ok((await page.evaluate(() => comps.map((c) => c.condition).join(','))) === 'B,B,B', 'a new comp row starts on B');
+  await page.evaluate(() => {
+    Object.assign(comps[0], { address: '1 Renovated Rd', salePrice: 800000, gla: 2100, beds: 4, fullBaths: 2, halfBaths: 1, garageSpaces: 0, condition: 'A', hoaMonthly: 0 });
+    Object.assign(comps[1], { address: '2 Dated Dr', salePrice: 500000, gla: 2100, beds: 4, fullBaths: 2, halfBaths: 1, garageSpaces: 0, condition: 'C', hoaMonthly: 0 });
+    Object.assign(comps[2], { address: '3 Same St', salePrice: 650000, gla: 2100, beds: 4, fullBaths: 2, halfBaths: 1, garageSpaces: 0, condition: 'B', hoaMonthly: 0 });
+    document.getElementById('s_parkingType').value = 'None';
+    buildCompsTable(); recalcAll();
+  });
+  gs = await gradeState(page);
+  ok(gs.cond[0] === expectPct(800000, 'B', 'A') && gs.cond[0] === -59259, 'a B listing against an A comp that sold for 800,000: -59,259 (800,000 x 1.00 / 1.08 - 800,000)', gs.cond);
+  ok(gs.cond[1] === expectPct(500000, 'B', 'C') && gs.cond[1] === 49451, 'against a C comp that sold for 500,000: +49,451 (500,000 x 1.00 / 0.91 - 500,000)', gs.cond);
+  ok(gs.cond[2] === 0, 'same grade: no adjustment', gs.cond);
+  const nets = await page.evaluate(() => comps.map((c) => [c._adj.net, c._adj.condition, c._adj.adjusted - c.salePrice]));
+  ok(nets.every((n) => n[0] === n[1] && n[0] === n[2]), 'it is the whole net adjustment here and carries into the Indicated Value', nets);
+  await page.selectOption('#s_condition', 'A+');
+  await page.evaluate(() => { comps[1].condition = 'D'; buildCompsTable(); recalcAll(); });
+  gs = await gradeState(page);
+  ok(gs.cond[0] === expectPct(800000, 'A+', 'A') && gs.cond[1] === expectPct(500000, 'A+', 'D') && gs.cond[1] === 207317 && gs.cond[2] === expectPct(650000, 'A+', 'B') && gs.cond[2] === 104000, 'an A+ listing: every comp is checked against an independent calculation of the formula', gs.cond);
+  await page.selectOption('#s_condition', 'B');
+  await page.evaluate(() => { comps[1].condition = 'C'; buildCompsTable(); recalcAll(); });
+  await page.waitForTimeout(2800);
+  ok(table.length === 1 && table[0].draft_data.gradeMethod === 'pct1', 'the CMA is saved with its method (percent)', table[0] && table[0].draft_data.gradeMethod);
+
+  // The PDF: grades with their ratings, the key and its source.
+  await page.fill('#s_state', 'DC');
+  await page.evaluate(() => { for (let i = 0; i < 3; i++) { addComp(); Object.assign(comps[3 + i], { address: (4 + i) + ' More St', salePrice: 700000, gla: 2000, beds: 4, fullBaths: 2, halfBaths: 1, garageSpaces: 0, condition: 'B', hoaMonthly: 0 }); } buildCompsTable(); recalcAll(); });
+  const keyPdf = await page.evaluate(() => {
+    const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const out = [], onKeyPage = []; let keyPage = 0; const orig = doc.text.bind(doc);
+    doc.text = function (t, x, y, o) {
+      const pg = doc.internal.getCurrentPageInfo().pageNumber;
+      [].concat(t).forEach((line, i) => { out.push(String(line)); if (/How Condition Is Valued/.test(String(line))) keyPage = pg; onKeyPage.push([pg, y + i * 9, x + doc.getTextWidth(String(line)) * ((o && o.align === 'right') ? 0 : 1), String(line).slice(0, 30)]); });
+      return orig(t, x, y, o);
+    };
+    _fillPDFDoc(doc);
+    const mine = onKeyPage.filter((e) => e[0] === keyPage && !/Confidential|Page \d/.test(e[3]));
+    const foot = onKeyPage.filter((e) => e[0] === keyPage && /Confidential/.test(e[3])).map((e) => e[1]);
+    return { text: out.join(' ').replace(/\s+/g, ' '), keyPage, maxY: Math.max.apply(null, mine.map((e) => e[1])), maxX: Math.max.apply(null, mine.map((e) => e[2])), footY: Math.min.apply(null, foot), pages: doc.getNumberOfPages(), w: doc.internal.pageSize.getWidth() };
+  });
+  ok(/How Condition Is Valued/.test(keyPdf.text) && /A\+ C1 New \+16% of the comparable.s sale price/.test(keyPdf.text) && /B C3 Standard, well maintained Standard home: no adjustment/.test(keyPdf.text) && /D C5 or C6 Needs major work .18% of the comparable.s sale price/.test(keyPdf.text), 'the PDF carries the condition key: grade, appraiser rating, name and weight', keyPdf.text.slice(keyPdf.text.indexOf('How Condition'), keyPdf.text.indexOf('How Condition') + 420));
+  ok(/more than 37,000 home appraisals/.test(keyPdf.text) && /Federal Housing Finance Agency/.test(keyPdf.text) && /This analysis is not an appraisal/.test(keyPdf.text), 'and the note saying where the percents come from and that it is not an appraisal');
+  ok(/B \(C3\)/.test(keyPdf.text) && /C \(C4\)/.test(keyPdf.text), 'the grid shows each grade with its rating');
+  ok(keyPdf.maxY < keyPdf.footY - 6 && keyPdf.maxX <= keyPdf.w - 40, 'with six comps and the two DC rows, the key and its note end above the page footer and inside the margins (measured with real jsPDF)', [keyPdf.maxY, keyPdf.footY, keyPdf.maxX, keyPdf.w]);
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  gs = await gradeState(page);
+  ok(!gs.flat && gs.cond[0] === -59259 && gs.sCond === 'B', 'reopened, it is still a percent CMA with the same numbers', gs);
+  await page.context().close();
+
+  // A CMA saved before the change: nothing about it moves.
+  const oldDraft = draft('Charlotte Lee', [comp('1 Old St', { condition: 'A' }), comp('2 Old St'), comp('3 Old St', { condition: 'D' })]);
+  table = [row('Charlotte Lee', LISTING, '2026-10-03T10:00:00Z', JSON.parse(JSON.stringify(oldDraft)))];
+  writes = []; snaps = [];
+  page = await builder('Charlotte Lee');
+  gs = await gradeState(page);
+  ok(gs.flat && gs.sCond === 'B' && gs.grades.join(',') === 'A,C,D', 'a CMA saved before Oct 6, 2026 opens with its own letters', gs);
+  ok(gs.cond.join(',') === '-5000,5000,15000', 'and its own dollar grades: B against A is -5,000, against C +5,000, against D +15,000, at any price', gs.cond);
+  ok(gs.flatNotice && gs.flatBoxes && !gs.keyShown && !gs.key2Shown, 'it shows the dollar grade boxes and a notice that it keeps them, not the new key', [gs.flatNotice, gs.flatBoxes, gs.keyShown]);
+  ok(/^B . Good$/.test(gs.sLabel), 'its grade names are the ones it was graded under', gs.sLabel);
+  const oldPdf = await pdfText(page);
+  ok(!/How Condition Is Valued|37,000|\(C3\)|percent of sale price/.test(oldPdf.text), 'its PDF has no key, no source note and no ratings: it prints what it printed before');
+  await page.evaluate(() => addComp());
+  ok((await page.evaluate(() => comps[3].condition)) === 'C', 'a row added to it starts on C, its own standard');
+  await page.evaluate(() => { const el = document.getElementById('agentNotes'); el.value = 'edited'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(2800);
+  ok(table[0].draft_data.gradeMethod === 'flat' && table[0].draft_data.comps[0]._adj.condition === -5000, 'saved again, it is marked as a dollar-grade CMA and stays one', table[0].draft_data.gradeMethod);
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  gs = await gradeState(page);
+  ok(gs.flat && gs.cond.slice(0, 3).join(',') === '-5000,5000,15000', 'and reopens the same way', gs.cond);
+  await page.context().close();
+
+  // A draft saved before the change with nothing in it: no grades to protect.
+  table = [row('Charlotte Lee', LISTING, '2026-10-03T10:00:00Z', draft('Charlotte Lee', [], { subject: Object.assign(subject('Charlotte Lee'), { condition: 'C' }) }))];
+  page = await builder('Charlotte Lee');
+  gs = await gradeState(page);
+  ok(!gs.flat && gs.sCond === 'B', 'an old draft with no properties becomes a percent CMA, and its unchosen C is not carried over as a C', gs);
+  await page.context().close();
+
+  // ════════════════ EARLIER VERSIONS ════════════════
+  console.log('Earlier versions, and Reset / New CMA');
+  const snapList = (page) => page.evaluate(() => ({ text: document.getElementById('snapList').innerText.replace(/\s+/g, ' ').trim(), rows: document.querySelectorAll('#snapList .snap-row').length }));
+  table = [row('Charlotte Lee', LISTING, '2026-10-05T10:00:00Z', draft('Charlotte Lee', [comp('1 Mine St'), comp('2 Mine St')], { gradeMethod: 'pct1' }))];
+  writes = []; snaps = []; snapMode = 'ok'; snapBadWrites = [];
+  page = await builder('Charlotte Lee');
+  const dialogs = []; page.on('dialog', (d) => dialogs.push(d.message()));
+  let sl = await snapList(page);
+  ok(sl.rows === 0 && /No earlier versions yet/.test(sl.text), 'a CMA with no kept copies says so', sl);
+  await page.evaluate(() => exportPDF()); await page.waitForTimeout(500);
+  ok(snaps.length === 1 && snaps[0].reason === 'PDF exported' && snaps[0].agent_name === 'Charlotte Lee' && snaps[0].property_address === LISTING && snaps[0].draft_data.comps.length === 2 && /\$\d/.test(snaps[0].value_text), 'exporting the PDF keeps a copy of the whole CMA, with who, why and the value', snaps.map((x) => [x.reason, x.agent_name, x.value_text]));
+  await page.evaluate(() => exportPDF()); await page.waitForTimeout(500);
+  ok(snaps.length === 1, 'exporting again with nothing changed does not keep a second identical copy', snaps.length);
+  sl = await snapList(page);
+  ok(sl.rows === 1 && /PDF exported, by Charlotte Lee/.test(sl.text) && /Open this version/.test(sl.text), 'the copy is listed with its date, reason and agent', sl.text);
+
+  // Reset / New CMA from a listing. A teammate has an older draft with comps.
+  table.push(row('Marc Cashin', LISTING, '2026-10-04T10:00:00Z', draft('Marc Cashin', [comp('HIS OLD 1')])));
+  writes = [];
+  await page.evaluate(() => { document.getElementById('agentNotes').value = 'changed since the PDF'; });
+  await page.evaluate(() => clearPrefill()); await page.waitForTimeout(700);
+  ok(/Start a new CMA for this listing/.test(dialogs.join(' ')) && /MLS Data/.test(dialogs.join(' ')) && /kept under Earlier Versions/.test(dialogs.join(' ')), 'Reset says what it will do', dialogs);
+  ok(snaps.length === 2 && snaps[1].reason === 'Before starting a new CMA' && snaps[1].draft_data.comps.length === 2 && snaps[1].draft_data.agentNotes === 'changed since the PDF', 'the CMA on screen is kept first, as it stood', snaps.map((x) => x.reason));
+  let st = await page.evaluate(() => ({ n: comps.length, addr: document.getElementById('s_address').value, agent: document.getElementById('s_agentName').value, flat: document.body.classList.contains('cma-flat'), cond: document.getElementById('s_condition').value, notes: document.getElementById('agentNotes').value }));
+  ok(st.n === 0 && st.addr === STREET && st.agent === 'Charlotte Lee' && !st.flat && st.cond === 'B', 'the new CMA has no comps and starts from the listing\'s own details, on the current grades', st);
+  const mineRow = table.find((r) => r.agent_name === 'Charlotte Lee');
+  ok(mineRow.draft_data.comps.length === 0 && !!mineRow.draft_data.startedFresh && mineRow.draft_data.gradeMethod === 'pct1', 'it is saved at once as her current CMA', [mineRow.draft_data.comps.length, mineRow.draft_data.startedFresh]);
+  ok(!writes.some((w) => w.m === 'DELETE') && table.length === 2, 'nothing was deleted, and the teammate\'s draft is untouched', writes.map((w) => w.m));
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  st = await state(page);
+  ok(st.n === 0, 'reopened, it is still her new CMA: the teammate\'s older draft does not come back over it (it used to)', st.comps);
+  sl = await snapList(page);
+  ok(sl.rows === 2, 'both kept copies are listed', sl.text);
+
+  // Open an earlier version.
+  await page.evaluate(() => { addComp(); Object.assign(comps[0], { address: '9 New Try St', salePrice: 600000 }); buildCompsTable(); recalcAll(); });
+  await page.click('#snapList .snap-row:last-child button'); await page.waitForTimeout(900);
+  st = await state(page);
+  ok(st.n === 2 && st.comps[0] === '1 Mine St', 'opening an earlier version puts its comps back on screen', st.comps);
+  ok(snaps.length === 3 && snaps[2].reason === 'Before opening an earlier version' && snaps[2].draft_data.comps[0].address === '9 New Try St', 'what was on screen is kept first', snaps.map((x) => x.reason));
+  ok(table.find((r) => r.agent_name === 'Charlotte Lee').draft_data.comps.length === 2, 'and the opened version is saved as her current CMA');
+  ok(snapBadWrites.length === 0, 'the builder never tried to change or delete a kept copy', snapBadWrites);
+  // A teammate saves after her reset: newest wins again.
+  table.find((r) => r.agent_name === 'Marc Cashin').updated_at = new Date(Date.now() + 60000).toISOString();
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(900);
+  st = await state(page);
+  ok(st.n === 1 && st.comps[0] === 'HIS OLD 1', 'a teammate who saves AFTER her reset is new work on the listing, and opens', st.comps);
+  await page.context().close();
+
+  // A version saved under the dollar grades reopens under the dollar grades.
+  table = [row('Charlotte Lee', LISTING, '2026-10-06T10:00:00Z', draft('Charlotte Lee', [comp('1 New St', { condition: 'B' })], { gradeMethod: 'pct1' }))];
+  snaps = [{ id: 'snap-old', property_address: LISTING, agent_name: 'Charlotte Lee', reason: 'PDF exported', value_text: '$700,000', created_at: '2026-10-01T10:00:00.000Z', draft_data: JSON.parse(JSON.stringify(oldDraft)) }];
+  page = await builder('Charlotte Lee');
+  await page.click('#snapList .snap-row button'); await page.waitForTimeout(900);
+  gs = await gradeState(page);
+  ok(gs.flat && gs.cond.join(',') === '-5000,5000,15000', 'an earlier version built with dollar grades opens with its dollar grades and its own numbers: never converted', gs.cond);
+  await page.context().close();
+
+  // The one cost of "newest wins": her own older draft, replaced when she edits his newer one.
+  table = [row('Charlotte Lee', LISTING, '2026-10-01T10:00:00Z', draft('Charlotte Lee', [comp('HERS OLD')])),
+           row('Marc Cashin', LISTING, '2026-10-02T10:00:00Z', draft('Marc Cashin', [comp('HIS 1'), comp('HIS 2')]))];
+  snaps = []; writes = [];
+  page = await builder('Charlotte Lee');
+  await page.waitForTimeout(2600);
+  ok(snaps.length === 0 && writes.length === 0, 'opening his newer version keeps nothing and writes nothing by itself', [snaps.length, writes.length]);
+  await page.evaluate(() => { const el = document.getElementById('agentNotes'); el.value = 'her edit'; el.dispatchEvent(new Event('input', { bubbles: true })); });
+  await page.waitForTimeout(2900);
+  ok(snaps.length === 1 && /Your earlier draft/.test(snaps[0].reason) && /Marc Cashin/.test(snaps[0].reason) && snaps[0].draft_data.comps[0].address === 'HERS OLD', 'her own older draft is kept before her edit replaces it (it used to be lost)', snaps.map((x) => [x.reason, x.draft_data.comps[0].address]));
+  ok(table.find((r) => r.agent_name === 'Charlotte Lee').draft_data.comps.length === 2, 'and her edit of his version is saved under her name');
+  await page.context().close();
+
+  // The table has not been created yet: everything else works and nothing is hidden.
+  table = [row('Charlotte Lee', LISTING, '2026-10-05T10:00:00Z', draft('Charlotte Lee', [comp('1 Mine St')], { gradeMethod: 'pct1' }))];
+  snaps = []; snapMode = 'missing';
+  page = await builder('Charlotte Lee');
+  const dialogs2 = []; page.on('dialog', (d) => dialogs2.push(d.message()));
+  sl = await snapList(page);
+  ok(/not switched on yet/.test(sl.text), 'with no versions table the list says earlier versions are not switched on yet', sl.text);
+  await page.evaluate(() => { window.__toasts.length = 0; exportPDF(); }); await page.waitForTimeout(500);
+  ok(!/could NOT be kept/.test(await page.evaluate(() => window.__toasts.join(' '))), 'the PDF still exports, with no repeated warning');
+  await page.evaluate(() => clearPrefill()); await page.waitForTimeout(700);
+  ok(dialogs2.some((d) => /could NOT be kept/.test(d) && /will be gone/.test(d)), 'Reset warns that the CMA on screen cannot be kept, and asks again before going on', dialogs2);
+  await page.context().close();
+  snapMode = 'fail';
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee'));
+  await page.evaluate(() => { addComp(); Object.assign(comps[0], { address: '5 Fail St', salePrice: 500000 }); buildCompsTable(); recalcAll(); window.__toasts.length = 0; exportPDF(); }); await page.waitForTimeout(600);
+  ok(/could NOT be kept under Earlier Versions/.test(await page.evaluate(() => window.__toasts.join(' '))), 'when keeping a copy fails for a real reason, the agent is told');
+  sl = await snapList(page);
+  await page.context().close();
+  snapMode = 'ok';
+
+  // Not opened from a listing: Reset gives a blank builder, as before, after keeping a copy.
+  table = [{ id: 'x', agent_name: 'Charlotte Lee', property_address: '77 Typed Ave', updated_at: '2026-10-05T10:00:00Z', prefill_data: {}, draft_data: Object.assign(draft('Charlotte Lee', [comp('1 Typed Comp')], { gradeMethod: 'pct1' }), { subject: Object.assign(subject('Charlotte Lee'), { address: '77 Typed Ave' }) }) }];
+  snaps = []; writes = [];
+  const ctxT = await context('Charlotte Lee', null);
+  await ctxT.addInitScript(() => { localStorage.setItem('fos_cma_address', '77 Typed Ave'); });
+  page = await ctxT.newPage(); page.on('pageerror', (e) => errors.push(e.message)); page.on('dialog', (d) => d.accept().catch(() => {}));
+  await page.goto(origin + '/cma-tool.html', { waitUntil: 'load' }); await page.waitForTimeout(700);
+  ok((await state(page)).n === 1, 'a CMA typed in without a listing opens');
+  await page.evaluate(() => clearPrefill()); await page.waitForTimeout(1200);
+  ok(snaps.length === 1 && snaps[0].reason === 'Before starting a new CMA' && table.length === 0 && (await state(page)).n === 0, 'Reset keeps a copy, then gives a blank builder', [snaps.length, table.length]);
   await page.context().close();
 
   ok(errors.length === 0, 'no page errors in any case', errors.slice(0, 5));

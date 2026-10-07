@@ -87,6 +87,23 @@
     .fieldok { display: inline-block; margin-top: 3px; font-size: 10px; font-weight: 700; color: #fff; background: #d97706; border: none; border-radius: 4px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
     .fieldok:hover { background: #b45309; }
     .comps-table .fieldok { display: block; width: 100%; padding: 3px 2px; font-size: 9px; }
+    /* Condition grades: a CMA saved before Oct 6, 2026 keeps its dollar grades (body.cma-flat). */
+    body.cma-flat .pct-only { display: none !important; }
+    body:not(.cma-flat) .flat-only { display: none !important; }
+    .gk { background:#f8f9fc; border:1px solid var(--border); border-radius:8px; padding:12px 14px; }
+    .gk-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:var(--navy); margin-bottom:6px; }
+    .gk-lead { font-size:12px; color:#374151; line-height:1.5; margin-bottom:10px; }
+    .gk table { width:100%; border-collapse:collapse; font-size:12px; }
+    .gk th { text-align:left; font-size:10px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); padding:4px 8px; border-bottom:1px solid var(--border); }
+    .gk td { padding:6px 8px; border-bottom:1px solid #eef0f4; vertical-align:top; color:#374151; }
+    .gk td.gk-g { font-weight:800; color:var(--navy); white-space:nowrap; }
+    .gk td.gk-p { font-weight:700; white-space:nowrap; text-align:right; }
+    .gk tr.gk-std td { background:#fffbf0; }
+    .gk-foot { font-size:11px; color:var(--muted); margin-top:8px; line-height:1.45; }
+    .snap-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid #eef0f4; font-size:13px; color:#374151; }
+    .snap-row:last-child { border-bottom:none; }
+    .snap-row .snap-what { flex:1; min-width:0; }
+    .snap-row .snap-sub { font-size:11px; color:var(--muted); margin-top:2px; }
     .fieldnote { display: block; margin-top: 2px; font-size: 9px; font-weight: 600; line-height: 1.25; color: #92400e; }
     .comps-table tr:nth-child(even) td { background: #f9fafc; }
     .comps-table tr:hover td { background: #f0f4ff; }
@@ -214,13 +231,17 @@
     </div>
   </div>
   <div style="display:flex;gap:10px;align-items:center;">
-    <button class="btn-outline" style="background:transparent;color:white;border-color:rgba(255,255,255,.45);font-weight:700;" onclick="clearPrefill()" title="Clear all fields and start a new CMA">🔄 Reset / New CMA</button>
+    <button class="btn-outline" style="background:transparent;color:white;border-color:rgba(255,255,255,.45);font-weight:700;" onclick="clearPrefill()" title="Start a new CMA. From a listing it starts with the listing's MLS Data and no comps. The CMA on screen is kept under Earlier Versions.">🔄 Reset / New CMA</button>
     <button class="btn-gold" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </div>
 
 <!-- PAGE -->
 <div class="page">
+
+  <div class="notice flat-only" id="flatNotice" style="background:#fffbeb;border-color:#f59e0b;color:#92400e;">
+    <strong>This CMA keeps the condition grades it was built with.</strong> It was saved before October 6, 2026, when condition was a fixed dollar amount and C meant an average home. Nothing in it has been changed. To price with the current grades, press Reset / New CMA: this version stays under Earlier Versions.
+  </div>
 
   <div class="notice" id="prefillNotice" style="display:none;">
     ✅ <strong>Property data pre-filled</strong> from your active listing. Review and adjust as needed before entering comps.
@@ -364,6 +385,8 @@
       <label>Notes / Pool / Features</label>
       <textarea id="s_notes" rows="2" placeholder="Additional notes about the subject property..." style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;resize:vertical;width:100%;"></textarea>
     </div>
+    <!-- The condition key, shown BEFORE the agent picks a grade (Marc, Oct 5, 2026). Filled by _cmaRenderGradeKeys(). -->
+    <div class="pct-only" id="gradeKeySubject" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── ADJUSTMENT SETTINGS ── -->
@@ -456,8 +479,14 @@
 
     </div>
 
-    <!-- Condition Grade Settings -->
-    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+    <!-- Condition: percent of sale price (CMAs started on or after Oct 6, 2026) -->
+    <div class="pct-only" id="condPctBlock" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin-bottom:6px;">Condition (percent of each comp's sale price)</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;">Condition is not a fixed dollar amount. Each grade is worth a percent of the comp's sale price, measured against a standard home (grade B), so the same step is worth more on a $2,000,000 sale than on a $500,000 one. The grades and their percents are in the key under Step 1. They are the same for every CMA and cannot be changed here.</div>
+    </div>
+
+    <!-- Condition Grade Settings (dollar grades: only for a CMA saved before Oct 6, 2026) -->
+    <div class="flat-only" id="condFlatBlock" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin-bottom:10px;">Condition Grade Values (dollar value assigned to each grade)</div>
       <div class="adj-grid">
 
@@ -610,8 +639,10 @@
       <span id="findCompsStatus" style="font-size:12px;color:#666;margin-left:6px;"></span>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 6 closed sales. All adjustments are calculated automatically and feed the value estimate. <strong>Indicated Value</strong> is what each sale says your listing is worth: its sale price, plus where your listing is better than that comp, minus where the comp is better.</div>
-    <!-- Condition Grade Reference -->
-    <details style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
+    <!-- Condition key again, beside the comps it is used on. Filled by _cmaRenderGradeKeys(). -->
+    <div class="pct-only" id="gradeKeyComps" style="margin-bottom:14px;"></div>
+    <!-- Condition Grade Reference (dollar grades) -->
+    <details class="flat-only" style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);list-style:none;display:flex;align-items:center;gap:8px;">
         <span style="color:var(--gold);">▶</span> Condition Grade Reference &nbsp;<span style="font-weight:400;color:var(--muted);text-transform:none;letter-spacing:0;">— click to expand</span>
       </summary>
@@ -724,6 +755,13 @@
     </div>
   </div>
 
+  <!-- ── EARLIER VERSIONS ── -->
+  <div class="card" id="snapCard">
+    <div class="card-title">🕘 Earlier Versions of This CMA</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">A copy of this CMA is kept each time you export the PDF, save it to the folder, or start a new one. Open a copy to go back to it. What is on screen is kept first.</div>
+    <div id="snapList" style="font-size:13px;color:var(--muted);">No earlier versions yet.</div>
+  </div>
+
 </div><!-- /page -->
 
 <!-- FOOTER BAR -->
@@ -819,8 +857,20 @@ async function _supaLoad() {
     const rows = await r.json();
     if (!Array.isArray(rows) || !rows.length) return null;
     const mine = rows.filter(function (x) { return !!_AGENT && x.agent_name === _AGENT; });
-    const pick = rows.find(_cmaDraftHasComps) || mine[0] || rows[0];
+    // RESET / NEW CMA (Marc, Oct 5, 2026): it starts from the listing's MLS Data, not from a
+    // teammate's draft. Before, a reset deleted the agent's own row and the next load found
+    // the teammate's draft and reopened it. A reset now stamps the agent's own draft
+    // (startedFresh); drafts teammates saved BEFORE that moment no longer reopen over it. One
+    // saved after it still does: that is new work on the listing, and newest wins.
+    const draftOf = function (x) { var d = x && x.draft_data; if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } } return d || {}; };
+    const fresh = mine.map(function (x) { return Date.parse(draftOf(x).startedFresh || '') || 0; }).reduce(function (a, b) { return Math.max(a, b); }, 0);
+    const eligible = fresh ? rows.filter(function (x) { return x.agent_name === _AGENT || (Date.parse(x.updated_at || '') || 0) > fresh; }) : rows;
+    const pick = eligible.find(_cmaDraftHasComps) || mine[0] || eligible[0] || rows[0];
     const out = Object.assign({}, pick);
+    // The one real cost of "newest wins" (#174): an agent who opens a teammate's newer CMA and
+    // edits it saves over their OWN older draft. That older draft is handed to the first save,
+    // which keeps it under Earlier Versions before writing (see _supaSave).
+    if (pick.agent_name !== _AGENT) { const older = mine.find(_cmaDraftHasComps); if (older) out._ownOlder = { draft: draftOf(older), from: pick.agent_name || 'a teammate' }; }
     if (typeof out.draft_data === 'string') { try { out.draft_data = JSON.parse(out.draft_data); } catch (e) { out.draft_data = null; } }
     if (typeof out.prefill_data === 'string') { try { out.prefill_data = JSON.parse(out.prefill_data); } catch (e) { out.prefill_data = null; } }
     out._ownKeys = mine.map(function (x) { return x.property_address; });
@@ -836,6 +886,14 @@ async function _supaSave(draftData, keepalive) {
   const prefill = _cmaPrefillObj();
   const key = _cmaSessionKey();
   if (!key) throw new Error('add the property address first');
+  if (_cmaOwnOlder && !keepalive) {
+    // This save is about to replace the agent's own older draft with their edit of a
+    // teammate's newer one. Keep the older draft first. If that fails the save still goes
+    // ahead, as it always has, but the agent is told.
+    const older = _cmaOwnOlder; _cmaOwnOlder = null;
+    const kept = await _cmaKeepVersion('Your earlier draft, before you edited the newer one from ' + older.from, older.draft);
+    if (!kept.ok && !_snapOff) showToast('Your own earlier draft of this CMA could not be kept (' + kept.why + ').', 8000);
+  }
   const payload = {
     agent_name: _AGENT,
     property_address: key,
@@ -883,6 +941,7 @@ async function _supaDelete() {
 
 // ── INIT ──
 window.addEventListener('DOMContentLoaded', async () => {
+  _cmaSetGradeMethod('pct', true);   // a saved CMA says otherwise in _applyDraft
   buildCompsTable();
   let row = await _supaLoad();
   if (row && row._error) {
@@ -895,6 +954,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     if (row.prefill_data) _applyPrefill(row.prefill_data);
     if (row.draft_data)   _applyDraft(row.draft_data);
     _fixUnitInCity();
+    _cmaOwnOlder = row._ownOlder || null;
     // This agent already has a row under the key saves use: a closing tab can update it in one request.
     if ((row._ownKeys || []).indexOf(_cmaSessionKey()) > -1) _cmaRowKey = _cmaSessionKey();
     const when = row.updated_at ? new Date(row.updated_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
@@ -920,7 +980,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     // called attached or detached, a bare number, wording the OS does not know): Parking Type
     // is marked CHECK THIS. It prints on the client's PDF and decides whether the listing's
     // spaces count as garages. (1926 Ruxton Rd opened as Street / None with a 2-car garage.)
-    if (_cmaPrefillObj().parkingUnsure && typeof window._cmaSetSubjectFlags === 'function') window._cmaSetSubjectFlags({ s_parkingType: 'check' });
+    _cmaFlagNewCma();
     if (_URL_ADDRESS) {
       // Parse full address string into separate fields
       (function parseAndFill(raw) {
@@ -953,6 +1013,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   }
   recalcAll();
   _cmaLoaded = !_cmaLoadFailed;
+  _cmaLoadVersions();
 });
 
 // ── PREFILL ──
@@ -965,7 +1026,9 @@ function _applyPrefill(d) {
   set('s_hoaMonthly', d.hoaMonthly); set('s_condoFee', d.condoFee);
   set('s_lotSize', d.lotSize); set('s_clientName', d.clientName);
   set('s_agentName', d.agentName); set('s_notes', d.notes);
-  if (d.condition) set('s_condition', d.condition);
+  // d.condition is NOT used. The OS has never known a listing's condition: openCMABuilder
+  // always sent the letter C, the old starting grade. The box starts on the standard grade
+  // and the agent sets it. (A saved CMA's own condition comes from its draft, below.)
   if (d.propType) set('s_propType', d.propType);
   if (d.parkingType) set('s_parkingType', d.parkingType);
   if (d.parkingSpaces) set('s_parkingSpaces', d.parkingSpaces);
@@ -1011,13 +1074,157 @@ function loadPrefill() {
   } catch(e) { console.warn('prefill load error', e); }
 }
 
+// ── EARLIER VERSIONS OF THIS CMA (table cma_snapshots) ──
+// Version history step 3 (Marc, Oct 3 and Oct 5, 2026). A CMA's content is its comps and
+// settings, not the summary text kept on the listing. A copy of the whole draft is kept
+// when the PDF is exported, when it is saved to the folder, before Reset / New CMA, before
+// an earlier version is opened over it, and before an agent's edit of a teammate's newer
+// CMA replaces their own older draft. Autosaves are NOT kept: there is one every two
+// seconds of typing.
+// The table only ever gains rows (SQL: sql/2026-10-06_cma_snapshots.sql, run by Marc).
+// Until it exists the list says so and everything else works as before.
+let _cmaOwnOlder = null;   // { draft, from }: see _supaLoad and _supaSave
+let _snapLast = '';        // the last copy kept from this tab, so the same content is not kept twice running
+let _snapOff = false;      // the table is not there yet
+function _snapKeys() {
+  const keys = _cmaLoadKeys(); const k = _cmaSessionKey();
+  if (k && keys.indexOf(k) === -1) keys.push(k);
+  return keys;
+}
+function _snapValueText() {
+  const o = parseFloat(getVal('agentPriceOverride'));
+  if (o > 0) return fmtDollar(o) + ' (agent)';
+  const t = (document.getElementById('vRecommended') || {}).textContent || '';
+  return /\d/.test(t) ? t : '';
+}
+// Returns { ok, why, skipped }. Never throws.
+async function _cmaKeepVersion(reason, draft, valueText) {
+  try {
+    if (!_SUPA_KEY) return { ok: false, why: 'open the CMA Builder from FORWARD OS while signed in' };
+    const key = _cmaSessionKey();
+    if (!key) return { ok: false, why: 'add the property address first' };
+    const d = draft || _buildDraft();
+    if (!_cmaDraftHasComps({ draft_data: d })) return { ok: true, skipped: true };   // no property in it: nothing to keep
+    const body = JSON.stringify(d);
+    if (body === _snapLast) return { ok: true, skipped: true };
+    const res = await fetch(_SUPA_URL + '/rest/v1/cma_snapshots', { method: 'POST', headers: _supaHdrs({ 'Prefer': 'return=minimal' }),
+      body: JSON.stringify({ property_address: key, agent_name: _AGENT || '', reason: reason, value_text: draft ? (valueText || '') : _snapValueText(), draft_data: d }) });
+    if (res.status === 404) { _snapOff = true; _snapRender(null, 'off'); return { ok: false, why: 'earlier versions are not switched on yet' }; }
+    if (!res.ok) return { ok: false, why: 'HTTP ' + res.status };
+    _snapLast = body;
+    _cmaLoadVersions();
+    return { ok: true };
+  } catch (e) { return { ok: false, why: (e && e.message) || 'network error' }; }
+}
+function _snapRender(rows, state) {
+  const el = document.getElementById('snapList'); if (!el) return;
+  if (state === 'off') { el.textContent = 'Earlier versions are not switched on yet. Nothing else is affected.'; return; }
+  if (state === 'error') { el.innerHTML = '<span style="color:#b91c1c;">Earlier versions could not be loaded (' + String(rows).replace(/[<>&]/g, '') + '). They are not lost. Reload the page to try again.</span>'; return; }
+  if (!rows || !rows.length) { el.textContent = 'No earlier versions yet.'; return; }
+  const esc = v => String(v == null ? '' : v).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' })[c]);
+  el.innerHTML = rows.map(r => {
+    const when = r.created_at ? new Date(r.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    return '<div class="snap-row"><div class="snap-what"><strong>' + esc(when) + '</strong>' + (r.value_text ? ' &nbsp;' + esc(r.value_text) : '') +
+      '<div class="snap-sub">' + esc(r.reason || 'Saved') + (r.agent_name ? ', by ' + esc(r.agent_name) : '') + '</div></div>' +
+      '<button type="button" class="btn-outline" style="color:var(--navy);font-weight:700;white-space:nowrap;" onclick="_cmaOpenVersion(\'' + esc(r.id) + '\')">Open this version</button></div>';
+  }).join('');
+}
+async function _cmaLoadVersions() {
+  if (!_SUPA_KEY) return;
+  const keys = _snapKeys();
+  if (!keys.length) { _snapRender([]); return; }
+  try {
+    const r = await fetch(_SUPA_URL + '/rest/v1/cma_snapshots?select=id,agent_name,reason,value_text,created_at&' + _cmaKeyFilter(keys) + '&order=created_at.desc&limit=30', { headers: _supaHdrs() });
+    if (r.status === 404) { _snapOff = true; _snapRender(null, 'off'); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    _snapOff = false;
+    _snapRender(await r.json());
+  } catch (e) { _snapRender((e && e.message) || 'network error', 'error'); }
+}
+// Every box back to how the page first drew it, and no properties.
+function _cmaBlankForm() {
+  Array.prototype.forEach.call(document.querySelectorAll('.page input, .page select, .page textarea'), el => {
+    if (el.type === 'file' || el.closest('#compsTable, #activeTable, #pendingTable')) return;
+    if (el.tagName === 'SELECT') { Array.prototype.forEach.call(el.options, o => { o.selected = o.defaultSelected; }); if (el.selectedIndex < 0) el.selectedIndex = 0; }
+    else el.value = el.defaultValue;
+  });
+  comps = []; activeComps = []; pendingComps = [];
+  buildCompsTable(); buildActiveTable(); buildPendingTable();
+  // The orange and blue marks on the subject's boxes belong to the CMA that was on screen.
+  Array.prototype.forEach.call(document.querySelectorAll('.field.f-mls, .field.f-needs, .field.f-check, .field.f-ok'), w => {
+    w.classList.remove('f-mls', 'f-needs', 'f-check', 'f-ok');
+    const f = w.querySelector('.fieldflag'); if (f) f.remove();
+  });
+  if (typeof window._cmaSetSubjectFlags === 'function') window._cmaSetSubjectFlags({});
+  updateOverrideDisplay();
+}
+// A CMA that is starting out: the listing's Condition is marked YOU FILL IN. The box
+// starts on B, the standard home, and B must be the agent's decision, not the default
+// nobody looked at. Parking Type is marked to check when the MLS Data did not settle it.
+function _cmaFlagNewCma() {
+  if (typeof window._cmaSetSubjectFlags !== 'function') return;
+  const f = { s_condition: 'needs' };
+  if (_cmaPrefillObj().parkingUnsure) f.s_parkingType = 'check';
+  window._cmaSetSubjectFlags(f);
+}
+async function _cmaOpenVersion(id) {
+  if (!_cmaLoaded) { showToast(_cmaLoadFailed ? '❌ Your saved CMA did not load. Reload the page first.' : 'Still loading. Try again in a moment.', 6000); return; }
+  if (!confirm('Open this earlier version?\n\nIt replaces the CMA on screen. What is on screen is kept under Earlier Versions first.')) return;
+  let row = null;
+  try {
+    const r = await fetch(_SUPA_URL + '/rest/v1/cma_snapshots?select=id,draft_data,agent_name,created_at&id=eq.' + encodeURIComponent(id) + '&limit=1', { headers: _supaHdrs() });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    row = (await r.json())[0] || null;
+    if (row && typeof row.draft_data === 'string') row.draft_data = JSON.parse(row.draft_data);
+    if (!row || !row.draft_data) throw new Error('that version was not found');
+  } catch (e) { showToast('❌ That version could not be opened (' + ((e && e.message) || 'network error') + '). Nothing on screen was changed.', 8000); return; }
+  clearTimeout(_autoSaveTimer); _autoSaveTimer = null;
+  const kept = await _cmaKeepVersion('Before opening an earlier version');
+  if (!kept.ok && !confirm('A copy of the CMA on screen could NOT be kept (' + kept.why + ').\n\nOpen the earlier version anyway? What is on screen will be gone.')) return;
+  const agentShown = getVal('s_agentName');
+  _cmaBlankForm();
+  _applyDraft(row.draft_data);
+  _cmaStartedFresh = new Date().toISOString();   // this is now the agent's own choice for the listing
+  const an = document.getElementById('s_agentName'); if (an && agentShown) an.value = agentShown;
+  recalcAll();
+  try { await _supaSave(_buildDraft()); showToast('Opened the version from ' + new Date(row.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) + '. It is now your current CMA.', 6000); }
+  catch (e) { showToast('❌ The earlier version is on screen but was NOT saved as your current CMA: ' + ((e && e.message) || e), 9000); }
+}
+
+// ── RESET / NEW CMA ──
+// Until Oct 6, 2026: "Reset all fields to blank?", then the agent's row was deleted, the
+// listing's details were thrown away and the page reloaded. What was on screen was gone for
+// good, and if a teammate had a draft for the listing that draft reopened in its place.
+// Now (Marc, Oct 5): the CMA on screen is kept under Earlier Versions, and a CMA opened
+// from a listing starts again from that listing's MLS Data with no comps. It is a new
+// CMA, so it uses the current condition grades.
 async function clearPrefill() {
-  if (!confirm('Reset all fields to blank?')) return;
-  _cmaLoaded = false;
-  clearTimeout(_autoSaveTimer);
-  await _supaDelete();
-  localStorage.removeItem('cma_voice_prefill');
-  location.reload();
+  const fromListing = !!String(_cmaPrefillObj().address || '').trim();
+  if (!confirm(fromListing
+      ? 'Start a new CMA for this listing?\n\nIt starts from the listing\'s MLS Data with no comps. The CMA on screen is kept under Earlier Versions.'
+      : 'Start a new, blank CMA?\n\nThe CMA on screen is kept under Earlier Versions.')) return;
+  if (_cmaLoadFailed) { showToast('❌ Your saved CMA did not load, so nothing can be saved from this page. Reload the page first.', 8000); return; }
+  clearTimeout(_autoSaveTimer); _autoSaveTimer = null;
+  const kept = await _cmaKeepVersion('Before starting a new CMA');
+  if (!kept.ok && !confirm('A copy of the CMA on screen could NOT be kept (' + kept.why + ').\n\nStart a new CMA anyway? What is on screen will be gone.')) return;
+  if (!fromListing) {
+    // Not opened from a listing: there is nothing to start from, so it is a blank builder.
+    _cmaLoaded = false;
+    await _supaDelete();
+    localStorage.removeItem('cma_voice_prefill');
+    location.reload();
+    return;
+  }
+  _cmaBlankForm();
+  _cmaSetGradeMethod('pct', true);
+  _cmaOwnOlder = null;
+  _cmaStartedFresh = new Date().toISOString();
+  loadPrefill();
+  _cmaFlagNewCma();
+  recalcAll();
+  clearTimeout(_autoSaveTimer); _autoSaveTimer = null;
+  try { await _supaSave(_buildDraft()); showToast('New CMA started from this listing\'s MLS Data.' + (kept.skipped ? '' : ' The earlier one is under Earlier Versions.'), 6000); }
+  catch (e) { showToast('❌ The new CMA is on screen but was NOT saved: ' + ((e && e.message) || e), 9000); }
 }
 
 // ── COMPS TABLE ──
@@ -1074,7 +1281,7 @@ function buildCompRow(i) {
 
 function addComp() {
   if (comps.length >= MAX_COMPS) return;
-  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', drivewaySpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' });
+  comps.push({ address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', drivewaySpaces:'', condition:_cmaDefaultGrade(), hoaMonthly:'', concessions:'', proximity:'', dom:'' });
   buildCompsTable();
   recalcAll();
 }
@@ -1160,13 +1367,92 @@ function pcRecalcPsf(i) {
 
 function addActiveComp() {
   if (activeComps.length >= MAX_INFO_COMPS) return;
-  activeComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+  activeComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:_cmaDefaultGrade(), hoaMonthly:'', proximity:'', dom:'' });
   buildActiveTable();
 }
 function addPendingComp() {
   if (pendingComps.length >= MAX_INFO_COMPS) return;
-  pendingComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+  pendingComps.push({ address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:_cmaDefaultGrade(), hoaMonthly:'', proximity:'', dom:'' });
   buildPendingTable();
+}
+
+// ── CONDITION GRADES ──
+// Decided by Marc on Oct 5, 2026, built Oct 6. Full study: project doc
+// OPEN-condition-grade-study-2026-10-05.
+//
+// BEFORE: flat dollars from Step 2 (A+ 15,000, A 10,000, B 5,000, C 0, D -10,000). The
+// whole range from A+ to D was 25,000 at any price: 5% of a 500,000 condo, 1.25% of a
+// 2,000,000 house. And C was the ordinary home.
+//
+// NOW: each grade is a PERCENT of the comp's sale price against a standard home, and the
+// letters are tied to the condition ratings on the standard appraisal form (C1 to C6):
+//   A+ = C1 (+16%)   A = C2 (+8%)   B = C3, the standard home (0)   C = C4 (-9%)   D = C5 or C6 (-18%)
+// B is the standard home because C3 is 68% of appraisals in DC, Maryland and Virginia.
+// The percents are the middle of a regression on 37,080 appraisals in FORWARD's counties
+// (FHFA UAD Appraisal-Level Public Use File v2.1, 2013 to 2022): C1 +17.0%, C2 +8.9%,
+// C4 -7.9%, C5/C6 -17.5% against C3. The middle, not the low end: a percent cuts both
+// ways (a smaller upgrade percent undervalues an A+ listing but OVERVALUES a B listing
+// against an A+ comp, which is the common case).
+// The percents are fixed in code, like the driveway rate: there is no box to change them.
+//
+// Effect on one comp:  comp price x (1 + listing %) / (1 + comp %) - comp price.
+//
+// SAVED CMAs ARE NOT TOUCHED (Marc, Oct 6). A CMA saved before this was graded under the
+// old meaning of the letters. It keeps the flat dollars and the old key when reopened:
+// _cmaGradeMethod is 'flat' for it, 'pct' for every CMA started from now on. The method
+// is saved with the draft (gradeMethod) and nothing converts one into the other.
+const CMA_GRADES = [
+  { g: 'A+', uad: 'C1',       pct: 16,  short: 'New',        name: 'New',                       def: 'Newly built and never lived in. Nothing is worn.' },
+  { g: 'A',  uad: 'C2',       pct: 8,   short: 'Renovated',  name: 'Fully renovated',           def: 'Almost everything is new or recently redone: kitchen, baths, floors, systems. No repairs needed and nothing put off.' },
+  { g: 'B',  uad: 'C3',       pct: 0,   short: 'Standard',   name: 'Standard, well maintained', def: 'The typical home. Well kept, with normal wear only. Some parts updated, but not all of them. Most homes are a B.' },
+  { g: 'C',  uad: 'C4',       pct: -9,  short: 'Dated',      name: 'Dated or worn',             def: 'Kept up adequately, with some minor repairs put off. Needs cosmetic work and small fixes.' },
+  { g: 'D',  uad: 'C5 or C6', pct: -18, short: 'Major work', name: 'Needs major work',          def: 'Obvious repairs put off. Significant work needed, or damage that affects safety or soundness.' }
+];
+const CMA_GRADE_SOURCE = 'Condition adjustments are FORWARD\u2019s estimates. They are based on our analysis of more than 37,000 home appraisals in the Washington, DC region filed with Fannie Mae and Freddie Mac from 2013 to 2022, using public data from the Federal Housing Finance Agency. Condition grades follow the appraisal industry\u2019s standard condition ratings. This analysis is not an appraisal.';
+let _cmaGradeMethod = 'pct';
+let _cmaStartedFresh = '';   // set by Reset / New CMA: see _supaLoad
+function _cmaIsPct() { return _cmaGradeMethod === 'pct'; }
+// The grade a box starts on: the standard home. That was C under the dollar grades.
+function _cmaDefaultGrade() { return _cmaIsPct() ? 'B' : 'C'; }
+function _cmaGradePct(g) { const r = CMA_GRADES.find(x => x.g === g); return r ? r.pct : 0; }
+function _cmaGradeLabel(g) { const r = CMA_GRADES.find(x => x.g === g); return r ? r.g + ' (' + r.uad + ')' : (g || ''); }
+// Which method a saved draft was built with. A draft saved by this code says so. One
+// saved before it has no marker: if it holds a property it was graded under the dollar
+// grades and keeps them; if it holds none there are no grades to protect.
+function _cmaMethodOfDraft(d) {
+  if (d && d.gradeMethod === 'pct1') return 'pct';
+  if (d && d.gradeMethod === 'flat') return 'flat';
+  return _cmaDraftHasComps({ draft_data: d }) ? 'flat' : 'pct';
+}
+const _CMA_FLAT_OPTION_LABELS = {};
+function _cmaSetGradeMethod(m, resetSubject) {
+  _cmaGradeMethod = m === 'flat' ? 'flat' : 'pct';
+  document.body.classList.toggle('cma-flat', !_cmaIsPct());
+  const sel = document.getElementById('s_condition');
+  if (sel) {
+    Array.prototype.forEach.call(sel.options, o => {
+      if (!(o.value in _CMA_FLAT_OPTION_LABELS)) _CMA_FLAT_OPTION_LABELS[o.value] = o.textContent;
+      const r = CMA_GRADES.find(x => x.g === o.value);
+      // Short, so the whole label shows in the box; the key beside it has the full wording.
+      o.textContent = _cmaIsPct() && r ? r.g + ': ' + r.short + ' (' + r.uad.replace(' or ', '/') + ')' : _CMA_FLAT_OPTION_LABELS[o.value];
+    });
+    if (resetSubject) sel.value = _cmaDefaultGrade();
+  }
+  _cmaRenderGradeKeys();
+}
+function _cmaGradeKeyHtml(title) {
+  const pc = n => n === 0 ? 'Standard: 0%' : (n > 0 ? '+' : '\u2212') + Math.abs(n) + '%';
+  return '<div class="gk"><div class="gk-title">' + title + '</div>' +
+    '<div class="gk-lead">Grade your listing and every comp on the scale appraisers use. <strong>B is the standard home, and most homes are a B.</strong> Grade the listing as a buyer\u2019s appraiser would, not as its owner would: a B has to earn an A, and one new kitchen does not make a home an A. Each grade is worth a percent of the comp\u2019s sale price.</div>' +
+    '<table><thead><tr><th>Grade</th><th>Appraiser rating</th><th>What it means</th><th style="text-align:right;">Against a standard home</th></tr></thead><tbody>' +
+    CMA_GRADES.map(r => '<tr' + (r.pct === 0 ? ' class="gk-std"' : '') + '><td class="gk-g">' + r.g + '</td><td>' + r.uad + '</td><td><strong>' + r.name + '.</strong> ' + r.def + '</td><td class="gk-p" style="color:' + (r.pct > 0 ? '#16a34a' : r.pct < 0 ? '#dc2626' : 'var(--navy)') + ';">' + pc(r.pct) + '</td></tr>').join('') +
+    '</tbody></table>' +
+    '<div class="gk-foot">Example: your listing is a B and a comp is an A that sold for $800,000. The comp is better, so about $59,000 comes off it (800,000 \u00d7 1.00 \u00f7 1.08). C1 to C6 are the condition ratings on the standard appraisal form; the descriptions are FORWARD\u2019s summaries of them. The percents come from FORWARD\u2019s analysis of more than 37,000 appraisals in our counties and are the same on every CMA.</div></div>';
+}
+function _cmaRenderGradeKeys() {
+  const a = document.getElementById('gradeKeySubject'), b = document.getElementById('gradeKeyComps');
+  if (a) a.innerHTML = _cmaIsPct() ? _cmaGradeKeyHtml('Read this before you grade condition') : '';
+  if (b) b.innerHTML = _cmaIsPct() ? _cmaGradeKeyHtml('Condition key: grade each comp as it was when it sold') : '';
 }
 
 // ── CALCULATIONS ──
@@ -1194,7 +1480,12 @@ function _cmaSubjectDriveway() {
   return (getVal('s_parkingType') === 'Driveway') ? getNum('s_parkingSpaces') : 0;
 }
 
-function calcCondAdj(subjectCond, compCond) {
+function calcCondAdj(subjectCond, compCond, salePrice) {
+  if (_cmaIsPct()) {
+    // comp price x (1 + listing %) / (1 + comp %) - comp price, to the dollar.
+    const sp = parseFloat(salePrice) || 0;
+    return Math.round(sp * (100 + _cmaGradePct(subjectCond)) / (100 + _cmaGradePct(compCond)) - sp);
+  }
   const condValues = {
     'A+': getNum('adj_condAplus'),
     'A':  getNum('adj_condA'),
@@ -1211,7 +1502,7 @@ function recalcAll() {
   _scheduleAutoSave();
   const subGla      = getNum('s_gla');
   const subBelow    = getNum('s_below');
-  const subCond     = getVal('s_condition') || 'C';
+  const subCond     = getVal('s_condition') || _cmaDefaultGrade();
   // Comps count GARAGE spaces only (the MLS import extracts garage spaces), so the
   // subject's spaces are compared at the garage rate only when they are garages.
   // A driveway or street parking carries no value, and there is deliberately no
@@ -1258,12 +1549,12 @@ function recalcAll() {
     // adjusted in full (Marc, Oct 4, 2026). Before, blank counted as $0 and the subject's whole
     // fee times the multiplier landed on the comp: 86,500 on each comp of a condo CMA.
     const cHoaKnown  = !(c.hoaMonthly === undefined || c.hoaMonthly === null || String(c.hoaMonthly).trim() === '');
-    const cCond      = c.condition || 'C';
+    const cCond      = c.condition || _cmaDefaultGrade();
     const cConcess   = parseFloat(c.concessions) || 0;
 
     const glaAdj      = subGla && cGla ? (subGla - cGla) * adjGla : 0;
     const belowAdj    = (subBelow || cBelow) ? (subBelow - cBelow) * adjBelow : 0;
-    const condAdj     = calcCondAdj(subCond, cCond);
+    const condAdj     = calcCondAdj(subCond, cCond, sp);
     const bedroomAdj  = subBeds && cBeds ? (subBeds - cBeds) * adjBedroom : 0;
     const bathAdj     = (subBaths - cBaths) * adjBath;
     const halfBathAdj = (subHalfBaths - cHalfBaths) * adjHalfBath;
@@ -1399,6 +1690,11 @@ function _buildDraft() {
     },
     agentNotes: getVal('agentNotes'),
     agentPriceOverride: getVal('agentPriceOverride'),
+    // How condition is valued in THIS CMA: 'pct1' (percent of sale price) or 'flat' (the
+    // dollar grades of a CMA saved before Oct 6, 2026). Never converted. See CONDITION GRADES.
+    gradeMethod: _cmaIsPct() ? 'pct1' : 'flat',
+    // Set by Reset / New CMA. Teammates' drafts older than this do not reopen over it.
+    startedFresh: _cmaStartedFresh || undefined,
     // Which subject fields are still flagged for review (see MLS PDF IMPORT, section 1).
     subjectFlags: (typeof window._cmaGetSubjectFlags === 'function') ? window._cmaGetSubjectFlags() : undefined
   };
@@ -1406,8 +1702,15 @@ function _buildDraft() {
 
 function _applyDraft(draft) {
   if (!draft) return;
+  // The method comes first: it decides what the letters mean and what a new row starts on.
+  const marked = draft.gradeMethod === 'pct1' || draft.gradeMethod === 'flat';
+  _cmaSetGradeMethod(_cmaMethodOfDraft(draft), true);
+  _cmaStartedFresh = draft.startedFresh || '';
   if (draft.subject) {
     Object.entries(draft.subject).forEach(([k, v]) => {
+      // An unmarked draft with no properties was saved under the dollar grades with nothing
+      // graded yet. Its subject C was only the old starting grade, so it is not carried over.
+      if (k === 'condition' && !marked && _cmaIsPct()) return;
       const el = document.getElementById('s_' + k);
       if (el && v) el.value = v;
     });
@@ -1601,6 +1904,7 @@ async function saveToFolder() {
       if (btn) { btn.innerHTML = '✅ PDF Downloaded'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
       showToast('✅ CMA downloaded — link a Drive folder to auto-file next time');
       saveLocal();
+      _keepVersionForPdf('PDF saved to folder');
       return;
     }
     const fd = new FormData();
@@ -1622,6 +1926,7 @@ async function saveToFolder() {
     if (btn) { btn.innerHTML = '✅ Saved to Folder'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
     showToast('✅ CMA saved to ' + address + ' client folder');
     saveLocal();
+    _keepVersionForPdf('PDF saved to folder');
   } catch(e) {
     console.error('Save to folder failed:', e);
     showToast('❌ Upload failed — check connection');
@@ -1639,6 +1944,12 @@ function exportPDF() {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
   _fillPDFDoc(doc);
   doc.save(_pdfFilename());
+  _keepVersionForPdf('PDF exported');
+}
+// A PDF that left the builder has a copy of the CMA behind it. Said out loud if it could
+// not be kept, except while the table simply is not there yet (the list says that).
+function _keepVersionForPdf(reason) {
+  _cmaKeepVersion(reason).then(function (k) { if (!k.ok && !_snapOff) showToast('The PDF is fine, but a copy of this CMA could NOT be kept under Earlier Versions (' + k.why + ').', 8000); });
 }
 
 function _fillPDFDoc(doc) {
@@ -2139,7 +2450,7 @@ function _fillPDFDoc(doc) {
     { label: 'Sale Price',       subVal: '—',                                        fn: c => c.salePrice ? '$' + parseInt(c.salePrice).toLocaleString() : '—', adjFn: null },
     { label: 'GLA (sqft)',       subVal: getVal('s_gla') ? parseInt(getVal('s_gla')).toLocaleString() : '—', fn: c => c.gla ? parseInt(c.gla).toLocaleString() : '—', adjFn: null },
     { label: 'Below-Grade',      subVal: getVal('s_below') && getVal('s_below')!=='0' ? getVal('s_below') + ' sqft' : '—', fn: c => c.below && c.below!=='0' ? c.below + ' sqft' : '—', adjFn: null },
-    { label: 'Condition',        subVal: getVal('s_condition')||'—',                  fn: c => c.condition||'—',      adjFn: null },
+    { label: 'Condition',        subVal: _cmaIsPct() ? _cmaGradeLabel(getVal('s_condition')) || '—' : getVal('s_condition')||'—', fn: c => _cmaIsPct() ? _cmaGradeLabel(c.condition) || '—' : c.condition||'—', adjFn: null },
     { label: 'Beds / Baths',     subVal: (getVal('s_beds')||'—') + 'bd / ' + (getVal('s_fullBaths')||'—') + 'fb' + (getVal('s_halfBaths')&&getVal('s_halfBaths')!=='0'?' / '+getVal('s_halfBaths')+'hb':''), fn: c => (c.beds||'—') + 'bd / ' + (c.fullBaths||'—') + 'fb' + (c.halfBaths&&c.halfBaths!=='0'?' / '+c.halfBaths+'hb':''), adjFn: null },
     { label: 'Parking',          subVal: (getVal('s_parkingSpaces')||'0') + ' space(s)', fn: c => (c.garageSpaces == null || String(c.garageSpaces).trim() === '') ? 'unknown' : String(c.garageSpaces) + ' space(s)', adjFn: null },
     { label: 'Concessions',      subVal: '—', fn: c => (parseFloat(c.concessions)||0) > 0 ? '-$' + parseFloat(c.concessions).toLocaleString() : '—', adjFn: null, isAdj: true },
@@ -2233,9 +2544,43 @@ function _fillPDFDoc(doc) {
     'Half Bath: $' + parseInt(getVal('adj_halfbath')||0).toLocaleString(),
     'Garage: $' + parseInt(getVal('adj_garage')||0).toLocaleString() + '/space',
     _cmaIsDC() ? 'Driveway (DC): $15,000/space, first 2' : 'Driveway: not valued outside DC',
-  ].join('  |  ');
+  ].concat(_cmaIsPct() ? ['Condition: percent of sale price, see the key below'] : []).join('  |  ');
   const rateLines = doc.splitTextToSize(rates, CW - 120);
   doc.text(rateLines, ML + 124, y);
+
+  // HOW CONDITION IS VALUED: the key and its source, for the client (Marc, Oct 5, 2026).
+  // Only on a CMA that uses the percent grades. A CMA saved before Oct 6, 2026 prints
+  // exactly what it printed before.
+  if (_cmaIsPct()) {
+    y += rateLines.length * 10 + 16;
+    const srcLines = (doc.setFont('helvetica', 'normal'), doc.setFontSize(7), doc.splitTextToSize(CMA_GRADE_SOURCE, CW));
+    const keyH = 14 + 13 + CMA_GRADES.length * 12 + 8 + srcLines.length * 9;
+    if (y + keyH > 738) {
+      pageFooter('Grid follows the Fannie Mae sales comparison structure. Adjustment amounts are FORWARD estimates.  |  Confidential  |  ' + dateStr, null);
+      doc.addPage(); pageHeader('Adjustment Grid (cont.)'); y = 95;
+    }
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(...NAVY);
+    doc.text('How Condition Is Valued', ML, y);
+    y += 14;
+    const kx = [ML, ML + 42, ML + 112, ML + 250];
+    doc.setFontSize(6.5); doc.setTextColor(...GRAY);
+    doc.text('GRADE', kx[0], y); doc.text('APPRAISER RATING', kx[1], y); doc.text('CONDITION', kx[2], y); doc.text('VALUE AGAINST A STANDARD HOME', kx[3], y);
+    doc.setDrawColor(220, 220, 225); doc.setLineWidth(0.2); doc.line(ML, y + 3, ML + CW, y + 3);
+    y += 13;
+    CMA_GRADES.forEach(r => {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(...NAVY);
+      doc.text(r.g, kx[0], y);
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...GRAY);
+      doc.text(r.uad, kx[1], y);
+      doc.text(r.name, kx[2], y);
+      doc.text(r.pct === 0 ? 'Standard home: no adjustment' : (r.pct > 0 ? '+' : '\u2013') + Math.abs(r.pct) + '% of the comparable\u2019s sale price', kx[3], y);
+      y += 12;
+    });
+    y += 8;
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...GRAY);
+    doc.text(srcLines, ML, y);
+    y += srcLines.length * 9;
+  }
 
   // Until Oct 4, 2026 this read 'Adjustment methodology per Fannie Mae UAD standards'. The grid's
   // STRUCTURE is the Fannie Mae sales comparison approach; the dollar amounts are fixed FORWARD
@@ -2513,7 +2858,7 @@ async function findComps() {
         halfBaths:    c.halfBaths    != null ? String(c.halfBaths)    : '',
         below:        c.below        != null ? String(c.below)        : '',
         garageSpaces: c.garageSpaces != null ? String(c.garageSpaces) : '',
-        condition:    c.condition    || 'C',
+        condition:    c.condition    || _cmaDefaultGrade(),
         hoaMonthly:   c.hoaMonthly   != null ? String(c.hoaMonthly)   : '',
         concessions:  c.concessions  || '',
         proximity:    c.proximity    || '',
@@ -2651,7 +2996,8 @@ async function findComps() {
       // Only the agent can judge it, so it is flagged on every row in use, imported or typed.
       // A value already moved off the pre-filled C was a deliberate choice (drafts saved before Oct 3).
       if (!rowInUse(c)) return '';
-      return (!c[field] || c[field] === 'C') ? 'needs' : '';
+      // (C under the dollar grades, B under the percent grades: whatever a new row starts on.)
+      return (!c[field] || c[field] === _cmaDefaultGrade()) ? 'needs' : '';
     }
     return (c._src || {})[field] || '';
   }
@@ -3169,8 +3515,8 @@ async function findComps() {
       }
 
       var row = existing > -1 ? target[existing] : (target === comps
-        ? { address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', drivewaySpaces:'', condition:'C', hoaMonthly:'', concessions:'', proximity:'', dom:'' }
-        : { address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:'C', hoaMonthly:'', proximity:'', dom:'' });
+        ? { address:'', soldDate:'', salePrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', drivewaySpaces:'', condition:_cmaDefaultGrade(), hoaMonthly:'', concessions:'', proximity:'', dom:'' }
+        : { address:'', date:'', listPrice:'', gla:'', lotSize:'', beds:'', fullBaths:'', halfBaths:'', below:'', garageSpaces:'', condition:_cmaDefaultGrade(), hoaMonthly:'', proximity:'', dom:'' });
 
       row._src = row._src || {};
       var map = target === comps
