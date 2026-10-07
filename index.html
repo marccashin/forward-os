@@ -6154,6 +6154,14 @@ body {
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.cma)" style="font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy</button>
                       <a v-if="lstSubfolderFiles('cma')[0]?.drive_link" :href="lstSubfolderFiles('cma')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg> View File →</a>
                     </div>
+                    <div v-if="lstPdfError" data-pdf-error="cma" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Saved PDFs could not be loaded ({{ lstPdfError }}). They are not lost. Reopen the listing to try again.</div>
+                    <div v-if="lstPdfFor('cma').length" data-pdfs="cma" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;margin-bottom:6px;">Saved CMA PDFs ({{ lstPdfFor('cma').length }})</div>
+                      <div v-for="(f, fi) in lstPdfFor('cma')" :key="f.path" data-pdf-row style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;padding:7px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                        <span>{{ lstPdfWhen(f) }} · {{ f.who || 'agent not recorded' }}<span v-if="fi===0" style="color:#166534;font-weight:700;"> · newest</span></span>
+                        <button class="btn-sm btn-navy" @click="lstPdfOpen(f)" :disabled="lstPdfOpening===f.path" style="font-size:11px;white-space:nowrap;">{{ lstPdfOpening===f.path ? 'Opening…' : 'Open PDF' }}</button>
+                      </div>
+                    </div>
                     <div v-if="lstHistCurrent('cma')" data-hist-current="cma" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('cma') }}</div>
                     <div v-if="lstHistError" data-hist-error="cma" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The CMA summary above is the current one.</div>
                     <div v-if="lstHistFor('cma').length" data-hist="cma" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
@@ -6273,6 +6281,14 @@ body {
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='sellerprep' ? '▼' : '▶' }}</span>
                 </div>
                 <div v-if="lstToolOpen==='sellerprep'" class="subfolder-body">
+                    <div v-if="lstPdfError" data-pdf-error="seller_prep" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Saved PDFs could not be loaded ({{ lstPdfError }}). They are not lost. Reopen the listing to try again.</div>
+                    <div v-if="lstPdfFor('seller_prep').length" data-pdfs="seller_prep" style="margin-bottom:12px;">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;margin-bottom:6px;">Saved prep guide PDFs ({{ lstPdfFor('seller_prep').length }})</div>
+                      <div v-for="(f, fi) in lstPdfFor('seller_prep')" :key="f.path" data-pdf-row style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;padding:7px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                        <span>{{ lstPdfWhen(f) }} · {{ f.who || 'agent not recorded' }}<span v-if="fi===0" style="color:#166534;font-weight:700;"> · newest</span></span>
+                        <button class="btn-sm btn-navy" @click="lstPdfOpen(f)" :disabled="lstPdfOpening===f.path" style="font-size:11px;white-space:nowrap;">{{ lstPdfOpening===f.path ? 'Opening…' : 'Open PDF' }}</button>
+                      </div>
+                    </div>
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                     <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
                       <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
@@ -6330,6 +6346,14 @@ body {
                     <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
                       <button class="btn-sm btn-navy" @click="copy(lstNotes.seller_net_sheet)" style="font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg> Copy</button>
                       <a v-if="lstSubfolderFiles('seller_net_sheet')[0]?.drive_link" :href="lstSubfolderFiles('seller_net_sheet')[0].drive_link" target="_blank" class="btn-sm btn-navy" style="text-decoration:none;font-size:12px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg> View PDF →</a>
+                    </div>
+                    <div v-if="lstPdfError" data-pdf-error="seller_net_sheet" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Saved PDFs could not be loaded ({{ lstPdfError }}). They are not lost. Reopen the listing to try again.</div>
+                    <div v-if="lstPdfFor('seller_net_sheet').length" data-pdfs="seller_net_sheet" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;margin-bottom:6px;">Saved net sheet PDFs ({{ lstPdfFor('seller_net_sheet').length }})</div>
+                      <div v-for="(f, fi) in lstPdfFor('seller_net_sheet')" :key="f.path" data-pdf-row style="display:flex;justify-content:space-between;align-items:center;gap:10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;padding:7px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                        <span>{{ lstPdfWhen(f) }} · {{ f.who || 'agent not recorded' }}<span v-if="fi===0" style="color:#166534;font-weight:700;"> · newest</span></span>
+                        <button class="btn-sm btn-navy" @click="lstPdfOpen(f)" :disabled="lstPdfOpening===f.path" style="font-size:11px;white-space:nowrap;">{{ lstPdfOpening===f.path ? 'Opening…' : 'Open PDF' }}</button>
+                      </div>
                     </div>
                     <div v-if="lstHistCurrent('seller_net_sheet')" data-hist-current="seller_net_sheet" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('seller_net_sheet') }}</div>
                     <div v-if="lstHistError" data-hist-error="seller_net_sheet" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The net sheet above is the current one.</div>
@@ -8554,6 +8578,70 @@ const SUPABASE_URL = window.__FORWARD_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = window.__FORWARD_SUPABASE_ANON_KEY || '';
 const PIPELINE_TRIGGER_URL = window.__FORWARD_PIPELINE_TRIGGER_URL || '';
 const RAILWAY_URL = window.__FORWARD_RAILWAY_URL || 'https://forward-command-center-production.up.railway.app';
+// ── A LISTING'S PDFs (Supabase Storage bucket listing-files) ──
+// Version history step 2 (Marc, Oct 3 and 5, 2026): "the files are saved in the OS so that
+// an agent can review both previous and current iterations". Until Oct 6, 2026 a tool's PDF
+// was only filed when the listing had Google Drive folders. 7 of 45 listings had them and
+// nothing creates them, so for almost every listing the PDF was never kept anywhere, and
+// the CMA Builder's Save to Folder button just downloaded it (Charlotte, Oct 3).
+// A PDF is now stored against the listing itself, with no Drive involved:
+//   listing-files / <listing id> / <kind> / <UTC time><3 random>__<agent>__<name>.pdf
+// The bucket is private, PDF only, 20MB, and the app's role can ADD and READ files and
+// nothing else (SQL run by Marc Oct 6, 2026). So every save is a new file and no file is
+// ever replaced: the newest is first in the list and the earlier ones stay. The time and
+// the agent are in the file name because a stored file carries no other details the app
+// can rely on. cma-tool.html has its own copy of path() and put(); keep them the same.
+const FOS_LISTING_BUCKET = 'listing-files';
+const fosListingFiles = {
+  hdr(extra) { return Object.assign({ 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY }, extra || {}); },
+  slug(v) { return String(v == null ? '' : v).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); },
+  path(propId, kind, fileName, who) {
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+    const rnd = Math.random().toString(36).slice(2, 5).padEnd(3, '0');
+    const base = this.slug(String(fileName || '').replace(/\.pdf$/i, '')).slice(0, 80) || 'file';
+    return propId + '/' + kind + '/' + stamp + rnd + '__' + (this.slug(who) || 'agent') + '__' + base + '.pdf';
+  },
+  // 'Marc_Cashin' back to 'Marc Cashin'; a file not named by this code still lists, undated.
+  parse(name) {
+    const m = /^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z[a-z0-9]{3}__(.*?)__(.*)\.pdf$/i.exec(String(name || ''));
+    if (!m) return { at: null, who: '', title: String(name || '') };
+    return { at: new Date(Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6])), who: m[7].replace(/_/g, ' '), title: m[8].replace(/_/g, ' ') };
+  },
+  // Stores one PDF. Throws with the storage service's own words if it did not go in.
+  async put(propId, kind, blob, fileName, who) {
+    if (!propId || !kind) throw new Error('no listing to file it on');
+    const path = this.path(propId, kind, fileName, who);
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/' + FOS_LISTING_BUCKET + '/' + path, {
+      method: 'POST', headers: this.hdr({ 'Content-Type': 'application/pdf', 'x-upsert': 'false' }), body: blob });
+    if (!res.ok) {
+      let why = 'file storage answered ' + res.status;
+      try { const j = await res.json(); if (j && (j.message || j.error)) why = String(j.message || j.error); } catch (e) {}
+      throw new Error(why);
+    }
+    try { window.dispatchEvent(new CustomEvent('fos-pdf-saved', { detail: { propertyId: propId, kind: kind } })); } catch (e) {}
+    return path;
+  },
+  // Newest first. [{ path, name, at, who, title }]
+  async list(propId, kind) {
+    const prefix = propId + '/' + kind + '/';
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/list/' + FOS_LISTING_BUCKET, {
+      method: 'POST', headers: this.hdr({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ prefix: prefix, limit: 100, offset: 0, sortBy: { column: 'name', order: 'desc' } }) });
+    if (!res.ok) throw new Error('file storage answered ' + res.status);
+    const rows = await res.json();
+    return (Array.isArray(rows) ? rows : []).filter(r => r && r.name && /\.pdf$/i.test(r.name)).map(r => {
+      const p = this.parse(r.name);
+      if (!p.at && r.created_at) { const d = new Date(r.created_at); if (!isNaN(d.getTime())) p.at = d; }
+      return { path: prefix + r.name, name: r.name, kind: kind, at: p.at, who: p.who, title: p.title };
+    }).sort((a, b) => (a.name < b.name ? 1 : a.name > b.name ? -1 : 0));
+  },
+  async blob(path) {
+    const res = await fetch(SUPABASE_URL + '/storage/v1/object/authenticated/' + FOS_LISTING_BUCKET + '/' + path, { headers: this.hdr() });
+    if (!res.ok) throw new Error('file storage answered ' + res.status);
+    return await res.blob();
+  }
+};
+
 const supaRest = {
   headers() {
     return {
@@ -11178,6 +11266,54 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (pid && lstActiveProp.value && lstActiveProp.value.id === pid) lstLoadHistory(pid);
     });
 
+    // ── The listing's saved PDFs (fosListingFiles) ────────────────────────────
+    // One list per kind, newest first. lstPdfError is shown on screen for the same
+    // reason lstHistError is: "no PDFs" and "could not load them" must look different.
+    const LST_PDF_KINDS = ['cma', 'seller_net_sheet', 'seller_prep'];
+    const lstPdfs       = ref({});
+    const lstPdfError   = ref('');
+    const lstPdfOpening = ref('');
+    async function lstLoadPdfs(propId) {
+      if (!propId) return;
+      try {
+        const lists = await Promise.all(LST_PDF_KINDS.map(k => fosListingFiles.list(propId, k)));
+        if (!lstActiveProp.value || lstActiveProp.value.id !== propId) return;   // moved to another listing meanwhile
+        const out = {}; LST_PDF_KINDS.forEach((k, i) => { out[k] = lists[i]; });
+        lstPdfs.value = out; lstPdfError.value = '';
+      } catch (e) {
+        if (!lstActiveProp.value || lstActiveProp.value.id !== propId) return;
+        lstPdfs.value = {}; lstPdfError.value = (e && e.message) ? e.message : 'unknown error';
+      }
+    }
+    function lstPdfFor(kind) { return lstPdfs.value[kind] || []; }
+    function lstPdfWhen(f) {
+      if (!f || !f.at) return 'Date not recorded';
+      return f.at.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ', ' + f.at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    // The tab is opened at the click, before the file arrives, or the browser blocks it.
+    async function lstPdfOpen(f) {
+      if (!f || lstPdfOpening.value) return;
+      lstPdfOpening.value = f.path;
+      let tab = null; try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+      try {
+        const url = URL.createObjectURL(new Blob([await fosListingFiles.blob(f.path)], { type: 'application/pdf' }));
+        if (tab) tab.location.href = url;
+        else { const a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); }
+        setTimeout(() => URL.revokeObjectURL(url), 120000);
+      } catch (e) {
+        try { if (tab) tab.close(); } catch (e2) {}
+        showToast('That PDF could not be opened: ' + fosWhy(e), 8000);
+      } finally { lstPdfOpening.value = ''; }
+    }
+    window.addEventListener('fos-pdf-saved', function (ev) {
+      const pid = ev && ev.detail && ev.detail.propertyId;
+      if (pid && lstActiveProp.value && lstActiveProp.value.id === pid) lstLoadPdfs(pid);
+    });
+    // A CMA is filed from the builder's own tab. Coming back to this tab shows it.
+    window.addEventListener('focus', function () {
+      if (lstActiveProp.value && view.value === 'listing-detail') lstLoadPdfs(lstActiveProp.value.id);
+    });
+
     function lstSubfolderFiles(key) {
       return lstActiveFiles.value.filter(f => f.subfolder === key);
     }
@@ -11420,6 +11556,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       pr.listDate = ''; pr.price = '';
       // Earlier versions belong to one listing: empty the list before the new one loads.
       lstHistory.value = []; lstHistError.value = ''; lstHistOpen.value = null; lstHistView.value = null;
+      lstPdfs.value = {}; lstPdfError.value = '';   // one listing's PDFs must never show on the next
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -11468,6 +11605,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
       } catch {}
       lstLoadHistory(prop.id);
+      lstLoadPdfs(prop.id);
       // Load revision requests
       lstRevisionRequests.value = []; lstRevSelectedVersion.value = 'original';
       lstRevNotes.value = ''; lstRevActiveStatus.value = ''; lstRevLatestNumber.value = 0;
@@ -12973,13 +13111,26 @@ async function lstSubmitToPipeline() {
           mimeType = 'application/json';
         }
 
+        // The tool's own PDF is filed on the listing (fosListingFiles), Drive folder or not.
+        // Only a real PDF made by the tool: a save with text alone is already kept, version by
+        // version, in the listing's text history, and a PDF built from that text adds nothing.
+        let _fileTried = false, _fileErr = '';
+        if (pdfData) {
+          _fileTried = true;
+          try { await fosListingFiles.put(prop.id, subfolder, new Blob([fileBytes], { type: 'application/pdf' }), fileName, agentName.value); }
+          catch (e) { _fileErr = fosWhy(e) || 'unknown error'; console.error('listing PDF save failed (' + subfolder + '):', e.message); }
+        }
+        const _fileSaved = _fileTried && !_fileErr;
+
         const subfolderDriveIds = prop.subfolder_drive_ids || {};
         const folderId = subfolderDriveIds[subfolder] || '';
 
-        // Skip Drive upload if no folder configured — text is already saved above
+        // No Drive folder for this listing (most have none): the text and the PDF above are the save.
         if (!folderId) {
-          if (_noteSaved) { showGoldToast(toolName + ' saved to ' + _where); return true; }
-          showToast(toolName + ' was NOT saved to ' + _where + ': ' + (_noteErr || 'this listing has no Drive folder for it'), 8000);
+          if ((_noteSaved || _fileSaved) && !_noteErr && !_fileErr) { showGoldToast(toolName + ' saved to ' + _where); return true; }
+          if (_noteSaved && _fileErr) { showToast(toolName + ' text saved to ' + _where + ', but the PDF was NOT filed on the listing: ' + _fileErr, 8000); return true; }
+          if (_fileSaved && _noteErr) { showToast(toolName + ' PDF filed on ' + _where + ', but the text was NOT saved to the listing: ' + _noteErr, 8000); return true; }
+          showToast(toolName + ' was NOT saved to ' + _where + ': ' + (_noteErr || _fileErr || 'there was nothing to save'), 8000);
           return false;
         }
 
@@ -12996,7 +13147,9 @@ async function lstSubmitToPipeline() {
           await fosOk(uploadRes, 'the file reached Drive but could not be recorded on the listing');
         } catch (uploadErr) { _driveErr = fosWhy(uploadErr); console.warn('Drive upload failed:', uploadErr.message); }
 
+        if (!_driveErr && !_noteErr && _fileErr) { showToast(toolName + ' saved to ' + _where + ' and its Drive folder, but the PDF was NOT filed on the listing in FORWARD OS: ' + _fileErr, 8000); return true; }
         if (!_driveErr && !_noteErr) { showGoldToast(toolName + ' saved to ' + _where); return true; }
+        if (_driveErr && !_noteSaved && _fileSaved) { showToast(toolName + ' PDF filed on ' + _where + ', but the text was NOT saved and the Drive copy failed: ' + (_noteErr || _driveErr), 8000); return true; }
         if (_driveErr && !_noteSaved) {
           showToast(toolName + ' was NOT saved to ' + _where + ': ' + (_noteErr || _driveErr), 8000);
           return false;
@@ -21161,6 +21314,10 @@ const CHANGELOG = [
       {
         title: 'Earlier Versions of a CMA',
         detail: 'The CMA Builder now keeps a copy of the whole CMA, with its comps and settings, each time you export the PDF, save it to the folder, or start a new one. The copies are listed at the bottom of the builder under Earlier Versions of This CMA, with the date, the value and who saved it.\n\nIf you open a teammate\'s newer CMA and change it, your own earlier one used to be lost. It is now kept on that list first.\n\nAn earlier version built with the old dollar condition grades opens with those grades. Nothing is converted.\n\nHow to use: Scroll to the bottom of the builder and press Open this version. What is on screen is kept on the list before it is replaced.\n\nBest practice: Export the PDF whenever you reach a version you may want to come back to. Typing alone does not add a version to the list.'
+      },
+      {
+        title: 'Your PDFs Are Now Saved on the Listing',
+        detail: 'Until today the PDF of a net sheet, a prep guide or a CMA was only kept if the listing had Google Drive folders, and almost no listing does. So the PDF you made was usually kept nowhere, and Save to Folder in the CMA Builder simply downloaded it.\n\nNow the PDF is saved on the listing itself:\n\nSeller Net Sheet and Seller Prep Guide: when you press Save to Property, the PDF is filed on the listing along with the text.\n\nCMA Builder: the button is now called Save to Listing. It files the CMA PDF on the listing and saves the CMA summary with it. Export PDF is still the plain download.\n\nEvery save is a new PDF. Nothing is replaced, so you can open the newest one or any earlier one.\n\nHow to use: Open the listing and open Comparative Market Analysis, Seller Net Sheet or Seller Prep Guide. Saved PDFs are listed with the date and who saved them, newest first. Press Open PDF.\n\nBest practice: Press Save to Listing or Save to Property each time you send a version to a client. Then the listing holds exactly what the client received, and you can open it again when they call about a number.'
       }
     ]
   }
@@ -23830,7 +23987,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
