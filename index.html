@@ -2678,6 +2678,19 @@ body {
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span><span v-if="ldSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
                 </button>
+                <!-- Approve for marketing: only for a listing, and only once this text is the saved text -->
+                <div v-if="lstActiveProp && ldOutput && lstNotes.listing_remarks && lstAppr.state==='ready'" data-appr-writer="box" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;">
+                  <template v-if="ldOutput === lstNotes.listing_remarks">
+                    <div v-if="lstApprIsOn()" data-appr-writer="approved" style="color:#166534;font-weight:600;">✓ Approved for marketing by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
+                    <div v-else style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <span data-appr-writer="not-approved" style="color:#6b7280;font-weight:600;">Saved to the listing. Not approved for marketing.</span>
+                      <button class="btn-sm" data-appr-writer="approve" :disabled="lstAppr.busy" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                    </div>
+                    <div v-if="lstAppr.failed" data-appr-writer="failed" style="color:#b91c1c;margin-top:4px;">NOT approved: {{ lstAppr.failed }}.</div>
+                    <div v-if="lstApprIsOn() && (lstAppr.notice==='failed' || lstAppr.notice==='none')" data-appr-writer="not-notified" style="color:#b91c1c;margin-top:4px;">Concierge has NOT been notified of this approval{{ lstAppr.notice==='failed' ? ' (' + lstAppr.noticeError + ')' : '' }}. The approval stands. <button class="btn-sm" data-appr-writer="notify" @click="lstApprNotify()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Notify Concierge</button></div>
+                  </template>
+                  <div v-else-if="lstAppr.row" data-appr-writer="will-clear" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">The description saved on this listing is approved for marketing ({{ lstAppr.row.approved_by }}, {{ lstApprWhen(lstAppr.row.approved_at) }}). The text here is different: saving it clears that approval.</div>
+                </div>
                 <div v-if="ldStarted && ldResumeNote" style="margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;line-height:1.5;">{{ ldResumeNote }}</div>
               </div>
               <!-- Chat messages -->
@@ -6201,6 +6214,8 @@ body {
                     <span class="subfolder-tool-name">Listing Description</span>
                     <span class="subfolder-tool-desc">AI-powered MLS copy</span>
                     <span v-if="ldSavedToProperty || lstNotes.listing_remarks" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
+                    <span v-if="lstApprIsOn()" data-appr-badge="approved" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Approved for marketing</span>
+                    <span v-else-if="lstNotes.listing_remarks && lstAppr.cleared" data-appr-badge="cleared" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#b45309;font-weight:600;margin-left:4px;">Approval cleared</span>
                   </div>
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='listingdesc' ? '▼' : '▶' }}</span>
                 </div>
@@ -6213,6 +6228,7 @@ body {
                       <!-- Read mode -->
                       <div v-if="!lstDescEditing" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:200px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:10px;">{{ lstNotes.listing_remarks }}</div>
                       <!-- Edit mode -->
+                      <div v-if="lstDescEditing && lstApprIsOn()" data-appr="edit-warning" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This description is approved for marketing. Saving different text clears the approval, and it will need to be approved again.</div>
                       <textarea v-if="lstDescEditing" v-model="lstDescEditVal" style="width:100%;min-height:260px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1.5px solid var(--gold);border-radius:2px;padding:12px;line-height:1.65;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:10px;"></textarea>
                     </template>
                     <!-- File links -->
@@ -6235,6 +6251,31 @@ body {
                       <template v-if="lstDescEditing">
                         <button class="btn-sm" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescSave()">Save</button>
                         <button class="btn-sm" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" @click="lstDescEditing=false">Cancel</button>
+                      </template>
+                    </div>
+                    <!-- Approve for marketing -->
+                    <div v-if="lstNotes.listing_remarks" data-appr="box" style="margin-top:12px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:8px;">Approved for Marketing?</div>
+                      <div v-if="lstAppr.state==='loading' || lstAppr.state==='idle'" data-appr="loading" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;">Checking the approval...</div>
+                      <div v-else-if="lstAppr.state==='off'" data-appr="off" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;">Approving is not switched on yet (the one-time database setup has not been run). Nothing can be approved until it is. Tell Marc.</div>
+                      <div v-else-if="lstAppr.state==='error'" data-appr="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;">The approval could not be checked ({{ lstAppr.error }}). This does not say whether the description is approved. <button class="btn-sm" data-appr="recheck" @click="lstApprReload()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Check again</button></div>
+                      <template v-else>
+                        <div v-if="lstApprIsOn()" data-appr="approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#166534;line-height:1.5;">✓ Approved by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
+                        <template v-else>
+                          <div v-if="lstAppr.cleared" data-appr="cleared" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This description was approved by {{ lstAppr.cleared.by }} on {{ lstApprWhen(lstAppr.cleared.at) }}. The text has changed since, so that approval was cleared. Approve it again when this text is final.</div>
+                          <div v-else-if="lstAppr.row" data-appr="mismatch" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">An approval by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }} is on file, but for different text than the text shown above. It does not cover this text.</div>
+                          <div data-appr="not-approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px;">Not approved</div>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Concierge uses this description in marketing and in the Preparing to Launch email only after you approve it. Approve it when the text above is final.</div>
+                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                          <span v-if="lstDescEditing" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">Save or cancel your edit first.</span>
+                        </template>
+                        <div v-if="lstAppr.failed" data-appr="failed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">NOT approved: {{ lstAppr.failed }}.</div>
+                        <template v-if="lstApprIsOn()">
+                          <div v-if="lstAppr.notice==='sending'" data-appr="notifying" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:6px;">Telling Concierge...</div>
+                          <div v-else-if="lstAppr.notice==='sent'" data-appr="notified" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:6px;">Concierge was notified{{ lstAppr.noticeAt ? ' on ' + lstApprWhen(lstAppr.noticeAt) : '' }}.</div>
+                          <div v-else-if="lstAppr.notice==='failed' || lstAppr.notice==='none'" data-appr="not-notified" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">Concierge has NOT been notified of this approval{{ lstAppr.notice==='failed' ? ' (' + lstAppr.noticeError + ')' : '' }}. The approval stands. <button class="btn-sm" data-appr="notify" @click="lstApprNotify()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Notify Concierge</button></div>
+                          <div v-else-if="lstAppr.notice==='unknown'" data-appr="notice-unknown" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">Could not check whether Concierge was notified ({{ lstAppr.noticeError }}). <button class="btn-sm" data-appr="notify" @click="lstApprNotify()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Notify Concierge</button></div>
+                        </template>
                       </template>
                     </div>
                     <div v-if="lstHistCurrent('listing_remarks')" data-hist-current="listing_remarks" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('listing_remarks') }}</div>
@@ -6806,6 +6847,8 @@ body {
                     </div>
                     <div v-if="campOpenSection==='__ld__'" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
+                      <div v-if="lstApprIsOn()" data-appr="camp-warning" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:10px;line-height:1.5;">This description is approved for marketing. This box saves as you type: the first change clears the approval, and it will need to be approved again on the listing.</div>
+                      <div v-else-if="lstAppr.cleared" data-appr="camp-cleared" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:10px;line-height:1.5;">The text changed, so its approval for marketing was cleared. Approve it again on the listing when it is final.</div>
                       <textarea v-model="campLdEditVal" class="camp-section-ta"
                         @input="function(e){e.target.style.height='auto';e.target.style.height=Math.max(180,e.target.scrollHeight)+'px';campLdSave();}"
                         style="width:100%;border:1px solid var(--cream-mid);border-radius:1px;outline:none;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.8;resize:vertical;min-height:180px;background:var(--cream);padding:14px 16px;box-sizing:border-box;color:var(--navy);transition:border-color 0.13s;"
@@ -11178,6 +11221,194 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (pid && lstActiveProp.value && lstActiveProp.value.id === pid) lstLoadHistory(pid);
     });
 
+    // ── Approve for marketing (the listing description) ─────────────────────
+    // Concierge may use a description in marketing and in the Preparing to Launch email
+    // only after the agent has approved it. The approval is ONE row per listing in
+    // listing_description_approvals (SQL in sql/2026-10-09_listing_description_approvals.sql;
+    // the Command Center reads the same table). The app can only READ that table:
+    //   - an approval is written by the database function approve_listing_description,
+    //     which freezes the saved text and refuses if the saved text is not the text
+    //     the agent was reading;
+    //   - an approval is removed by the DATABASE, in the same step as any later save of
+    //     the description that holds different text. Saving identical text keeps it.
+    // So nothing here ever clears an approval. After a save the app asks the database
+    // what is true and shows that. "Approved" is shown only for a row the database
+    // returned whose frozen text is exactly the text on screen.
+    //
+    // lstAppr.state:  idle | loading | ready | off (table not created yet) | error
+    // lstAppr.notice: idle | checking | sending | sent | failed | none | unknown
+    //   none    = this approval exists but no message to Concierge was ever recorded
+    //   unknown = the record of the message could not be read
+    const lstAppr = reactive({ row: null, state: 'idle', error: '', busy: false, failed: '', cleared: null, notice: 'idle', noticeAt: '', noticeError: '' });
+    const LST_APPR_NOTICE_KEY = 'ld_approval_notice:';   // os_settings key prefix, one per listing
+    function _lstApprReset() {
+      lstAppr.row = null; lstAppr.state = 'idle'; lstAppr.error = ''; lstAppr.busy = false; lstAppr.failed = '';
+      lstAppr.cleared = null; lstAppr.notice = 'idle'; lstAppr.noticeAt = ''; lstAppr.noticeError = '';
+    }
+    function _lstApprHere(propId) { return !!(lstActiveProp.value && lstActiveProp.value.id === propId); }
+    // fetch() with a time limit, so a hung request can never leave a spinner or hold up a save message.
+    async function _lstApprFetch(url, opts, ms) {
+      const ctl = new AbortController();
+      const t = setTimeout(function () { ctl.abort(); }, ms);
+      try { return await fetch(url, Object.assign({}, opts || {}, { signal: ctl.signal })); }
+      finally { clearTimeout(t); }
+    }
+    function _lstApprNetWhy(e, who) {
+      if (e && e.name === 'AbortError') return who + ' did not answer in time';
+      if (e && e._lstApprSaid) return e.message;
+      return who + ' could not be reached';
+    }
+    function _lstApprSameMoment(a, b) {
+      if (!a || !b) return false;
+      if (a === b) return true;
+      const x = new Date(a).getTime(), y = new Date(b).getTime();
+      return !isNaN(x) && x === y;
+    }
+    // True only when the database holds an approval for exactly the text on screen.
+    function lstApprIsOn() {
+      return lstAppr.state === 'ready' && !!lstAppr.row && lstAppr.row.content === lstNotes.listing_remarks;
+    }
+    function lstApprWhen(iso) { return lstHistWhen({ saved_at: iso }); }
+    // Read the approval for one listing. Never guesses: a failed read is shown as a failed read.
+    async function lstApprLoad(propId) {
+      if (!propId) return;
+      if (lstAppr.state === 'idle' || lstAppr.state === 'error' || lstAppr.state === 'off') lstAppr.state = 'loading';
+      let row = null;
+      try {
+        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/listing_description_approvals?select=property_id,content,approved_by,approved_at&property_id=eq.' + encodeURIComponent(propId), { headers: supaRest.headers() }, 8000);
+        if (!res.ok) {
+          let code = '', detail = 'error ' + res.status;
+          try { const j = await res.json(); code = j.code || ''; detail = j.message || j.hint || detail; } catch (x) {}
+          if (code === 'PGRST205' || code === '42P01') {
+            if (_lstApprHere(propId)) { lstAppr.row = null; lstAppr.state = 'off'; lstAppr.error = ''; lstAppr.notice = 'idle'; }
+            return;
+          }
+          const err = new Error(detail); err._lstApprSaid = true; throw err;
+        }
+        const rows = await res.json();
+        row = (Array.isArray(rows) && rows[0]) ? rows[0] : null;
+      } catch (e) {
+        if (!_lstApprHere(propId)) return;
+        lstAppr.row = null; lstAppr.state = 'error'; lstAppr.error = _lstApprNetWhy(e, 'the database'); lstAppr.notice = 'idle';
+        return;
+      }
+      if (!_lstApprHere(propId)) return;   // the agent moved to another listing while this was loading
+      lstAppr.row = row; lstAppr.state = 'ready'; lstAppr.error = '';
+      if (!row) { lstAppr.notice = 'idle'; lstAppr.noticeAt = ''; lstAppr.noticeError = ''; return; }
+      // Was Concierge told about THIS approval? The record is kept per listing in os_settings.
+      if (lstAppr.notice !== 'sending') lstAppr.notice = 'checking';
+      try {
+        const rec = await osSettingGet(LST_APPR_NOTICE_KEY + propId);
+        if (!_lstApprHere(propId) || !lstAppr.row || lstAppr.row.approved_at !== row.approved_at || lstAppr.notice === 'sending') return;
+        if (rec && _lstApprSameMoment(rec.approved_at, row.approved_at)) {
+          lstAppr.notice = rec.ok === true ? 'sent' : 'failed';
+          lstAppr.noticeAt = rec.at || ''; lstAppr.noticeError = rec.ok === true ? '' : (rec.error || 'reason not recorded');
+        } else { lstAppr.notice = 'none'; lstAppr.noticeAt = ''; lstAppr.noticeError = ''; }
+      } catch (e) {
+        if (!_lstApprHere(propId) || !lstAppr.row || lstAppr.row.approved_at !== row.approved_at || lstAppr.notice === 'sending') return;
+        lstAppr.notice = 'unknown'; lstAppr.noticeAt = ''; lstAppr.noticeError = fosWhy(e);
+      }
+    }
+    function lstApprReload() { if (lstActiveProp.value) return lstApprLoad(lstActiveProp.value.id); }
+    // After any save of the description: ask the database whether the approval still stands.
+    // Resolves true when an approval that was on file is now gone (the text changed).
+    const LST_APPR_CLEARED_MSG = 'The text changed, so its approval for marketing was cleared. Approve it again when it is final.';
+    let _lstApprAfterSave = Promise.resolve(false);
+    async function lstApprAfterSave(propId) {
+      const before = lstAppr.row;
+      lstAppr.failed = '';
+      if (!before && lstAppr.state === 'ready') return false;   // nothing was approved, so nothing can have been cleared
+      await lstApprLoad(propId);
+      if (!_lstApprHere(propId)) return false;
+      if (before && lstAppr.state === 'ready' && !lstAppr.row) {
+        const first = !lstAppr.cleared;
+        lstAppr.cleared = { by: before.approved_by, at: before.approved_at };
+        return first;
+      }
+      return false;
+    }
+    window.addEventListener('fos-note-saved', function (ev) {
+      const d = ev && ev.detail;
+      if (!d || d.subfolder !== 'listing_remarks') return;
+      _lstApprAfterSave = _lstApprHere(d.propertyId) ? lstApprAfterSave(d.propertyId).catch(function () { return false; }) : Promise.resolve(false);
+    });
+    // Tell Concierge (Netlify function -> Zapier catch hook -> email). The hook address lives
+    // on the server only. A failure never undoes the approval: it is shown, and recorded.
+    async function lstApprNotify(prop, row) {
+      prop = (prop && prop.id) ? prop : lstActiveProp.value; row = (row && row.approved_at) ? row : lstAppr.row;
+      if (!prop || !row || lstAppr.notice === 'sending') return false;
+      const pid = prop.id;
+      const mine = function () { return _lstApprHere(pid) && !!lstAppr.row && _lstApprSameMoment(lstAppr.row.approved_at, row.approved_at); };
+      if (mine()) lstAppr.notice = 'sending';
+      let sent = false, why = '';
+      try {
+        const res = await _lstApprFetch('/.netlify/functions/notify-description-approved', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ property_id: pid }) }, 15000);
+        let j = null;
+        try { j = await res.json(); } catch (x) {}
+        if (res.ok && j && j.ok === true) sent = true;
+        else why = (j && j.error) ? j.error : ('the notification service answered with error ' + res.status);
+      } catch (e) { why = _lstApprNetWhy(e, 'the notification service'); }
+      const rec = { approved_at: row.approved_at, ok: sent, at: new Date().toISOString(), by: agentName.value || '', error: sent ? '' : why };
+      if (!sent) console.error('[approve for marketing] Concierge NOT notified. listing ' + pid + ', approved_at ' + row.approved_at + ': ' + why);
+      // The record: what the listing shows after a reload, and the log of a failure.
+      try { await osSettingPut(LST_APPR_NOTICE_KEY + pid, rec); }
+      catch (e) { console.error('[approve for marketing] the record of the Concierge message could not be saved: ' + fosWhy(e)); }
+      if (mine()) { lstAppr.notice = sent ? 'sent' : 'failed'; lstAppr.noticeAt = rec.at; lstAppr.noticeError = why; }
+      if (sent) showGoldToast('Approved for marketing. Concierge has been notified.', 4000);
+      else showToast('Approved for marketing, but Concierge was NOT notified (' + why + '). The approval stands. Use Notify Concierge on the listing to send it again.', 12000);
+      return sent;
+    }
+    // The signed-in agent approves the saved description, exactly as it reads on screen.
+    async function lstApprove() {
+      const prop = lstActiveProp.value;
+      const text = lstNotes.listing_remarks || '';
+      if (!prop || !prop.id || !text.trim() || lstAppr.busy || lstApprIsOn()) return false;
+      const who = agentName.value || '';
+      if (!who) { lstAppr.failed = 'no agent is signed in'; return false; }
+      const pid = prop.id;
+      lstAppr.busy = true; lstAppr.failed = '';
+      let row = null, why = '';
+      try {
+        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/rpc/approve_listing_description', {
+          method: 'POST', headers: supaRest.headers(),
+          body: JSON.stringify({ p_property_id: pid, p_content: text, p_approved_by: who })
+        }, 15000);
+        if (!res.ok) {
+          let code = '', detail = 'error ' + res.status;
+          try { const j = await res.json(); code = j.code || ''; detail = j.message || j.hint || detail; } catch (x) {}
+          if (code === 'PGRST202' || res.status === 404) detail = 'approving is not switched on yet (the one-time database setup has not been run)';
+          const err = new Error(detail); err._lstApprSaid = true; throw err;
+        }
+        let got = await res.json();
+        if (Array.isArray(got)) got = got[0];
+        if (!got || got.property_id !== pid || got.content !== text || !got.approved_by || !got.approved_at) {
+          const err = new Error('the database did not confirm the approval'); err._lstApprSaid = true; throw err;
+        }
+        row = got;
+      } catch (e) {
+        why = _lstApprNetWhy(e, 'the database');
+        // No answer is not the same as no approval: the request may have been applied and
+        // the answer lost. Ask the database before saying anything.
+        if (!(e && e._lstApprSaid)) {
+          await lstApprLoad(pid);
+          if (_lstApprHere(pid) && lstApprIsOn() && lstAppr.row.approved_by === who) row = lstAppr.row;
+        }
+      }
+      lstAppr.busy = false;
+      if (!row) {
+        console.warn('[approve for marketing] NOT approved. listing ' + pid + ': ' + why);
+        if (_lstApprHere(pid)) lstAppr.failed = why;
+        showToast('NOT approved for marketing (' + why + ').', 10000);
+        return false;
+      }
+      if (_lstApprHere(pid)) {
+        lstAppr.row = row; lstAppr.state = 'ready'; lstAppr.error = ''; lstAppr.failed = ''; lstAppr.cleared = null;
+        lstAppr.notice = 'none'; lstAppr.noticeAt = ''; lstAppr.noticeError = '';
+      }
+      await lstApprNotify(prop, row);
+      return true;
+    }
+
     function lstSubfolderFiles(key) {
       return lstActiveFiles.value.filter(f => f.subfolder === key);
     }
@@ -11420,6 +11651,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       pr.listDate = ''; pr.price = '';
       // Earlier versions belong to one listing: empty the list before the new one loads.
       lstHistory.value = []; lstHistError.value = ''; lstHistOpen.value = null; lstHistView.value = null;
+      // An approval belongs to one listing: forget the last listing's before the new one loads.
+      _lstApprReset();
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -11468,6 +11701,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
       } catch {}
       lstLoadHistory(prop.id);
+      lstApprLoad(prop.id);
       // Load revision requests
       lstRevisionRequests.value = []; lstRevSelectedVersion.value = 'original';
       lstRevNotes.value = ''; lstRevActiveStatus.value = ''; lstRevLatestNumber.value = 0;
@@ -13392,14 +13626,20 @@ async function lstSubmitToPipeline() {
       const trimmed = campLdEditVal.value.trim();
       if (!trimmed || !lstActiveProp.value) return;
       lstNotes.listing_remarks = trimmed;
-      await lstSaveNote('listing_remarks');
+      if (await lstSaveNote('listing_remarks')) {
+        // The campaign editor saves as you type. Say once that the approval is gone.
+        if (await _lstApprAfterSave) showToast('Listing description saved. ' + LST_APPR_CLEARED_MSG, 10000);
+      }
     }
     async function lstDescSave() {
       const trimmed = lstDescEditVal.value.trim();
       if (!trimmed || !lstActiveProp.value) return;
       lstNotes.listing_remarks = trimmed;
       lstDescEditing.value = false;
-      if (await lstSaveNote('listing_remarks')) showToast('Listing description saved.', 2500);
+      if (await lstSaveNote('listing_remarks')) {
+        const _cleared = await _lstApprAfterSave;
+        showToast(_cleared ? ('Listing description saved. ' + LST_APPR_CLEARED_MSG) : 'Listing description saved.', _cleared ? 10000 : 2500);
+      }
     }
     const ldVoiceListening = ref(false);
     const ldDistances       = ref(null);
@@ -13434,9 +13674,11 @@ async function lstSubmitToPipeline() {
           // The agent chose to save this conversation's output to this listing, so the
           // conversation belongs to it even if it was started without the listing open.
           if (!ldConvPropId.value) ldConvPropId.value = prop.id;
+          const _apprCleared = await _lstApprAfterSave;
           const _chatOk = await ldPersistChat(text);
           showGoldToast('Listing Description saved to ' + prop.address);
-          if (_chatOk === false) showToast('Description saved. The conversation could not be saved, so reopening the writer will start from the saved description.', 6000);
+          if (_chatOk === false) showToast('Description saved. The conversation could not be saved, so reopening the writer will start from the saved description.' + (_apprCleared ? ' ' + LST_APPR_CLEARED_MSG : ''), _apprCleared ? 12000 : 6000);
+          else if (_apprCleared) showToast('Description saved. ' + LST_APPR_CLEARED_MSG, 10000);
           // Auto-navigate back to the property folder after successful save
           setTimeout(() => { view.value = 'listing-detail'; window.scrollTo(0, 0); }, 700);
         } else {
@@ -21163,6 +21405,18 @@ const CHANGELOG = [
         detail: 'The CMA Builder now keeps a copy of the whole CMA, with its comps and settings, each time you export the PDF, save it to the folder, or start a new one. The copies are listed at the bottom of the builder under Earlier Versions of This CMA, with the date, the value and who saved it.\n\nIf you open a teammate\'s newer CMA and change it, your own earlier one used to be lost. It is now kept on that list first.\n\nAn earlier version built with the old dollar condition grades opens with those grades. Nothing is converted.\n\nHow to use: Scroll to the bottom of the builder and press Open this version. What is on screen is kept on the list before it is replaced.\n\nBest practice: Export the PDF whenever you reach a version you may want to come back to. Typing alone does not add a version to the list.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-09',
+    date: 'October 9, 2026',
+    title: 'Approve a Listing Description for Marketing',
+    summary: 'A saved listing description now has an approved state. You approve it when the text is final, Concierge is told, and any later change to the text clears the approval.',
+    updates: [
+      {
+        title: 'Approve for Marketing',
+        detail: 'Concierge needs to know a listing description is final before using it in marketing and in the Preparing to Launch email to your client. Until today there was no way to say so in the OS.\n\nA saved description now shows one of two things: Not approved, or Approved by your name and the date. When you approve, Concierge gets an email with the address, your name and the exact approved text.\n\nIf the text changes after you approve it, the approval is cleared and the listing tells you so. This is true wherever the change is made: the Edit button, the Writer, or the campaign editor. Saving the same text again keeps the approval.\n\nIf the approval goes through but the email to Concierge does not, the listing says Concierge has NOT been notified and gives you a Notify Concierge button. Your approval stands either way.\n\nHow to use: Open the listing, open Listing Description, and read the saved text. When it is final, press Approve for marketing. The same button is at the top of the Writer once your text is saved to the listing.\n\nBest practice: Approve last. Finish every edit, read the saved text once more from top to bottom, then approve. If you change even one word afterward, approve it again, because Concierge will only use text that is approved.'
+      }
+    ]
   }
 
 ];
@@ -23830,7 +24084,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
