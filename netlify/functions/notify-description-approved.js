@@ -6,6 +6,9 @@
  * this right after an approval is written. It posts one JSON message to a Zapier catch
  * hook; the Zap (built in the Command Center session) emails concierge@fwrdrealestate.com.
  *
+ * Since the flyer version and the branded PDF were added, the message also carries
+ * flyer_content, and pdf_url with pdf_filename when the PDF was produced.
+ *
  * The browser sends only the listing's id. This function reads the approval and the
  * listing from the database itself and sends what is stored there, so the message can
  * only ever describe a real approval, in the exact approved text.
@@ -84,9 +87,21 @@ function displayTime(iso) {
   }) + ' ET';
 }
 
+// The PDF's file name is the last part of its address, so the name in the email is
+// always the name of the file that opens: "Listing Description - 200 Bravo Ave.pdf".
+function pdfFilename(url) {
+  try {
+    const last = new URL(url).pathname.split('/').pop() || '';
+    return decodeURIComponent(last);
+  } catch (e) { return ''; }
+}
+
 // The one place the message is shaped. The Command Center builds its Zap against this.
+// flyer_content is always present ('' for an approval made before the flyer version
+// existed). pdf_url and pdf_filename are present ONLY when the branded PDF was produced:
+// an approval whose PDF failed is sent without them.
 function buildPayload(approval, property) {
-  return {
+  const p = {
     event:               'listing_description_approved',
     source:              'forward-os',
     property_id:         approval.property_id,
@@ -96,7 +111,14 @@ function buildPayload(approval, property) {
     approved_at:         approval.approved_at,
     approved_at_display: displayTime(approval.approved_at),
     content:             approval.content,
+    flyer_content:       approval.flyer_content || '',
   };
+  const url = String(approval.pdf_url || '');
+  if (/^https:\/\//.test(url)) {
+    p.pdf_url = url;
+    p.pdf_filename = pdfFilename(url);
+  }
+  return p;
 }
 
 async function timedFetch(fetchImpl, url, options, ms) {
@@ -162,8 +184,16 @@ async function handle(event, deps) {
 
   let approval, property;
   try {
-    approval = await readRow(fetchImpl, env, 'listing_description_approvals',
-      'select=property_id,content,approved_by,approved_at&property_id=eq.' + encodeURIComponent(propertyId));
+    try {
+      approval = await readRow(fetchImpl, env, 'listing_description_approvals',
+        'select=property_id,content,approved_by,approved_at,flyer_content,pdf_url&property_id=eq.' + encodeURIComponent(propertyId));
+    } catch (e) {
+      // A database that does not have the flyer and PDF columns yet answers 400. Read the
+      // original four columns, so an approval is still announced.
+      if (!e || e.status !== 400) throw e;
+      approval = await readRow(fetchImpl, env, 'listing_description_approvals',
+        'select=property_id,content,approved_by,approved_at&property_id=eq.' + encodeURIComponent(propertyId));
+    }
     if (approval) {
       property = await readRow(fetchImpl, env, 'properties',
         'select=id,address,agent_name&id=eq.' + encodeURIComponent(propertyId));
@@ -195,7 +225,7 @@ async function handle(event, deps) {
     return answer(CORS, 502, { ok: false, code: 'hook_refused', error: 'Zapier answered with error ' + res.status });
   }
   console.log('[notify-description-approved] sent. listing ' + propertyId + ' approved_at ' + approval.approved_at);
-  return answer(CORS, 200, { ok: true, approved_at: approval.approved_at });
+  return answer(CORS, 200, { ok: true, approved_at: approval.approved_at, with_pdf: !!payload.pdf_url });
 }
 
 exports.handler = async (event) => {
@@ -206,4 +236,4 @@ exports.handler = async (event) => {
   }
 };
 
-exports._test = { handle, buildPayload, displayTime, requestAllowed, originAllowed, hookUrl };
+exports._test = { handle, buildPayload, displayTime, pdfFilename, requestAllowed, originAllowed, hookUrl };

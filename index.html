@@ -2684,7 +2684,8 @@ body {
                     <div v-if="lstApprIsOn()" data-appr-writer="approved" style="color:#166534;font-weight:600;">✓ Approved for marketing by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
                     <div v-else style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                       <span data-appr-writer="not-approved" style="color:#6b7280;font-weight:600;">Saved to the listing. Not approved for marketing.</span>
-                      <button class="btn-sm" data-appr-writer="approve" :disabled="lstAppr.busy" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                      <button v-if="!lstFlyerReady()" class="btn-sm" data-appr-writer="to-listing" @click="lstApprGoListing()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">A flyer version is needed first: go to the listing</button>
+                      <button v-else class="btn-sm" data-appr-writer="approve" :disabled="lstAppr.busy" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
                     </div>
                     <div v-if="lstAppr.failed" data-appr-writer="failed" style="color:#b91c1c;margin-top:4px;">NOT approved: {{ lstAppr.failed }}.</div>
                     <div v-if="lstApprIsOn() && (lstAppr.notice==='failed' || lstAppr.notice==='none')" data-appr-writer="not-notified" style="color:#b91c1c;margin-top:4px;">Concierge has NOT been notified of this approval{{ lstAppr.notice==='failed' ? ' (' + lstAppr.noticeError + ')' : '' }}. The approval stands. <button class="btn-sm" data-appr-writer="notify" @click="lstApprNotify()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Notify Concierge</button></div>
@@ -6260,13 +6261,53 @@ body {
                       <div v-else-if="lstAppr.state==='off'" data-appr="off" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;">Approving is not switched on yet (the one-time database setup has not been run). Nothing can be approved until it is. Tell Marc.</div>
                       <div v-else-if="lstAppr.state==='error'" data-appr="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;">The approval could not be checked ({{ lstAppr.error }}). This does not say whether the description is approved. <button class="btn-sm" data-appr="recheck" @click="lstApprReload()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Check again</button></div>
                       <template v-else>
+                        <!-- The flyer version: the second text one approval covers -->
+                        <div data-flyer="box" style="margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--cream-mid);">
+                          <div style="font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;color:var(--navy);margin-bottom:6px;">Flyer version <span style="font-weight:500;color:#6b7280;">({{ LST_FLYER_MAX }} words at most)</span></div>
+                          <div v-if="lstFlyer.busy" data-flyer="busy" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;"><span class="fwd-thinking"><span></span><span></span><span></span></span> Writing the flyer version from the description above...</div>
+                          <template v-else-if="lstFlyer.editing">
+                            <div v-if="lstApprIsOn()" data-flyer="edit-warning" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This flyer version is approved for marketing. Saving different text clears the approval, and both texts will need to be approved again.</div>
+                            <textarea data-flyer="textarea" v-model="lstFlyer.draft" placeholder="Write the flyer version here: the residence, the location and how it lives." style="width:100%;min-height:170px;font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--white);border:1.5px solid var(--gold);border-radius:2px;padding:12px;line-height:1.65;resize:vertical;outline:none;box-sizing:border-box;margin-bottom:6px;"></textarea>
+                            <div data-flyer="count" :style="{fontFamily:'Montserrat,sans-serif',fontSize:'11px',fontWeight:600,marginBottom:'8px',color: fosWordCount(lstFlyer.draft) > LST_FLYER_MAX ? '#b91c1c' : '#166534'}">{{ fosWordCount(lstFlyer.draft) }} / {{ LST_FLYER_MAX }} words<span v-if="fosWordCount(lstFlyer.draft) > LST_FLYER_MAX">: over the limit by {{ fosWordCount(lstFlyer.draft) - LST_FLYER_MAX }}. It can be saved, but it cannot be approved until it is {{ LST_FLYER_MAX }} or fewer.</span></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                              <button class="btn-sm" data-flyer="save" :disabled="lstFlyer.saving || !lstFlyer.draft.trim()" @click="lstFlyerSave()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstFlyer.saving ? 'Saving...' : 'Save flyer version' }}</button>
+                              <button class="btn-sm" data-flyer="cancel" :disabled="lstFlyer.saving" @click="lstFlyer.editing=false;lstFlyer.draft=''" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Cancel</button>
+                            </div>
+                          </template>
+                          <template v-else-if="lstFlyer.text">
+                            <div data-flyer="text" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:6px;">{{ lstFlyer.text }}</div>
+                            <div data-flyer="count" :style="{fontFamily:'Montserrat,sans-serif',fontSize:'11px',fontWeight:600,marginBottom:'8px',color: fosWordCount(lstFlyer.text) > LST_FLYER_MAX ? '#b91c1c' : '#166534'}">{{ fosWordCount(lstFlyer.text) }} / {{ LST_FLYER_MAX }} words<span v-if="fosWordCount(lstFlyer.text) > LST_FLYER_MAX">: over the limit by {{ fosWordCount(lstFlyer.text) - LST_FLYER_MAX }}. Shorten it before approving.</span></div>
+                            <div v-for="(iss, ii) in lstFlyerIssues(lstFlyer.text)" :key="ii" data-flyer="issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;margin-bottom:6px;">Check before approving: {{ iss }}.</div>
+                            <div v-if="lstFlyer.stale && !lstApprIsOn()" data-flyer="stale" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">The description was saved after this flyer version was written. Read the flyer version again, or rewrite it, before approving.</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                              <button class="btn-sm btn-navy" data-flyer="copy" @click="copy(lstFlyer.text)">Copy</button>
+                              <button class="btn-sm" data-flyer="edit" :disabled="lstFlyer.saving" @click="lstFlyerEdit()" style="background:var(--white);border:1px solid var(--gold);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Edit</button>
+                              <button class="btn-sm" data-flyer="rewrite" :disabled="lstFlyer.saving || lstDescEditing" @click="lstFlyerWrite()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Rewrite from the description</button>
+                            </div>
+                          </template>
+                          <template v-else>
+                            <div data-flyer="none" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:8px;">No flyer version yet. One approval covers two texts: the description above and a short version for marketing flyers. The OS writes the short version from the description; you can edit it.</div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                              <button class="btn-sm" data-flyer="write" :disabled="lstDescEditing" @click="lstFlyerWrite()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Write the flyer version</button>
+                              <button class="btn-sm" data-flyer="self" @click="lstFlyerEdit()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Write it myself</button>
+                            </div>
+                          </template>
+                          <div v-if="lstFlyer.error" data-flyer="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">{{ lstFlyer.error }}</div>
+                        </div>
                         <div v-if="lstApprIsOn()" data-appr="approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#166534;line-height:1.5;">✓ Approved by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
-                        <template v-else>
+                        <div v-if="lstApprIsOn() && lstAppr.row.flyer_content == null" data-appr="old-approval" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:4px;line-height:1.5;">This approval was given before flyer versions existed. It covers the description only and has no PDF.</div>
+                        <template v-if="lstApprIsOn() && lstAppr.row.flyer_content != null">
+                          <div v-if="lstAppr.pdf==='making'" data-appr="pdf-making" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:6px;">Making the branded PDF...</div>
+                          <div v-else-if="lstAppr.row.pdf_url" data-appr="pdf" style="font-family:'Montserrat',sans-serif;font-size:11px;margin-top:6px;"><a :href="lstAppr.row.pdf_url" target="_blank" rel="noopener" data-appr="pdf-link" style="color:var(--navy);font-weight:600;">Open the branded PDF</a> <span style="color:#6b7280;">of the approved description</span></div>
+                          <div v-else data-appr="pdf-failed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">The branded PDF was NOT produced{{ lstAppr.pdfError ? ' (' + lstAppr.pdfError + ')' : '' }}. The approval stands. <button class="btn-sm" data-appr="pdf-retry" @click="lstApprRetryPdf()" style="margin-left:6px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Make the PDF</button></div>
+                        </template>
+                        <template v-if="!lstApprIsOn()">
                           <div v-if="lstAppr.cleared" data-appr="cleared" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This description was approved by {{ lstAppr.cleared.by }} on {{ lstApprWhen(lstAppr.cleared.at) }}. The text has changed since, so that approval was cleared. Approve it again when this text is final.</div>
                           <div v-else-if="lstAppr.row" data-appr="mismatch" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">An approval by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }} is on file, but for different text than the text shown above. It does not cover this text.</div>
                           <div data-appr="not-approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px;">Not approved</div>
-                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Concierge uses this description in marketing and in the Preparing to Launch email only after you approve it. Approve it when the text above is final.</div>
-                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                          <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Concierge uses these in marketing and in the Preparing to Launch email only after you approve them. Approve them when both texts are final: one approval covers the description and the flyer version.</div>
+                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing || !lstFlyerReady()" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing || !lstFlyerReady()) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                          <span v-if="!lstFlyerReady() && !lstDescEditing" data-appr="need-flyer" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">{{ lstFlyer.editing ? 'Save or cancel the flyer edit first.' : (lstFlyer.busy ? 'Waiting for the flyer version.' : (lstFlyer.text.trim() ? 'The flyer version is over ' + LST_FLYER_MAX + ' words.' : 'A flyer version is needed first.')) }}</span>
                           <span v-if="lstDescEditing" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">Save or cancel your edit first.</span>
                         </template>
                         <div v-if="lstAppr.failed" data-appr="failed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">NOT approved: {{ lstAppr.failed }}.</div>
@@ -11239,11 +11280,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // lstAppr.notice: idle | checking | sending | sent | failed | none | unknown
     //   none    = this approval exists but no message to Concierge was ever recorded
     //   unknown = the record of the message could not be read
-    const lstAppr = reactive({ row: null, state: 'idle', error: '', busy: false, failed: '', cleared: null, notice: 'idle', noticeAt: '', noticeError: '' });
+    const lstAppr = reactive({ row: null, state: 'idle', error: '', busy: false, failed: '', cleared: null, notice: 'idle', noticeAt: '', noticeError: '', pdf: 'idle', pdfError: '' });
     const LST_APPR_NOTICE_KEY = 'ld_approval_notice:';   // os_settings key prefix, one per listing
     function _lstApprReset() {
       lstAppr.row = null; lstAppr.state = 'idle'; lstAppr.error = ''; lstAppr.busy = false; lstAppr.failed = '';
       lstAppr.cleared = null; lstAppr.notice = 'idle'; lstAppr.noticeAt = ''; lstAppr.noticeError = '';
+      lstAppr.pdf = 'idle'; lstAppr.pdfError = '';
+      lstFlyer.text = ''; lstFlyer.busy = false; lstFlyer.error = ''; lstFlyer.editing = false; lstFlyer.draft = ''; lstFlyer.saving = false; lstFlyer.stale = false;
     }
     function _lstApprHere(propId) { return !!(lstActiveProp.value && lstActiveProp.value.id === propId); }
     // fetch() with a time limit, so a hung request can never leave a spinner or hold up a save message.
@@ -11265,8 +11308,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return !isNaN(x) && x === y;
     }
     // True only when the database holds an approval for exactly the text on screen.
+    // Since the flyer version was added, one approval covers two texts: the row's
+    // flyer_content must also be exactly the saved flyer version. A row approved before
+    // that (flyer_content null) covers the description only.
     function lstApprIsOn() {
-      return lstAppr.state === 'ready' && !!lstAppr.row && lstAppr.row.content === lstNotes.listing_remarks;
+      return lstAppr.state === 'ready' && !!lstAppr.row && lstAppr.row.content === lstNotes.listing_remarks
+        && (lstAppr.row.flyer_content == null || lstAppr.row.flyer_content === lstFlyer.text);
     }
     function lstApprWhen(iso) { return lstHistWhen({ saved_at: iso }); }
     // Read the approval for one listing. Never guesses: a failed read is shown as a failed read.
@@ -11275,7 +11322,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (lstAppr.state === 'idle' || lstAppr.state === 'error' || lstAppr.state === 'off') lstAppr.state = 'loading';
       let row = null;
       try {
-        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/listing_description_approvals?select=property_id,content,approved_by,approved_at&property_id=eq.' + encodeURIComponent(propId), { headers: supaRest.headers() }, 8000);
+        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/listing_description_approvals?select=*&property_id=eq.' + encodeURIComponent(propId), { headers: supaRest.headers() }, 8000);
         if (!res.ok) {
           let code = '', detail = 'error ' + res.status;
           try { const j = await res.json(); code = j.code || ''; detail = j.message || j.hint || detail; } catch (x) {}
@@ -11310,6 +11357,312 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
     }
     function lstApprReload() { if (lstActiveProp.value) return lstApprLoad(lstActiveProp.value.id); }
+
+    // ── Flyer version (Approve for marketing, part two) ─────────────────────
+    // One approval covers two texts: the full description and a short version for
+    // marketing flyers, 200 words at most. The flyer version is a listing note like any
+    // other (property_notes, subfolder 'listing_flyer', saved with supaRest.saveNote), so
+    // the database's clear-on-edit rule sees it: saving different flyer text deletes the
+    // approval exactly as saving a different description does.
+    // The OS writes the first draft with AI; the agent can edit it. Approve stays off
+    // until a flyer version is saved and is 200 words or fewer. The same limit is
+    // enforced again by the database function, with the same way of counting.
+    const LST_FLYER_MAX = 200;
+    const lstFlyer = reactive({ text: '', busy: false, error: '', editing: false, draft: '', saving: false, stale: false });
+    // Words are runs of characters separated by spaces, tabs or line breaks. The database
+    // counts the same way (listing_flyer_word_count), so the two can never disagree.
+    function fosWordCount(t) {
+      const x = String(t == null ? '' : t).replace(/\u00a0/g, ' ').replace(/^[ \t\n\r]+|[ \t\n\r]+$/g, '');
+      return x ? x.split(/[ \t\n\r]+/).length : 0;
+    }
+    function _lstFlyerClean(t) {
+      return String(t == null ? '' : t).replace(/\r\n?/g, '\n').replace(/\u00a0/g, ' ').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
+    }
+    // The description's own word rules, plus FORWARD's brand list.
+    const LST_FLYER_BANNED = ['stunning', 'luxurious', 'impeccable', 'nestled', 'boasts', 'charming', 'gorgeous', 'amazing', 'rare find', "won't last", 'turnkey'];
+    // Fair housing: copy describes the residence, the location and how it lives. It never
+    // describes who should live there. These catch the usual ways that slips in.
+    const _LST_FLYER_WHO = '(?:famil(?:y|ies)(?!\\s+room)|couples?|singles?|professionals?|executives?|retirees?|empty[- ]nesters?|newlyweds?|bachelors?|students?|seniors?|downsizers?|commuters?|investors?|first[- ]time (?:home ?)?buyers?|home ?buyers?|buyers?|kids|children)';
+    const LST_FLYER_WHO_RX = [
+      new RegExp('\\b(?:for|suits?|suited to|attracts?|welcomes?|awaits?)\\s+(?:(?:a|an|the|any|your|active|growing|young|busy|discerning|savvy|modern|today\'s)\\s+)*' + _LST_FLYER_WHO + '\\b', 'i'),
+      /\b(?:family[- ]friendly|young professionals?|empty[- ]nesters?|retirees?|newlyweds?|bachelor pad|growing famil(?:y|ies)|first[- ]time (?:home ?)?buyers?|mature (?:adults?|buyers?)|adults only|no children)\b/i,
+      /\b(?:buyers?|those|anyone|someone|people)\s+(?:who|seeking|looking|wanting)\b/i
+    ];
+    // What is wrong with a flyer text, in words an agent can act on. [] when nothing is.
+    function lstFlyerIssues(t) {
+      const text = String(t || ''), low = text.toLowerCase(), out = [];
+      LST_FLYER_BANNED.forEach(function (w) {
+        if (new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)').test(low)) out.push('it uses "' + w + '", a word FORWARD does not use');
+      });
+      if (/[\u2014\u2013]/.test(text)) out.push('it has a long dash; use a comma, a colon or a semicolon');
+      const seen = [];
+      LST_FLYER_WHO_RX.forEach(function (rx) {
+        const m = text.match(rx);
+        // One phrase is reported once, even when two patterns catch it.
+        if (m && !seen.some(function (x) { return x.indexOf(m[0].toLowerCase()) >= 0 || m[0].toLowerCase().indexOf(x) >= 0; }) && seen.push(m[0].toLowerCase())) out.push('"' + m[0] + '" describes who should live there. Describe the residence, the location and how it lives, never the buyer (fair housing)');
+      });
+      return out;
+    }
+    // A flyer version is saved, within the limit, and not mid-edit.
+    function lstFlyerReady() {
+      return !!lstFlyer.text.trim() && fosWordCount(lstFlyer.text) <= LST_FLYER_MAX && !lstFlyer.editing && !lstFlyer.busy && !lstFlyer.saving;
+    }
+    // The voice and word rules, taken from the Listing Description Writer's own prompt so
+    // the two cannot drift apart. The writer's prompt itself is not changed.
+    function _lstFlyerVoice() {
+      const a = LD_SYSTEM.indexOf('FORWARD Brand Vision & Voice:'), b = LD_SYSTEM.indexOf('Here is an example of the quality');
+      return (a >= 0 && b > a) ? LD_SYSTEM.slice(a, b).trim() : '';
+    }
+    // The five buyer personas the writer produced for this listing, if they were kept:
+    // in the writer's saved conversation, or in the campaign's buyer section.
+    function _lstFlyerPersonas() {
+      let best = '';
+      const chat = ldSavedChat.value;
+      if (chat && Array.isArray(chat.messages)) {
+        chat.messages.forEach(function (m) {
+          if (m && m.role === 'assistant' && typeof m.content === 'string' && /persona/i.test(m.content) && m.content.length > best.length) best = m.content;
+        });
+      }
+      if (!best && Array.isArray(campParsed.value)) {
+        campParsed.value.forEach(function (sec) {
+          const title = String((sec && (sec.title || sec.name || sec.key)) || ''), body = String((sec && (sec.content || sec.body || sec.text)) || '');
+          if (/avatar|persona|buyer profile|target buyer/i.test(title) && body.length > best.length) best = body;
+        });
+      }
+      return best.slice(0, 7000);
+    }
+    function _lstFlyerSystem() {
+      return 'You write short marketing flyer copy for FORWARD, a luxury service real estate team in Washington, DC, Maryland and Virginia.\n\n'
+        + _lstFlyerVoice() + '\n\n'
+        + 'FLYER RULES. These come first wherever they differ from anything above:\n'
+        + '- Rewrite the approved listing description below as flyer copy. Rewrite it. Do not cut it off partway and do not copy its paragraphs.\n'
+        + '- HARD LIMIT: ' + LST_FLYER_MAX + ' words. Aim for 150 to 180 words. Count your words before you answer.\n'
+        + '- Use ONLY facts stated in the listing description. Add no feature, number, distance, name or claim that is not in it.\n'
+        + '- Two or three short paragraphs of plain prose. No headline, no bullet list, no list of amenities and distances, no hashtags, no emoji, no markdown.\n'
+        + '- Never use these words: ' + LST_FLYER_BANNED.join(', ') + '.\n'
+        + '- Never use em dashes or en dashes. Use commas, colons or semicolons.\n'
+        + '- Do not include the street address.\n'
+        + '- FAIR HOUSING, REQUIRED: describe the residence, the location and how it lives. Never describe the buyer or who should live there. No "perfect for families", no "ideal for young professionals", no "great for retirees", no "buyers who", and no wording about any kind of person, household, age, family status, religion, origin or ability.\n'
+        + '- The buyer personas, when given, are for you alone. Use them only to decide which features to lead with. Nothing about them may appear in the copy: no persona name, job, age, income or household.\n\n'
+        + 'Answer with the flyer copy only. No preface, no word count, no quotation marks around it.';
+    }
+    // Write the flyer version with AI, check it, and save it. Up to three tries: an answer
+    // over the limit, or one that breaks a word rule or describes the buyer, is sent back
+    // with the reason. Nothing is saved unless a try passes every check.
+    async function lstFlyerWrite() {
+      const prop = lstActiveProp.value;
+      const desc = (lstNotes.listing_remarks || '').trim();
+      if (!prop || !prop.id || !desc || lstFlyer.busy || lstFlyer.saving) return false;
+      const pid = prop.id;
+      lstFlyer.busy = true; lstFlyer.error = ''; lstFlyer.editing = false;
+      const personas = _lstFlyerPersonas();
+      const base = 'LISTING DESCRIPTION (the approved text to rewrite):\n' + desc
+        + (personas ? '\n\nBUYER PERSONAS (to steer which features lead; never to appear in the copy):\n' + personas : '\n\nBUYER PERSONAS: none were kept for this listing. The description above was written for them; lead with what it leads with.');
+      let good = '', lastWhy = '', failure = '';
+      try {
+        const system = _lstFlyerSystem();
+        let prompt = base;
+        for (let attempt = 1; attempt <= 3 && !good; attempt++) {
+          let out = await claude(prompt, system, 1500);
+          out = _lstFlyerClean(String(out || '').replace(/^\s*["\u201c]+|["\u201d]+\s*$/g, '').replace(/\*\*/g, ''));
+          const n = fosWordCount(out), problems = [];
+          if (n > LST_FLYER_MAX) problems.push('it is ' + n + ' words and the limit is ' + LST_FLYER_MAX);
+          if (n < 40) problems.push('it is only ' + n + ' words, too short to be flyer copy');
+          lstFlyerIssues(out).forEach(function (x) { problems.push(x); });
+          if (!problems.length) { good = out; break; }
+          lastWhy = problems.join('; ');
+          prompt = base + '\n\nYOUR LAST ANSWER WAS REJECTED: ' + lastWhy + '. Write it again from the listing description, following every flyer rule, in ' + (n > LST_FLYER_MAX ? '160 words or fewer' : 'at most ' + LST_FLYER_MAX + ' words') + '.';
+        }
+        if (!good) failure = 'three tries did not produce a version inside the rules (last try: ' + lastWhy + ')';
+      } catch (e) { failure = fosWhy(e); }
+      if (!_lstApprHere(pid)) { lstFlyer.busy = false; return false; }
+      if (!good) {
+        lstFlyer.busy = false;
+        lstFlyer.error = 'The flyer version was NOT written: ' + failure + '. Nothing was saved, and the description cannot be approved without one. Try again, or write it yourself.';
+        console.warn('[flyer version] not written. listing ' + pid + ': ' + failure);
+        return false;
+      }
+      const ok = await _lstFlyerStore(pid, good, 'Flyer version written.');
+      lstFlyer.busy = false;
+      return ok;
+    }
+    async function _lstFlyerStore(pid, text, okMsg) {
+      lstFlyer.saving = true;
+      try {
+        await supaRest.saveNote(pid, 'listing_flyer', text);
+      } catch (e) {
+        lstFlyer.saving = false;
+        if (_lstApprHere(pid)) lstFlyer.error = 'The flyer version was NOT saved (' + fosWhy(e) + '). Your text is still on screen: save it again.';
+        showToast('Flyer version NOT saved (' + fosWhy(e) + ').', 9000);
+        return false;
+      }
+      if (_lstApprHere(pid)) { lstFlyer.text = text; lstFlyer.editing = false; lstFlyer.draft = ''; lstFlyer.error = ''; lstFlyer.stale = false; }
+      const cleared = await _lstApprAfterSave;
+      lstFlyer.saving = false;
+      showToast(cleared ? (okMsg + ' ' + LST_APPR_CLEARED_MSG) : okMsg, cleared ? 10000 : 3000);
+      return true;
+    }
+    function lstFlyerEdit() { lstFlyer.draft = lstFlyer.text; lstFlyer.editing = true; lstFlyer.error = ''; }
+    async function lstFlyerSave() {
+      const prop = lstActiveProp.value, text = _lstFlyerClean(lstFlyer.draft);
+      if (!prop || !prop.id || !text || lstFlyer.saving) return false;
+      return _lstFlyerStore(prop.id, text, 'Flyer version saved.');
+    }
+    function lstApprGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'listingdesc'; window.scrollTo(0, 0); }
+
+    // ── Branded PDF of the approved description ─────────────────────────────
+    // Made in the browser on approval, with the same header, footer and colors as the
+    // other FORWARD PDFs, and stored in the public storage folder
+    // 'listing-description-pdfs' so Concierge can open it without signing in. One file
+    // per approval: a new folder name every time, never replaced. Its public address is
+    // recorded on the approval row by the database function set_listing_description_pdf.
+    // A failure never undoes the approval: pdf_url stays empty, the listing says the PDF
+    // was not produced, and Concierge is still told, without a PDF.
+    const LST_PDF_BUCKET = 'listing-description-pdfs';
+    // "6300 Stevenson Ave, #1120, Alexandria, VA" -> "6300 Stevenson Ave #1120".
+    // "1415 Riverside Ave. Baltimore, MD" (no comma before the city) -> "1415 Riverside Ave".
+    function lstApprStreet(address) {
+      const raw = String(address || '').replace(/\s+/g, ' ').trim();
+      const parts = raw.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+      let street = parts[0] || '';
+      if (parts[1] && /^(?:(?:(?:unit|apt|apartment|suite|ste)\.?\s*)+#?\s*[\w-]+(?:\s*-\s*\w+)?|#\s*[\w-]+(?:\s*-\s*\w+)?)$/i.test(parts[1])) street += ' ' + parts[1];
+      const m = street.match(/^(\d.*?\b(?:st|street|ave|avenue|rd|road|dr|drive|ct|court|ln|lane|blvd|boulevard|way|pl|place|ter|terrace|cir|circle|pkwy|parkway|hwy|highway|sq|square|trl|trail)\b\.?(?:\s+(?:nw|ne|sw|se|n|s|e|w)\b)?(?:\s+(?:(?:unit|apt|apartment|suite|ste)\.?\s*)*#?\s*[\w-]*\d[\w-]*(?:\s*-\s*\w+)?)?)\s+(?!(?:nw|ne|sw|se|n|s|e|w)\b)[A-Za-z][a-z]{2,}(?:\s+[A-Za-z][a-z]{2,})?$/i);
+      if (m) street = m[1];
+      return street.replace(/[.\s]+$/, '');
+    }
+    // File names keep to letters, digits, spaces, periods and hyphens: safe in a web
+    // address and in every storage system. "#1120" becomes "Unit 1120".
+    function lstApprPdfName(address) {
+      let x = lstApprStreet(address).replace(/&/g, ' and ').replace(/\s*#\s*/g, ' Unit ').replace(/[^A-Za-z0-9 .\-]/g, ' ')
+        .replace(/\b(unit)(?:\s+unit)+\b/gi, '$1').replace(/\s+/g, ' ').replace(/\s+\./g, '.').replace(/^[ .-]+|[ .-]+$/g, '').slice(0, 80).replace(/[ .-]+$/, '');
+      return 'Listing Description' + (x ? ' - ' + x : '') + '.pdf';
+    }
+    // jsPDF's built-in fonts hold Latin-1 only. Turn typographic marks into plain ones.
+    function _lstApprPdfText(t) {
+      return String(t || '').replace(/\r\n?/g, '\n').replace(/[\u2018\u2019\u201a\u2032]/g, "'").replace(/[\u201c\u201d\u201e\u2033]/g, '"')
+        .replace(/\s*\u2014\s*/g, ', ').replace(/\u2013/g, '-').replace(/\u2026/g, '...').replace(/[\u2022\u25cf\u25aa]/g, '-').replace(/\u00a0/g, ' ')
+        .replace(/\t/g, ' ').replace(/[^\n\x20-\x7e\xa1-\xff]/g, '');
+    }
+    function lstApprPdfWhen(iso) {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '';
+      return d.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET';
+    }
+    // Returns a jsPDF document. info = { address, agent, approvedBy, approvedAt, text }
+    function lstApprBuildPdf(info) {
+      if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('the PDF tool did not load on this page');
+      const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'letter' });
+      const W = 612, H = 792, ML = 54, MR = 54, TW = W - ML - MR, navy = [10, 22, 40], gold = [201, 168, 76];
+      let y = 0, pageNum = 1;
+      function header() {
+        doc.setFillColor(navy[0], navy[1], navy[2]); doc.rect(0, 0, W, 62, 'F');
+        let drawn = false;
+        try { if (FORWARD_LOGO_B64) { doc.addImage(FORWARD_LOGO_B64, 'PNG', 38, 10, 4.85 * 40, 40); drawn = true; } } catch (e) {}
+        if (!drawn) { doc.setFont('helvetica', 'bold'); doc.setFontSize(18); doc.setTextColor(255, 255, 255); doc.text('FORWARD', 38, 40); }
+        doc.setFillColor(gold[0], gold[1], gold[2]); doc.rect(0, 62, W, 3, 'F');
+      }
+      function footer() {
+        doc.setFillColor(navy[0], navy[1], navy[2]); doc.rect(0, H - 36, W, 36, 'F');
+        doc.setFillColor(gold[0], gold[1], gold[2]); doc.rect(0, H - 36, W, 2, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(gold[0], gold[1], gold[2]);
+        doc.text('FORWARD Real Estate | Corcoran McEnearney', ML, H - 16);
+        doc.setFont('helvetica', 'normal'); doc.setTextColor(180, 185, 200);
+        doc.text('Page ' + pageNum, W - MR, H - 16, { align: 'right' });
+      }
+      function newPage() { footer(); doc.addPage(); pageNum++; header(); y = 96; }
+      header();
+      y = 96;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(gold[0], gold[1], gold[2]);
+      doc.text('LISTING DESCRIPTION  |  APPROVED FOR MARKETING', ML, y, { charSpace: 1 }); y += 22;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(navy[0], navy[1], navy[2]);
+      doc.splitTextToSize(_lstApprPdfText(info.address) || 'Address not recorded', TW).forEach(function (line) { doc.text(line, ML, y); y += 21; });
+      y += 6;
+      [['Listing agent', info.agent], ['Approved by', info.approvedBy], ['Approved', lstApprPdfWhen(info.approvedAt)]].forEach(function (row) {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(120, 130, 145);
+        doc.text(row[0].toUpperCase(), ML, y, { charSpace: 0.6 });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(navy[0], navy[1], navy[2]);
+        doc.text(_lstApprPdfText(row[1]) || 'Not recorded', ML + 96, y);
+        y += 16;
+      });
+      y += 6;
+      doc.setDrawColor(gold[0], gold[1], gold[2]); doc.setLineWidth(1); doc.line(ML, y, W - MR, y); y += 26;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(40, 48, 62);
+      _lstApprPdfText(info.text).split('\n').forEach(function (para) {
+        if (!para.trim()) { y += 8; return; }
+        doc.splitTextToSize(para.trim(), TW).forEach(function (line) {
+          if (y > H - 62) newPage();
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(11); doc.setTextColor(40, 48, 62);
+          doc.text(line, ML, y); y += 16;
+        });
+        y += 6;
+      });
+      footer();
+      return doc;
+    }
+    // Make, store and record the PDF for the approval on file. Never throws. Returns the
+    // updated approval row, or null when the PDF was not produced.
+    async function lstApprMakePdf(prop, row) {
+      prop = (prop && prop.id) ? prop : lstActiveProp.value; row = (row && row.approved_at) ? row : lstAppr.row;
+      if (!prop || !row || lstAppr.pdf === 'making') return null;
+      const pid = prop.id;
+      const mine = function () { return _lstApprHere(pid) && !!lstAppr.row && _lstApprSameMoment(lstAppr.row.approved_at, row.approved_at); };
+      if (mine()) { lstAppr.pdf = 'making'; lstAppr.pdfError = ''; }
+      let updated = null, why = '';
+      const said = function (msg) { const e = new Error(msg); e._lstApprSaid = true; return e; };
+      try {
+        const blob = lstApprBuildPdf({ address: prop.address || '', agent: prop.agent_name || '', approvedBy: row.approved_by, approvedAt: row.approved_at, text: row.content }).output('blob');
+        const d = new Date(), two = function (n) { return (n < 10 ? '0' : '') + n; };
+        const stamp = d.getUTCFullYear() + two(d.getUTCMonth() + 1) + two(d.getUTCDate()) + '-' + two(d.getUTCHours()) + two(d.getUTCMinutes()) + two(d.getUTCSeconds());
+        const rand = Math.random().toString(36).slice(2, 8) || 'x';
+        const enc = [String(pid), stamp + '-' + rand, lstApprPdfName(prop.address)].map(encodeURIComponent).join('/');
+        const up = await _lstApprFetch(SUPABASE_URL + '/storage/v1/object/' + LST_PDF_BUCKET + '/' + enc, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + SUPABASE_ANON_KEY, 'Content-Type': 'application/pdf', 'x-upsert': 'false' },
+          body: blob
+        }, 30000);
+        if (!up.ok) {
+          let detail = 'error ' + up.status;
+          try { const j = await up.json(); detail = j.message || j.error || detail; } catch (x) {}
+          if (/bucket not found/i.test(detail)) detail = 'the PDF folder is not set up yet (the one-time database setup has not been run)';
+          throw said('the PDF could not be stored: ' + detail);
+        }
+        const url = SUPABASE_URL + '/storage/v1/object/public/' + LST_PDF_BUCKET + '/' + enc;
+        // It must open for someone who is not signed in, so this request carries no key.
+        const chk = await _lstApprFetch(url, { method: 'GET', cache: 'no-store' }, 20000);
+        if (!chk.ok) throw said('the PDF was stored but its public address does not open (error ' + chk.status + ')');
+        const head = new Uint8Array(await chk.arrayBuffer());
+        if (!(head.length > 4 && head[0] === 0x25 && head[1] === 0x50 && head[2] === 0x44 && head[3] === 0x46)) throw said('the public address did not return a PDF');
+        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/rpc/set_listing_description_pdf', {
+          method: 'POST', headers: supaRest.headers(), body: JSON.stringify({ p_property_id: pid, p_approved_at: row.approved_at, p_pdf_url: url })
+        }, 15000);
+        if (!res.ok) {
+          let code = '', detail = 'error ' + res.status;
+          try { const j = await res.json(); code = j.code || ''; detail = j.message || j.hint || detail; } catch (x) {}
+          if (code === 'PGRST202' || res.status === 404) detail = 'the one-time database setup has not been run';
+          throw said('the PDF was made but could not be recorded on the approval: ' + detail);
+        }
+        let got = await res.json();
+        if (Array.isArray(got)) got = got[0];
+        if (!got || got.pdf_url !== url) throw said('the PDF was made but the database did not confirm its address');
+        updated = got;
+      } catch (e) { why = _lstApprNetWhy(e, 'storage'); }
+      if (updated) {
+        if (mine()) { lstAppr.row = updated; lstAppr.pdf = 'idle'; lstAppr.pdfError = ''; }
+        return updated;
+      }
+      console.error('[approve for marketing] PDF NOT produced. listing ' + pid + ', approved_at ' + row.approved_at + ': ' + why);
+      if (mine()) { lstAppr.pdf = 'failed'; lstAppr.pdfError = why; }
+      showToast('Approved for marketing, but the branded PDF was NOT produced (' + why + '). The approval stands.', 10000);
+      return null;
+    }
+    // "Make the PDF" on the listing, after a failure: make it, then tell Concierge again
+    // so the email with the PDF follows the one without.
+    async function lstApprRetryPdf() {
+      const prop = lstActiveProp.value;
+      const got = await lstApprMakePdf();
+      if (got && prop) await lstApprNotify(prop, got);
+      return !!got;
+    }
     // After any save of the description: ask the database whether the approval still stands.
     // Resolves true when an approval that was on file is now gone (the text changed).
     const LST_APPR_CLEARED_MSG = 'The text changed, so its approval for marketing was cleared. Approve it again when it is final.';
@@ -11329,7 +11682,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     window.addEventListener('fos-note-saved', function (ev) {
       const d = ev && ev.detail;
-      if (!d || d.subfolder !== 'listing_remarks') return;
+      if (!d || (d.subfolder !== 'listing_remarks' && d.subfolder !== 'listing_flyer')) return;
+      if (d.subfolder === 'listing_remarks' && _lstApprHere(d.propertyId) && lstFlyer.text) lstFlyer.stale = true;
       _lstApprAfterSave = _lstApprHere(d.propertyId) ? lstApprAfterSave(d.propertyId).catch(function () { return false; }) : Promise.resolve(false);
     });
     // Tell Concierge (Netlify function -> Zapier catch hook -> email). The hook address lives
@@ -11365,13 +11719,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!prop || !prop.id || !text.trim() || lstAppr.busy || lstApprIsOn()) return false;
       const who = agentName.value || '';
       if (!who) { lstAppr.failed = 'no agent is signed in'; return false; }
+      const flyer = lstFlyer.text;
+      if (!lstFlyerReady()) { lstAppr.failed = 'a saved flyer version of ' + LST_FLYER_MAX + ' words or fewer is needed first'; return false; }
       const pid = prop.id;
       lstAppr.busy = true; lstAppr.failed = '';
       let row = null, why = '';
       try {
-        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/rpc/approve_listing_description', {
+        const res = await _lstApprFetch(SUPABASE_URL + '/rest/v1/rpc/approve_listing_description_with_flyer', {
           method: 'POST', headers: supaRest.headers(),
-          body: JSON.stringify({ p_property_id: pid, p_content: text, p_approved_by: who })
+          body: JSON.stringify({ p_property_id: pid, p_content: text, p_flyer_content: flyer, p_approved_by: who })
         }, 15000);
         if (!res.ok) {
           let code = '', detail = 'error ' + res.status;
@@ -11381,7 +11737,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
         let got = await res.json();
         if (Array.isArray(got)) got = got[0];
-        if (!got || got.property_id !== pid || got.content !== text || !got.approved_by || !got.approved_at) {
+        if (!got || got.property_id !== pid || got.content !== text || got.flyer_content !== flyer || !got.approved_by || !got.approved_at) {
           const err = new Error('the database did not confirm the approval'); err._lstApprSaid = true; throw err;
         }
         row = got;
@@ -11404,8 +11760,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (_lstApprHere(pid)) {
         lstAppr.row = row; lstAppr.state = 'ready'; lstAppr.error = ''; lstAppr.failed = ''; lstAppr.cleared = null;
         lstAppr.notice = 'none'; lstAppr.noticeAt = ''; lstAppr.noticeError = '';
+        lstAppr.pdf = 'idle'; lstAppr.pdfError = '';
       }
-      await lstApprNotify(prop, row);
+      // The PDF first, so the message to Concierge can carry its address. If the PDF
+      // fails the approval stands and Concierge is still told, without a PDF.
+      const withPdf = await lstApprMakePdf(prop, row);
+      await lstApprNotify(prop, withPdf || row);
       return true;
     }
 
@@ -11744,6 +12104,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         });
         const _ldChatRow = notes.find(n => n.subfolder === 'listing_remarks_chat');
         ldSavedChat.value = _ldParseChat(_ldChatRow && _ldChatRow.content);
+        // The flyer version (newest copy), and whether the description was saved after it.
+        const _flyerRow = notes.find(n => n.subfolder === 'listing_flyer');
+        const _descRow = notes.find(n => n.subfolder === 'listing_remarks');
+        lstFlyer.text = (_flyerRow && _flyerRow.content) || '';
+        lstFlyer.stale = !!(_flyerRow && _descRow && _flyerRow.updated_at && _descRow.updated_at && new Date(_descRow.updated_at).getTime() > new Date(_flyerRow.updated_at).getTime());
         // Restore campaign sections for this property
         const campNote = notes.find(n => n.subfolder === 'campaign_sections');
         if (campNote && campNote.content) {
@@ -21474,11 +21839,15 @@ const CHANGELOG = [
     id: 'v2026-10-09',
     date: 'October 9, 2026',
     title: 'Approve a Listing Description for Marketing',
-    summary: 'A saved listing description now has an approved state. You approve it when the text is final, Concierge is told, and any later change to the text clears the approval.',
+    summary: 'A saved listing description now has an approved state. One approval covers the description and a short flyer version, makes a branded PDF, and tells Concierge. Any later change to either text clears the approval.',
     updates: [
       {
         title: 'Approve for Marketing',
         detail: 'Concierge needs to know a listing description is final before using it in marketing and in the Preparing to Launch email to your client. Until today there was no way to say so in the OS.\n\nA saved description now shows one of two things: Not approved, or Approved by your name and the date. When you approve, Concierge gets an email with the address, your name and the exact approved text.\n\nIf the text changes after you approve it, the approval is cleared and the listing tells you so. This is true wherever the change is made: the Edit button, the Writer, or the campaign editor. Saving the same text again keeps the approval.\n\nIf the approval goes through but the email to Concierge does not, the listing says Concierge has NOT been notified and gives you a Notify Concierge button. Your approval stands either way.\n\nHow to use: Open the listing, open Listing Description, and read the saved text. When it is final, press Approve for marketing. The same button is at the top of the Writer once your text is saved to the listing.\n\nBest practice: Approve last. Finish every edit, read the saved text once more from top to bottom, then approve. If you change even one word afterward, approve it again, because Concierge will only use text that is approved.'
+      },
+      {
+        title: 'One Approval Now Covers a Flyer Version Too, and Makes a Branded PDF',
+        detail: 'Approving a listing description now does two more things.\n\nFirst, a flyer version. Marketing flyers need shorter copy than the MLS, so the OS writes a version of 200 words or fewer from your saved description. It is a rewrite, not the first 200 words, and it follows the same FORWARD voice and word rules. It describes the residence, the location and how it lives, and never who should live there. You can edit it. The word count is shown, and Approve stays off until a flyer version is saved and is 200 words or fewer.\n\nOne approval covers both texts. If you change either one afterward, the approval is cleared and both need approving again.\n\nSecond, a branded PDF. When you approve, the OS makes a FORWARD PDF of the full description with the address, the listing agent, who approved it and when. Concierge gets the link with the approval email, and the listing shows Open the branded PDF. If the PDF cannot be made, your approval still stands, the listing says so, and a Make the PDF button tries again.\n\nHow to use: Open the listing, open Listing Description, and press Write the flyer version. Read it, edit it if you want, and save. Then press Approve for marketing.\n\nBest practice: Read the flyer version as carefully as the description, because it goes out under your approval. If you edit it, describe the home and never the buyer: no "perfect for" any kind of person or household. If the listing warns that the description was saved after the flyer version was written, read the flyer version again before you approve.'
       }
     ]
   }
@@ -24148,7 +24517,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
