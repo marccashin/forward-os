@@ -35,6 +35,13 @@
 #   ci/net-sheet-numbers-test.js  the seller net sheet's numbers: two executed
 #                        settlement statements to the penny, 116 recorded sheets
 #                        across all 28 jurisdictions, and one calculator.
+#   ci/description-approval-test.js  Approve for marketing: "Approved" only for
+#                        an approval the database confirmed, a changed description
+#                        says its approval was cleared, a failed write or a failed
+#                        message to Concierge is shown, and the message is the
+#                        agreed JSON.
+#   ci/description-approval-db-test.js  the same rule in a real Postgres: the
+#                        repo's SQL, run as the app's own database role.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -126,3 +133,15 @@ jobs:
       - name: Net sheet numbers test (executed statements to the penny, every jurisdiction)
         if: always()
         run: node head/ci/net-sheet-numbers-test.js head
+
+      - name: Approve for marketing test (approved only when the database says so, failures shown)
+        if: always()
+        run: node head/ci/description-approval-test.js head
+
+      # The rule that clears an approval is SQL, so it is tested in a real Postgres.
+      # GitHub's Ubuntu runners ship the server binaries; install them if one does not.
+      - name: Approve for marketing database test (the repo's SQL in a throwaway Postgres)
+        if: always()
+        run: |
+          ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
+          node head/ci/description-approval-db-test.js head
