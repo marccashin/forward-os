@@ -463,11 +463,11 @@ function session(role) {
   approve2(Hh, 'H DESC CHANGED', 'H FLYER 5', 'Marc Cashin'); const keep2 = row2(Hh);
   s = sql(FMIG);
   ok(!/ERROR/.test(s.err) && row2(Hh) === keep2 && sql("select count(*) from storage.buckets;").out === '1' && sql("select count(*) from pg_policies where schemaname='storage';").out === '1', 'running the SQL file a second time gives no error, keeps approvals and makes no second folder or policy', s.err);
-  const fparts = FMIG.split(/^-- ===== PART \d of 3[^\n]*\n(?:--[^\n]*\n)*/m).slice(1).map(p => p.split('\n').filter(l => !/^\s*--/.test(l)).join('\n').trim());
+  const fparts = FMIG.split(/^-- ===== PART \d of 4[^\n]*\n(?:--[^\n]*\n)*/m).slice(1).map(p => p.split('\n').filter(l => !/^\s*--/.test(l)).join('\n').trim());
   let fpartErr = '';
   fparts.forEach(p => { const q = sql(p); if (/ERROR/.test(q.err)) fpartErr += q.err; });
   flyer(Hh, 'H FLYER 6');
-  ok(fparts.length === 3 && !fpartErr && row2(Hh) === 'NONE', 'pasted as three comment-free parts it gives no error and the rule still works', { n: fparts.length, fpartErr });
+  ok(fparts.length === 4 && !fpartErr && row2(Hh) === 'NONE', 'pasted as four comment-free parts it gives no error and the rule still works', { n: fparts.length, fpartErr });
   ok(snap() === before, 'and at the very end everything that existed before is still exactly as it was');
   done();
 })().catch(e => { console.log('FAIL the test itself stopped: ' + (e && e.stack || e)); fail++; done(); });

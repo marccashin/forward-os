@@ -1,5 +1,5 @@
 -- Approve for marketing, part two: the flyer version and the branded PDF.
--- Run once in the Supabase SQL Editor, in the three parts marked below, AFTER
+-- Run once in the Supabase SQL Editor, in the four parts marked below, AFTER
 -- sql/2026-10-09_listing_description_approvals.sql. Safe to run again.
 --
 -- Adds two nullable columns to public.listing_description_approvals. The Command Center
@@ -22,7 +22,7 @@
 -- the recheck (it now also compares the flyer) and the trigger function (it now also
 -- fires for 'listing_flyer').
 
--- ===== PART 1 of 3: the two columns and the clearing rule. Last line of this part is:
+-- ===== PART 1 of 4: the two columns and the clearing rule. Last line of this part is:
 -- revoke all on function public.property_notes_recheck_description_approval() from public, anon, authenticated;
 
 alter table public.listing_description_approvals add column if not exists flyer_content text;
@@ -110,8 +110,8 @@ $$;
 revoke all on function public.listing_description_approval_recheck(public.properties.id%type) from public, anon, authenticated;
 revoke all on function public.property_notes_recheck_description_approval() from public, anon, authenticated;
 
--- ===== PART 2 of 3: approving both texts, and recording the PDF. Last line of this part is:
--- notify pgrst, 'reload schema';
+-- ===== PART 2 of 4: approving both texts. Last line of this part is:
+-- grant execute on function public.approve_listing_description_with_flyer(public.properties.id%type, text, text, text) to anon, authenticated, service_role;
 
 create or replace function public.listing_flyer_word_count(p_text text)
 returns integer
@@ -203,6 +203,14 @@ begin
 end;
 $$;
 
+revoke all on function public.listing_flyer_word_count(text) from public;
+revoke all on function public.approve_listing_description_with_flyer(public.properties.id%type, text, text, text) from public;
+grant execute on function public.listing_flyer_word_count(text) to anon, authenticated, service_role;
+grant execute on function public.approve_listing_description_with_flyer(public.properties.id%type, text, text, text) to anon, authenticated, service_role;
+
+-- ===== PART 3 of 4: the older approve function, and recording the PDF. Last line of this part is:
+-- notify pgrst, 'reload schema';
+
 create or replace function public.approve_listing_description(
   p_property_id public.properties.id%type,
   p_content text,
@@ -291,18 +299,14 @@ begin
 end;
 $$;
 
-revoke all on function public.listing_flyer_word_count(text) from public;
-revoke all on function public.approve_listing_description_with_flyer(public.properties.id%type, text, text, text) from public;
 revoke all on function public.approve_listing_description(public.properties.id%type, text, text) from public;
 revoke all on function public.set_listing_description_pdf(public.properties.id%type, timestamptz, text) from public;
-grant execute on function public.listing_flyer_word_count(text) to anon, authenticated, service_role;
-grant execute on function public.approve_listing_description_with_flyer(public.properties.id%type, text, text, text) to anon, authenticated, service_role;
 grant execute on function public.approve_listing_description(public.properties.id%type, text, text) to anon, authenticated, service_role;
 grant execute on function public.set_listing_description_pdf(public.properties.id%type, timestamptz, text) to anon, authenticated, service_role;
 
 notify pgrst, 'reload schema';
 
--- ===== PART 3 of 3: the public folder for the PDFs. Last line of this part is:
+-- ===== PART 4 of 4: the public folder for the PDFs. Last line of this part is:
 -- for insert to anon, authenticated with check (bucket_id = 'listing-description-pdfs');
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
