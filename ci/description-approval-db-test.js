@@ -359,5 +359,115 @@ function session(role) {
   ecall('start', E, 'Niki Lang');
   ok(eparts.length === 2 && !epartErr && erow(E) === 'Niki Lang|true|true', 'pasted as two comment-free parts, in order, it builds the same working thing', { n: eparts.length, epartErr, row: erow(E) });
   ok(snap() === before, 'and at the very end everything that existed before is still exactly as it was');
+
+  // ══ The flyer version and the PDF ═════════════════════════════════════════
+  console.log('\nFlyer and PDF: the two new columns');
+  sql("create schema if not exists storage; create table if not exists storage.buckets (id text primary key, name text, public boolean, file_size_limit bigint, allowed_mime_types text[]); create table if not exists storage.objects (id uuid primary key default gen_random_uuid(), bucket_id text, name text); alter table storage.objects enable row level security;");
+  const beforeFlyer = sql("select string_agg(policyname || '/' || cmd || '/' || roles::text, ' | ' order by policyname) from pg_policies where tablename='listing_description_approvals'; select string_agg(tgname || ':' || tgdeferrable::text || tginitdeferred::text || ':' || tgtype::text, ',') from pg_trigger where tgrelid='public.property_notes'::regclass and tgname='property_notes_recheck_description_approval';").out;
+  const FMIG = fs.readFileSync(path.join(dir, 'sql', '2026-10-09_listing_description_flyer_pdf.sql'), 'utf8');
+  const G = '77777777-7777-4777-8777-777777777777', Hh = '88888888-8888-4888-8888-888888888888';
+  sql("insert into public.properties (id, address, agent_name) values ('" + G + "','700 Golf Ter','Niki Lang'),('" + Hh + "','800 Hotel Pl','Marc Cashin');");
+  save(G, 'G OLD STYLE'); approve(G, 'G OLD STYLE', 'Niki Lang');     // a row from before the columns existed
+  s = sql(FMIG);
+  ok(!/ERROR/.test(s.err), 'the flyer and PDF SQL file runs with no error', s.err);
+  ok(snap() === before, 'property_notes, both save functions, version history and every other policy and trigger are exactly as before');
+  s = sql("select column_name || '|' || data_type || '|' || is_nullable || '|' || coalesce(column_default,'') from information_schema.columns where table_schema='public' and table_name='listing_description_approvals' order by ordinal_position;");
+  ok(s.out === ['property_id|uuid|NO|', 'content|text|NO|', 'approved_by|text|NO|', 'approved_at|timestamp with time zone|NO|now()', 'flyer_content|text|YES|', 'pdf_url|text|YES|'].join('\n'), 'the four original columns are untouched, plus flyer_content text and pdf_url text, both nullable', s.out);
+  ok(sql("select string_agg(policyname || '/' || cmd || '/' || roles::text, ' | ' order by policyname) from pg_policies where tablename='listing_description_approvals'; select string_agg(tgname || ':' || tgdeferrable::text || tginitdeferred::text || ':' || tgtype::text, ',') from pg_trigger where tgrelid='public.property_notes'::regclass and tgname='property_notes_recheck_description_approval';").out === beforeFlyer, 'the read policy and the trigger itself are as they were');
+  ok(sql("select coalesce(flyer_content,'NULL') || '|' || coalesce(pdf_url,'NULL') || '|' || content from public.listing_description_approvals where property_id='" + G + "';").out === 'NULL|NULL|G OLD STYLE', 'a row approved before this keeps both new columns null and is still there');
+  for (const role of ['anon', 'authenticated']) {
+    const u1 = sql("update public.listing_description_approvals set pdf_url='https://x/y.pdf', flyer_content='x';", role);
+    ok(/permission denied/.test(u1.err), role + ' still cannot write the table directly, new columns included', u1);
+  }
+  s = sql("select public.listing_flyer_word_count('') || ',' || public.listing_flyer_word_count(null) || ',' || public.listing_flyer_word_count('one') || ',' || public.listing_flyer_word_count(E'  one  two\\nthree\\tfour \\n\\n five  ') || ',' || public.listing_flyer_word_count('well-kept, two-car garage (2024).');");
+  ok(s.out === '0,0,1,5,4', 'the word count is words separated by spaces, tabs or line breaks: 0, 0, 1, 5, 4', s.out);
+
+  console.log('\nFlyer and PDF: one approval covers both texts');
+  const flyer = (p, text, by) => anon("select (public.save_property_note_by('" + p + "','listing_flyer',$t$" + text + "$t$,'" + (by || 'Marc Cashin') + "')).content;");
+  const approve2 = (p, text, fl, by, role) => sql("select (public.approve_listing_description_with_flyer('" + p + "',$t$" + text + "$t$,$t$" + fl + "$t$,'" + by + "')).approved_by;", role || 'anon');
+  const row2 = (p) => sql("select coalesce((select approved_by || '|' || content || '|' || coalesce(flyer_content,'NULL') || '|' || coalesce(pdf_url,'NULL') from public.listing_description_approvals where property_id='" + p + "'), 'NONE');", 'anon').out;
+  const W = (n) => Array.from({ length: n }, (_, i) => 'w' + (i + 1)).join(' ');
+  save(Hh, 'H DESC');
+  s = approve2(Hh, 'H DESC', 'H FLYER', 'Marc Cashin');
+  ok(/no saved flyer version/.test(s.err) && row2(Hh) === 'NONE', 'no saved flyer version: refused, nothing written', s);
+  flyer(Hh, 'H FLYER');
+  s = approve2(Hh, 'H DESC', 'A DIFFERENT FLYER', 'Marc Cashin');
+  ok(/saved flyer version is no longer the text you were reading/.test(s.err) && row2(Hh) === 'NONE', 'flyer text that is not the saved flyer text: refused', s);
+  s = approve2(Hh, 'NOT THE DESC', 'H FLYER', 'Marc Cashin');
+  ok(/saved description is no longer the text you were reading/.test(s.err) && row2(Hh) === 'NONE', 'description text that is not the saved description: refused', s);
+  s = approve2(Hh, 'H DESC', '  ', 'Marc Cashin');
+  ok(/no flyer version yet/.test(s.err) && row2(Hh) === 'NONE', 'a blank flyer: refused', s);
+  flyer(Hh, W(201));
+  s = approve2(Hh, 'H DESC', W(201), 'Marc Cashin');
+  ok(/The flyer version is 201 words\. The limit is 200/.test(s.err) && row2(Hh) === 'NONE', '201 words: refused, and the message gives the count', s);
+  flyer(Hh, W(200));
+  s = approve2(Hh, 'H DESC', W(200), 'Marc Cashin');
+  ok(s.out === 'Marc Cashin' && !s.err && row2(Hh) === 'Marc Cashin|H DESC|' + W(200) + '|NULL', 'exactly 200 words: approved; the row holds the description, the flyer version and no PDF yet', s);
+
+  console.log('\nFlyer and PDF: editing EITHER text clears the approval');
+  flyer(Hh, W(200));
+  ok(row2(Hh) !== 'NONE', 'saving the identical flyer text keeps it');
+  save(Hh, 'H DESC');
+  ok(row2(Hh) !== 'NONE', 'saving the identical description keeps it');
+  flyer(Hh, W(199));
+  ok(row2(Hh) === 'NONE', 'saving different flyer text, with the description untouched, deletes the row');
+  approve2(Hh, 'H DESC', W(199), 'Marc Cashin'); save(Hh, 'H DESC CHANGED');
+  ok(row2(Hh) === 'NONE', 'saving a different description, with the flyer untouched, deletes the row');
+  approve2(Hh, 'H DESC CHANGED', W(199), 'Marc Cashin');
+  anon("update public.property_notes set content='typed straight in' where property_id='" + Hh + "' and subfolder='listing_flyer';");
+  ok(row2(Hh) === 'NONE', 'a direct update of the flyer note is covered');
+  flyer(Hh, 'H FLYER 2'); approve2(Hh, 'H DESC CHANGED', 'H FLYER 2', 'Marc Cashin');
+  anon("insert into public.property_notes (property_id, subfolder, content, updated_at) values ('" + Hh + "','listing_flyer','A NEWER COPY', now() + interval '1 second');");
+  ok(row2(Hh) === 'NONE', 'a plain insert of a newer flyer copy is covered');
+  flyer(Hh, 'H FLYER 3'); approve2(Hh, 'H DESC CHANGED', 'H FLYER 3', 'Marc Cashin');
+  anon("delete from public.property_notes where property_id='" + Hh + "' and subfolder='listing_flyer';");
+  ok(row2(Hh) === 'NONE', 'deleting the flyer note is covered');
+  flyer(Hh, 'H FLYER 4'); approve2(Hh, 'H DESC CHANGED', 'H FLYER 4', 'Marc Cashin');
+  anon("begin;\nselect public.save_property_note_by('" + Hh + "','listing_flyer','ROLLED BACK','x');\nrollback;");
+  flyer(E, 'ANOTHER LISTING FLYER'); anon("select public.save_property_note_by('" + Hh + "','cma','CMA','x');");
+  ok(row2(Hh) === 'Marc Cashin|H DESC CHANGED|H FLYER 4|NULL', 'a rolled back flyer save, another listing\'s flyer and other notes on this listing do not touch it');
+  flyer(G, 'G GETS A FLYER LATER'); flyer(G, 'G FLYER CHANGED');
+  ok(row2(G) === 'Niki Lang|G OLD STYLE|NULL|NULL', 'an older approval with no flyer on it is not cleared by flyer saves');
+  save(G, 'G NEW TEXT');
+  ok(row2(G) === 'NONE', 'and is still cleared when its description changes');
+  const s5 = session('anon');
+  await s5.send("begin;\nselect (public.approve_listing_description_with_flyer('" + Hh + "','H DESC CHANGED','H FLYER 4','Charlotte Lee')).approved_by;");
+  const fl2 = new Promise(res => { const p = spawn(ROOT ? 'runuser' : path.join(BIN, 'psql'), (ROOT ? ['-u', 'postgres', '--', 'env', 'PGOPTIONS=' + process.env.PGOPTIONS, path.join(BIN, 'psql')] : []).concat(PSQL, ['-c', "set role anon; select public.save_property_note_by('" + Hh + "','listing_flyer','H FLYER 5','x');"])); let o = ''; p.stdout.on('data', d => o += d); p.stderr.on('data', d => o += d); p.on('close', () => res(o)); });
+  await new Promise(r => setTimeout(r, 600));
+  await s5.send('commit;'); s5.close();
+  const fl2Out = await fl2;
+  ok(!/ERROR/.test(fl2Out) && row2(Hh) === 'NONE', 'a flyer save that lands while an approval is being written waits for it, then clears it', { fl2Out, row: row2(Hh) });
+
+  console.log('\nFlyer and PDF: recording the PDF');
+  approve2(Hh, 'H DESC CHANGED', 'H FLYER 5', 'Marc Cashin');
+  const at = sql("select approved_at from public.listing_description_approvals where property_id='" + Hh + "';").out;
+  const URL1 = 'https://ewedrgopezogifzysusn.supabase.co/storage/v1/object/public/listing-description-pdfs/' + Hh + '/20261009-134211-ab12cd/Listing%20Description%20-%20800%20Hotel%20Pl.pdf';
+  const setPdf = (p, when, url, role) => sql("select (public.set_listing_description_pdf('" + p + "','" + when + "','" + url + "')).pdf_url;", role || 'anon');
+  for (const [name, bad] of [['another website', 'https://evil.example/x.pdf'], ['another Supabase project', URL1.replace('ewedrgopezogifzysusn', 'someoneelse')], ['another storage folder', URL1.replace('listing-description-pdfs', 'listing-files')], ['not a PDF', URL1.replace('.pdf', '.html')], ['an address with a query on the end', URL1 + '?download=1'], ['plain http', URL1.replace('https://', 'http://')]]) {
+    s = setPdf(Hh, at, bad);
+    ok(/not the address of a listing description PDF/.test(s.err) && row2(Hh).endsWith('|NULL'), 'refused, nothing recorded: ' + name, s);
+  }
+  s = setPdf(Hh, '2020-01-01T00:00:00Z', URL1);
+  ok(/no longer on file/.test(s.err) && row2(Hh).endsWith('|NULL'), 'a PDF made for an approval that is no longer the one on file is not recorded', s);
+  s = setPdf(Hh, at, URL1);
+  ok(s.out === URL1 && row2(Hh) === 'Marc Cashin|H DESC CHANGED|H FLYER 5|' + URL1 && sql("select approved_at from public.listing_description_approvals where property_id='" + Hh + "';").out === at, 'the right address for the approval on file is recorded, and nothing else in the row moves', s);
+  approve2(Hh, 'H DESC CHANGED', 'H FLYER 5', 'Charlotte Lee');
+  ok(row2(Hh) === 'Charlotte Lee|H DESC CHANGED|H FLYER 5|NULL', 're-approval replaces the row and empties pdf_url: one file per approval', row2(Hh));
+  setPdf(Hh, sql("select approved_at from public.listing_description_approvals where property_id='" + Hh + "';").out, URL1);
+  approve(Hh, 'H DESC CHANGED', 'Operations');
+  ok(row2(Hh) === 'Operations|H DESC CHANGED|NULL|NULL', 'an approval from a page still on the old code leaves no flyer and no PDF from an earlier approval on the row', row2(Hh));
+
+  console.log('\nFlyer and PDF: the public folder, and housekeeping');
+  s = sql("select id || '|' || public::text || '|' || file_size_limit || '|' || allowed_mime_types::text from storage.buckets; select string_agg(policyname || '/' || cmd || '/' || roles::text || '/' || with_check, ';') from pg_policies where schemaname='storage';");
+  ok(s.out === "listing-description-pdfs|true|5242880|{application/pdf}\nlisting description pdfs add/INSERT/{anon,authenticated}/(bucket_id = 'listing-description-pdfs'::text)", 'one public folder, PDF only, 5MB; the app may add files to it and nothing else (no change, no delete)', s.out);
+  approve2(Hh, 'H DESC CHANGED', 'H FLYER 5', 'Marc Cashin'); const keep2 = row2(Hh);
+  s = sql(FMIG);
+  ok(!/ERROR/.test(s.err) && row2(Hh) === keep2 && sql("select count(*) from storage.buckets;").out === '1' && sql("select count(*) from pg_policies where schemaname='storage';").out === '1', 'running the SQL file a second time gives no error, keeps approvals and makes no second folder or policy', s.err);
+  const fparts = FMIG.split(/^-- ===== PART \d of 4[^\n]*\n(?:--[^\n]*\n)*/m).slice(1).map(p => p.split('\n').filter(l => !/^\s*--/.test(l)).join('\n').trim());
+  let fpartErr = '';
+  fparts.forEach(p => { const q = sql(p); if (/ERROR/.test(q.err)) fpartErr += q.err; });
+  flyer(Hh, 'H FLYER 6');
+  ok(fparts.length === 4 && !fpartErr && row2(Hh) === 'NONE', 'pasted as four comment-free parts it gives no error and the rule still works', { n: fparts.length, fpartErr });
+  ok(snap() === before, 'and at the very end everything that existed before is still exactly as it was');
   done();
 })().catch(e => { console.log('FAIL the test itself stopped: ' + (e && e.stack || e)); fail++; done(); });
