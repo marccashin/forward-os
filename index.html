@@ -11409,6 +11409,70 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return true;
     }
 
+    // ── "Editing now" marker for the Listing Description Writer ─────────────
+    // Between an agent opening the writer and saving, nothing changes in the database,
+    // so the Command Center would go on showing the earlier approved text as usable.
+    // While the writer is open on a listing that already has a saved description, this
+    // keeps one row for the listing in listing_description_editing (SQL in
+    // sql/2026-10-09_listing_description_editing.sql; the Command Center reads it and
+    // warns Concierge). The row is refreshed about once a minute while this tab is
+    // visible, and removed on save, on leaving the writer, and on closing the tab.
+    // The Command Center ignores a row more than 3 minutes old, so a missed removal
+    // clears itself: never rely on the removal.
+    // This is a COURTESY SIGNAL. It must never block, slow or warn the agent: every
+    // failure is written to the console and nothing else happens. The app cannot write
+    // the table; it calls the three database functions.
+    const LD_EDIT_BEAT_MS = 60000;
+    let _ldEdit = null;        // { pid, who } while this page holds a marker
+    let _ldEditTimer = null;
+    let _ldEditOff = false;    // table or functions not there: stop asking until the page reloads
+    function _ldEditCall(fn, pid, who, keepalive) {
+      if (_ldEditOff) return Promise.resolve(false);
+      try {
+        const opts = { method: 'POST', headers: supaRest.headers(), body: JSON.stringify({ p_property_id: pid, p_editor: who }) };
+        if (keepalive) opts.keepalive = true;
+        return fetch(SUPABASE_URL + '/rest/v1/rpc/listing_description_editing_' + fn, opts).then(function (res) {
+          if (res.ok) return true;
+          if (res.status === 404) _ldEditOff = true;
+          console.warn('[editing marker] ' + fn + ' answered ' + res.status + (res.status === 404 ? ' (not set up; not trying again on this page)' : ''));
+          return false;
+        }).catch(function (e) { console.warn('[editing marker] ' + fn + ' failed: ' + ((e && e.message) || e)); return false; });
+      } catch (e) { console.warn('[editing marker] ' + fn + ' failed: ' + ((e && e.message) || e)); return Promise.resolve(false); }
+    }
+    function _ldEditStop(keepalive) {
+      if (_ldEditTimer) { clearInterval(_ldEditTimer); _ldEditTimer = null; }
+      const m = _ldEdit; _ldEdit = null;
+      if (m) _ldEditCall('stop', m.pid, m.who, keepalive);
+    }
+    function _ldEditStart() {
+      const prop = lstActiveProp.value, who = agentName.value || '';
+      if (view.value !== 'listing-desc' || !prop || !prop.id || !who) return;
+      // No saved description yet: there is no earlier text for anyone to be warned about.
+      if (!(lstNotes.listing_remarks || '').trim()) return;
+      if (_ldEdit && _ldEdit.pid === prop.id && _ldEdit.who === who) return;
+      _ldEditStop();
+      _ldEdit = { pid: prop.id, who: who };
+      _ldEditCall('start', prop.id, who);
+      _ldEditTimer = setInterval(function () {
+        if (_ldEdit && document.visibilityState === 'visible') _ldEditCall('touch', _ldEdit.pid, _ldEdit.who);
+      }, LD_EDIT_BEAT_MS);
+    }
+    watch(function () { return (view.value === 'listing-desc' && lstActiveProp.value) ? lstActiveProp.value.id : null; },
+      function (id) { if (id) _ldEditStart(); else _ldEditStop(); });
+    // Saved: the database now holds the new text, so the warning has done its job.
+    window.addEventListener('fos-note-saved', function (ev) {
+      const d = ev && ev.detail;
+      if (d && d.subfolder === 'listing_remarks' && _ldEdit && _ldEdit.pid === d.propertyId) _ldEditStop();
+    });
+    // Back on this tab after being away: refresh at once, or take the marker up again
+    // if it was dropped when the page was hidden.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState !== 'visible') return;
+      if (_ldEdit) _ldEditCall('touch', _ldEdit.pid, _ldEdit.who); else _ldEditStart();
+    });
+    // Tab closed or page left: best effort. keepalive lets the request outlive the page.
+    window.addEventListener('pagehide', function () { _ldEditStop(true); });
+
     function lstSubfolderFiles(key) {
       return lstActiveFiles.value.filter(f => f.subfolder === key);
     }

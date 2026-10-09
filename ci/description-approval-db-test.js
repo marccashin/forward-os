@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /*
  * FORWARD OS: "Approve for marketing" in the DATABASE. Run on every pull request.
+ * Also covers the writer's "editing now" marker (listing_description_editing), at the end.
  *
  * The rule that an approval is cleared when the saved listing description changes
  * lives in Postgres, not in the app, so it is tested in a real Postgres. This starts
@@ -117,7 +118,7 @@ function session(role) {
   const snap = () => sql([
     "select string_agg(column_name || ':' || data_type || ':' || is_nullable, ',' order by ordinal_position) from information_schema.columns where table_schema='public' and table_name='property_notes';",
     "select string_agg(p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')->' || pg_get_function_result(p.oid) || '#' || md5(p.prosrc), ' | ' order by p.proname) from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('save_property_note','save_property_note_by','property_note_keep_history');",
-    "select string_agg(tablename || '/' || policyname || '/' || cmd || '/' || roles::text, ' | ' order by tablename, policyname) from pg_policies where schemaname='public' and tablename <> 'listing_description_approvals';",
+    "select string_agg(tablename || '/' || policyname || '/' || cmd || '/' || roles::text, ' | ' order by tablename, policyname) from pg_policies where schemaname='public' and tablename not like 'listing_description_%';",
     "select string_agg(tgname, ',' order by tgname) from pg_trigger where tgrelid='public.property_notes'::regclass and not tgisinternal and tgname <> 'property_notes_recheck_description_approval';"
   ].join('\n')).out;
   const before = snap();
@@ -281,5 +282,82 @@ function session(role) {
   parts.forEach(p => { const q = sql(p); if (/ERROR/.test(q.err)) partErr += q.err; });
   save(C, 'C AGAIN'); approve(C, 'C AGAIN', 'Niki Lang'); const a1 = row(C); save(C, 'C CHANGED');
   ok(!partErr && a1 === 'Niki Lang|C AGAIN' && row(C) === 'NONE', 'pasted as three comment-free parts, in order, it builds the same working thing', { partErr, a1, now: row(C) });
+
+  // ══ The "editing now" marker ══════════════════════════════════════════════
+  console.log('\nEditing marker: the table is the contract');
+  const EMIG = fs.readFileSync(path.join(dir, 'sql', '2026-10-09_listing_description_editing.sql'), 'utf8');
+  s = sql(EMIG);
+  ok(!/ERROR/.test(s.err), 'the editing SQL file runs with no error', s.err);
+  ok(snap() === before, 'everything that existed before is still exactly as it was');
+  s = sql("select column_name || '|' || data_type || '|' || is_nullable || '|' || coalesce(column_default,'') from information_schema.columns where table_schema='public' and table_name='listing_description_editing' order by ordinal_position;");
+  ok(s.out === ['property_id|uuid|NO|', 'editor|text|NO|', 'started_at|timestamp with time zone|NO|now()', 'last_active_at|timestamp with time zone|NO|now()'].join('\n'), 'four columns: property_id uuid, editor text not null, started_at and last_active_at timestamptz not null default now()', s.out);
+  s = sql("select contype::text || ':' || pg_get_constraintdef(oid) from pg_constraint where conrelid='public.listing_description_editing'::regclass order by contype;");
+  ok(/^f:FOREIGN KEY \(property_id\) REFERENCES properties\(id\) ON DELETE CASCADE\np:PRIMARY KEY \(property_id\)$/.test(s.out), 'property_id is the primary key and references properties(id) on delete cascade', s);
+  s = sql("select relrowsecurity from pg_class where oid='public.listing_description_editing'::regclass; select string_agg(cmd || ':' || roles::text, ';') from pg_policies where tablename='listing_description_editing';");
+  ok(s.out === 't\nSELECT:{anon,authenticated}', 'row level security is on, with one policy: select for anon and authenticated', s.out);
+  for (const role of ['anon', 'authenticated']) {
+    const i1 = sql("insert into public.listing_description_editing (property_id, editor) values ('" + A + "','x');", role);
+    const u1 = sql("update public.listing_description_editing set editor='x';", role);
+    const d1 = sql("delete from public.listing_description_editing;", role);
+    const r1 = sql("select count(*) from public.listing_description_editing;", role);
+    ok(/permission denied/.test(i1.err) && /permission denied/.test(u1.err) && /permission denied/.test(d1.err) && r1.out === '0' && !r1.err, role + ' can read the table and cannot insert, update or delete directly', { i1, u1, d1, r1 });
+  }
+
+  console.log('\nEditing marker: start, refresh, stop');
+  const E = '55555555-5555-4555-8555-555555555555', F = '66666666-6666-4666-8666-666666666666';
+  sql("insert into public.properties (id, address, agent_name) values ('" + E + "','500 Echo Ln','Niki Lang'),('" + F + "','600 Foxtrot Way','Cesar Rivera');");
+  const erow = (p) => sql("select coalesce((select editor || '|' || (started_at = last_active_at)::text || '|' || (last_active_at > now() - interval '30 seconds')::text from public.listing_description_editing where property_id='" + p + "'), 'NONE');", 'anon').out;
+  const ecall = (fn, p, who, role) => sql("select public.listing_description_editing_" + fn + "('" + p + "'," + (who === null ? 'null' : "'" + who + "'") + ") is not null;", role || 'anon');
+  s = ecall('start', E, 'Niki Lang');
+  ok(s.out === 'f' && !s.err && erow(E) === 'NONE', 'a listing with no saved description gets no row', s);
+  s = ecall('touch', E, 'Niki Lang');
+  ok(s.out === 'f' && erow(E) === 'NONE', 'and a refresh does not create one either', s);
+  save(E, 'E DESCRIPTION');
+  s = ecall('start', E, '  ');
+  ok(erow(E) === 'NONE' && !s.err, 'no editor name: no row', s);
+  s = ecall('start', E, 'Niki Lang');
+  ok(s.out === 't' && erow(E) === 'Niki Lang|true|true', 'opening the writer on a listing with a saved description writes one row: editor, started_at = last_active_at = now', { s, row: erow(E) });
+  const t0 = sql("select started_at || '~' || last_active_at from public.listing_description_editing where property_id='" + E + "';").out;
+  sql("select pg_sleep(0.3);");
+  ecall('touch', E, 'Niki Lang');
+  s = sql("select (started_at::text = split_part('" + t0 + "','~',1))::text || '|' || (last_active_at > split_part('" + t0 + "','~',2)::timestamptz)::text || '|' || count(*) over () from public.listing_description_editing where property_id='" + E + "';");
+  ok(s.out === 'true|true|1', 'a refresh moves last_active_at forward and leaves started_at alone; still one row', s.out);
+  ecall('touch', E, 'Cesar Rivera');
+  ok(erow(E) === 'Cesar Rivera|true|true', 'a refresh from another agent takes the row over under their name, with a new started_at', erow(E));
+  s = sql("select public.listing_description_editing_stop('" + E + "','Niki Lang');", 'anon');
+  ok(s.out === 'f' && erow(E) === 'Cesar Rivera|true|true', 'an agent leaving does not remove a row that is now another agent\'s', s);
+  s = sql("select public.listing_description_editing_stop('" + E + "','Cesar Rivera');", 'anon');
+  ok(s.out === 't' && erow(E) === 'NONE', 'the editor leaving removes the row', s);
+  s = sql("select public.listing_description_editing_stop('" + E + "','Cesar Rivera');", 'anon');
+  ok(s.out === 'f' && !s.err, 'removing a row that is already gone is not an error', s);
+  ecall('touch', E, 'Niki Lang');
+  ok(erow(E) === 'Niki Lang|true|true', 'a refresh with no row (it was dropped while the tab was hidden) puts it back', erow(E));
+  ecall('start', E, 'Niki Lang', 'authenticated');
+  ok(erow(E) === 'Niki Lang|true|true', 'the functions also run for a signed-in (authenticated) role');
+  anon("delete from public.property_notes where property_id='" + E + "' and subfolder='listing_remarks';");
+  ecall('touch', E, 'Niki Lang');
+  ok(erow(E) === 'NONE', 'if the description no longer exists, the next refresh removes the row');
+
+  console.log('\nEditing marker: it touches nothing else');
+  save(F, 'F DESCRIPTION'); approve(F, 'F DESCRIPTION', 'Cesar Rivera');
+  const notesBefore = sql("select md5(string_agg(id::text || content || updated_at::text, '|' order by id)) from public.property_notes;").out;
+  const histBefore = sql("select count(*) from public.property_note_history;").out;
+  ecall('start', F, 'Cesar Rivera'); ecall('touch', F, 'Cesar Rivera');
+  ok(row(F) === 'Cesar Rivera|F DESCRIPTION', 'opening the writer does not clear or change an approval', row(F));
+  sql("select public.listing_description_editing_stop('" + F + "','Cesar Rivera');", 'anon');
+  ok(row(F) === 'Cesar Rivera|F DESCRIPTION' && sql("select md5(string_agg(id::text || content || updated_at::text, '|' order by id)) from public.property_notes;").out === notesBefore && sql("select count(*) from public.property_note_history;").out === histBefore, 'start, refresh and stop leave the approval, every saved note and the version history exactly as they were');
+  ecall('start', F, 'Cesar Rivera');
+  s = anon("delete from public.properties where id='" + F + "';");
+  ok(!s.err && sql("select count(*) from public.listing_description_editing where property_id='" + F + "';").out === '0', 'deleting a listing removes its marker', s);
+  save(E, 'E AGAIN'); ecall('start', E, 'Niki Lang');
+  s = sql(EMIG);
+  ok(!/ERROR/.test(s.err) && erow(E) === 'Niki Lang|true|true', 'running the SQL file a second time gives no error and keeps existing rows', s.err);
+  sql("drop table public.listing_description_editing cascade; drop function public.listing_description_editing_start(uuid, text); drop function public.listing_description_editing_touch(uuid, text); drop function public.listing_description_editing_stop(uuid, text);");
+  const eparts = EMIG.split(/^-- ===== PART \d of 2[^\n]*\n(?:--[^\n]*\n)*/m).slice(1).map(p => p.split('\n').filter(l => !/^\s*--/.test(l)).join('\n').trim());
+  let epartErr = '';
+  eparts.forEach(p => { const q = sql(p); if (/ERROR/.test(q.err)) epartErr += q.err; });
+  ecall('start', E, 'Niki Lang');
+  ok(eparts.length === 2 && !epartErr && erow(E) === 'Niki Lang|true|true', 'pasted as two comment-free parts, in order, it builds the same working thing', { n: eparts.length, epartErr, row: erow(E) });
+  ok(snap() === before, 'and at the very end everything that existed before is still exactly as it was');
   done();
 })().catch(e => { console.log('FAIL the test itself stopped: ' + (e && e.stack || e)); fail++; done(); });

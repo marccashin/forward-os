@@ -40,8 +40,14 @@
 #                        says its approval was cleared, a failed write or a failed
 #                        message to Concierge is shown, and the message is the
 #                        agreed JSON.
+#   ci/description-editing-test.js  the writer's "editing now" marker: written
+#                        when the writer opens on a listing with a saved
+#                        description, refreshed each minute while the tab is
+#                        visible, removed on save, leave, listing switch and tab
+#                        close, and never shown to the agent when it fails.
 #   ci/description-approval-db-test.js  the same rule in a real Postgres: the
-#                        repo's SQL, run as the app's own database role.
+#                        repo's SQL, run as the app's own database role. Also the
+#                        editing marker's table and functions.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -137,6 +143,10 @@ jobs:
       - name: Approve for marketing test (approved only when the database says so, failures shown)
         if: always()
         run: node head/ci/description-approval-test.js head
+
+      - name: Editing marker test (writer open marks the listing, refreshes while visible, clears on save or leave)
+        if: always()
+        run: node head/ci/description-editing-test.js head
 
       # The rule that clears an approval is SQL, so it is tested in a real Postgres.
       # GitHub's Ubuntu runners ship the server binaries; install them if one does not.
