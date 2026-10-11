@@ -9195,7 +9195,10 @@ async function getAgentToolsContent(query) {
 const DMV_SNAPSHOT = {
   asOf: 'September 2026',
   source: 'Bright MLS',
-  // [ market, median sold price, median days on market, months of supply ]
+  // [ market, median sold price, average days on market, months of supply ]
+  // The third figure is Bright's DOM cell, which is an AVERAGE, not a median. Bright's own
+  // definition on the report: "the average of the days on market of the listings that
+  // closed this month". Sold Median is a true median. Use DOM, never CDOM.
   rows: [
     ['Washington, DC',        '$660,000', '46', '7.3'],
     ['Arlington + Fairfax',   '$747,000', '28', '2.8'],
@@ -17289,9 +17292,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             bodyText(_dmvIntro);
             ensureSpace(80);
             // Mini table
-            const cols = ['Market', 'Median Sold Price', 'Median Days on Market (Closed)', 'Months of Supply'];
+            const cols = ['Market', 'Median Sold Price', 'Average Days on Market (Closed)', 'Months of Supply'];
             const rows = DMV_SNAPSHOT.rows;
-            const colX = [58, 210, 330, 460];
+            const colX = [58, 210, 326, 460];
             doc.setFont('helvetica','bold');
             doc.setFontSize(8);
             doc.setTextColor(...navy);
@@ -22144,6 +22147,10 @@ const CHANGELOG = [
       {
         title: 'A Clearer Seller Net Sheet: Charges, Credits and a Settlement Summary',
         detail: 'The seller net sheet PDF used to be one long list. The loan payoff sat in the middle of the costs, and each line carried a minus or a plus. A seller had to add it up themselves to see what selling actually costs.\n\nThe sheet now reads the way a settlement statement does, in three parts. Charges Paid by Seller lists every cost of the sale with a total. Credits to Seller lists anything coming back to the seller, such as taxes or dues they prepaid, with a total. Settlement Summary then shows the sale price, the mortgage payoff, the charges and the credits, and ends with Net Proceeds to the Seller. The loan payoff is shown at the top beside the sale price and is no longer mixed in with the costs. Every figure is shown to the cent, and amounts that come off the sale price are in parentheses.\n\nNo number has changed. The lines and the net are calculated exactly as before; only the page is laid out differently. When you open the net sheet from a listing, the seller\'s name from that listing is printed at the top. A sheet with many lines continues onto a second page.\n\nHow to use: Nothing new to learn. Fill in the net sheet as you always have and press Calculate. The PDF opens in the new layout. If you change the price or a loan afterward, press Calculate again before you download or save, because the PDF shows the sheet as it was last calculated.\n\nBest practice: Walk your seller through it from the bottom up. Start with Net Proceeds, then the Settlement Summary, then the charges that make up the total. Check that the seller\'s name on the listing is spelled the way they would want to see it, because it now prints on the sheet.'
+      },
+      {
+        title: 'Buyer Packet: Days on Market Is an Average',
+        detail: 'One column heading on the DMV Market Snapshot page of the Buyer Consultation Kit was wrong. It read Median Days on Market (Closed). It now reads Average Days on Market (Closed).\n\nThe figure comes from the DOM cell of the Bright MLS Market Statistics Report, and Bright defines that cell as the average of the days on market of the listings that closed in the month. It is not a median. The Median Sold Price column is a true median and has not changed.\n\nNo number has changed. Only the heading above the days on market column is different.\n\nHow to use: Nothing new to do. Generate the Buyer Consultation Kit as usual and the page prints with the corrected heading.\n\nBest practice: When you walk a buyer through the page, say average days on market. An average can be pulled up by a few listings that sat for a long time, so it can run higher than what a typical home takes. If you quoted the figure to a client as a median from a kit made before today, correct it the next time you speak.'
       }
     ]
   }
