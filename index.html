@@ -9245,7 +9245,10 @@ async function getAgentToolsContent(query) {
 const DMV_SNAPSHOT = {
   asOf: 'September 2026',
   source: 'Bright MLS',
-  // [ market, median sold price, median days on market, months of supply ]
+  // [ market, median sold price, average days on market, months of supply ]
+  // The third figure is Bright's DOM cell, which is an AVERAGE, not a median. Bright's own
+  // definition on the report: "the average of the days on market of the listings that
+  // closed this month". Sold Median is a true median. Use DOM, never CDOM.
   rows: [
     ['Washington, DC',        '$660,000', '46', '7.3'],
     ['Arlington + Fairfax',   '$747,000', '28', '2.8'],
@@ -17327,9 +17330,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             bodyText(_dmvIntro);
             ensureSpace(80);
             // Mini table
-            const cols = ['Market', 'Median Sold Price', 'Median Days on Market (Closed)', 'Months of Supply'];
+            const cols = ['Market', 'Median Sold Price', 'Average Days on Market (Closed)', 'Months of Supply'];
             const rows = DMV_SNAPSHOT.rows;
-            const colX = [58, 210, 330, 460];
+            const colX = [58, 210, 326, 460];
             doc.setFont('helvetica','bold');
             doc.setFontSize(8);
             doc.setTextColor(...navy);
@@ -22186,6 +22189,10 @@ const CHANGELOG = [
       {
         title: 'You Choose the Comps When a File Has Too Many',
         detail: 'The CMA Builder holds 6 closed sales, 10 pending and 10 active. Until today, if your MLS file had more than that, the builder kept the first ones in the file and dropped the rest, and only told you afterwards. The ones it dropped could have been your best comps.\n\nNow the review window groups the properties into Closed, Pending and Active and says how many each section has room for. Under each address you see the sold date, price, square feet, beds and baths, and the distance from your listing. If you have ticked more than a section holds, Add to CMA is switched off and a red notice says how many to untick.\n\nThe builder never picks for you. The PDF tells your client that you selected the comps, and now that is always true.\n\nAlso fixed: when a listing\'s address has no comma before the city, such as "1415 Riverside Ave. Baltimore, MD", the builder used to put the state in the City box. It now fills street, city and state, and marks Address and City CHECK THIS so you confirm them.\n\nHow to use: Upload your MLS sheets as usual. In the review window, untick the sales you do not want until each section fits, then press Add to CMA. Untick all and Tick all are at the top of each section.\n\nBest practice: Keep the sales most like your listing: the closest, the most recent, and the nearest in size and style. Six close comps give a better value than six plus weaker ones.'
+      },
+      {
+        title: 'Buyer Packet: Days on Market Is an Average',
+        detail: 'One column heading on the DMV Market Snapshot page of the Buyer Consultation Kit was wrong. It read Median Days on Market (Closed). It now reads Average Days on Market (Closed).\n\nThe figure comes from the DOM cell of the Bright MLS Market Statistics Report, and Bright defines that cell as the average of the days on market of the listings that closed in the month. It is not a median. The Median Sold Price column is a true median and has not changed.\n\nNo number has changed. Only the heading above the days on market column is different.\n\nHow to use: Nothing new to do. Generate the Buyer Consultation Kit as usual and the page prints with the corrected heading.\n\nBest practice: When you walk a buyer through the page, say average days on market. An average can be pulled up by a few listings that sat for a long time, so it can run higher than what a typical home takes. If you quoted the figure to a client as a median from a kit made before today, correct it the next time you speak.'
       }
     ]
   }
