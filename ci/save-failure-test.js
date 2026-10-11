@@ -27,6 +27,12 @@ const P1 = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', B1 = '11111111-1111-4111-8111
 let mode = { failWrites: false, failPipeline: false, failListings: false, failNotes: false };
 let sent = [];   // every write the page made: method, address, body text
 let gets = [];   // every read of the listing notes table: its address
+// The listing's PDF store (Supabase Storage bucket listing-files). stored: what the page filed.
+// storedList: what a listing of the store answers, per "<listing id>/<kind>/". failFiles: filing
+// a PDF is refused. failFileList: listing them fails.
+let stored = [];
+let storedList = {};
+let fileReads = [];
 // Two copies of the same notes on one listing, stored with the NEWEST in the middle,
 // the way a real table can hand them back when no order is asked for.
 const DUP_NOTES = [
@@ -43,6 +49,24 @@ function api(route) {
   const req = route.request(), u = req.url(), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
   if (/\/trigger$/.test(u.split('?')[0])) return (mode.failPipeline || mode.failWrites) ? J(route, 500, { detail: 'mock outage' }) : J(route, 200, { ok: true });
+  if (m === 'POST' && /\/storage\/v1\/object\/list\/listing-files$/.test(u)) {
+    if (mode.failFileList) return J(route, 500, { message: 'mock outage' });
+    let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {}
+    return J(route, 200, (storedList[b.prefix] || []).map((name) => ({ name, created_at: '2026-10-06T12:00:00Z', metadata: { size: 9 } })));
+  }
+  if (m === 'GET' && /\/storage\/v1\/object\/authenticated\/listing-files\//.test(u)) {
+    fileReads.push(u.split('/listing-files/')[1]);
+    return route.fulfill({ status: 200, contentType: 'application/pdf', headers: { 'access-control-allow-origin': '*' }, body: '%PDF-1.4\n' });
+  }
+  if (m === 'POST' && /\/storage\/v1\/object\/listing-files\//.test(u)) {
+    const h = req.headers();
+    sent.push({ m, u, body: '' });
+    if (mode.failWrites || mode.failFiles) return J(route, 400, { message: 'mock storage refusal' });
+    const buf = req.postDataBuffer();
+    stored.push({ path: u.split('/listing-files/')[1], type: h['content-type'], upsert: h['x-upsert'], head: buf ? buf.slice(0, 5).toString() : '' });
+    return J(route, 200, { Key: 'listing-files/' + u.split('/listing-files/')[1] });
+  }
+  if (m !== 'GET' && m !== 'POST' && /\/storage\/v1\//.test(u)) { stored.push({ badMethod: m }); return J(route, 403, {}); }
   if (m === 'GET') {
     if (mode.failListings && /\/rest\/v1\/properties/.test(u)) return J(route, 500, { message: 'mock outage' });
     if (/\/rest\/v1\/property_notes/.test(u)) {
@@ -94,8 +118,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
   // Runs one save in the page and returns every message shown while it ran.
   async function run(m, body, arg) {
-    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false, failNotes: false, dupNotes: false }, m);
-    sent = []; gets = [];
+    mode = Object.assign({ failWrites: false, failPipeline: false, failListings: false, failNotes: false, dupNotes: false, failFiles: false, failFileList: false }, m);
+    sent = []; gets = []; stored = []; fileReads = [];
     return page.evaluate(async ([src, arg]) => {
       const st = document.querySelector('#app').__vue_app__._instance.setupState;
       const seen = [];
@@ -153,9 +177,58 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   r = await run({}, spNoFolder, { P1 });
   ok(r.ret[0] === true && r.ret[1] === true && r.msgs.some(x => /Seller Prep Guide saved to 1 Test St/.test(x)) && noteWrites().length === 1, 'listing with no Drive folder: the text still saves', r);
   r = await run({ failNotes: true }, spNoFolder, { P1 });
-  ok(r.ret[0] === false && r.msgs.some(x => /was NOT saved/.test(x)) && !r.msgs.some(x => /Seller Prep Guide saved to/.test(x)), 'no Drive folder and the text write fails: NOT saved, badge off', r);
+  ok(r.msgs.some(x => /PDF filed on 1 Test St .*, but the text was NOT saved to the listing/.test(x)) && !r.msgs.some(x => /Seller Prep Guide saved to/.test(x)) && r.ret[1] === false, 'no Drive folder and the text write fails: the PDF is filed on the listing and the message says the text was NOT saved', r);
+  r = await run({ failNotes: true, failFiles: true }, spNoFolder, { P1 });
+  ok(r.ret[0] === false && r.msgs.some(x => /was NOT saved/.test(x)) && !r.msgs.some(x => /Seller Prep Guide saved to/.test(x)), 'no Drive folder, and neither the text nor the PDF goes in: NOT saved, badge off', r);
   r = await run({ failWrites: true }, spFolder, { P1 });
   ok(r.ret[0] === false && r.msgs.some(x => /was NOT saved/.test(x)), 'everything fails: NOT saved, badge off', r);
+
+  // ── The tool's PDF is filed on the listing itself (bucket listing-files) ──
+  console.log('A tool\'s PDF is filed on the listing, with or without a Drive folder');
+  const PDF = 'data:application/pdf;base64,JVBERi0xLjQK';
+  const nsPdf = "st.lstActiveProp = { id: arg.P1, address: '1 Test St' }; st.view = 'listing-detail'; return await st.saveToPropertyFromTool('Seller Net Sheet', '1 Test St — $512,300', 'Net to seller: 512,300', arg.PDF);";
+  r = await run({}, nsPdf, { P1, PDF });
+  ok(r.ret === true && r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)) && !r.msgs.some(x => SAID_FAILED.test(x)), 'a listing with no Drive folder: says saved', r);
+  ok(stored.length === 1 && new RegExp('^' + P1 + '/seller_net_sheet/\\d{8}T\\d{6}Z[a-z0-9]{3}__Marc_Cashin__1_Test_St_512300\\.pdf$').test(stored[0].path), 'the PDF is stored under the listing and its kind, named with the time, the agent and the title', stored);
+  ok(stored[0].type === 'application/pdf' && stored[0].head === '%PDF-' && stored[0].upsert === 'false', 'it is the PDF itself, sent as a PDF, and never as a replacement of an existing file', stored[0]);
+  ok(noteWrites().length === 1, 'the text is still saved once', noteWrites().length);
+  ok(!sent.some(x => /googleapis\.com\/upload\/drive|\/upload-file$/.test(x.u)), 'nothing is sent to Drive for a listing with no folder');
+  const firstPath = stored[0].path;
+  r = await run({}, nsPdf, { P1, PDF });
+  ok(stored.length === 1 && stored[0].path !== firstPath, 'saving again files a NEW PDF under a new name: the earlier one is not replaced', [firstPath, stored[0] && stored[0].path]);
+  r = await run({ failFiles: true }, nsPdf, { P1, PDF });
+  ok(r.ret === true && r.msgs.some(x => /text saved to 1 Test St .*, but the PDF was NOT filed on the listing: mock storage refusal/.test(x)) && !r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)), 'the PDF store refuses it: says the text saved and the PDF did NOT, with the reason, and no plain saved message', r);
+  r = await run({ failWrites: true }, nsPdf, { P1, PDF });
+  ok(r.ret === false && r.msgs.some(x => /was NOT saved/.test(x)) && !r.msgs.some(x => SAID_SAVED.test(x) && !SAID_FAILED.test(x)), 'everything fails: NOT saved', r);
+  r = await run({}, st1, { P1 });
+  ok(r.ret === true && stored.length === 0 && !sent.some(x => /\/storage\/v1\//.test(x.u)), 'a save with text only files no PDF (the text history already keeps it)', stored);
+  const nsPdfFolder = nsPdf.replace("address: '1 Test St' }", "address: '1 Test St', subfolder_drive_ids: { seller_net_sheet: 'folder-9' } }");
+  r = await run({}, nsPdfFolder, { P1, PDF });
+  ok(r.ret === true && stored.length === 1 && sent.some(x => /googleapis\.com\/upload\/drive/.test(x.u)) && r.msgs.some(x => /Seller Net Sheet saved to 1 Test St/.test(x)), 'a listing WITH a Drive folder: filed on the listing and in Drive', r);
+  r = await run({ failFiles: true }, nsPdfFolder, { P1, PDF });
+  ok(r.ret === true && r.msgs.some(x => /but the PDF was NOT filed on the listing in FORWARD OS: mock storage refusal/.test(x)), 'with a Drive folder and the PDF store refusing: says which copy did not save', r);
+  ok(!stored.some(x => x.badMethod), 'the app never tried to change or delete a stored PDF', stored);
+
+  console.log('The listing shows its saved PDFs, newest first');
+  const P2 = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+  storedList = {};
+  storedList[P1 + '/cma/'] = ['20261001T140000Zabc__Marc_Cashin__FORWARD_CMA_1_Test_St.pdf', '20261006T131500Zxyz__Charlotte_Lee__FORWARD_CMA_1_Test_St.pdf'];
+  storedList[P1 + '/seller_net_sheet/'] = ['20261005T230000Zqqq__Niki_Lang__1_Test_St_512_300.pdf'];
+  storedList[P2 + '/cma/'] = [];
+  const openListing = "await st.lstOpenProperty({ id: arg.id, address: arg.addr }); st.lstNotes.cma = 'ESTIMATED VALUE: $1'; st.lstNotes.seller_net_sheet = 'Net: 1'; st.lstToolOpen = arg.tool; await new Promise(r => setTimeout(r, 400));" +
+    "return { rows: Array.prototype.map.call(document.querySelectorAll('[data-pdfs=\"' + arg.kind + '\"] [data-pdf-row]'), e => e.innerText.replace(/\\s+/g, ' ').trim()), err: (document.querySelector('[data-pdf-error]') || {}).innerText || '', all: document.querySelectorAll('[data-pdf-row]').length };";
+  r = await run({}, openListing, { id: P1, addr: '1 Test St', tool: 'cma', kind: 'cma' });
+  ok(r.ret.rows.length === 2 && /Charlotte Lee · newest/.test(r.ret.rows[0]) && /Oct 6, 2026/.test(r.ret.rows[0]) && /Marc Cashin/.test(r.ret.rows[1]) && /Oct 1, 2026/.test(r.ret.rows[1]) && !/newest/.test(r.ret.rows[1]), 'the CMA box lists both CMA PDFs with date and agent, the newest first and marked', r.ret);
+  ok(r.ret.rows.every(x => /Open PDF/i.test(x)), 'each has an Open PDF button', r.ret.rows);
+  const opened = await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const real = window.open; let got = null; window.open = () => ({ location: { set href(v) { got = v; } }, close() {} }); document.querySelector('[data-pdfs="cma"] [data-pdf-row]:last-child button').click(); await new Promise(r => setTimeout(r, 400)); window.open = real; return got; });
+  ok(/^blob:/.test(opened || '') && fileReads.length === 1 && fileReads[0] === P1 + '/cma/20261001T140000Zabc__Marc_Cashin__FORWARD_CMA_1_Test_St.pdf', 'Open PDF fetches that exact file and opens it in a new tab', [opened, fileReads]);
+  r = await run({}, openListing, { id: P1, addr: '1 Test St', tool: 'netsheet', kind: 'seller_net_sheet' });
+  ok(r.ret.rows.length === 1 && /Niki Lang · newest/.test(r.ret.rows[0]), 'the net sheet box lists the net sheet PDF, not the CMA ones', r.ret);
+  r = await run({}, openListing, { id: P2, addr: '2 Other St', tool: 'cma', kind: 'cma' });
+  ok(r.ret.all === 0 && !r.ret.err, 'another listing shows none of the first listing\'s PDFs', r.ret);
+  r = await run({ failFileList: true }, openListing, { id: P1, addr: '1 Test St', tool: 'cma', kind: 'cma' });
+  ok(r.ret.all === 0 && /Saved PDFs could not be loaded/.test(r.ret.err) && /not lost/.test(r.ret.err), 'when the list cannot be loaded the listing says so, and says the PDFs are not lost', r.ret);
+  storedList = {};
 
   console.log('Pick-a-listing save window (a tool saved from outside a listing)');
   const pick = "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: { seller_net_sheet: 'folder-2' } }]; st.saveToPropData = { type: 'net-sheet-x', label: 'Net Sheet', data: 'Net to seller: 1', pdfData: null, toolName: 'Seller Net Sheet' }; st.saveToPropSelected = arg.P1; st.showSaveToProp = true; await st.confirmSaveToPropDrive(); return st.showSaveToProp;";
