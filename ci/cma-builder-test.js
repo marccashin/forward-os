@@ -216,7 +216,10 @@ function api(route) {
 }
 
 let pass = 0, fail = 0;
-function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; console.log('  FAIL ' + name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 600) : '')); } }
+function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; const line = name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 600) : ''); console.log('  FAIL ' + line); ghError(line); } }
+// On GitHub a failed case is also written as an error annotation, so it can be read
+// from the check itself. The job's log text is not readable from a cloud session.
+function ghError(line) { if (process.env.GITHUB_ACTIONS) console.log('::error title=CMA Builder test::' + String(line).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')); }
 
 // ── test data ──
 const comp = (address, extra) => Object.assign({ address, soldDate: '2026-08-01', salePrice: 700000, gla: 2000, lotSize: '', beds: 4, fullBaths: 2, halfBaths: 1, below: 0, garageSpaces: 2, drivewaySpaces: '', condition: 'C', hoaMonthly: 0, concessions: 0, proximity: '0.4 mi', dom: 9 }, extra || {});
