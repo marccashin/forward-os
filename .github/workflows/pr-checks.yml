@@ -37,6 +37,10 @@
 #   ci/net-sheet-numbers-test.js  the seller net sheet's numbers: two executed
 #                        settlement statements to the penny, 116 recorded sheets
 #                        across all 28 jurisdictions, and one calculator.
+#   ci/net-sheet-pdf-test.js  the seller net sheet PDF: every calculated line in
+#                        its group (charges, credits, summary) to the penny on
+#                        all 116 recorded sheets, the net in the navy bar is the
+#                        calculator's, and nothing runs off the page.
 #   ci/description-approval-test.js  Approve for marketing: "Approved" only for
 #                        an approval the database confirmed, a changed description
 #                        says its approval was cleared, a failed write or a failed
@@ -145,6 +149,10 @@ jobs:
       - name: Net sheet numbers test (executed statements to the penny, every jurisdiction)
         if: always()
         run: node head/ci/net-sheet-numbers-test.js head
+
+      - name: Net sheet PDF test (charges, credits and summary say what the calculator said)
+        if: always()
+        run: node head/ci/net-sheet-pdf-test.js head
 
       - name: Approve for marketing test (approved only when the database says so, failures shown)
         if: always()

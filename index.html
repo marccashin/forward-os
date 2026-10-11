@@ -15930,6 +15930,58 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
     // -- Seller Net Sheet PDF Download (branded)
     // Returns a jsPDF doc object (reusable for open + base64 save)
+    // ── The seller net sheet PDF (layout of Oct 11, 2026, Marc) ────────────────
+    // The sheet used to be one list: transfer tax, title, loan payoff, commissions,
+    // concession, taxes, all in a row with a minus or a plus. A seller could not see
+    // at a glance what was a cost of selling and what was their own loan. It is now
+    // three groups, the way a settlement statement reads:
+    //   CHARGES PAID BY SELLER, with a total
+    //   CREDITS TO SELLER, with a total
+    //   SETTLEMENT SUMMARY: sale price, mortgage payoff, charges, credits, net
+    // The loan payoff is shown beside the sale price at the top and once in the
+    // summary; it is not a charge.
+    //
+    // NO RATE, FEE OR TAX RULE LIVES HERE. Every line and the net come from
+    // nsCompute(). This only sorts the lines it was given: a negative amount is a
+    // credit, a line labelled '1st Loan Payoff' or '2nd Loan Payoff' is a payoff,
+    // everything else is a charge. The net printed is ns.result, never a figure
+    // added up on this page.
+    //
+    // THE SALE PRICE PRINTED IS THE PRICE THE SHEET WAS CALCULATED FOR: the net
+    // plus the payoff plus the charges less the credits, in whole cents. It is not
+    // read from the form. Two routes draw the PDF without calculating again (Save
+    // to Listing, and Download with no closing date), so a price or loan changed
+    // after Calculate would otherwise print above lines and a net worked out for
+    // the old one: a summary that does not add up, on the copy filed on the
+    // listing. On a freshly calculated sheet the two are the same figure, and
+    // ci/net-sheet-pdf-test.js holds the page to that on every recorded sheet.
+    function nsSheetGroups(items) {
+      const loans = [], charges = [], credits = [];
+      (items || []).forEach(function (it) {
+        const amt = Number(it.amount) || 0;
+        if (amt < 0) credits.push({ label: it.label, amount: nsRound2(-amt) });
+        else if (/^(1st|2nd) Loan Payoff$/.test(it.label)) loans.push({ label: it.label, amount: nsRound2(amt) });
+        else charges.push({ label: it.label, amount: nsRound2(amt) });
+      });
+      const sum = function (a) { return nsRound2(a.reduce(function (s, i) { return s + i.amount; }, 0)); };
+      return { loans: loans, charges: charges, credits: credits, payoff: sum(loans), totalCharges: sum(charges), totalCredits: sum(credits) };
+    }
+    // Dollars and cents, always: a settlement figure is read to the penny.
+    function nsMoney2(v) {
+      const n = Number(v) || 0;
+      return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    // The seller's name, only for a sheet opened from a listing and only from that
+    // listing's own record. The standalone net sheet has no seller and prints none.
+    function nsSheetSeller() {
+      const p = lstActiveProp.value;
+      if (!ns._propId || !p || p.id !== ns._propId) return '';
+      let name = String(p.seller_name || '').trim();
+      if (!name || name.toLowerCase() === String(p.address || '').trim().toLowerCase()) return '';
+      const co = p.subfolder_drive_ids && p.subfolder_drive_ids._co_seller ? String(p.subfolder_drive_ids._co_seller).trim() : '';
+      if (co) name += ' & ' + co;
+      return name;
+    }
     function nsGeneratePDFDoc() {
       if (!ns.result && ns.result !== 0) return null;
       const { jsPDF } = window.jspdf;
@@ -15938,17 +15990,25 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const navy = [26, 39, 68];
       const gold = [201, 168, 76];
       const gray = [107, 114, 128];
-      const red = [239, 68, 68];
       const white = [255, 255, 255];
       const lightGray = [248, 250, 252];
+      const rule = [226, 232, 240];
+      const L = 50, R = W - 56;
+      const footerTop = H - 50;
+      const LIMIT = footerTop - 14;
       let y = 0;
+
+      const g = nsSheetGroups(ns.breakdown);
+      const toCents = function (n) { return Math.round((Number(n) || 0) * 100); };
+      const price = (toCents(ns.result) + toCents(g.payoff) + toCents(g.totalCharges) - toCents(g.totalCredits)) / 100;
+      const paren = function (n) { return n > 0 ? '(' + nsMoney2(n) + ')' : nsMoney2(n); };
 
       // ── Header bar ──
       doc.setFillColor(...navy);
       doc.rect(0, 0, W, 74, 'F');
       // Logo image (or text fallback)
       if (FORWARD_LOGO_B64) {
-        // Logo aspect ratio ~4.85:1 — fit to header height
+        // Logo aspect ratio ~4.85:1, fit to header height
         const logoH = 44;
         const logoW = logoH * 4.85;
         doc.addImage(FORWARD_LOGO_B64, 'PNG', 40, 15, logoW, logoH);
@@ -15965,27 +16025,23 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // Gold accent line
       doc.setFillColor(...gold);
       doc.rect(0, 74, W, 4, 'F');
-      y = 104;
+      y = 106;
 
-      // ── Title ──
+      // ── Title and date ──
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(20);
       doc.setTextColor(...navy);
-      doc.text('Seller Net Sheet', 50, y);
-      y += 12;
-
-      // Date
+      doc.text('Seller\'s Estimated Net Sheet', L, y);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
       doc.setTextColor(...gray);
       const today = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-      doc.text(today, W - 50, y, { align:'right' });
-      y += 18;
+      doc.text(today, R, y, { align:'right' });
+      y += 16;
 
-      // ── Property info box ──
+      // ── Summary box: who and where on the left, payoff and price on the right ──
       const addr = ns.address || 'Not specified';
-      const unit = ns.unit ? ' | Unit ' + ns.unit : '';
-      const fullAddr = addr + unit;
+      const fullAddr = addr + (ns.unit ? ' | Unit ' + ns.unit : '');
       // Smart jurisdiction label
       let jurText = '';
       if (ns._detectedCounty && ns._detectedState) {
@@ -15997,118 +16053,162 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const jurObj = NS_JURISDICTIONS.find(j => j.value === ns.jurisdiction);
         jurText = jurObj ? jurObj.label : ns.jurisdiction;
       }
+      const cdObj = nsParseDate(ns.closingDate);
+      const settleText = cdObj
+        ? String(cdObj.getMonth() + 1).padStart(2, '0') + '/' + String(cdObj.getDate()).padStart(2, '0') + '/' + cdObj.getFullYear()
+        : (ns.closingDate || 'Not specified');
+      const sellerText = nsSheetSeller();
+
+      const LBL_X = 56, VAL_X = 152, DIV_X = 356, RLBL_X = 370;
+      const VAL_W = DIV_X - 12 - VAL_X;
+      const LINE_H = 11.5, ROW_GAP = 5;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      const leftRows = [];
+      if (sellerText) leftRows.push(['Seller', doc.splitTextToSize(sellerText, VAL_W)]);
+      leftRows.push(['Property', doc.splitTextToSize(fullAddr, VAL_W)]);
+      leftRows.push(['Jurisdiction', doc.splitTextToSize(String(jurText), VAL_W)]);
+      leftRows.push(['Settlement Date', [settleText]]);
+      const rightRows = g.loans.map(function (l) { return [l.label, paren(l.amount)]; });
+      if (g.loans.length) rightRows.push(['Total Payoff', paren(g.payoff)]);
+      rightRows.push(['Sale Price', nsMoney2(price)]);
+      const leftH = leftRows.reduce(function (s, r) { return s + r[1].length * LINE_H + ROW_GAP; }, 0);
+      const rightH = rightRows.length * (LINE_H + ROW_GAP);
+      const boxH = Math.max(leftH, rightH) + 21;
       doc.setFillColor(...lightGray);
-      doc.roundedRect(40, y, W - 80, 72, 6, 6, 'F');
-      y += 16;
+      doc.roundedRect(40, y, W - 80, boxH, 6, 6, 'F');
+      doc.setDrawColor(...rule);
+      doc.setLineWidth(0.6);
+      doc.line(DIV_X, y + 12, DIV_X, y + boxH - 12);
+      let ly = y + 22;
+      leftRows.forEach(function (r) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gray);
+        doc.text(r[0], LBL_X, ly);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...navy);
+        r[1].forEach(function (t, i) { doc.text(t, VAL_X, ly + i * LINE_H); });
+        ly += r[1].length * LINE_H + ROW_GAP;
+      });
+      let ry = y + 22;
+      rightRows.forEach(function (r) {
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gray);
+        doc.text(r[0], RLBL_X, ry);
+        doc.setFont('helvetica', 'bold'); doc.setTextColor(...navy);
+        doc.text(r[1], R, ry, { align:'right' });
+        ry += LINE_H + ROW_GAP;
+      });
+      y += boxH + 26;
+
+      // ── Sections ──
+      // need(h): start a new page when the next h points would run into the footer.
+      // A later page says whose sheet it is, so it never stands as a bare figure.
+      const need = function (h) {
+        if (y + h <= LIMIT) return;
+        doc.addPage();
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gray);
+        doc.text('Seller\'s Estimated Net Sheet, continued', L, 44);
+        doc.text(doc.splitTextToSize(fullAddr, 250)[0], R, 44, { align:'right' });
+        doc.setFillColor(...gold);
+        doc.rect(L, 52, R - L, 0.8, 'F');
+        y = 78;
+      };
+      const section = function (title, firstBlock) {
+        need(22 + firstBlock);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...navy);
+        doc.text(title, L, y, { charSpace: 0.8 });
+        doc.setFillColor(...gold);
+        doc.rect(L, y + 5, R - L, 1.2, 'F');
+        y += 22;
+      };
+      // One row: label on the left, amount right-aligned. A label too long for the
+      // row is set smaller until it fits; it is never cut.
+      const row = function (label, amount, bold) {
+        need(bold ? 26 : 17);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+        const amtW = doc.getTextWidth(amount);
+        const maxLabelW = (R - amtW - 14) - (L + 14);
+        doc.setFont('helvetica', bold ? 'bold' : 'normal');
+        let size = 9.5;
+        while (size > 6.5 && doc.getTextWidth(label) > maxLabelW) { size -= 0.25; doc.setFontSize(size); }
+        doc.setTextColor(...(bold ? navy : gray));
+        doc.text(label, L + 14, y);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...navy);
+        doc.text(amount, R, y, { align:'right' });
+        if (!bold) { doc.setDrawColor(...rule); doc.setLineWidth(0.4); doc.line(L + 14, y + 5.5, R, y + 5.5); }
+        y += bold ? 26 : 17;
+      };
+
+      // The last row of a group moves to the next page with its total, so a total
+      // never opens a page alone.
+      const rows = function (list) {
+        if (!list.length) { row('None', nsMoney2(0)); return; }
+        list.forEach(function (c, i) {
+          if (i === list.length - 1) need(17 + 2 + 26);
+          row(c.label, nsMoney2(c.amount));
+        });
+      };
+
+      section('CHARGES PAID BY SELLER', 17 + 26);
+      rows(g.charges);
+      y += 2;
+      row('Total Charges to Seller', nsMoney2(g.totalCharges), true);
+
+      section('CREDITS TO SELLER', 17 + 26);
+      rows(g.credits);
+      y += 2;
+      row('Total Credits to Seller', nsMoney2(g.totalCredits), true);
+
+      // The summary, the net and the disclaimer stay together on one page.
       doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...gray);
-      doc.text('PROPERTY', 56, y);
-      y += 13;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...navy);
-      // Full address — wrap if needed (max width ~500pt)
-      const addrLines = doc.splitTextToSize(fullAddr, W - 120);
-      doc.text(addrLines[0], 56, y);
-      if (addrLines.length > 1) { y += 12; doc.text(addrLines[1], 56, y); }
-      y += 16;
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(9);
-      doc.setTextColor(...gray);
-      doc.text('CLOSING DATE', 56, y);
-      doc.text('JURISDICTION', 300, y);
-      y += 13;
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.setTextColor(...navy);
-      doc.text(ns.closingDate || '—', 56, y);
-      const jurLines = doc.splitTextToSize(jurText, W - 340);
-      doc.text(jurLines, 300, y);
-      y += 22;
-
-      // ── Sale Price hero ──
-      doc.setFillColor(...navy);
-      doc.roundedRect(40, y, W - 80, 50, 6, 6, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.setTextColor(...white);
-      doc.text('Sale Price', 56, y + 22);
-      doc.setFontSize(18);
-      doc.text(nsFmt(ns.salePrice), W - 56, y + 22, { align:'right' });
-
-      // Gold accent under sale price
-      doc.setFillColor(...gold);
-      doc.rect(40, y + 50, W - 80, 2, 'F');
-      y += 70;
-
-      // ── Line items ──
-      doc.setFontSize(11);
-      const items = ns.breakdown;
-      for (let i = 0; i < items.length; i++) {
-        if (y > 660) {
-          doc.addPage();
-          y = 60;
-        }
-        // Alternate row background
-        if (i % 2 === 0) {
-          doc.setFillColor(248, 250, 252);
-          doc.rect(40, y - 12, W - 80, 26, 'F');
-        }
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(...gray);
-        doc.text(items[i].label, 56, y);
-        doc.setFont('helvetica', 'bold');
-        const lineAmt = items[i].amount;
-        if (lineAmt < 0) {
-          doc.setTextColor(22, 163, 74);
-          doc.text('+ ' + nsFmt(-lineAmt), W - 56, y, { align:'right' });
-        } else {
-          doc.setTextColor(...red);
-          doc.text('- ' + nsFmt(lineAmt), W - 56, y, { align:'right' });
-        }
-        y += 26;
-      }
+      doc.setFontSize(7.5);
+      const disclaimer = 'This is an estimate only. Actual costs may vary based on settlement company, lender requirements, and contract terms. Confirm all figures with your settlement agent before closing. Rates sourced from KVS Title, SMART Settlements, and Virginia/DC/MD code.';
+      const discLines = doc.splitTextToSize(disclaimer, R - L);
+      section('SETTLEMENT SUMMARY', 4 * 17 + 4 + 48 + 18 + discLines.length * 10);
+      row('Sale Price', nsMoney2(price));
+      row('Mortgage Payoff', paren(g.payoff));
+      row('Charges to Seller', paren(g.totalCharges));
+      row('Credits to Seller', nsMoney2(g.totalCredits));
+      y += 4;
 
       // ── Net proceeds ──
-      y += 6;
       doc.setFillColor(...navy);
-      doc.roundedRect(40, y, W - 80, 56, 6, 6, 'F');
+      doc.roundedRect(40, y, W - 80, 46, 6, 6, 'F');
+      doc.setFillColor(...gold);
+      doc.rect(40, y + 46, W - 80, 2, 'F');
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(12);
       doc.setTextColor(...white);
-      doc.text('Estimated Net Proceeds for Seller', 56, y + 24);
-      doc.setFontSize(20);
+      doc.text('Net Proceeds to the Seller', 56, y + 28);
+      doc.setFontSize(18);
       const netColor = ns.result >= 0 ? white : [255, 180, 180];
       doc.setTextColor(...netColor);
-      doc.text(nsFmt(ns.result), W - 56, y + 26, { align:'right' });
-      y += 76;
+      doc.text(nsMoney2(ns.result), R, y + 29, { align:'right' });
+      y += 66;
 
       // ── Disclaimer ──
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(160, 165, 175);
-      const disclaimer = 'This is an estimate only. Actual costs may vary based on settlement company, lender requirements, and contract terms. Confirm all figures with your settlement agent before closing. Rates sourced from KVS Title, SMART Settlements, and Virginia/DC/MD code.';
-      const lines = doc.splitTextToSize(disclaimer, W - 100);
-      doc.text(lines, 50, y);
-      y += lines.length * 10 + 20;
+      doc.text(discLines, L, y);
+      y += discLines.length * 10 + 20;
 
-      // ── Footer ──
-      const footerY = H - 40;
-      doc.setFillColor(...navy);
-      doc.rect(0, footerY - 10, W, 50, 'F');
-      doc.setFillColor(...gold);
-      doc.rect(0, footerY - 10, W, 3, 'F');
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(9);
-      doc.setTextColor(...gold);
-      doc.text('FORWARD Real Estate', 50, footerY + 10);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(8);
-      doc.setTextColor(180, 185, 200);
-      doc.text('Corcoran McEnearney  |  fwrdrealestate.com', 50, footerY + 24);
-      doc.text('Prepared with FORWARD OS', W - 50, footerY + 24, { align:'right' });
+      // ── Footer, on every page ──
+      const pages = doc.getNumberOfPages();
+      for (let pg = 1; pg <= pages; pg++) {
+        doc.setPage(pg);
+        doc.setFillColor(...navy);
+        doc.rect(0, footerTop, W, 50, 'F');
+        doc.setFillColor(...gold);
+        doc.rect(0, footerTop, W, 3, 'F');
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(...gold);
+        doc.text('FORWARD Real Estate', 50, footerTop + 20);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.setTextColor(180, 185, 200);
+        doc.text('Corcoran McEnearney  |  fwrdrealestate.com', 50, footerTop + 34);
+        doc.text(pages > 1 ? 'Page ' + pg + ' of ' + pages + '  |  Prepared with FORWARD OS' : 'Prepared with FORWARD OS', W - 50, footerTop + 34, { align:'right' });
+      }
 
       return doc;
     }
@@ -22078,6 +22178,10 @@ const CHANGELOG = [
       {
         title: 'Your PDFs Are Now Saved on the Listing',
         detail: 'Until today the PDF of a net sheet, a prep guide or a CMA was only kept if the listing had Google Drive folders, and almost no listing does. So the PDF you made was usually kept nowhere, and Save to Folder in the CMA Builder simply downloaded it.\n\nNow the PDF is saved on the listing itself:\n\nSeller Net Sheet and Seller Prep Guide: when you press Save to Property, the PDF is filed on the listing along with the text.\n\nCMA Builder: the button is now called Save to Listing. It files the CMA PDF on the listing and saves the CMA summary with it. Export PDF is still the plain download.\n\nEvery save is a new PDF. Nothing is replaced, so you can open the newest one or any earlier one.\n\nHow to use: Open the listing and open Comparative Market Analysis, Seller Net Sheet or Seller Prep Guide. Saved PDFs are listed with the date and who saved them, newest first. Press Open PDF.\n\nBest practice: Press Save to Listing or Save to Property each time you send a version to a client. Then the listing holds exactly what the client received, and you can open it again when they call about a number.'
+      },
+      {
+        title: 'A Clearer Seller Net Sheet: Charges, Credits and a Settlement Summary',
+        detail: 'The seller net sheet PDF used to be one long list. The loan payoff sat in the middle of the costs, and each line carried a minus or a plus. A seller had to add it up themselves to see what selling actually costs.\n\nThe sheet now reads the way a settlement statement does, in three parts. Charges Paid by Seller lists every cost of the sale with a total. Credits to Seller lists anything coming back to the seller, such as taxes or dues they prepaid, with a total. Settlement Summary then shows the sale price, the mortgage payoff, the charges and the credits, and ends with Net Proceeds to the Seller. The loan payoff is shown at the top beside the sale price and is no longer mixed in with the costs. Every figure is shown to the cent, and amounts that come off the sale price are in parentheses.\n\nNo number has changed. The lines and the net are calculated exactly as before; only the page is laid out differently. When you open the net sheet from a listing, the seller\'s name from that listing is printed at the top. A sheet with many lines continues onto a second page.\n\nHow to use: Nothing new to learn. Fill in the net sheet as you always have and press Calculate. The PDF opens in the new layout. If you change the price or a loan afterward, press Calculate again before you download or save, because the PDF shows the sheet as it was last calculated.\n\nBest practice: Walk your seller through it from the bottom up. Start with Net Proceeds, then the Settlement Summary, then the charges that make up the total. Check that the seller\'s name on the listing is spelled the way they would want to see it, because it now prints on the sheet.'
       },
       {
         title: 'You Choose the Comps When a File Has Too Many',
