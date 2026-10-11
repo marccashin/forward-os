@@ -758,7 +758,7 @@
   <!-- ── EARLIER VERSIONS ── -->
   <div class="card" id="snapCard">
     <div class="card-title">🕘 Earlier Versions of This CMA</div>
-    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">A copy of this CMA is kept each time you export the PDF, save it to the folder, or start a new one. Open a copy to go back to it. What is on screen is kept first.</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:8px;">A copy of this CMA is kept each time you export the PDF, save it to the listing, or start a new one. Open a copy to go back to it. What is on screen is kept first.</div>
     <div id="snapList" style="font-size:13px;color:var(--muted);">No earlier versions yet.</div>
   </div>
 
@@ -772,7 +772,7 @@
     <span class="range" id="footerRange"></span>
   </div>
   <div style="display:flex;gap:10px;">
-    <button id="btnSaveFolder" class="btn-outline" onclick="saveToFolder()" title="Save CMA PDF to this property’s client folder in Google Drive" style="color:var(--navy);font-weight:700;">📁 Save to Folder</button>
+    <button id="btnSaveFolder" class="btn-outline" onclick="saveToFolder()" title="File this CMA’s PDF on the listing in FORWARD OS. Each save is kept; the newest is listed first." style="color:var(--navy);font-weight:700;">📁 Save to Listing</button>
     <button class="btn-gold" onclick="exportPDF()" title="Generate and download the 4-page PDF report">⬇ Export PDF</button>
   </div>
 </div>
@@ -1872,67 +1872,67 @@ function goBack() {
   window.location.href = home;
 }
 
-// ── SAVE TO FOLDER ──
+// ── SAVE TO LISTING ──
+// Until Oct 6, 2026 this button was "Save to Folder". For a listing with Google Drive
+// folders it posted the PDF to a different service (web-production-d9b04) that nobody ever
+// saw file anything; for every other listing, which is almost all of them, it downloaded
+// the PDF exactly like Export PDF and said to "link a Drive folder". Charlotte asked for
+// it to file the CMA on the listing (Oct 3). Any failure said "check connection".
+// Now it stores the PDF on the listing itself (bucket listing-files, the same place and
+// the same file naming as the rest of FORWARD OS: see fosListingFiles in index.html, of
+// which _listingPdfPath and _listingPdfPut are a copy), saves the CMA summary to the
+// listing, keeps a copy under Earlier Versions, and says truthfully what happened.
+// Every press files a new PDF; nothing is replaced. Export PDF stays the plain download.
 let _folderSaving = false;
-let _folderSaved  = false;
-const _RAILWAY = 'https://web-production-d9b04.up.railway.app';
+const _RAILWAY = 'https://web-production-d9b04.up.railway.app';   // still used by the dead pullFromMLS / findComps
+const _LISTING_BUCKET = 'listing-files';
+function _listingPdfPath(propId, kind, fileName, who) {
+  const slug = v => String(v == null ? '' : v).replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const rnd = Math.random().toString(36).slice(2, 5).padEnd(3, '0');
+  const base = slug(String(fileName || '').replace(/\.pdf$/i, '')).slice(0, 80) || 'file';
+  return propId + '/' + kind + '/' + stamp + rnd + '__' + (slug(who) || 'agent') + '__' + base + '.pdf';
+}
+async function _listingPdfPut(propId, kind, blob, fileName, who) {
+  const path = _listingPdfPath(propId, kind, fileName, who);
+  const res = await fetch(_SUPA_URL + '/storage/v1/object/' + _LISTING_BUCKET + '/' + path, {
+    method: 'POST', headers: { 'apikey': _SUPA_KEY, 'Authorization': 'Bearer ' + _SUPA_KEY, 'Content-Type': 'application/pdf', 'x-upsert': 'false' }, body: blob });
+  if (!res.ok) {
+    let why = 'file storage answered ' + res.status;
+    try { const j = await res.json(); if (j && (j.message || j.error)) why = String(j.message || j.error); } catch (e) {}
+    throw new Error(why);
+  }
+  return path;
+}
 
 async function saveToFolder() {
-  if (_folderSaving || _folderSaved) return;
-  const prefillRaw = localStorage.getItem('cma_voice_prefill');
-  const prefill = prefillRaw ? JSON.parse(prefillRaw) : {};
-  const propId        = prefill.propId || '';
-  const driveFolderId = prefill.driveFolderId || '';
-  const agentUpload   = getVal('s_agentName') || localStorage.getItem('fos_agent') || 'Agent';
-  const address       = getVal('s_address') || prefill.address || 'Property';
-  _folderSaving = true;
+  if (_folderSaving) return;
+  const prefill = _cmaPrefillObj();
+  const propId  = /^[0-9a-f-]{36}$/i.test(String(prefill.propId || '')) ? String(prefill.propId) : '';
+  const address = getVal('s_address') || prefill.address || 'Property';
   const btn = document.getElementById('btnSaveFolder');
+  const rest = () => { if (btn) { btn.disabled = false; btn.innerHTML = '📁 Save to Listing'; btn.style.color = 'var(--navy)'; btn.style.borderColor = ''; } };
+  if (!propId || !_SUPA_KEY) {
+    showToast('This CMA was not opened from a listing, so there is no listing to save it to. Use Export PDF, or open the builder from the listing.', 9000);
+    return;
+  }
+  _folderSaving = true;
   if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
   try {
     const { blob, filename } = await _buildPDFBlob();
-    if (!driveFolderId) {
-      // No Drive folder linked — download PDF locally and log to property record
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      _folderSaved = true;
-      if (propId && _SUPA_KEY) {
-        const cmaSummary = _buildCmaSummary();
-        _saveCmaNote(propId, cmaSummary);
-        localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: '', filename, date: new Date().toISOString(), address }));
-      }
-      if (btn) { btn.innerHTML = '✅ PDF Downloaded'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
-      showToast('✅ CMA downloaded — link a Drive folder to auto-file next time');
-      saveLocal();
-      _keepVersionForPdf('PDF saved to folder');
-      return;
-    }
-    const fd = new FormData();
-    fd.append('file', blob, filename);
-    fd.append('folder_id', driveFolderId);
-    fd.append('subfolder', 'cma');
-    fd.append('property_id', propId);
-    fd.append('uploaded_by', agentUpload);
-    const resp = await fetch(_RAILWAY + '/upload-file', { method: 'POST', body: fd });
-    if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    const result = await resp.json();
-    _folderSaved = true;
-    const driveUrl = result.webViewLink || result.url || result.fileUrl || '';
-    if (propId) { localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: driveUrl, filename, date: new Date().toISOString(), address })); }
-    if (propId && _SUPA_KEY) {
-      const cmaSummary = _buildCmaSummary();
-      _saveCmaNote(propId, cmaSummary);
-    }
-    if (btn) { btn.innerHTML = '✅ Saved to Folder'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
-    showToast('✅ CMA saved to ' + address + ' client folder');
+    await _listingPdfPut(propId, 'cma', blob, filename, _AGENT || getVal('s_agentName'));
+    try { localStorage.setItem('cma_saved_' + propId, JSON.stringify({ url: '', filename, date: new Date().toISOString(), address })); } catch (e) {}
+    _saveCmaNote(propId, _buildCmaSummary());   // says so itself if the summary did not save
     saveLocal();
-    _keepVersionForPdf('PDF saved to folder');
-  } catch(e) {
-    console.error('Save to folder failed:', e);
-    showToast('❌ Upload failed — check connection');
-    if (btn) { btn.disabled = false; btn.innerHTML = '📁 Save to Folder'; }
-    _folderSaving = false;
-  }
+    _keepVersionForPdf('PDF saved to the listing');
+    if (btn) { btn.innerHTML = '✅ Saved to Listing'; btn.style.color = '#16a34a'; btn.style.borderColor = '#16a34a'; }
+    showToast('✅ CMA PDF saved to the listing. Open the listing in FORWARD OS to see it under Saved CMA PDFs.', 7000);
+    setTimeout(rest, 5000);
+  } catch (e) {
+    console.error('Save to listing failed:', e);
+    showToast('❌ The CMA PDF was NOT saved to the listing: ' + ((e && e.message) || 'network error') + '. Your CMA is still here. Try again, or use Export PDF.', 10000);
+    rest();
+  } finally { _folderSaving = false; }
 }
 
 function _pdfFilename() { const addr = getVal('s_address') || 'Report'; return 'FORWARD_CMA_' + addr.replace(/[^a-zA-Z0-9]/g, '_') + '_' + new Date().toISOString().slice(0,10) + '.pdf'; }

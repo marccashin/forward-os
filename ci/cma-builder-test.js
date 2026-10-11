@@ -94,6 +94,13 @@
  *   - with no versions table everything else works and the list says so; a real
  *     failure to keep a copy is said out loud; a kept copy is never changed.
  *
+ * SAVE TO LISTING (was Save to Folder)
+ *   - the CMA PDF is stored on the listing itself, named with the time, the agent
+ *     and the address; every press files a new PDF and none is replaced;
+ *   - the summary is saved to the listing and a copy is kept under Earlier Versions;
+ *   - a refusal is said out loud with its reason; nothing goes to the old service;
+ *   - with no listing behind the CMA it says so and files nothing.
+ *
  * BACK TO LISTING
  *   - with the FORWARD OS tab still open: that tab is told which listing to show
  *     and the builder closes;
@@ -127,6 +134,10 @@ let parseResults = []; // what the MLS sheet reader answers
 let snaps = [];        // cma_snapshots rows (earlier versions)
 let snapMode = 'ok';   // 'ok' | 'missing' (table not created yet) | 'fail'
 let snapBadWrites = []; // any PATCH or DELETE the page tried on a version
+let files = [];        // PDFs the page filed on the listing (Supabase Storage, bucket listing-files)
+let filesFail = false; // the PDF store refuses the file
+let notes = [];        // CMA summaries saved to the listing
+let oldService = [];   // anything still sent to the service Save to Folder used to post to
 
 function inList(u) {
   const m = /property_address=in\.([^&]+)/.exec(u);
@@ -155,6 +166,16 @@ function api(route) {
     if (m === 'PATCH') { match(u).forEach((r) => Object.assign(r, body)); return J(route, 204, []); }
     if (m === 'DELETE') { const gone = match(u); table = table.filter((r) => !gone.includes(r)); return J(route, 204, []); }
   }
+  if (/\/storage\/v1\/object\/listing-files\//.test(u)) {
+    // The listing's PDF store. The builder only ever adds a file.
+    if (m !== 'POST') { files.push({ badMethod: m }); return J(route, 403, {}); }
+    if (filesFail) return J(route, 400, { message: 'mock storage refusal' });
+    const h = req.headers(), buf = req.postDataBuffer();
+    files.push({ path: u.split('/listing-files/')[1], type: h['content-type'], upsert: h['x-upsert'], head: buf ? buf.slice(0, 5).toString() : '', size: buf ? buf.length : 0 });
+    return J(route, 200, { Key: 'ok' });
+  }
+  if (/\/rpc\/save_property_note(_by)?$/.test(u)) { let b = {}; try { b = JSON.parse(req.postData() || '{}'); } catch (e) {} notes.push(b); return J(route, 200, [{ id: 1 }]); }
+  if (/web-production-d9b04/.test(u)) { oldService.push(u); return J(route, 200, {}); }
   if (/\/rest\/v1\/cma_snapshots/.test(u)) {
     // Earlier versions. Only ever added to and read. Not counted in `writes` (those are the draft's own saves).
     if (snapMode === 'missing') return J(route, 404, { code: 'PGRST205', message: 'Could not find the table' });
@@ -1091,6 +1112,39 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok((await state(page)).n === 1, 'a CMA typed in without a listing opens');
   await page.evaluate(() => clearPrefill()); await page.waitForTimeout(1200);
   ok(snaps.length === 1 && snaps[0].reason === 'Before starting a new CMA' && table.length === 0 && (await state(page)).n === 0, 'Reset keeps a copy, then gives a blank builder', [snaps.length, table.length]);
+  await page.context().close();
+
+  // ════════════════ SAVE TO LISTING ════════════════
+  console.log('Save to Listing files the CMA PDF on the listing');
+  table = [row('Charlotte Lee', LISTING, '2026-10-06T10:00:00Z', draft('Charlotte Lee', [comp('1 Mine St'), comp('2 Mine St')], { gradeMethod: 'pct1' }))];
+  snaps = []; snapMode = 'ok'; files = []; filesFail = false; notes = []; oldService = []; writes = [];
+  page = await builder('Charlotte Lee');
+  const btnText = () => page.evaluate(() => document.getElementById('btnSaveFolder').innerText.trim());
+  ok(/Save to Listing/.test(await btnText()), 'the button is called Save to Listing');
+  await page.evaluate(() => { window.__toasts.length = 0; return saveToFolder(); }); await page.waitForTimeout(500);
+  ok(files.length === 1 && new RegExp('^' + PROP_ID + '/cma/\\d{8}T\\d{6}Z[a-z0-9]{3}__Charlotte_Lee__FORWARD_CMA_4202_Woodland_Dr_Fairfax_\\d{4}_\\d{2}_\\d{2}\\.pdf$').test(files[0].path), 'the PDF is stored under the listing as a CMA, named with the time, the agent and the address', files);
+  ok(files[0].type === 'application/pdf' && files[0].head === '%PDF-' && files[0].size > 5000 && files[0].upsert === 'false', 'it is the real PDF, and is never sent as a replacement of an existing file', files[0]);
+  ok(notes.length === 1 && notes[0].p_property_id === PROP_ID && notes[0].p_subfolder === 'cma' && /ESTIMATED VALUE/.test(notes[0].p_content), 'the CMA summary is saved to the listing with it', notes.map((n) => n.p_subfolder));
+  ok(snaps.length === 1 && snaps[0].reason === 'PDF saved to the listing', 'a copy of the CMA is kept under Earlier Versions', snaps.map((x) => x.reason));
+  let tt = await page.evaluate(() => window.__toasts.join(' || '));
+  ok(/CMA PDF saved to the listing/.test(tt) && !/Drive|downloaded/i.test(tt) && /Saved to Listing/.test(await btnText()), 'the message says it was saved to the listing (it used to say downloaded, link a Drive folder)', tt);
+  ok(oldService.length === 0, 'nothing is sent to the old upload service', oldService);
+  const p1 = files[0].path;
+  await page.evaluate(() => saveToFolder()); await page.waitForTimeout(500);
+  ok(files.length === 2 && files[1].path !== p1, 'pressing it again files a second PDF under a new name: the first is kept (it used to do nothing the second time)', files.map((f) => f.path));
+  filesFail = true;
+  await page.evaluate(() => { window.__toasts.length = 0; return saveToFolder(); }); await page.waitForTimeout(500);
+  tt = await page.evaluate(() => window.__toasts.join(' || '));
+  ok(files.length === 2 && /was NOT saved to the listing: mock storage refusal/.test(tt) && !/✅/.test(tt) && /Save to Listing/.test(await btnText()) && notes.length === 2, 'when the PDF store refuses it: says NOT saved with the reason, no success message, no summary written, and the button is ready to try again', [tt, notes.length]);
+  filesFail = false;
+  ok(!files.some((f) => f.badMethod), 'the builder never tried to change or delete a filed PDF');
+  await page.context().close();
+  // Not opened from a listing.
+  table = []; files = [];
+  page = await builder('Charlotte Lee', { address: '9 Loose St', agentName: 'Charlotte Lee' });
+  await page.evaluate(() => { window.__toasts.length = 0; return saveToFolder(); }); await page.waitForTimeout(300);
+  tt = await page.evaluate(() => window.__toasts.join(' || '));
+  ok(files.length === 0 && /not opened from a listing/.test(tt) && /Export PDF/.test(tt), 'a CMA with no listing behind it says there is no listing to save to, and files nothing', tt);
   await page.context().close();
 
   ok(errors.length === 0, 'no page errors in any case', errors.slice(0, 5));
