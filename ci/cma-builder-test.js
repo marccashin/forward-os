@@ -94,6 +94,16 @@
  *   - with no versions table everything else works and the list says so; a real
  *     failure to keep a copy is said out loud; a kept copy is never changed.
  *
+ * THE AGENT CHOOSES THE COMPS (Marc, Oct 6, 2026)
+ *   - the review window groups properties by section, says how much room each has,
+ *     and shows sold date, price, size, beds and baths and distance for each;
+ *   - with more ticked than a section holds, nothing is added until the agent unticks
+ *     enough; the builder never drops the overflow in file order;
+ *   - what the agent kept is what goes in, with the distance they chose by;
+ *   - a property already in the CMA takes no room.
+ *   - the listing's address is split into street, city and state when the listing has
+ *     no comma before the city, and marked to check.
+ *
  * SAVE TO LISTING (was Save to Folder)
  *   - the CMA PDF is stored on the listing itself, named with the time, the agent
  *     and the address; every press files a new PDF and none is replaced;
@@ -138,6 +148,8 @@ let files = [];        // PDFs the page filed on the listing (Supabase Storage, 
 let filesFail = false; // the PDF store refuses the file
 let notes = [];        // CMA summaries saved to the listing
 let oldService = [];   // anything still sent to the service Save to Folder used to post to
+let proxAnswer = null; // what the distance lookup answers for one address (null: it answers nothing)
+let proxCalls = [];    // how many addresses each distance lookup asked about
 
 function inList(u) {
   const m = /property_address=in\.([^&]+)/.exec(u);
@@ -204,7 +216,10 @@ function api(route) {
 }
 
 let pass = 0, fail = 0;
-function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; console.log('  FAIL ' + name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 600) : '')); } }
+function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; const line = name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 600) : ''); console.log('  FAIL ' + line); ghError(line); } }
+// On GitHub a failed case is also written as an error annotation, so it can be read
+// from the check itself. The job's log text is not readable from a cloud session.
+function ghError(line) { if (process.env.GITHUB_ACTIONS) console.log('::error title=CMA Builder test::' + String(line).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')); }
 
 // ── test data ──
 const comp = (address, extra) => Object.assign({ address, soldDate: '2026-08-01', salePrice: 700000, gla: 2000, lotSize: '', beds: 4, fullBaths: 2, halfBaths: 1, below: 0, garageSpaces: 2, drivewaySpaces: '', condition: 'C', hoaMonthly: 0, concessions: 0, proximity: '0.4 mi', dom: 9 }, extra || {});
@@ -233,6 +248,11 @@ const row = (agent, key, when, d) => ({ id: agent + '|' + key, agent_name: agent
     const ctx = await browser.newContext();
     await ctx.route('**/*', (route) => {
       const u = route.request().url();
+      if (u.startsWith(origin) && u.includes('cma-proximity')) {
+        let b = {}; try { b = JSON.parse(route.request().postData() || '{}'); } catch (e) {}
+        proxCalls.push((b.comps || []).length);
+        return J(route, 200, proxAnswer ? { distances: (b.comps || []).map(proxAnswer) } : {});
+      }
       if (u.startsWith(origin)) return u.includes('/.netlify/') ? J(route, 200, {}) : route.continue();
       if (u.startsWith('data:') || u.startsWith('blob:')) return route.continue();
       if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
@@ -718,18 +738,26 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.context().close();
 
   // Coming back by a full load must not show the sign-in screen while the app starts.
-  // The app's own script is held back so the page can be looked at before it has started.
+  // The page is looked at in the state it is in before the app has started. That state used to
+  // be caught by holding Vue back for a fixed 1.5 seconds and looking in the few milliseconds
+  // between the page being read and the app starting. On a slow machine the app won that race
+  // and this case failed by chance (seen Oct 11, 2026: started true, 1137 characters shown).
+  // Now the first load is given no Vue at all, so the app cannot start and the page stays in
+  // its before-start state for as long as the test needs. The second load is an ordinary one.
   {
     properties = [prop('Charlotte Lee')];
+    const c0 = await context('Charlotte Lee', null);
+    await c0.route(/cdnjs.*\/vue\//, (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+    const p0 = await c0.newPage();   // no pageerror listener: with no Vue the app's script stops, on purpose
+    await p0.goto(origin + '/?listing=' + PROP_ID, { waitUntil: 'load' });
+    const early = await p0.evaluate(() => ({ started: !!document.querySelector('#app').__vue_app__, parsed: document.querySelector('#app').children.length > 0, shown: document.querySelector('#app').innerText.trim().length }));
+    ok(!early.started && early.parsed && early.shown === 0, 'before the app has started, nothing is shown: no sign-in screen flash', early);
+    await c0.close();
     const c = await context('Charlotte Lee', null);
-    await c.route(/cdnjs.*\/vue\//, async (route) => { await new Promise((r) => setTimeout(r, 1500)); route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE }); });
     const p = await c.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
-    p.goto(origin + '/?listing=' + PROP_ID).catch(() => {});
-    await p.waitForFunction(() => !!document.querySelector('#app') && document.querySelector('#app').children.length > 0, null, { timeout: 5000 }).catch(() => {});
-    const early = await p.evaluate(() => ({ started: !!document.querySelector('#app').__vue_app__, shown: document.querySelector('#app').innerText.trim().length }));
-    ok(!early.started && early.shown === 0, 'before the app has started, nothing is shown: no sign-in screen flash', early);
-    await p.waitForTimeout(3200);
+    await p.goto(origin + '/?listing=' + PROP_ID, { waitUntil: 'load' });
+    await p.waitForTimeout(1700);
     const late = await osState(p);
     ok(late.view === 'listing-detail' && late.text.trim().length > 0, 'once it has started, the listing is shown', late.view);
     await c.close();
@@ -1145,6 +1173,83 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.evaluate(() => { window.__toasts.length = 0; return saveToFolder(); }); await page.waitForTimeout(300);
   tt = await page.evaluate(() => window.__toasts.join(' || '));
   ok(files.length === 0 && /not opened from a listing/.test(tt) && /Export PDF/.test(tt), 'a CMA with no listing behind it says there is no listing to save to, and files nothing', tt);
+  await page.context().close();
+
+  // ════════════════ THE AGENT CHOOSES THE COMPS ════════════════
+  console.log('More properties than the builder holds: the agent chooses');
+  // Marc, Oct 6, 2026: 16 properties in one file; the first six closed sales went in and six
+  // others were "Skipped (section is full)". "What if the ones left off were better comps?"
+  table = []; writes = []; snaps = [];
+  proxAnswer = (addr) => { const m = /^(\d+) Closed/.exec(addr); return m ? (m[1] / 10).toFixed(1) + ' mi' : ''; }; proxCalls = [];
+  parseResults = [];
+  for (let n = 1; n <= 9; n++) parseResults.push(sheet(n + ' Closed Ct', 'closed', { salePrice: String(500000 + n * 1000), soldDate: '2026-08-0' + n, gla: String(800 + n), hoaMonthly: '0' }));
+  parseResults.push(sheet('1 Active Ave', 'active', { listPrice: '525000', listDate: '2026-09-15' }), sheet('2 Active Ave', 'active', { listPrice: '530000' }));
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { city: 'Fairfax', state: 'VA', zip: '22030' }));
+  const openImport = async () => {
+    await page.evaluate(() => cmaUploadPDFs([new File(['x'], 'sheets.pdf', { type: 'application/pdf' })]));
+    await page.waitForFunction(() => document.getElementById('cmaImportModal').style.display === 'flex', null, { timeout: 5000 });
+    await page.waitForTimeout(300);
+  };
+  const imp = () => page.evaluate(() => ({
+    heads: Array.prototype.map.call(document.querySelectorAll('#impList .imp-head'), (h) => [h.querySelector('span').textContent, h.classList.contains('over')]),
+    over: document.getElementById('impOver').style.display === 'none' ? '' : document.getElementById('impOver').innerText,
+    addOff: document.getElementById('impAddBtn').disabled,
+    open: document.getElementById('cmaImportModal').style.display === 'flex',
+    order: Array.prototype.map.call(document.querySelectorAll('#impList .imp-row'), (r) => r.querySelector('div > div').textContent),
+    facts: Array.prototype.map.call(document.querySelectorAll('#impList .imp-facts'), (f) => f.innerText.replace(/\s+/g, ' ').trim()),
+    n: comps.length, status: document.getElementById('pdfStatus').textContent,
+  }));
+  await openImport();
+  let im = await imp();
+  ok(im.heads.length === 2 && /^Closed sales: 9 ticked, room for 6 \(the CMA holds 6\)$/.test(im.heads[0][0]) && im.heads[0][1] === true && /^Active listings: 2 ticked, room for 10/.test(im.heads[1][0]) && im.heads[1][1] === false, 'the review window groups the properties by section and says how many each has room for', im.heads);
+  ok(/Choose your comps/.test(im.over) && /Closed sales: 9 ticked, room for 6\. Untick 3\./.test(im.over) && /closest, most recent, nearest in size/.test(im.over), 'with nine closed sales it says to untick three, and what to keep', im.over);
+  ok(im.addOff === true, 'Add to CMA is switched off until the section fits');
+  ok(/^Sold Aug 1, 2026 · \$501,000 · 801 sq ft · 1 bd \/ 1 fb · 0\.1 mi away$/.test(im.facts[0]) && /0\.9 mi away$/.test(im.facts[8]), 'each closed sale shows its sold date, price, size, beds and baths, and its distance from the listing', [im.facts[0], im.facts[8]]);
+  ok(/^List \$525,000 · Listed Sep 15, 2026 · 861 sq ft/.test(im.facts[9]), 'an active listing shows its list price and list date', im.facts[9]);
+  await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(300);
+  im = await imp();
+  ok(im.n === 0 && im.open === true && (await page.evaluate(() => activeComps.length)) === 0, 'pressing Add anyway adds nothing: the builder never picks the six for the agent', [im.n, im.open]);
+  // The agent keeps the closest ones... and they are not the first six in the file.
+  for (const n of [1, 5, 9]) await page.evaluate((nn) => { const rows = document.querySelectorAll('#impList .imp-row'); for (const r of rows) if (r.querySelector('div > div').textContent.startsWith(nn + ' Closed Ct')) r.querySelector('input[type=checkbox]').click(); }, n);
+  im = await imp();
+  ok(im.over === '' && im.addOff === false && /^Closed sales: 6 ticked, room for 6/.test(im.heads[0][0]) && im.heads[0][1] === false, 'after unticking three the notice clears and Add is switched on', [im.over, im.heads[0]]);
+  proxCalls = [];
+  await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(500);
+  const got = await page.evaluate(() => ({ closed: comps.map((c) => c.address), active: activeComps.map((c) => c.address), prox: comps.map((c) => c.proximity), status: document.getElementById('pdfStatus').textContent }));
+  ok(got.closed.join('|') === '2 Closed Ct|3 Closed Ct|4 Closed Ct|6 Closed Ct|7 Closed Ct|8 Closed Ct' && got.active.length === 2, 'exactly the six the agent kept go in, including the 7th and 8th in the file (they used to be dropped)', got.closed);
+  ok(!/Skipped/.test(got.status) && /Added 8 properties/.test(got.status), 'nothing is reported as skipped', got.status);
+  ok(got.prox.join('|') === '0.2 mi|0.3 mi|0.4 mi|0.6 mi|0.7 mi|0.8 mi' && proxCalls.join() === '2', 'each comp carries the distance the agent chose by; only the two listings whose distance was not found are looked up again', [got.prox, proxCalls]);
+
+  // A CMA that already has comps: room is what is left, and a property already in it does not use any.
+  parseResults = [sheet('2 Closed Ct', 'closed', { salePrice: '502000' }), sheet('10 Closed Ct', 'closed', { salePrice: '510000' })];
+  await openImport();
+  im = await imp();
+  ok(/^Closed sales: 1 ticked, room for 0 \(the CMA already has 6 of 6\)$/.test(im.heads[0][0]) && im.addOff === true && /Untick 1/.test(im.over), 'with six closed sales already in the CMA there is no room for a new one, and it says so', [im.heads[0], im.over]);
+  await page.evaluate(() => cmaImpSet('closed', false));
+  im = await imp();
+  ok(/^Closed sales: 0 ticked/.test(im.heads[0][0]) && im.addOff === false, 'Untick all clears the section', im.heads[0]);
+  await page.evaluate(() => { const rows = document.querySelectorAll('#impList .imp-row'); for (const r of rows) if (r.querySelector('div > div').textContent.startsWith('2 Closed Ct')) r.querySelector('input[type=checkbox]').click(); });
+  im = await imp();
+  ok(/^Closed sales: 0 ticked, room for 0/.test(im.heads[0][0]) && im.addOff === false, 'a property already in the CMA can be ticked to refresh it: it takes no room', im.heads[0]);
+  await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(400);
+  ok((await page.evaluate(() => comps.length + '|' + comps[0].salePrice)) === '6|502000', 'and it is updated in place');
+  await page.context().close();
+  proxAnswer = null; parseResults = [];
+
+  // The listing's address.
+  console.log('The listing\'s address');
+  page = await os('Marc Cashin', '/');
+  const sp = await page.evaluate(() => ['1415 Riverside Ave. Baltimore, MD', '4202 Woodland Dr Fairfax, VA', '601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004', '2909 7th st NW, DC 20001', '13717 Martin Rd'].map((a) => fosSplitListingAddress(a)));
+  ok(sp[0].street === '1415 Riverside Ave.' && sp[0].city === 'Baltimore' && sp[0].state === 'MD' && sp[0].unsure === true, '"1415 Riverside Ave. Baltimore, MD" is the street, Baltimore, MD, marked to check (City used to read MD)', sp[0]);
+  ok(sp[1].street === '4202 Woodland Dr' && sp[1].city === 'Fairfax' && sp[1].state === 'VA', '"4202 Woodland Dr Fairfax, VA" the same', sp[1]);
+  ok(sp[2].street === '601 Pennsylvania Ave NW, Unit #1403' && sp[2].city === 'Washington' && sp[2].state === 'DC' && sp[2].zip === '20004' && sp[2].unsure === false, 'a fully written address is split as before, not marked, and the city has no comma left on it', sp[2]);
+  ok(sp[3].street === '2909 7th st NW' && sp[3].city === '' && sp[3].state === 'DC' && sp[3].zip === '20001' && sp[3].unsure === true, 'a state with no city goes to State, never to City, and is marked to check', sp[3]);
+  ok(sp[4].street === '13717 Martin Rd' && sp[4].state === '' && sp[4].unsure === false, 'a street on its own is left alone', sp[4]);
+  await page.context().close();
+  table = [];
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { address: '1415 Riverside Ave.', city: 'Baltimore', state: 'MD', addressUnsure: true }));
+  const af = await page.evaluate(() => ['s_address', 's_city', 's_state'].map((id) => document.getElementById(id).closest('.field').className));
+  ok(/f-check/.test(af[0]) && /f-check/.test(af[1]) && !/f-check/.test(af[2]), 'on a new CMA the Address and City boxes are marked CHECK THIS when the split was a reading', af);
   await page.context().close();
 
   ok(errors.length === 0, 'no page errors in any case', errors.slice(0, 5));
