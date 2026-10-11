@@ -2675,6 +2675,7 @@ body {
                   <button v-if="ldStarted" @click="ldStartFresh()" title="Clear this conversation and start fresh" style="background:none;border:1px solid #e5e7eb;border-radius:6px;padding:4px 10px;font-size:11px;font-family:'Montserrat',sans-serif;font-weight:600;color:#6b7280;cursor:pointer;white-space:nowrap;letter-spacing:.05em;">↺ Start Fresh</button>
                 </div>
                 <div v-if="ldOutput" :style="{fontSize:'11px',fontFamily:'Montserrat,sans-serif',fontWeight:600,letterSpacing:'.04em',marginBottom:'8px',padding:'6px 10px',borderRadius:'6px',background: ldCharCount > 4000 ? '#fef2f2' : '#f0fdf4',border: ldCharCount > 4000 ? '1px solid #fecaca' : '1px solid #bbf7d0',color: ldCharCount > 4000 ? '#b91c1c' : '#166534'}">{{ ldCharCount.toLocaleString() }} / 4,000 characters<span v-if="ldCharCount > 4000"> \u2014 over the MLS limit by {{ (ldCharCount - 4000).toLocaleString() }}. Ask for a shorter version before pasting.</span></div>
+                <div v-for="(iss, ii) in lstWhoIssues(ldOutput)" :key="'lwho' + ii" data-ld="who-issue" style="font-size:11px;font-family:Montserrat,sans-serif;font-weight:600;line-height:1.5;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;">Fair housing: {{ iss }}. Ask for a rewrite before you save or paste this. It cannot be approved for marketing as written.</div>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span><span v-if="ldSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
                 </button>
@@ -2684,7 +2685,7 @@ body {
                     <div v-if="lstApprIsOn()" data-appr-writer="approved" style="color:#166534;font-weight:600;">✓ Approved for marketing by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
                     <div v-else style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                       <span data-appr-writer="not-approved" style="color:#6b7280;font-weight:600;">Saved to the listing. Not approved for marketing.</span>
-                      <button v-if="!lstFlyerReady()" class="btn-sm" data-appr-writer="to-listing" @click="lstApprGoListing()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">A flyer version is needed first: go to the listing</button>
+                      <button v-if="!lstFlyerReady() || lstApprWhoBlocked()" class="btn-sm" data-appr-writer="to-listing" @click="lstApprGoListing()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstFlyerReady() ? 'Wording to change before approving: go to the listing' : 'A flyer version is needed first: go to the listing' }}</button>
                       <button v-else class="btn-sm" data-appr-writer="approve" :disabled="lstAppr.busy" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
                     </div>
                     <div v-if="lstAppr.failed" data-appr-writer="failed" style="color:#b91c1c;margin-top:4px;">NOT approved: {{ lstAppr.failed }}.</div>
@@ -6295,6 +6296,7 @@ body {
                           <div v-if="lstFlyer.error" data-flyer="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">{{ lstFlyer.error }}</div>
                         </div>
                         <div v-if="lstApprIsOn()" data-appr="approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#166534;line-height:1.5;">✓ Approved by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
+                        <template v-if="lstApprIsOn()"><div v-for="(iss, ii) in lstWhoIssues(lstNotes.listing_remarks).concat(lstWhoIssues(lstFlyer.text))" :key="'awho' + ii" data-appr="approved-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-top:8px;line-height:1.5;">This approved text needs a change: {{ iss }}. Edit the text and save it. Saving clears this approval, and the new text can then be approved.</div></template>
                         <div v-if="lstApprIsOn() && lstAppr.row.flyer_content == null" data-appr="old-approval" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:4px;line-height:1.5;">This approval was given before flyer versions existed. It covers the description only and has no PDF.</div>
                         <template v-if="lstApprIsOn() && lstAppr.row.flyer_content != null">
                           <div v-if="lstAppr.pdf==='making'" data-appr="pdf-making" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:6px;">Making the branded PDF...</div>
@@ -6304,10 +6306,12 @@ body {
                         <template v-if="!lstApprIsOn()">
                           <div v-if="lstAppr.cleared" data-appr="cleared" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This description was approved by {{ lstAppr.cleared.by }} on {{ lstApprWhen(lstAppr.cleared.at) }}. The text has changed since, so that approval was cleared. Approve it again when this text is final.</div>
                           <div v-else-if="lstAppr.row" data-appr="mismatch" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">An approval by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }} is on file, but for different text than the text shown above. It does not cover this text.</div>
+                          <div v-for="(iss, ii) in lstWhoIssues(lstNotes.listing_remarks)" :key="'dwho' + ii" data-appr="desc-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This cannot be approved yet. In the description, {{ iss }}. Press Edit above, change the wording and save.</div>
                           <div data-appr="not-approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px;">Not approved</div>
                           <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Concierge uses these in marketing and in the Preparing to Launch email only after you approve them. Approve them when both texts are final: one approval covers the description and the flyer version.</div>
-                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing || !lstFlyerReady()" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing || !lstFlyerReady()) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked()" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked()) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
                           <span v-if="!lstFlyerReady() && !lstDescEditing" data-appr="need-flyer" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">{{ lstFlyer.editing ? 'Save or cancel the flyer edit first.' : (lstFlyer.busy ? 'Waiting for the flyer version.' : (lstFlyer.text.trim() ? 'The flyer version is over ' + LST_FLYER_MAX + ' words.' : 'A flyer version is needed first.')) }}</span>
+                          <span v-if="lstFlyerReady() && !lstDescEditing && lstApprWhoBlocked()" data-appr="who-blocked" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#b91c1c;margin-left:8px;">Change the wording about who should live there first.</span>
                           <span v-if="lstDescEditing" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">Save or cancel your edit first.</span>
                         </template>
                         <div v-if="lstAppr.failed" data-appr="failed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">NOT approved: {{ lstAppr.failed }}.</div>
@@ -11382,9 +11386,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const LST_FLYER_BANNED = ['stunning', 'luxurious', 'impeccable', 'nestled', 'boasts', 'charming', 'gorgeous', 'amazing', 'rare find', "won't last", 'turnkey'];
     // Fair housing: copy describes the residence, the location and how it lives. It never
     // describes who should live there. These catch the usual ways that slips in.
-    const _LST_FLYER_WHO = '(?:famil(?:y|ies)(?!\\s+room)|couples?|singles?|professionals?|executives?|retirees?|empty[- ]nesters?|newlyweds?|bachelors?|students?|seniors?|downsizers?|commuters?|investors?|first[- ]time (?:home ?)?buyers?|home ?buyers?|buyers?|kids|children)';
+    const _LST_FLYER_WHO = '(?:famil(?:y|ies)(?!\\s+room)|couples?(?!\\s+of\\b)|singles?(?![- ](?:famil|level|stor|car|floor))|professionals?|executives?|retirees?|empty[- ]nesters?|newlyweds?|bachelors?|students?|seniors?|downsizers?|commuters?|investors?|first[- ]time (?:home ?)?buyers?|home ?buyers?|buyers?|kids|children)';
     const LST_FLYER_WHO_RX = [
-      new RegExp('\\b(?:for|suits?|suited to|attracts?|welcomes?|awaits?)\\s+(?:(?:a|an|the|any|your|active|growing|young|busy|discerning|savvy|modern|today\'s)\\s+)*' + _LST_FLYER_WHO + '\\b', 'i'),
+      new RegExp('\\b(?:for|suits?|suited to|attracts?|welcomes?|awaits?)\\s+(?:(?:a|an|the|any|your|active|growing|young|busy|discerning|savvy|modern|today\'s)\\s+)*' + _LST_FLYER_WHO + '\\b(?!-)', 'i'),
       /\b(?:family[- ]friendly|young professionals?|empty[- ]nesters?|retirees?|newlyweds?|bachelor pad|growing famil(?:y|ies)|first[- ]time (?:home ?)?buyers?|mature (?:adults?|buyers?)|adults only|no children)\b/i,
       /\b(?:buyers?|those|anyone|someone|people)\s+(?:who|seeking|looking|wanting)\b/i
     ];
@@ -11395,6 +11399,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)').test(low)) out.push('it uses "' + w + '", a word FORWARD does not use');
       });
       if (/[\u2014\u2013]/.test(text)) out.push('it has a long dash; use a comma, a colon or a semicolon');
+      return out.concat(lstWhoIssues(text));
+    }
+    // Fair housing, on any text that goes to the public: the flyer version AND the full
+    // description (Marc, Oct 11, 2026). One line per phrase that says who should live
+    // there. [] when there is none. Approve for marketing stays off while either text
+    // has one (lstApprWhoBlocked).
+    function lstWhoIssues(t) {
+      const text = String(t || ''), out = [];
       const seen = [];
       LST_FLYER_WHO_RX.forEach(function (rx) {
         const m = text.match(rx);
@@ -11402,6 +11414,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (m && !seen.some(function (x) { return x.indexOf(m[0].toLowerCase()) >= 0 || m[0].toLowerCase().indexOf(x) >= 0; }) && seen.push(m[0].toLowerCase())) out.push('"' + m[0] + '" describes who should live there. Describe the residence, the location and how it lives, never the buyer (fair housing)');
       });
       return out;
+    }
+    function lstApprWhoBlocked() {
+      return lstWhoIssues(lstNotes.listing_remarks).length > 0 || lstWhoIssues(lstFlyer.text).length > 0;
     }
     // A flyer version is saved, within the limit, and not mid-edit.
     function lstFlyerReady() {
@@ -11721,6 +11736,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!who) { lstAppr.failed = 'no agent is signed in'; return false; }
       const flyer = lstFlyer.text;
       if (!lstFlyerReady()) { lstAppr.failed = 'a saved flyer version of ' + LST_FLYER_MAX + ' words or fewer is needed first'; return false; }
+      // Fair housing: neither text may say who should live there. Checked here as well as
+      // on the button, so no other caller can approve around it.
+      const _whoDesc = lstWhoIssues(text), _whoFlyer = lstWhoIssues(flyer);
+      if (_whoDesc.length || _whoFlyer.length) { lstAppr.failed = (_whoDesc.length ? 'in the description, ' + _whoDesc[0] : 'in the flyer version, ' + _whoFlyer[0]); return false; }
       const pid = prop.id;
       lstAppr.busy = true; lstAppr.failed = '';
       let row = null, why = '';
@@ -14490,15 +14509,16 @@ Writing rules:
 - Keep in mind the principles used for luxury companies such as the Ritz-Carlton and Rolex, while also keeping in mind the trendsetting attitude of brands like YSL.
 - Never use Em dashes. Replace them with commas, colons, or semicolons.
 - Don't use overly "flowy" words like "perched" or "bathed in natural light." Speak in a more refined style.
-- NEVER use: stunning, gorgeous, amazing, rare find, won't last, turnkey.
+- NEVER use: stunning, luxurious, impeccable, nestled, boasts, charming, gorgeous, amazing, rare find, won't last, turnkey.
 - Do not use the property address in the description itself.
 - Use "residence" instead of "property" when referring to the home.
 - If the building has a recognized name (especially a luxury brand name like The Ritz-Carlton Residences, The Watergate, etc.), use it prominently in the description. Lean into the brand identity.
 - For the amenities paragraph, prioritize the closest amenities first (within 0.5 miles), including grocery stores, libraries, parks, restaurants, and transit. Be specific with names.
 - Tailor the description to attract the identified buyer personas but do not reference the personas directly in the description.
+- FAIR HOUSING, REQUIRED: describe the residence, the location and how it lives. Never describe the buyer or who should live there. No "first-time buyer", no "perfect for families", no "young professionals", no "buyers who", and no wording about any kind of person, household, age, family status, religion, origin or ability. The buyer personas only decide which features lead. Nothing about them may appear in the description.
 
 Here is an example of the quality and style expected:
-"Glowing with the energy of the world's most powerful city exists a sanctuary, a place where history meets modernity, and where elegance intertwines with innovation. There are truly only a few properties that offer not just a home, but a story, a retreat, and an unparalleled living experience. This is The Hideaway. Nestled behind a wrought iron gate and flanked by meticulously landscaped grounds, The Hideaway stands as a testament to classic architectural beauty, now enhanced with the finest modern upgrades. Stepping inside, you are immediately enveloped by an ambiance of refined style. The expansive foyer invites you into a space where every detail has been meticulously curated. From the rich hardwood floors to the high ceilings, the home exudes a sense of timeless elegance. Yet, it is the modern touches, discreet, but deliberate, that truly set The Hideaway apart. The heart of this home is its gourmet kitchen, where state-of-the-art appliances meet bespoke cabinetry, creating a space that is as functional as it is beautiful. Complemented by a glistening Mother of Pearl backsplash, whether you're hosting an intimate dinner party or preparing a quiet family meal, this kitchen is designed to meet your every need. Adjacent, the dining room glows softly under a new, elegant light fixture, creating the perfect setting for memorable gatherings. The sunroom, with its heated floors and newly installed ceiling fan, offers a year-round retreat, perfect for morning coffees or evening reflections. As you explore further, the primary suite reveals itself as a private haven. With its spa-like en-suite bathroom, custom insulating window treatments, and generous closet space, this is a room designed for rest and rejuvenation. The hall bathroom, recently restored to perfection, speaks to the home's commitment to luxury and comfort, offering a serene space complete with custom-made art tiles, a glass shower enclosure, and a vanity that is both functional and beautiful. The Hideaway is not just about interior luxury; it's about creating a living experience that is secure, modern, and seamlessly integrated with the environment. Outside, the newly installed French drains protect the property from the elements while the entire backyard was professionally designed to enhance not only privacy and reflection, but to also be a sustainable addition to the natural landscape. From the new boiler and indirect water heater system to the emergency AC shut-off and HVAC surge protection, every modern convenience has been thoughtfully added, ensuring that while the home remains steeped in history, it is perfectly equipped for the future. The Hideaway offers a unique blend of seclusion and accessibility. Here, you are just steps away from the heartbeat of Washington, DC, yet within your own private world, where luxury and privacy converge."
+"Glowing with the energy of the world's most powerful city exists a sanctuary, a place where history meets modernity, and where elegance intertwines with innovation. There are truly only a few properties that offer not just a home, but a story, a retreat, and an unparalleled living experience. This is The Hideaway. Set behind a wrought iron gate and flanked by meticulously landscaped grounds, The Hideaway stands as a testament to classic architectural beauty, now enhanced with the finest modern upgrades. Stepping inside, you are immediately enveloped by an ambiance of refined style. The expansive foyer invites you into a space where every detail has been meticulously curated. From the rich hardwood floors to the high ceilings, the home exudes a sense of timeless elegance. Yet, it is the modern touches, discreet, but deliberate, that truly set The Hideaway apart. The heart of this home is its gourmet kitchen, where state-of-the-art appliances meet bespoke cabinetry, creating a space that is as functional as it is beautiful. Complemented by a glistening Mother of Pearl backsplash, whether you're hosting an intimate dinner party or preparing a quiet dinner at home, this kitchen is designed to meet your every need. Adjacent, the dining room glows softly under a new, elegant light fixture, creating the perfect setting for memorable gatherings. The sunroom, with its heated floors and newly installed ceiling fan, offers a year-round retreat, perfect for morning coffees or evening reflections. As you explore further, the primary suite reveals itself as a private haven. With its spa-like en-suite bathroom, custom insulating window treatments, and generous closet space, this is a room designed for rest and rejuvenation. The hall bathroom, recently restored to perfection, speaks to the home's commitment to luxury and comfort, offering a serene space complete with custom-made art tiles, a glass shower enclosure, and a vanity that is both functional and beautiful. The Hideaway is not just about interior luxury; it's about creating a living experience that is secure, modern, and seamlessly integrated with the environment. Outside, the newly installed French drains protect the property from the elements while the entire backyard was professionally designed to enhance not only privacy and reflection, but to also be a sustainable addition to the natural landscape. From the new boiler and indirect water heater system to the emergency AC shut-off and HVAC surge protection, every modern convenience has been thoughtfully added, ensuring that while the home remains steeped in history, it is perfectly equipped for the future. The Hideaway offers a unique blend of seclusion and accessibility. Here, you are just steps away from the heartbeat of Washington, DC, yet within your own private world, where luxury and privacy converge."
 
 CONVERSATION FLOW (follow this exactly):
 1. When the conversation begins, greet the agent warmly and ask for the property address.
@@ -15731,10 +15751,19 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // The loan payoff is shown beside the sale price at the top and once in the
     // summary; it is not a charge.
     //
-    // NO MATH LIVES HERE. Every line and the net come from nsCompute(). This only
-    // sorts the lines it was given: a negative amount is a credit, a line labelled
-    // '1st Loan Payoff' or '2nd Loan Payoff' is a payoff, everything else is a
-    // charge. The net printed is ns.result, never a figure added up on this page.
+    // NO RATE, FEE OR TAX RULE LIVES HERE. Every line and the net come from
+    // nsCompute(). This only sorts the lines it was given: a negative amount is a
+    // credit, a line labelled '1st Loan Payoff' or '2nd Loan Payoff' is a payoff,
+    // everything else is a charge. The net printed is ns.result, never a figure
+    // added up on this page.
+    //
+    // THE SALE PRICE PRINTED IS THE PRICE THE SHEET WAS CALCULATED FOR: the net
+    // plus the payoff plus the charges less the credits, in whole cents. It is not
+    // read from the form. Two routes draw the PDF without calculating again (Save
+    // to Listing, and Download with no closing date), so a price or loan changed
+    // after Calculate would otherwise print above lines and a net worked out for
+    // the old one: a summary that does not add up, on the copy filed on the
+    // listing. On a freshly calculated sheet the two are the same figure, and
     // ci/net-sheet-pdf-test.js holds the page to that on every recorded sheet.
     function nsSheetGroups(items) {
       const loans = [], charges = [], credits = [];
@@ -15779,8 +15808,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const LIMIT = footerTop - 14;
       let y = 0;
 
-      const price = Number(String(ns.salePrice).replace(/[^0-9.]/g, '')) || 0;
       const g = nsSheetGroups(ns.breakdown);
+      const toCents = function (n) { return Math.round((Number(n) || 0) * 100); };
+      const price = (toCents(ns.result) + toCents(g.payoff) + toCents(g.totalCharges) - toCents(g.totalCredits)) / 100;
       const paren = function (n) { return n > 0 ? '(' + nsMoney2(n) + ')' : nsMoney2(n); };
 
       // ── Header bar ──
@@ -15880,7 +15910,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
 
       // ── Sections ──
       // need(h): start a new page when the next h points would run into the footer.
-      const need = function (h) { if (y + h > LIMIT) { doc.addPage(); y = 60; } };
+      // A later page says whose sheet it is, so it never stands as a bare figure.
+      const need = function (h) {
+        if (y + h <= LIMIT) return;
+        doc.addPage();
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(...gray);
+        doc.text('Seller\'s Estimated Net Sheet, continued', L, 44);
+        doc.text(doc.splitTextToSize(fullAddr, 250)[0], R, 44, { align:'right' });
+        doc.setFillColor(...gold);
+        doc.rect(L, 52, R - L, 0.8, 'F');
+        y = 78;
+      };
       const section = function (title, firstBlock) {
         need(22 + firstBlock);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(10.5); doc.setTextColor(...navy);
@@ -15907,15 +15947,23 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         y += bold ? 26 : 17;
       };
 
+      // The last row of a group moves to the next page with its total, so a total
+      // never opens a page alone.
+      const rows = function (list) {
+        if (!list.length) { row('None', nsMoney2(0)); return; }
+        list.forEach(function (c, i) {
+          if (i === list.length - 1) need(17 + 2 + 26);
+          row(c.label, nsMoney2(c.amount));
+        });
+      };
+
       section('CHARGES PAID BY SELLER', 17 + 26);
-      if (g.charges.length) g.charges.forEach(function (c) { row(c.label, nsMoney2(c.amount)); });
-      else row('None', nsMoney2(0));
+      rows(g.charges);
       y += 2;
       row('Total Charges to Seller', nsMoney2(g.totalCharges), true);
 
       section('CREDITS TO SELLER', 17 + 26);
-      if (g.credits.length) g.credits.forEach(function (c) { row(c.label, nsMoney2(c.amount)); });
-      else row('None', nsMoney2(0));
+      rows(g.credits);
       y += 2;
       row('Total Credits to Seller', nsMoney2(g.totalCredits), true);
 
@@ -15923,7 +15971,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       const disclaimer = 'This is an estimate only. Actual costs may vary based on settlement company, lender requirements, and contract terms. Confirm all figures with your settlement agent before closing. Rates sourced from KVS Title, SMART Settlements, and Virginia/DC/MD code.';
-      const discLines = doc.splitTextToSize(disclaimer, W - 100);
+      const discLines = doc.splitTextToSize(disclaimer, R - L);
       section('SETTLEMENT SUMMARY', 4 * 17 + 4 + 48 + 18 + discLines.length * 10);
       row('Sale Price', nsMoney2(price));
       row('Mortgage Payoff', paren(g.payoff));
@@ -21926,12 +21974,16 @@ const CHANGELOG = [
   {
     id: 'v2026-10-11',
     date: 'October 11, 2026',
-    title: 'A Clearer Seller Net Sheet',
-    summary: 'The seller net sheet PDF now groups its lines the way a settlement statement does: charges, credits, and a summary that ends in the net. The numbers are the same.',
+    title: 'Listing Descriptions Describe the Home, Never the Buyer',
+    summary: 'The Listing Description Writer now follows the same fair housing rule as the flyer version, and Approve for marketing stays off while either text says who should live there.',
     updates: [
       {
-        title: 'The Net Sheet Now Shows Charges, Credits and a Settlement Summary',
-        detail: 'The seller net sheet PDF used to be one long list. The loan payoff sat in the middle of the costs, and each line carried a minus or a plus. A seller had to add it up themselves to see what selling actually costs.\n\nThe sheet now reads the way a settlement statement does, in three parts. Charges Paid by Seller lists every cost of the sale with a total. Credits to Seller lists anything coming back to the seller, such as taxes or dues they prepaid, with a total. Settlement Summary then shows the sale price, the mortgage payoff, the charges and the credits, and ends with Net Proceeds to the Seller. The loan payoff is shown at the top beside the sale price and is no longer mixed in with the costs. Every figure is shown to the cent, and amounts that come off the sale price are in parentheses.\n\nNo number has changed. The lines and the net are calculated exactly as before; only the page is laid out differently. When you open the net sheet from a listing, the seller\'s name from that listing is printed at the top. A sheet with many lines continues onto a second page.\n\nHow to use: Nothing new to learn. Fill in the net sheet as you always have and press Calculate. The PDF opens in the new layout.\n\nBest practice: Walk your seller through it from the bottom up. Start with Net Proceeds, then the Settlement Summary, then the charges that make up the total. Check that the seller\'s name on the listing is spelled the way they would want to see it, because it now prints on the sheet.'
+        title: 'Fair Housing Check on the Full Description',
+        detail: 'A listing description describes the residence, the location and how it lives. It never describes the buyer or who should live there: no "first-time buyer", no "perfect for families", no "young professionals", no "buyers who". The flyer version already followed this rule. The full description did not, and one was approved with wording about the buyer in it.\n\nThree things changed. The Listing Description Writer is now told the rule, and its list of words FORWARD does not use is complete. The OS now reads the full description for this kind of wording and shows you the exact phrase in red, in the writer as soon as the description appears and on the listing under Approved for Marketing. And Approve for marketing stays off while the description or the flyer version has such a phrase.\n\nHow to use: If a red line appears, it quotes the phrase. In the writer, ask for a rewrite without it before you save. On the listing, press Edit, change the wording and save, then approve. A description that was approved before today and has such a phrase now shows a red line under its approval: edit it, save, and approve it again.\n\nBest practice: Write about the home. "Three bedrooms on one level" says the same thing as naming who might want them, and it is true for every buyer. The check catches the common phrasings, not every one, so read the text yourself before you approve.'
+      },
+      {
+        title: 'A Clearer Seller Net Sheet: Charges, Credits and a Settlement Summary',
+        detail: 'The seller net sheet PDF used to be one long list. The loan payoff sat in the middle of the costs, and each line carried a minus or a plus. A seller had to add it up themselves to see what selling actually costs.\n\nThe sheet now reads the way a settlement statement does, in three parts. Charges Paid by Seller lists every cost of the sale with a total. Credits to Seller lists anything coming back to the seller, such as taxes or dues they prepaid, with a total. Settlement Summary then shows the sale price, the mortgage payoff, the charges and the credits, and ends with Net Proceeds to the Seller. The loan payoff is shown at the top beside the sale price and is no longer mixed in with the costs. Every figure is shown to the cent, and amounts that come off the sale price are in parentheses.\n\nNo number has changed. The lines and the net are calculated exactly as before; only the page is laid out differently. When you open the net sheet from a listing, the seller\'s name from that listing is printed at the top. A sheet with many lines continues onto a second page.\n\nHow to use: Nothing new to learn. Fill in the net sheet as you always have and press Calculate. The PDF opens in the new layout. If you change the price or a loan afterward, press Calculate again before you download or save, because the PDF shows the sheet as it was last calculated.\n\nBest practice: Walk your seller through it from the bottom up. Start with Net Proceeds, then the Settlement Summary, then the charges that make up the total. Check that the seller\'s name on the listing is spelled the way they would want to see it, because it now prints on the sheet.'
       }
     ]
   }
@@ -24601,7 +24653,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,

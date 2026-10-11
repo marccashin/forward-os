@@ -18,6 +18,8 @@
  * 2. LAYOUT. Nothing runs past the margins or into the footer; no label touches
  *    its amount; the summary, the net and the disclaimer share a page; every
  *    page has the footer. Measured with real jsPDF widths, never estimated.
+ *    A price changed after Calculate, or figures typed with a third decimal,
+ *    still print a summary that adds up, read back off the page itself.
  * 3. THE SUMMARY BOX. No Gross Equity line (Marc, Oct 11, 2026). The seller's
  *    name prints only on a sheet opened from a listing, from that listing.
  *
@@ -52,16 +54,44 @@ function expected(lines, salePrice, net) {
   return { loans, credits, charges, payoff: sum(loans), totCharges: sum(charges), totCredits: sum(credits), price: cents(salePrice), net: cents(net) };
 }
 
+// The figures PRINTED in the summary, read back off the page, must add up to the
+// figure printed in the navy bar. Uses nothing but the page.
+function foots(rec) {
+  furniture(rec);
+  const T = rec.texts, pos = (t) => t.page * 10000 + t.y;
+  const hS = T.filter(t => t.str === HEAD.summary)[0];
+  if (!hS) return ['no settlement summary on the page'];
+  const amt = (label, tol) => { const l = T.filter(t => t.str === label && pos(t) > pos(hS))[0]; if (!l) return NaN; const a = T.filter(x => x !== l && !x.footer && x.page === l.page && x.align === 'right' && Math.abs(x.y - l.y) <= (tol || 0.01)); return a.length === 1 ? unmoney(a[0].str) : NaN; };
+  const p = amt('Sale Price'), m = amt('Mortgage Payoff'), c = amt('Charges to Seller'), k = amt('Credits to Seller'), n = amt('Net Proceeds to the Seller', 1.5);
+  if ([p, m, c, k, n].some(isNaN)) return ['a summary figure could not be read off the page: ' + [p, m, c, k, n].join(' ')];
+  // payoff and charges print in parentheses (negative), except a zero
+  return p + m + c + k === n ? [] : ['the printed summary does not add up: ' + [p, m, c, k].join(' + ') + ' is not ' + n];
+}
+
 // Checks one recorded PDF. Returns a list of problems; empty means right.
+// Page furniture: the footer's three texts and a later page's heading. Named
+// exactly, so body text that strays into the footer band is never excused.
+const CONT = "Seller's Estimated Net Sheet, continued";
+function furniture(rec) {
+  rec.texts.forEach(t => {
+    const foot = t.y > FOOT_TOP && (t.str === 'FORWARD Real Estate' || t.str === 'Corcoran McEnearney  |  fwrdrealestate.com' || /^(Page \d+ of \d+  \|  )?Prepared with FORWARD OS$/.test(t.str));
+    const head = t.page > 1 && Math.abs(t.y - 44) < 0.01;
+    t.footer = foot || head; t.head = head;
+  });
+}
+// A printed amount back to cents: "$1,234.50", "($1,234.50)", "-$1,234.50".
+const unmoney = (str) => { const m = /^(\()?(-)?\$([\d,]+)\.(\d\d)\)?$/.exec(str); if (!m) return NaN; const c = Number(m[3].replace(/,/g, '')) * 100 + Number(m[4]); return (m[1] || m[2]) ? -c : c; };
+
 function check(rec, lines, salePrice, net) {
   const bad = [];
   if (!rec || !rec.texts || !rec.texts.length) return ['no PDF was drawn'];
+  furniture(rec);
   const e = expected(lines, salePrice, net);
   const T = rec.texts, pos = (t) => t.page * 10000 + t.y;
   const find = (s) => T.filter(t => t.str === s);
   const one = (s) => { const f = find(s); if (f.length !== 1) bad.push('"' + s + '" is on the page ' + f.length + ' times'); return f[0]; };
   // the amount drawn on the same row as a label
-  const amountOn = (t) => { const r = T.filter(x => x !== t && x.page === t.page && Math.abs(x.y - t.y) < 0.01 && x.align === 'right'); return r.length === 1 ? r[0] : null; };
+  const amountOn = (t) => { const r = T.filter(x => x !== t && !x.footer && x.page === t.page && Math.abs(x.y - t.y) < 0.01 && x.align === 'right'); return r.length === 1 ? r[0] : null; };
   const hC = one(HEAD.charges), hK = one(HEAD.credits), hS = one(HEAD.summary);
   const tC = one('Total Charges to Seller'), tK = one('Total Credits to Seller');
   const netLabel = one('Net Proceeds to the Seller');
@@ -97,7 +127,14 @@ function check(rec, lines, salePrice, net) {
   rowIs('Mortgage Payoff', paren(e.payoff), hS);
   rowIs('Charges to Seller', paren(e.totCharges), hS);
   rowIs('Credits to Seller', money(e.totCredits), hS);
-  if (e.price - e.payoff - e.totCharges + e.totCredits !== e.net) bad.push('the summary does not add up to the net: ' + [e.price, e.payoff, e.totCharges, e.totCredits, e.net].join(' '));
+  if (e.price - e.payoff - e.totCharges + e.totCredits !== e.net) bad.push('the recorded lines do not add up to the recorded net: ' + [e.price, e.payoff, e.totCharges, e.totCredits, e.net].join(' '));
+  bad.push.apply(bad, foots(rec));
+  // a total sits on the page of the last row of its group, never alone at the top of the next
+  [[hC, tC, 'charges'], [hK, tK, 'credits']].forEach(g => {
+    const rows = T.filter(t => t.align !== 'right' && !t.footer && pos(t) > pos(g[0]) && pos(t) < pos(g[1]));
+    if (rows.length && rows[rows.length - 1].page !== g[1].page) bad.push('the ' + g[2] + ' total opens a page alone');
+  });
+  for (let pg = 2; pg <= rec.pages; pg++) if (T.filter(t => t.page === pg && t.head && t.str === CONT).length !== 1) bad.push('page ' + pg + ' does not say whose sheet it is');
   // the net is set larger than its label, one point lower on the same bar
   const netRow = T.filter(x => x.page === netLabel.page && x.align === 'right' && Math.abs(x.y - netLabel.y) <= 1.5);
   const netShown = netRow.length === 1 ? netRow[0] : null;
@@ -172,7 +209,7 @@ function check(rec, lines, salePrice, net) {
           const align = (o && o.align) || 'left';
           const left = align === 'right' ? x - w : x;
           const yy = y + i * lh;
-          rec.texts.push({ str: String(s), page: doc.internal.getCurrentPageInfo().pageNumber, x: x, y: yy, align: align, left: left, right: left + w, size: size, footer: yy > 792 - 50 });
+          rec.texts.push({ str: String(s), page: doc.internal.getCurrentPageInfo().pageNumber, x: x, y: yy, align: align, left: left, right: left + w, size: size });
         });
         rec.pages = doc.getNumberOfPages();
         return text(t, x, y, o);
@@ -248,6 +285,37 @@ function check(rec, lines, salePrice, net) {
   // Lines handed straight to the PDF step (with no closing date it draws the sheet
   // it is given and does not recalculate): a label far too long for its row, and
   // enough rows for three pages. No real sheet is this long; the page must still hold.
+  // The sheet is the one last CALCULATED. With no closing date the PDF step does
+  // not calculate again, so change the price and a loan after Calculate and
+  // download: the page must still be the calculated sheet, and must add up.
+  const stale = await page.evaluate(async (a) => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    Object.assign(st.ns, a.base, { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, result: null, breakdown: [], _propId: null });
+    await tick(); st.calcNetSheet(); await tick(); await tick(); await tick();
+    const lines = JSON.parse(JSON.stringify(st.ns.breakdown)), net = st.ns.result;
+    st.ns.salePrice = '800000'; st.ns.loan1 = '1'; await tick();
+    window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
+    return { rec: window.__pdfs[0] || null, lines, net, same: JSON.stringify(st.ns.breakdown) === JSON.stringify(lines) };
+  }, { base });
+  b = stale.rec ? check(stale.rec, stale.lines, 725000, stale.net) : ['no PDF'];
+  ok(stale.same && b.length === 0 && !stale.rec.texts.some(t => /800,000/.test(t.str)), 'a price and a loan changed after Calculate, then Download with no closing date: the page is the calculated $725,000 sheet and adds up; $800,000 is nowhere on it', [stale.same, b.slice(0, 4)]);
+
+  // Figures typed with a third decimal, and a price typed with a dollar sign and
+  // commas. Whatever is typed, the figures printed must add up to the net printed.
+  const odd = await run([
+    { input: Object.assign({}, novaLabel, { loan1: '100000.004', loan2: '50000.004' }) },
+    { input: Object.assign({}, novaLabel, { salePrice: '725000.005' }) },
+    { input: Object.assign({}, novaLabel, { salePrice: '$725,000' }) },
+    { input: Object.assign({}, novaLabel, { salePrice: '725000.37', loan1: '511000.61', otherCosts: '50.19', hoaResaleCert: '330.45' }) }
+  ]);
+  ok(odd.every(x => x.pdfs === 1 && foots(x.rec).length === 0), 'loans or a price typed with a third decimal: the printed summary still adds up to the printed net', odd.map(x => foots(x.rec)));
+  ok(odd.slice(0, 2).every(x => x.rec.texts.some(t => t.str === money(cents(x.net)))), 'and the net printed is the calculator\'s', odd.slice(0, 2).map(x => x.net));
+  b = check(odd[2].rec, odd[2].lines, 725000, odd[2].net);
+  ok(b.length === 0 && odd[2].net === 156356.48, 'a price typed as $725,000 prints as $725,000.00 and nets the same $156,356.48', [odd[2].net, b.slice(0, 3)]);
+  b = check(odd[3].rec, odd[3].lines, 725000.37, odd[3].net);
+  ok(b.length === 0, 'a price, a loan and two costs with cents: every figure to the cent, and it adds up', b.slice(0, 4));
+
   const longLabel = 'Property Tax Collection - 1st Half (unpaid, collected at settlement for the county treasurer office, second notice)';
   const fake = [{ label: '1st Loan Payoff', amount: 100000 }, { label: longLabel, amount: 1234567.89 }];
   for (let i = 1; i <= 78; i++) fake.push({ label: 'Made-up charge number ' + i, amount: 100 + i });
@@ -263,6 +331,27 @@ function check(rec, lines, salePrice, net) {
   }, { base, fake, net: fakeNet });
   b = inj.pdfs === 1 && JSON.stringify(inj.lines) === JSON.stringify(fake) ? check(inj.rec, fake, 5000000, fakeNet) : ['the PDF step did not draw the lines it was given'];
   ok(b.length === 0 && inj.rec.pages === 3, '80 rows run to three pages: every row once, nothing in a footer, the summary and net together on the last page', [inj.rec && inj.rec.pages, b.slice(0, 4)]);
+  // Every length from 18 to 70 rows, so a page break falls on every possible row:
+  // the last row and its total, a heading, the summary.
+  const sweep = await page.evaluate(async (a) => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    const out = [];
+    for (let n = 18; n <= 70; n++) for (const k of [0, 1, 3]) {
+      const lines = [{ label: '1st Loan Payoff', amount: 100000 }];
+      for (let i = 1; i <= n; i++) lines.push({ label: 'Made-up charge number ' + i, amount: 100 + i + 0.25 });
+      for (let i = 1; i <= k; i++) lines.push({ label: 'Made-up credit number ' + i, amount: -(50 + i + 0.5) });
+      const net = Math.round((5000000 - lines.reduce((s, l) => s + l.amount, 0)) * 100) / 100;
+      Object.assign(st.ns, a.base, { salePrice: 5000000, closingDate: '', jurisdiction: 'dc', _propId: null, breakdown: lines, result: net });
+      await tick(); window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
+      out.push({ n, k, lines, net, rec: window.__pdfs[0] || null });
+    }
+    return out;
+  }, { base });
+  const sweepBad = sweep.map(x => ({ n: x.n, k: x.k, bad: x.rec ? check(x.rec, x.lines, 5000000, x.net) : ['no PDF'] })).filter(x => x.bad.length);
+  ok(sweep.length === 159 && sweepBad.length === 0, '159 sheets of 18 to 70 rows with 0, 1 or 3 credits: wherever the page breaks, no total opens a page alone, nothing reaches the footer, every later page names the property', sweepBad.slice(0, 2));
+  ok(new Set(sweep.map(x => x.rec.pages)).size >= 2, 'those sheets run to one, two and three pages (' + Array.from(new Set(sweep.map(x => x.rec.pages))).sort().join(', ') + ')', null);
+
   const ll = inj.rec.texts.filter(t => t.str === longLabel)[0];
   ok(ll && ll.size < 9.5 && ll.size >= 6.5, 'a label too long for its row is printed whole in smaller type (' + (ll && ll.size) + 'pt), never cut and never over its amount', ll);
 
@@ -278,7 +367,8 @@ function check(rec, lines, salePrice, net) {
   const a0 = src.indexOf('function nsSheetGroups('), a1 = src.indexOf('function nsRecalcSilent(');
   const pdfSrc = a0 >= 0 && a1 > a0 ? src.slice(a0, a1) : '';
   ok(pdfSrc.length > 0 && !/transferTax|settlementFee|nsHoaItems|TaxItems|MD_RATES|0\.003|0\.0145/.test(pdfSrc), 'the PDF code holds no rate, fee or tax rule', pdfSrc.length);
-  ok(/ns\.result/.test(pdfSrc) && !/Gross Equity/.test(src.slice(a0, a1)), 'the net in the navy bar is the calculator\'s own (ns.result)', null);
+  ok(/doc\.text\(nsMoney2\(ns\.result\), R, y \+ 29/.test(pdfSrc) && !/Gross Equity/.test(pdfSrc), 'the figure drawn in the navy bar is ns.result itself', null);
+  ok(!/ns\.salePrice/.test(pdfSrc.replace(/\/\/[^\n]*/g, '')), 'the PDF code never reads the sale price box: it prints the price the sheet was calculated for', null);
 
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();
