@@ -11512,7 +11512,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
 
     // ── Branded PDF of the approved description ─────────────────────────────
     // Made in the browser on approval, with the same header, footer and colors as the
-    // other FORWARD PDFs, and stored in the public storage folder
+    // other FORWARD PDFs. It is CLIENT FACING: address, listing agent and the description.
+    // It is and stored in the public storage folder
     // 'listing-description-pdfs' so Concierge can open it without signing in. One file
     // per approval: a new folder name every time, never replaced. Its public address is
     // recorded on the approval row by the database function set_listing_description_pdf.
@@ -11543,12 +11544,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         .replace(/\s*\u2014\s*/g, ', ').replace(/\u2013/g, '-').replace(/\u2026/g, '...').replace(/[\u2022\u25cf\u25aa]/g, '-').replace(/\u00a0/g, ' ')
         .replace(/\t/g, ' ').replace(/[^\n\x20-\x7e\xa1-\xff]/g, '');
     }
-    function lstApprPdfWhen(iso) {
-      const d = new Date(iso);
-      if (isNaN(d.getTime())) return '';
-      return d.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }) + ' ET';
-    }
-    // Returns a jsPDF document. info = { address, agent, approvedBy, approvedAt, text }
+    // Returns a jsPDF document. info = { address, agent, text }. This PDF is sent to the
+    // client: it carries the address, the listing agent and the description, and nothing
+    // about the approval.
     function lstApprBuildPdf(info) {
       if (!window.jspdf || !window.jspdf.jsPDF) throw new Error('the PDF tool did not load on this page');
       const doc = new window.jspdf.jsPDF({ unit: 'pt', format: 'letter' });
@@ -11573,11 +11571,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       header();
       y = 96;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(gold[0], gold[1], gold[2]);
-      doc.text('LISTING DESCRIPTION  |  APPROVED FOR MARKETING', ML, y, { charSpace: 1 }); y += 22;
+      doc.text('LISTING DESCRIPTION', ML, y, { charSpace: 1 }); y += 22;
       doc.setFont('helvetica', 'bold'); doc.setFontSize(17); doc.setTextColor(navy[0], navy[1], navy[2]);
       doc.splitTextToSize(_lstApprPdfText(info.address) || 'Address not recorded', TW).forEach(function (line) { doc.text(line, ML, y); y += 21; });
       y += 6;
-      [['Listing agent', info.agent], ['Approved by', info.approvedBy], ['Approved', lstApprPdfWhen(info.approvedAt)]].forEach(function (row) {
+      // Client facing (Marc, Oct 9, 2026): the listing agent's name only. Who approved the
+      // text and when stays in the OS and in the message to Concierge, not on this page.
+      [['Listing agent', info.agent]].forEach(function (row) {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(120, 130, 145);
         doc.text(row[0].toUpperCase(), ML, y, { charSpace: 0.6 });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(10.5); doc.setTextColor(navy[0], navy[1], navy[2]);
@@ -11610,7 +11610,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       let updated = null, why = '';
       const said = function (msg) { const e = new Error(msg); e._lstApprSaid = true; return e; };
       try {
-        const blob = lstApprBuildPdf({ address: prop.address || '', agent: prop.agent_name || '', approvedBy: row.approved_by, approvedAt: row.approved_at, text: row.content }).output('blob');
+        const blob = lstApprBuildPdf({ address: prop.address || '', agent: prop.agent_name || '', text: row.content }).output('blob');
         const d = new Date(), two = function (n) { return (n < 10 ? '0' : '') + n; };
         const stamp = d.getUTCFullYear() + two(d.getUTCMonth() + 1) + two(d.getUTCDate()) + '-' + two(d.getUTCHours()) + two(d.getUTCMinutes()) + two(d.getUTCSeconds());
         const rand = Math.random().toString(36).slice(2, 8) || 'x';
@@ -21847,7 +21847,7 @@ const CHANGELOG = [
       },
       {
         title: 'One Approval Now Covers a Flyer Version Too, and Makes a Branded PDF',
-        detail: 'Approving a listing description now does two more things.\n\nFirst, a flyer version. Marketing flyers need shorter copy than the MLS, so the OS writes a version of 200 words or fewer from your saved description. It is a rewrite, not the first 200 words, and it follows the same FORWARD voice and word rules. It describes the residence, the location and how it lives, and never who should live there. You can edit it. The word count is shown, and Approve stays off until a flyer version is saved and is 200 words or fewer.\n\nOne approval covers both texts. If you change either one afterward, the approval is cleared and both need approving again.\n\nSecond, a branded PDF. When you approve, the OS makes a FORWARD PDF of the full description with the address, the listing agent, who approved it and when. Concierge gets the link with the approval email, and the listing shows Open the branded PDF. If the PDF cannot be made, your approval still stands, the listing says so, and a Make the PDF button tries again.\n\nHow to use: Open the listing, open Listing Description, and press Write the flyer version. Read it, edit it if you want, and save. Then press Approve for marketing.\n\nBest practice: Read the flyer version as carefully as the description, because it goes out under your approval. If you edit it, describe the home and never the buyer: no "perfect for" any kind of person or household. If the listing warns that the description was saved after the flyer version was written, read the flyer version again before you approve.'
+        detail: 'Approving a listing description now does two more things.\n\nFirst, a flyer version. Marketing flyers need shorter copy than the MLS, so the OS writes a version of 200 words or fewer from your saved description. It is a rewrite, not the first 200 words, and it follows the same FORWARD voice and word rules. It describes the residence, the location and how it lives, and never who should live there. You can edit it. The word count is shown, and Approve stays off until a flyer version is saved and is 200 words or fewer.\n\nOne approval covers both texts. If you change either one afterward, the approval is cleared and both need approving again.\n\nSecond, a branded PDF. When you approve, the OS makes a FORWARD PDF of the full description with the address and the listing agent, ready to send to your client. Concierge gets the link with the approval email, and the listing shows Open the branded PDF. If the PDF cannot be made, your approval still stands, the listing says so, and a Make the PDF button tries again.\n\nHow to use: Open the listing, open Listing Description, and press Write the flyer version. Read it, edit it if you want, and save. Then press Approve for marketing.\n\nBest practice: Read the flyer version as carefully as the description, because it goes out under your approval. If you edit it, describe the home and never the buyer: no "perfect for" any kind of person or household. If the listing warns that the description was saved after the flyer version was written, read the flyer version again before you approve.'
       }
     ]
   }
