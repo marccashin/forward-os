@@ -2422,7 +2422,7 @@ body {
                 <div class="panel-link" @click="go('listings')">View all →</div>
               </div>
               <template v-if="lstProperties.length">
-                <div class="lrow" v-for="p in lstProperties.slice(0,4)" :key="p.id" @click="go('listings')">
+                <div class="lrow" v-for="p in lstProperties.slice(0,4)" :key="p.id" @click="lstOpenProperty(p)">
                   <div class="lswatch">{{ (p.address||'').split(' ').slice(0,1).join('').substring(0,3).toUpperCase() }}</div>
                   <div class="linfo">
                     <div class="laddr">{{ p.address }}</div>
@@ -2445,7 +2445,7 @@ body {
                 <div class="panel-link" @click="go('buyer-package')">View all →</div>
               </div>
               <template v-if="byrBuyers.length">
-                <div class="prow" v-for="b in byrBuyers.slice(0,4)" :key="b.id" @click="go('buyer-package')">
+                <div class="prow" v-for="b in byrBuyers.slice(0,4)" :key="b.id" @click="byrOpenBuyer(b)">
                   <div class="pavatar">{{ ((b.buyer_name||b.first_name||'?').split(' ').map(n=>n[0]).join('').substring(0,2)).toUpperCase() }}</div>
                   <div style="flex:1;min-width:0;">
                     <div class="pname">{{ b.buyer_name || (b.first_name + ' ' + b.last_name).trim() }}</div>
@@ -21880,6 +21880,10 @@ const CHANGELOG = [
       {
         title: 'Fair Housing Check on the Full Description',
         detail: 'A listing description describes the residence, the location and how it lives. It never describes the buyer or who should live there: no "first-time buyer", no "perfect for families", no "young professionals", no "buyers who". The flyer version already followed this rule. The full description did not, and one was approved with wording about the buyer in it.\n\nThree things changed. The Listing Description Writer is now told the rule, and its list of words FORWARD does not use is complete. The OS now reads the full description for this kind of wording and shows you the exact phrase in red, in the writer as soon as the description appears and on the listing under Approved for Marketing. And Approve for marketing stays off while the description or the flyer version has such a phrase.\n\nHow to use: If a red line appears, it quotes the phrase. In the writer, ask for a rewrite without it before you save. On the listing, press Edit, change the wording and save, then approve. A description that was approved before today and has such a phrase now shows a red line under its approval: edit it, save, and approve it again.\n\nBest practice: Write about the home. "Three bedrooms on one level" says the same thing as naming who might want them, and it is true for every buyer. The check catches the common phrasings, not every one, so read the text yourself before you approve.'
+      },
+      {
+        title: 'Dashboard Rows Open the Listing or Buyer',
+        detail: 'On the Dashboard, clicking a row under Active Listings now opens that listing, and clicking a row under Buyer Pipeline now opens that buyer. Before, either click took you to the full list and you had to find the card again.\n\nHow to use: Click the address or the name on the Dashboard. View all still opens the full list, and Prep still starts Meeting Prep for that person.\n\nBest practice: Use the Dashboard rows for the deals you are working today, and View all when you need a listing or buyer that is not among the four shown.'
       }
     ]
   }
