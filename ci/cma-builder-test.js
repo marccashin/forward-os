@@ -738,18 +738,26 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   await page.context().close();
 
   // Coming back by a full load must not show the sign-in screen while the app starts.
-  // The app's own script is held back so the page can be looked at before it has started.
+  // The page is looked at in the state it is in before the app has started. That state used to
+  // be caught by holding Vue back for a fixed 1.5 seconds and looking in the few milliseconds
+  // between the page being read and the app starting. On a slow machine the app won that race
+  // and this case failed by chance (seen Oct 11, 2026: started true, 1137 characters shown).
+  // Now the first load is given no Vue at all, so the app cannot start and the page stays in
+  // its before-start state for as long as the test needs. The second load is an ordinary one.
   {
     properties = [prop('Charlotte Lee')];
+    const c0 = await context('Charlotte Lee', null);
+    await c0.route(/cdnjs.*\/vue\//, (route) => route.fulfill({ status: 200, contentType: 'text/javascript', body: '' }));
+    const p0 = await c0.newPage();   // no pageerror listener: with no Vue the app's script stops, on purpose
+    await p0.goto(origin + '/?listing=' + PROP_ID, { waitUntil: 'load' });
+    const early = await p0.evaluate(() => ({ started: !!document.querySelector('#app').__vue_app__, parsed: document.querySelector('#app').children.length > 0, shown: document.querySelector('#app').innerText.trim().length }));
+    ok(!early.started && early.parsed && early.shown === 0, 'before the app has started, nothing is shown: no sign-in screen flash', early);
+    await c0.close();
     const c = await context('Charlotte Lee', null);
-    await c.route(/cdnjs.*\/vue\//, async (route) => { await new Promise((r) => setTimeout(r, 1500)); route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE }); });
     const p = await c.newPage();
     p.on('pageerror', (e) => errors.push(e.message));
-    p.goto(origin + '/?listing=' + PROP_ID).catch(() => {});
-    await p.waitForFunction(() => !!document.querySelector('#app') && document.querySelector('#app').children.length > 0, null, { timeout: 5000 }).catch(() => {});
-    const early = await p.evaluate(() => ({ started: !!document.querySelector('#app').__vue_app__, shown: document.querySelector('#app').innerText.trim().length }));
-    ok(!early.started && early.shown === 0, 'before the app has started, nothing is shown: no sign-in screen flash', early);
-    await p.waitForTimeout(3200);
+    await p.goto(origin + '/?listing=' + PROP_ID, { waitUntil: 'load' });
+    await p.waitForTimeout(1700);
     const late = await osState(p);
     ok(late.view === 'listing-detail' && late.text.trim().length > 0, 'once it has started, the listing is shown', late.view);
     await c.close();
