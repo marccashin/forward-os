@@ -672,6 +672,85 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await open(A); s = await see();
   ok(!s.approved && !s.badge && s['not-approved'] === 'Not approved' && /^An approval by Niki Lang on .* is on file, but for different text than the text shown above\. It does not cover this text\.$/.test(s.mismatch || '') && /^Approve for marketing$/i.test(s.approve || ''), 'the listing says Not approved, explains, and offers the button', s);
 
+  // ── Fair housing on the full description (Marc, Oct 11, 2026) ─────────────────
+  console.log('\nFair housing: the writer\'s own instructions');
+  {
+    const src = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+    const a0 = src.indexOf('const LD_SYSTEM  = `'), a1 = src.indexOf('`;', a0);
+    const LD = src.slice(a0, a1);
+    const rules = LD.slice(LD.indexOf('Writing rules:'), LD.indexOf('Here is an example of the quality'));
+    const example = LD.slice(LD.indexOf('Here is an example of the quality'), LD.indexOf('CONVERSATION FLOW'));
+    ok(a0 > 0 && rules.length > 200 && example.length > 2000, 'the writer\'s instructions, their rules and their example were found', [a0, rules.length, example.length]);
+    ok(/- FAIR HOUSING, REQUIRED: describe the residence, the location and how it lives\. Never describe the buyer or who should live there\./.test(rules) && ['"first-time buyer"', '"perfect for families"', '"young professionals"', '"buyers who"'].every(x => rules.includes(x)), 'the writing rules carry the flyer\'s rule: describe the residence, the location and how it lives, never the buyer', rules.slice(-500));
+    const never = (rules.match(/- NEVER use: ([^\n]*)\./) || [])[1] || '';
+    ok(same(never.split(', '), ['stunning', 'luxurious', 'impeccable', 'nestled', 'boasts', 'charming', 'gorgeous', 'amazing', 'rare find', "won't last", 'turnkey']), 'the NEVER use list is FORWARD\'s full list', never);
+    const flyerList = (src.match(/const LST_FLYER_BANNED = \[([^\]]*)\]/) || [])[1] || '';
+    ok(same(flyerList.split(', ').map(x => x.replace(/^['"]|['"]$/g, '')), never.split(', ')), 'and it is the same list the flyer version is checked against', flyerList);
+    const exIssues = await page.evaluate((t) => document.querySelector('#app').__vue_app__._instance.setupState.lstFlyerIssues(t), example);
+    ok(exIssues.length === 0 && !/nestled/i.test(example) && !/famil/i.test(example), 'the example description in the instructions passes the OS\'s own check: no banned word, no long dash, nothing about who lives there', exIssues);
+  }
+  const BAD_DESC = 'A three bedroom residence on a quiet block, with a kitchen rebuilt in 2024. Ideal for the first-time buyer.\n\nSecond paragraph about the garden.';
+  const FIXED_DESC = BAD_DESC.replace(' Ideal for the first-time buyer.', '');
+  const freshWith = async (desc, flyer, appr) => {
+    reset(); notes.find(n => n.property_id === A && n.subfolder === 'listing_remarks').content = desc;
+    if (flyer) notes.push({ id: 'nf', property_id: A, subfolder: 'listing_flyer', content: flyer, updated_at: '2026-10-05T00:00:00Z' });
+    if (appr) approvals = [appr];
+    await page.context().close(); who = 'Marc Cashin'; page = await newPage(); await open(A);
+  };
+  const all = (sel) => page.evaluate((s2) => Array.from(document.querySelectorAll(s2)).map(e => e.innerText.replace(/\s+/g, ' ').trim()), sel);
+  const direct = () => page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const r = await st.lstApprove(); await new Promise(r2 => setTimeout(r2, 600)); return r; });
+
+  console.log('\nFair housing: a description that says who should live there');
+  await freshWith(BAD_DESC, GOOD);
+  s = await see();
+  let di = await all('[data-appr="desc-issue"]');
+  ok(di.length === 1 && /^This cannot be approved yet\. In the description, "for the first-time buyer" describes who should live there\. Describe the residence, the location and how it lives, never the buyer \(fair housing\)\. Press Edit above, change the wording and save\.$/.test(di[0]), 'the listing quotes the phrase, once, and says what to do', di);
+  ok(s.approveDisabled === true && s['who-blocked'] === 'Change the wording about who should live there first.' && !s['need-flyer'] && /^200|^\d+ \/ 200 words$/.test(s['f:count'] || ''), 'Approve for marketing is off although the flyer version is ready, and says why', s);
+  sent = [];
+  await page.evaluate(() => document.querySelector('[data-appr="approve"]').click()); await page.waitForTimeout(500);
+  ok(rpcSent().length === 0 && oldRpc().length === 0 && approvals.length === 0, 'pressing it sends nothing');
+  let dr = await direct(); s = await see();
+  ok(dr === false && rpcSent().length === 0 && approvals.length === 0 && /^NOT approved: in the description, "for the first-time buyer" describes who should live there/.test(s.failed || ''), 'the approve step itself refuses, sends nothing, and says why', s.failed);
+  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.view = 'listing-desc'; }, BAD_DESC);
+  s = await see();
+  let wi = await all('[data-ld="who-issue"]');
+  ok(wi.length === 1 && /^Fair housing: "for the first-time buyer" describes who should live there\..* Ask for a rewrite before you save or paste this\. It cannot be approved for marketing as written\.$/.test(wi[0]), 'the writer shows the same phrase beside the description, before it is saved', wi);
+  ok(/^Wording to change before approving: go to the listing$/i.test(s['w:to-listing'] || '') && !s['w:approve'], 'and the writer offers no Approve button', s);
+  await writer((st, t) => { st.ldOutput = t; }, FIXED_DESC);
+  wi = await all('[data-ld="who-issue"]');
+  ok(wi.length === 0, 'a description without the phrase shows no fair housing line in the writer', wi);
+  await writer((st) => { st.view = 'listing-detail'; }, null);
+  await open(A);
+  await editSave(FIXED_DESC);
+  s = await see(); di = await all('[data-appr="desc-issue"]');
+  ok(savedNote(A, 'listing_remarks') === FIXED_DESC && di.length === 0 && s.approveDisabled === false && !s['who-blocked'], 'with the phrase edited out and saved, the red line goes and Approve is on', s);
+  sent = []; await click('[data-appr="approve"]', 2200);
+  s = await see();
+  ok(rpcSent().length === 1 && approvals.length === 1 && approvals[0].content === FIXED_DESC && /^✓ Approved by Marc Cashin on /.test(s.approved || ''), 'and it approves', s.approved);
+
+  console.log('\nFair housing: the same wording in the flyer version');
+  await freshWith(FIXED_DESC, 'A home ideal for young professionals.\n\n' + WORDS(60));
+  s = await see(); di = await all('[data-appr="desc-issue"]');
+  ok(s.approveDisabled === true && s['who-blocked'] === 'Change the wording about who should live there first.' && di.length === 0 && /"for young professionals" describes who should live there/.test(s['f:issue'] || ''), 'Approve is off, the phrase is quoted under the flyer version, and the description is not blamed', s);
+  sent = []; dr = await direct(); s = await see();
+  ok(dr === false && rpcSent().length === 0 && approvals.length === 0 && /^NOT approved: in the flyer version, "for young professionals" describes who should live there/.test(s.failed || ''), 'the approve step refuses and names the flyer version', s.failed);
+
+  console.log('\nFair housing: ordinary wording is not caught');
+  const PLAIN = 'A single-family residence built for single-level living, with a family room, parking for a couple of cars and a range for professional-grade cooking. Perfect for morning coffee.';
+  await freshWith(PLAIN, GOOD);
+  s = await see(); di = await all('[data-appr="desc-issue"]');
+  ok(di.length === 0 && s.approveDisabled === false && !s['who-blocked'], 'single-family, single-level, family room, a couple of cars, professional-grade: no red line and Approve is on', di);
+
+  console.log('\nFair housing: a description approved before this check existed');
+  await freshWith(BAD_DESC, GOOD, { property_id: A, content: BAD_DESC, flyer_content: GOOD, pdf_url: null, approved_by: 'Charlotte Lee', approved_at: '2026-10-09T18:00:00+00:00' });
+  s = await see();
+  const ai2 = await all('[data-appr="approved-issue"]');
+  ok(/^✓ Approved by Charlotte Lee on /.test(s.approved || '') && approvals.length === 1, 'the approval on file is still shown as it is: the OS does not clear an approval by itself', s.approved);
+  ok(ai2.length === 1 && /^This approved text needs a change: "for the first-time buyer" describes who should live there\..* Edit the text and save it\. Saving clears this approval, and the new text can then be approved\.$/.test(ai2[0]), 'and a red line under it quotes the phrase and says to edit, save and approve again', ai2);
+  await editSave(FIXED_DESC);
+  s = await see();
+  ok(approvals.length === 0 && !s.approved && s['not-approved'] === 'Not approved' && s.approveDisabled === false && (await all('[data-appr="approved-issue"]')).length === 0, 'saving the corrected text clears that approval, and the new text can be approved', s);
+
   console.log('\nA listing with no saved description');
   notes = notes.filter(n => !(n.property_id === A && n.subfolder === 'listing_remarks')); approvals = [];
   await open(A); s = await see();
