@@ -24,16 +24,25 @@ const dir = process.argv[2];
 const VUE = fs.readFileSync(require.resolve('vue/dist/vue.global.js'), 'utf8');
 const JSPDF = fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js'), 'utf8');
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222', C = '33333333-3333-4333-8333-333333333333';
+// The market written out in full, on an address that names no state (Oct 12, 2026: 211 Arbor Vista Ln,
+// market "Maryland", opened its net sheet as DC). D and E must follow the market, not the form's default.
+const D = '44444444-4444-4444-8444-444444444444', E = '55555555-5555-4555-8555-555555555555', F = '66666666-6666-4666-8666-666666666666';
 const PROPS = [
   { id: A, address: '100 Alpha Ct, Unit G-127, Alexandria VA 22306', seller_name: 'Seller A', agent_name: 'Ashling McGowan', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
   { id: B, address: '200 Bravo Ave. Baltimore, MD', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-09-21T00:00:00Z' },
-  { id: C, address: '300 Charlie St NW, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Charlotte Lee', market: 'DC', status: 'draft', created_at: '2026-09-20T00:00:00Z' }
+  { id: C, address: '300 Charlie St NW, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Charlotte Lee', market: 'DC', status: 'draft', created_at: '2026-09-20T00:00:00Z' },
+  { id: D, address: '211 Delta Vista Ln', seller_name: 'Seller D', agent_name: 'Marc Cashin', market: 'Maryland', status: 'draft', created_at: '2026-04-13T00:00:00Z' },
+  { id: E, address: '500 Echo Rd', seller_name: 'Seller E', agent_name: 'Marc Cashin', market: 'Virginia', status: 'draft', created_at: '2026-04-12T00:00:00Z' },
+  { id: F, address: '600 Foxtrot St, Bethesda, MD', seller_name: 'Seller F', agent_name: 'Marc Cashin', market: ' maryland ', status: 'draft', created_at: '2026-04-11T00:00:00Z' }
 ];
 const mls = (addr, price, hoa) => ['=== MLS DATA ===', 'Property Address : ' + addr, 'List Price       : ' + price, 'Bedrooms         : 3', 'Bathrooms        : 2', 'Square Footage   : 1,800 sq ft', 'Year Built       : 1990', 'HOA Fee          : ' + hoa, 'Property Type    : Condo', 'Parking          : 1', '', '--- Key Features ---', '1. One'].join('\n');
 const NOTES = [
   { id: 1, property_id: A, subfolder: 'mls_data', content: mls(PROPS[0].address, '$425,000', '$310/month'), updated_at: '2026-10-01T00:00:00Z' },
   { id: 2, property_id: B, subfolder: 'mls_data', content: mls(PROPS[1].address, '500000', 'None'), updated_at: '2026-10-01T00:00:00Z' },
-  { id: 3, property_id: C, subfolder: 'mls_data', content: mls(PROPS[2].address, '1.2M', '$807'), updated_at: '2026-10-01T00:00:00Z' }
+  { id: 3, property_id: C, subfolder: 'mls_data', content: mls(PROPS[2].address, '1.2M', '$807'), updated_at: '2026-10-01T00:00:00Z' },
+  { id: 4, property_id: D, subfolder: 'mls_data', content: mls(PROPS[3].address, '$410,000', '87'), updated_at: '2026-10-01T00:00:00Z' },
+  { id: 5, property_id: E, subfolder: 'mls_data', content: mls(PROPS[4].address, '$650,000', 'None'), updated_at: '2026-10-01T00:00:00Z' },
+  { id: 6, property_id: F, subfolder: 'mls_data', content: mls(PROPS[5].address, '$900,000', 'None'), updated_at: '2026-10-01T00:00:00Z' }
 ];
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function api(route) {
@@ -147,6 +156,27 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.lpOpen('checklist'); st.lpOpen('netsheet'); await new Promise(r => setTimeout(r, 100)); });
   s = await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; return { address: st.ns.address, salePrice: String(st.ns.salePrice) }; });
   ok(s.address === '9 Typed Rd, Bethesda, MD' && s.salePrice === '900000', 'standalone net sheet keeps its own typed form when reopened', s);
+
+  console.log('A market written out in full ("Maryland", "Virginia") is read as MD and VA');
+  await run(() => { document.querySelector('#app').__vue_app__._instance.setupState.go('listings'); });
+  await openListing(D); await clickNetSheet();
+  s = await see();
+  ok(s.box === PROPS[3].address && s.jur.indexOf('md-') === 0, 'D: market "Maryland", address with no state: the net sheet is Maryland, not DC', s.jur);
+  ok(s.salePrice === '410000' && s.hoa === '87', 'D: still fills from its own MLS Data', s);
+  await openListing(E); await clickNetSheet();
+  s = await see();
+  ok(s.box === PROPS[4].address && s.jur.indexOf('va-') === 0, 'E: market "Virginia", address with no state: the net sheet is Virginia, not DC', s.jur);
+  await openListing(F); await clickNetSheet();
+  s = await see();
+  ok(s.jur === 'md-montgomery', 'F: market " maryland " keeps the county the address names (Bethesda: Montgomery)', s.jur);
+  const badges = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.go('listings'); await new Promise(r => setTimeout(r, 400));
+    return { list: Array.from(document.querySelectorAll('.market-badge')).map(b => b.textContent.trim()),
+      code: ['Maryland', 'Virginia', 'Washington, DC', 'District of Columbia', 'MD', 'va', 'Delaware', '', null].map(v => st.fosMarketCode(v)) };
+  });
+  ok(badges.list.indexOf('Maryland') === -1 && badges.list.indexOf('Virginia') === -1 && badges.list.filter(t => t === 'MD').length >= 3, 'listing badges show MD and VA, never the written-out name', badges.list);
+  ok(JSON.stringify(badges.code) === JSON.stringify(['MD', 'VA', 'DC', 'DC', 'MD', 'VA', '', '', '']), 'fosMarketCode: full names and codes to DC / MD / VA; anything else is blank, never a guess', badges.code);
 
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();

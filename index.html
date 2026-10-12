@@ -5760,9 +5760,9 @@ body {
                     <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                     <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                        <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ prop.market || 'DC' }}</span>
+                        <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'DC' }}</span>
                         <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
-                          <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:prop.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
+                          <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(prop.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
                           <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
                         </span>
                         <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
@@ -5809,9 +5809,9 @@ body {
                 <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                 <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                    <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ prop.market || 'DC' }}</span>
+                    <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'DC' }}</span>
                     <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
-                      <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:prop.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
+                      <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(prop.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
                       <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
                     </span>
                     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px;">
@@ -5874,7 +5874,7 @@ body {
             </div>
             <!-- Meta -->
             <div class="prop-detail-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span>{{ lstActiveProp.agent_name || agentName }} · <template v-if="!lstMarketEditId || lstMarketEditId!==lstActiveProp.id">{{ lstActiveProp.market || 'DC' }}<span title="Change jurisdiction" style="cursor:pointer;margin-left:4px;opacity:0.5;font-size:9px;" @click.stop="lstMarketEditId=lstActiveProp.id">edit</span></template><template v-else><span style="display:inline-flex;gap:3px;align-items:center;" @click.stop><button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(lstActiveProp,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:lstActiveProp.market===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button><button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button></span></template> · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
+              <span>{{ lstActiveProp.agent_name || agentName }} · <template v-if="!lstMarketEditId || lstMarketEditId!==lstActiveProp.id">{{ fosMarketCode(lstActiveProp.market) || lstActiveProp.market || 'DC' }}<span title="Change jurisdiction" style="cursor:pointer;margin-left:4px;opacity:0.5;font-size:9px;" @click.stop="lstMarketEditId=lstActiveProp.id">edit</span></template><template v-else><span style="display:inline-flex;gap:3px;align-items:center;" @click.stop><button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(lstActiveProp,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(lstActiveProp.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button><button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button></span></template> · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
               <!-- Co-agent chips -->
               <span v-for="ca in ((lstActiveProp.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
                 {{ ca.split(' ')[0] }}
@@ -8540,6 +8540,22 @@ const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEff
 // Set by doLogin() after fetching from Supabase — ensures key works on any device
 // without depending solely on localStorage reads in individual API calls.
 let _fosApiKey = '';
+// A listing's market as one of the three codes the app works in: 'DC', 'MD' or 'VA'.
+// Listings store the market as text, and not always as the code: the two oldest listings
+// (April 2026) say "Maryland", and Follow Up Boss sends names such as "Virginia" and
+// "Washington, DC". Until Oct 12, 2026 the in-listing net sheet only accepted the exact
+// codes, so a listing marked "Maryland" whose address names no state opened its net sheet
+// as DC (found on 211 Arbor Vista Ln). Every place that reads a listing's market for its
+// meaning goes through this. Answers '' when the text names none of the three; never a guess.
+function fosMarketCode(v) {
+  const t = String(v == null ? '' : v).toLowerCase().replace(/[^a-z]+/g, ' ').trim();
+  if (!t) return '';
+  if (/^(dc|d c|district of columbia|washington dc|washington d c|washington district of columbia)$/.test(t)) return 'DC';
+  if (/^(md|maryland)$/.test(t)) return 'MD';
+  if (/^(va|virginia|northern virginia|nova)$/.test(t)) return 'VA';
+  return '';
+}
+
 // Shown by every AI tool when this device has no AI key. There is no demo or
 // sample output anywhere in the app: a tool with no key says this and stops.
 // A listing's address, split for the CMA Builder: street, city, state, ZIP.
@@ -12148,7 +12164,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           // confirm or override what the address regex found. For MD and VA the
           // regex is kept for the sub-jurisdiction (county / nova vs other),
           // overriding only when the regex returned a mismatched state.
-          const _mkt = (lstActiveProp.value.market || '').toUpperCase();
+          const _mkt = fosMarketCode(lstActiveProp.value.market);
           if (_mkt === 'DC') {
             ns.jurisdiction = 'dc';
           } else if (_mkt === 'MD' && ns.jurisdiction && !ns.jurisdiction.startsWith('md-')) {
@@ -22195,6 +22211,18 @@ const CHANGELOG = [
         detail: 'One column heading on the DMV Market Snapshot page of the Buyer Consultation Kit was wrong. It read Median Days on Market (Closed). It now reads Average Days on Market (Closed).\n\nThe figure comes from the DOM cell of the Bright MLS Market Statistics Report, and Bright defines that cell as the average of the days on market of the listings that closed in the month. It is not a median. The Median Sold Price column is a true median and has not changed.\n\nNo number has changed. Only the heading above the days on market column is different.\n\nHow to use: Nothing new to do. Generate the Buyer Consultation Kit as usual and the page prints with the corrected heading.\n\nBest practice: When you walk a buyer through the page, say average days on market. An average can be pulled up by a few listings that sat for a long time, so it can run higher than what a typical home takes. If you quoted the figure to a client as a median from a kit made before today, correct it the next time you speak.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-12',
+    date: 'October 12, 2026',
+    title: 'Maryland and Virginia Listings Open the Right Net Sheet',
+    summary: 'A listing whose state is written out in full, such as Maryland or Virginia, now opens its net sheet in that state instead of DC.',
+    updates: [
+      {
+        title: 'The Net Sheet Follows the Listing\'s State, However It Is Written',
+        detail: 'Each listing carries a state badge: DC, MD or VA. A few older listings had their state saved as the full word, Maryland, instead of MD. When one of those listings had no state in its address, its Seller Net Sheet opened as a DC sheet, with DC transfer tax and DC property tax rules.\n\nThe OS now reads Maryland, Virginia, District of Columbia and Washington, DC the same as MD, VA and DC, everywhere it uses the listing\'s state. The badge on those listings now shows MD or VA.\n\nHow to use: Nothing new to learn. Open a listing and press Seller Net Sheet as usual. Check the state picker at the top of the net sheet before you calculate.\n\nBest practice: Make sure every listing\'s badge shows the right state. Click the badge to change it. The net sheet starts from that badge, so a wrong badge means a wrong sheet.'
+      }
+    ]
   }
 
 ];
@@ -24862,7 +24890,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
