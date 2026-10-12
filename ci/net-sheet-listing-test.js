@@ -27,13 +27,15 @@ const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-2
 // The market written out in full, on an address that names no state (Oct 12, 2026: 211 Arbor Vista Ln,
 // market "Maryland", opened its net sheet as DC). D and E must follow the market, not the form's default.
 const D = '44444444-4444-4444-8444-444444444444', E = '55555555-5555-4555-8555-555555555555', F = '66666666-6666-4666-8666-666666666666';
+const G = '77777777-7777-4777-8777-777777777777';   // no state at all: the badge must say so, never DC
 const PROPS = [
   { id: A, address: '100 Alpha Ct, Unit G-127, Alexandria VA 22306', seller_name: 'Seller A', agent_name: 'Ashling McGowan', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
   { id: B, address: '200 Bravo Ave. Baltimore, MD', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-09-21T00:00:00Z' },
   { id: C, address: '300 Charlie St NW, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Charlotte Lee', market: 'DC', status: 'draft', created_at: '2026-09-20T00:00:00Z' },
   { id: D, address: '211 Delta Vista Ln', seller_name: 'Seller D', agent_name: 'Marc Cashin', market: 'Maryland', status: 'draft', created_at: '2026-04-13T00:00:00Z' },
   { id: E, address: '500 Echo Rd', seller_name: 'Seller E', agent_name: 'Marc Cashin', market: 'Virginia', status: 'draft', created_at: '2026-04-12T00:00:00Z' },
-  { id: F, address: '600 Foxtrot St, Bethesda, MD', seller_name: 'Seller F', agent_name: 'Marc Cashin', market: ' maryland ', status: 'draft', created_at: '2026-04-11T00:00:00Z' }
+  { id: F, address: '600 Foxtrot St, Bethesda, MD', seller_name: 'Seller F', agent_name: 'Marc Cashin', market: ' maryland ', status: 'draft', created_at: '2026-04-11T00:00:00Z' },
+  { id: G, address: 'Golf Seller Name', seller_name: 'Seller G', agent_name: 'Marc Cashin', market: '', status: 'draft', created_at: '2026-04-10T00:00:00Z' }
 ];
 const mls = (addr, price, hoa) => ['=== MLS DATA ===', 'Property Address : ' + addr, 'List Price       : ' + price, 'Bedrooms         : 3', 'Bathrooms        : 2', 'Square Footage   : 1,800 sq ft', 'Year Built       : 1990', 'HOA Fee          : ' + hoa, 'Property Type    : Condo', 'Parking          : 1', '', '--- Key Features ---', '1. One'].join('\n');
 const NOTES = [
@@ -177,6 +179,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   });
   ok(badges.list.indexOf('Maryland') === -1 && badges.list.indexOf('Virginia') === -1 && badges.list.filter(t => t === 'MD').length >= 3, 'listing badges show MD and VA, never the written-out name', badges.list);
   ok(JSON.stringify(badges.code) === JSON.stringify(['MD', 'VA', 'DC', 'DC', 'MD', 'VA', '', '', '']), 'fosMarketCode: full names and codes to DC / MD / VA; anything else is blank, never a guess', badges.code);
+  ok(badges.list.filter(t => t === 'Set state').length === 1 && badges.list.filter(t => t === 'DC').length === 1, 'a listing with no state shows "Set state" on its badge; only the one DC listing shows DC', badges.list);
 
   console.log('No net sheet without a full address, and never in the wrong state (Marc, Oct 12, 2026)');
   const tryAll = () => run(async () => {

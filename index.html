@@ -5761,7 +5761,7 @@ body {
                     <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                     <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                        <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'DC' }}</span>
+                        <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'Set state' }}</span>
                         <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
                           <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(prop.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
                           <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
@@ -5810,7 +5810,7 @@ body {
                 <button class="listing-card-desktop-del" @click.stop="lstConfirmArchive(prop)" title="Archive" style="color:var(--gold);">⊟</button>
                 <div :class="['listing-card', lstSwipedId===prop.id ? 'swiped' : '']" @click="lstOpenProperty(prop)">
                   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
-                    <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'DC' }}</span>
+                    <span v-if="lstMarketEditId!==prop.id" class="market-badge" title="Click to change jurisdiction" style="cursor:pointer;" @click.stop="lstMarketEditId=prop.id">{{ fosMarketCode(prop.market) || prop.market || 'Set state' }}</span>
                     <span v-else style="display:inline-flex;gap:3px;align-items:center;" @click.stop>
                       <button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(prop,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(prop.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button>
                       <button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button>
@@ -5875,7 +5875,7 @@ body {
             </div>
             <!-- Meta -->
             <div class="prop-detail-meta" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-              <span>{{ lstActiveProp.agent_name || agentName }} · <template v-if="!lstMarketEditId || lstMarketEditId!==lstActiveProp.id">{{ fosMarketCode(lstActiveProp.market) || lstActiveProp.market || 'DC' }}<span title="Change jurisdiction" style="cursor:pointer;margin-left:4px;opacity:0.5;font-size:9px;" @click.stop="lstMarketEditId=lstActiveProp.id">edit</span></template><template v-else><span style="display:inline-flex;gap:3px;align-items:center;" @click.stop><button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(lstActiveProp,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(lstActiveProp.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button><button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button></span></template> · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
+              <span>{{ lstActiveProp.agent_name || agentName }} · <template v-if="!lstMarketEditId || lstMarketEditId!==lstActiveProp.id">{{ fosMarketCode(lstActiveProp.market) || lstActiveProp.market || 'Set state' }}<span title="Change jurisdiction" style="cursor:pointer;margin-left:4px;opacity:0.5;font-size:9px;" @click.stop="lstMarketEditId=lstActiveProp.id">edit</span></template><template v-else><span style="display:inline-flex;gap:3px;align-items:center;" @click.stop><button v-for="m in ['DC','MD','VA']" :key="m" @click.stop="lstSetMarket(lstActiveProp,m)" :style="{fontWeight:700,fontSize:'7px',letterSpacing:'0.18em',padding:'3px 7px',borderRadius:'2px',border:'none',cursor:'pointer',background:fosMarketCode(lstActiveProp.market)===m?'var(--gold)':'var(--navy)',color:'white'}">{{ m }}</button><button @click.stop="lstMarketEditId=null" style="font-size:11px;background:none;border:none;cursor:pointer;color:#9ca3af;line-height:1;padding:0 2px;">x</button></span></template> · Created {{ new Date(lstActiveProp.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) }}</span>
               <!-- Co-agent chips -->
               <span v-for="ca in ((lstActiveProp.subfolder_drive_ids||{})._co_agents||[])" :key="ca" style="display:inline-flex;align-items:center;gap:4px;background:rgba(200,169,110,0.15);border:1px solid var(--gold-muted);border-radius:2px;padding:2px 8px;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--navy);">
                 {{ ca.split(' ')[0] }}
@@ -18718,7 +18718,7 @@ No markdown. No preamble. Valid JSON only.`;
       } catch (e) {
         console.warn('Market update failed:', e);
         prop.market = _was;        // put the badge back: the net sheet follows this value
-        showToast('The state was NOT changed to ' + val + ' (' + fosWhy(e) + '). The listing is still ' + (_was || 'DC') + '.', 8000);
+        showToast('The state was NOT changed to ' + val + ' (' + fosWhy(e) + '). The listing is still ' + (_was || 'without a state') + '.', 8000);
       }
     }
 
@@ -22294,6 +22294,10 @@ const CHANGELOG = [
       {
         title: 'No Net Sheet Without a Full Address',
         detail: 'A seller net sheet now needs the full address of the property: street, city, state and ZIP. Until it has all four, Calculate, Download PDF and Save to Property do nothing, and a red note above Calculate says what is missing.\n\nThe state in the address decides the sheet. If the state picker or the listing\'s state badge says a different state, the sheet will not calculate and the note names both. Until today a listing with no state in its address quietly got DC math, and a listing marked DC with an Arlington address got DC math too.\n\nNew listings: Market no longer starts on DC. It fills in from the State box, and if the two disagree the listing is not created until they match.\n\nHow to use: If the red note appears, type the full address in the net sheet\'s address box, for example 1300 Army Navy Dr, Arlington, VA 22202, and check the state picker and the listing\'s badge match it. Then press Calculate.\n\nBest practice: Give every listing its full address when you create it. Many older listings have only a street or a seller\'s name; fix them the next time you open them.'
+      },
+      {
+        title: 'A Listing With No State Says Set State',
+        detail: 'A listing whose state is not known now shows Set state on its badge instead of DC. New listings from Follow Up Boss no longer default to DC when the deal does not say which state it is in. A CMA started by voice no longer assumes DC either.\n\nHow to use: If a listing\'s badge says Set state, click it and choose DC, MD or VA. The net sheet will not run until you do.\n\nBest practice: Check the badge on every new listing the day it arrives from Follow Up Boss.'
       }
     ]
   }
@@ -23385,7 +23389,7 @@ async function voiceApplyFields() {
       const cmaPrefill = {
         address:      val(f.address) || '',
         city:         val(f.city) || '',
-        state:        val(f.state) || 'DC',
+        state:        val(f.state) || '',   // never assumed (Oct 12, 2026): DC adds driveway value in the CMA
         zip:          val(f.zip) || '',
         propType:     val(f.propertyType) || 'SFD',
         beds:         num(f.beds),
@@ -24723,7 +24727,7 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
       } else if (tool === 'cma') {
         if (f.address) {
           localStorage.setItem('cma_voice_prefill', JSON.stringify({
-            address: f.address, city: f.city||'', state: f.state||'DC', zip: f.zip||'',
+            address: f.address, city: f.city||'', state: f.state||'', zip: f.zip||'',
             propType: f.propertyType||'SFD', beds: num(f.beds), fullBaths: num(f.fullBaths),
             gla: num(f.gla), condition: f.condition||'A', agentName: agentName.value
           }));
