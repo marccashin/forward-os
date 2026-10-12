@@ -2868,11 +2868,21 @@ body {
                 </div>
               </div>
               <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
-              <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:20px;">33 pages, personalized with your sales team</div>
-              <a :href="listingPresentationUrl" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
-                <span style="font-size:16px;line-height:1;">&#8595;</span> Click to Download
-              </a>
-              <div style="margin-top:12px;font-size:11px;color:#9ca3af;">Opens in Canva where you can download as PDF</div>
+              <div v-if="!lpresHas" style="font-size:13px;color:#6b7280;">There is no listing presentation for this login. Each agent downloads their own.</div>
+              <template v-else>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:20px;">{{ lpresPagesLine }}</div>
+                <button @click="lpresDownload" :disabled="lpres.loading" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">
+                  <span style="font-size:16px;line-height:1;">&#8595;</span> {{ lpres.loading ? 'Preparing your PDF...' : 'Download PDF' }}
+                </button>
+                <div style="margin-top:12px;font-size:11px;color:#9ca3af;">{{ lpresUpdatedLine || 'Your own deck, as a PDF. No Canva sign-in needed.' }}</div>
+                <div v-if="lpres.error" style="margin-top:10px;font-size:12px;color:#b91c1c;">{{ lpres.error }}</div>
+                <div v-if="lpres.infoError" style="margin-top:6px;font-size:11px;color:#b45309;">{{ lpres.infoError }}</div>
+                <div v-if="agentName === 'Marc Cashin'" style="margin-top:18px;padding-top:14px;border-top:1px solid #eee;">
+                  <button @click="lpresRefresh" :disabled="lpres.refreshing" style="padding:8px 18px;background:#fff;color:var(--navy);border:1px solid var(--navy);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">{{ lpres.refreshing ? 'Refreshing...' : 'Refresh from Canva' }}</button>
+                  <div v-if="lpres.refreshNote" style="margin-top:8px;font-size:11px;color:#374151;">{{ lpres.refreshNote }}</div>
+                  <div style="margin-top:6px;font-size:10px;color:#9ca3af;">Edits in Canva reach the OS within the hour on their own. Refresh pulls all five decks now.</div>
+                </div>
+              </template>
             </div>
           </div>
 
@@ -6142,11 +6152,16 @@ body {
                     </div>
                   </div>
                   <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Listing Presentation</div>
-                  <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">33 pages, personalized with your sales team</div>
-                  <a :href="listingPresentationUrl" target="_blank" rel="noopener" class="btn-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 24px;font-size:13px;">
-                    ↓ Click to Download
-                  </a>
-                  <div style="margin-top:8px;font-size:10px;color:#9ca3af;">Opens in Canva where you can download as PDF</div>
+                  <div v-if="!lpresHas" style="font-size:12px;color:#6b7280;">There is no listing presentation for this login. Each agent downloads their own.</div>
+                  <template v-else>
+                    <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">{{ lpresPagesLine }}</div>
+                    <button @click="lpresDownload" :disabled="lpres.loading" class="btn-gold" style="display:inline-flex;align-items:center;gap:8px;padding:10px 24px;font-size:13px;">
+                      ↓ {{ lpres.loading ? 'Preparing your PDF...' : 'Download PDF' }}
+                    </button>
+                    <div style="margin-top:8px;font-size:10px;color:#9ca3af;">{{ lpresUpdatedLine || 'Your own deck, as a PDF. No Canva sign-in needed.' }}</div>
+                    <div v-if="lpres.error" style="margin-top:8px;font-size:12px;color:#b91c1c;">{{ lpres.error }}</div>
+                    <div v-if="lpres.infoError" style="margin-top:6px;font-size:11px;color:#b45309;">{{ lpres.infoError }}</div>
+                  </template>
                 </div>
               </div>
 
@@ -8710,15 +8725,15 @@ async function _loadCampaignFonts(doc) {
 
 // ── Constants ──────────────────────────────────────────────
 const AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee','Operations','Concierge'];
-const LISTING_PRESENTATIONS = {
-  'Marc Cashin':    'https://www.canva.com/design/DAHECgtXhJc/edit',
-  'Ashling McGowan':'https://www.canva.com/design/DAHEC0x1ja8/edit',
-  'Niki Lang':      'https://www.canva.com/design/DAHEC2uBYwc/edit',
-  'Cesar Rivera':   'https://www.canva.com/design/DAHECx4jFMs/edit',
-  'Charlotte Lee':  'https://www.canva.com/design/DAHECzMRm6M/edit',
-};
+// Listing presentations (Oct 12, 2026). Each agent's deck is exported from Canva by the
+// backend (forward-os-backend listing_presentations.py) and handed out as a PDF. The
+// browser holds NO Canva link and never names a file or a design: it sends only who is
+// signed in, and the backend returns a 5-minute link to that agent's own PDF. Canva
+// edit links used to live here; agents not signed in to the team account got
+// "not allowed". Logins not on this list (Operations, Concierge) have no deck.
+const LISTING_PRESENTATION_AGENTS = ['Marc Cashin', 'Ashling McGowan', 'Niki Lang', 'Cesar Rivera', 'Charlotte Lee'];
 // Seller Guide: the two-page seller one-sheet sent BEFORE the listing appointment.
-// One PDF per agent, keyed by login name exactly like LISTING_PRESENTATIONS, so an
+// One PDF per agent, keyed by login name like LISTING_PRESENTATION_AGENTS, so an
 // agent is only ever offered their own. A login with no entry (Operations,
 // Concierge) gets a plain message instead of a link. Built by seller-guides/_source/build.py.
 const SELLER_GUIDES = {
@@ -21395,7 +21410,77 @@ No markdown. Valid JSON only.`;
     const filteredLib = computed(() => libFilter.value==='all' ? lib.value : lib.value.filter(i=>i.type===libFilter.value));
     const jlTabObj   = computed(() => jlTabs.find(t=>t.k===jlTab.value));
     const jlCurrent  = computed(() => jlOutput.value ? (jlOutput.value[jlTab.value]||'') : '');
-    const listingPresentationUrl = computed(() => LISTING_PRESENTATIONS[agentName.value] || '');
+    // ── Listing presentation download (see LISTING_PRESENTATION_AGENTS) ──
+    const lpres = reactive({ loading: false, error: '', info: null, infoError: '', refreshing: false, refreshNote: '' });
+    const lpresHas = computed(() => LISTING_PRESENTATION_AGENTS.indexOf(agentName.value) !== -1);
+    const lpresPagesLine = computed(() => (lpres.info && lpres.info.pages)
+      ? lpres.info.pages + ' pages, personalized with your sales team'
+      : 'Personalized with your sales team');
+    const lpresUpdatedLine = computed(() => {
+      const i = lpres.info;
+      if (!i || !i.exported_at) return '';
+      try { return 'Updated from Canva ' + new Date(i.exported_at).toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+      catch (e) { return ''; }
+    });
+    async function lpresLoadInfo() {
+      if (!lpresHas.value) return;
+      lpres.infoError = '';
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/listing-presentations/status');
+        await fosOk(res, 'presentation status');
+        const all = (await res.json()).agents || {};
+        lpres.info = all[agentName.value] || null;
+      } catch (e) {
+        lpres.info = null;
+        lpres.infoError = 'Could not check when your presentation was last updated: ' + fosWhy(e);
+      }
+    }
+    async function lpresDownload() {
+      if (lpres.loading || !lpresHas.value) return;
+      lpres.loading = true; lpres.error = '';
+      let tab = null; try { tab = window.open('', '_blank'); } catch (e) { tab = null; }
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/listing-presentation?agent=' + encodeURIComponent(agentName.value));
+        let body = null; try { body = await res.json(); } catch (e) { body = null; }
+        if (!res.ok) throw new Error((body && body.detail) || ('the server answered ' + res.status));
+        if (!body || body.agent !== agentName.value || !body.url) throw new Error('the server answered for someone else; nothing was opened');
+        if (tab) tab.location.href = body.url;
+        else { const a = document.createElement('a'); a.href = body.url; a.download = body.file_name || 'Listing_Presentation.pdf'; document.body.appendChild(a); a.click(); a.remove(); }
+        lpres.info = Object.assign({}, lpres.info || {}, { pages: body.pages, exported_at: body.exported_at });
+      } catch (e) {
+        try { if (tab) tab.close(); } catch (e2) {}
+        lpres.error = 'Your presentation could not be downloaded: ' + fosWhy(e);
+      } finally { lpres.loading = false; }
+    }
+    async function lpresRefresh() {
+      if (lpres.refreshing || agentName.value !== ADMIN_AGENT) return;
+      lpres.refreshing = true; lpres.refreshNote = 'Refreshing all five decks from Canva. This takes about a minute.';
+      const started = Date.now();
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/listing-presentations/refresh', { method: 'POST' });
+        let body = null; try { body = await res.json(); } catch (e) { body = null; }
+        if (!res.ok) throw new Error((body && body.detail) || ('the server answered ' + res.status));
+        for (let i = 0; i < 48; i++) {
+          await new Promise(r => setTimeout(r, 5000));
+          const st = await fetch(RAILWAY_URL + '/api/listing-presentations/status').then(r => r.json());
+          const run = st.last_run;
+          if (!st.running && run && run.trigger === 'manual' && Date.parse(run.at) >= started - 5000) {
+            const bad = (run.results || []).filter(r => r.result === 'failed');
+            lpres.refreshNote = bad.length
+              ? 'Refreshed, except: ' + bad.map(r => r.agent + ' (' + r.reason + ')').join('; ') + '. Agents still get the last good copy of those.'
+              : 'All five decks are up to date with Canva.';
+            lpres.info = (st.agents || {})[agentName.value] || lpres.info;
+            return;
+          }
+        }
+        lpres.refreshNote = 'Still running after four minutes. Check again shortly.';
+      } catch (e) {
+        lpres.refreshNote = 'Refresh did not start: ' + fosWhy(e);
+      } finally { lpres.refreshing = false; }
+    }
+    watch(() => [lpActivePanel.value, lstToolOpen.value], ([a, b]) => {
+      if (a === 'presentation' || b === 'presentation') lpresLoadInfo();
+    });
     const sellerGuideUrl = computed(() => SELLER_GUIDES[agentName.value] || '');
 
     // ── Helpers ────────────────────────────────────────────
@@ -22298,6 +22383,10 @@ const CHANGELOG = [
       {
         title: 'A Listing With No State Says Set State',
         detail: 'A listing whose state is not known now shows Set state on its badge instead of DC. New listings from Follow Up Boss no longer default to DC when the deal does not say which state it is in. A CMA started by voice no longer assumes DC either.\n\nHow to use: If a listing\'s badge says Set state, click it and choose DC, MD or VA. The net sheet will not run until you do.\n\nBest practice: Check the badge on every new listing the day it arrives from Follow Up Boss.'
+      },
+      {
+        title: 'Your Listing Presentation Downloads Straight From the OS',
+        detail: 'Listing Presentation now downloads your own deck as a PDF, right from the OS. It no longer sends you to Canva, so it works whichever Canva account you are signed in to, or none. You always get your own deck and nobody else\'s.\n\nMarc keeps editing the decks in Canva. His changes reach the OS on their own within the hour, so the PDF you download is always the current version. The panel shows when your deck was last updated and how many pages it has.\n\nHow to use: Open a listing, press Listing Presentation, then Download PDF. The file arrives with your name in it, for example Niki_Lang_Listing_Presentation.pdf.\n\nBest practice: Download a fresh copy before each listing appointment rather than reusing an old file, so you present Marc\'s latest edits.'
       }
     ]
   }
@@ -24878,7 +24967,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, listingPresentationUrl, sellerGuideUrl,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
