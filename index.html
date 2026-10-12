@@ -3027,6 +3027,7 @@ body {
               </div>
 
               <!-- ── Calculate Button ── -->
+              <div v-if="nsAddrProblem" data-ns-addr-problem style="margin-top:20px;padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">{{ nsAddrProblem }}</div>
               <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:20px;">Calculate</button>
             </div>
           </div>
@@ -6519,6 +6520,7 @@ body {
                   <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;">Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid \u2014 confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jan–Jun' : 'Jul–Dec') }})</label><select v-model="ns.nsTaxH1Paid" @change="ns.nsTaxH1Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jul–Dec' : 'Jan–Jun') }})</label><select v-model="ns.nsTaxH2Paid" @change="ns.nsTaxH2Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
+                  <div v-if="nsAddrProblem" data-ns-addr-problem style="margin-top:14px;padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">{{ nsAddrProblem }}</div>
                   <button class="btn-gold" @click="calcNetSheet" style="width:100%;margin-top:14px;">Calculate</button>
                   <!-- Bottom result banner — mirrors the one at top so agents don't miss it -->
                   <div v-if="ns.result!==null" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;padding:14px;margin-top:14px;text-align:center;">
@@ -8409,6 +8411,7 @@ body {
           <div class="form-row">
             <label>Market</label>
             <select v-model="lstNewMarket" style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+              <option value="" disabled>Choose state</option>
               <option value="DC">DC</option>
               <option value="MD">Maryland</option>
               <option value="VA">Virginia</option>
@@ -11284,7 +11287,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const lstNewZip     = ref('');
     const lstNewSeller  = ref('');
     const lstNewSeller2 = ref('');
-    const lstNewMarket  = ref('DC');
+    const lstNewMarket  = ref('');   // no default state (Marc, Oct 12, 2026)
 
     // ── Global activity indicator ──────────────────────────────────────────
     const activityLabel = computed(() => {
@@ -12218,6 +12221,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!lstNewAddress.value.trim()) return;
       if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       if (!lstNewSeller.value.trim()) { lstCreateError.value = 'Seller name is required.'; return; }
+      // The listing's state is never assumed (Marc, Oct 12, 2026). Market follows the State box
+      // when the agent left it empty, and the two must agree: Market used to start on DC and could
+      // be saved as DC beside a Virginia address.
+      {
+        const _st = fosMarketCode(lstNewState.value) || (lstNewStreet.value.trim() ? '' : fosMarketCode(fosSplitListingAddress(lstNewAddress.value).state));
+        if (!lstNewMarket.value && _st) lstNewMarket.value = _st;
+        if (!lstNewMarket.value) { lstCreateError.value = 'Choose the listing\'s state in Market: DC, Maryland or Virginia.'; return; }
+        if (_st && _st !== lstNewMarket.value) { lstCreateError.value = 'The State box says ' + _st + ' but Market says ' + lstNewMarket.value + '. Make them match before creating the listing.'; return; }
+      }
       lstCreating.value = true; lstCreateError.value = '';
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
@@ -12268,7 +12280,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstShowNewModal.value = false;
         lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
         lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
-        lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = 'DC';
+        lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = '';
 
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
@@ -15460,6 +15472,60 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       return String(n);
     }
     // Auto-detect jurisdiction from address
+    // A net sheet runs only on a FULL address: street, city, state and ZIP (Marc, Oct 12, 2026:
+    // "they cannot run a net sheet without a full address"). Until then a listing whose address
+    // named no state, and whose market the form did not recognise, quietly got DC math (211 Arbor
+    // Vista Ln, Maryland, opened as DC), and a listing marked DC with an Arlington address got DC
+    // math too (1300 Army Navy Dr). Now the state comes from the address, and the sheet refuses
+    // when the address is not complete, when it is outside DC, Maryland and Virginia, when the
+    // state picker says another state, or (in a listing) when the listing's state badge is blank
+    // or says another state. Calculate, Download PDF and Save to Property all ask this first.
+    // Nothing is guessed and no default state is used. The city is read with the CMA's own
+    // splitter (fosSplitListingAddress), so "4202 Woodland Dr Fairfax, VA 22030" counts.
+    const NS_STATE_NAME = { DC: 'DC', MD: 'Maryland', VA: 'Virginia' };
+    const NS_US_CODES = 'AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC'.split(' ');
+    function nsAddressCheck() {
+      const full = 'Type the full address of the property: street, city, state and ZIP.';
+      const a = String(ns.address || '').replace(/\s+/g, ' ').trim().replace(/,?\s*(usa|united states(?: of america)?)\.?$/i, '').trim();
+      if (!a) return { ok: false, problem: full };
+      const missing = [];
+      const zm = a.match(/[\s,](\d{5})(?:-\d{4})?$/);
+      const zip = zm ? zm[1] : '';
+      let rest = zm ? a.slice(0, zm.index).replace(/[\s,]+$/, '') : a;
+      let code = '', other = '';
+      const named = rest.match(/(?:^|[\s,])(district of columbia|d\.\s?c\.?|maryland|virginia)$/i);
+      const two = rest.match(/(,\s*|\s)([A-Za-z]{2})\.?$/);
+      if (named) { code = fosMarketCode(named[1]); rest = rest.slice(0, named.index); }
+      else if (two && ['DC', 'MD', 'VA'].indexOf(two[2].toUpperCase()) > -1) { code = two[2].toUpperCase(); rest = rest.slice(0, two.index); }
+      else if (two && two[1].indexOf(',') > -1 && NS_US_CODES.indexOf(two[2].toUpperCase()) > -1) { other = two[2].toUpperCase(); }
+      if (other) return { ok: false, problem: 'This address is in ' + other + '. The net sheet covers DC, Maryland and Virginia only.' };
+      rest = rest.replace(/[\s,]+$/, '').trim();
+      const parts = code ? fosSplitListingAddress(rest + ', ' + code + (zip ? ' ' + zip : '')) : { street: rest, city: '' };
+      if (!/\d/.test(parts.street || '') || !/[a-z]/i.test(parts.street || '')) missing.push('street number and name');
+      if (!code) missing.push('state');
+      else if (!String(parts.city || '').trim()) missing.push('city');
+      if (!zip) missing.push('ZIP code');
+      if (missing.length) {
+        const list = missing.length === 1 ? missing[0] : missing.slice(0, -1).join(', ') + ' and ' + missing[missing.length - 1];
+        return { ok: false, problem: 'The address is missing the ' + list + '. ' + full };
+      }
+      const j = String(ns.jurisdiction || '');
+      const picked = j === 'dc' ? 'DC' : j.indexOf('md-') === 0 ? 'MD' : j.indexOf('va-') === 0 ? 'VA' : '';
+      if (picked !== code) return { ok: false, state: code, problem: 'The address is in ' + NS_STATE_NAME[code] + ' but the net sheet is set to ' + (picked ? NS_STATE_NAME[picked] : 'no state') + '. Change the state above to ' + NS_STATE_NAME[code] + ', or correct the address.' };
+      const lp = lstActiveProp.value;
+      if (ns._propId && lp && lp.id === ns._propId) {
+        const mk = fosMarketCode(lp.market);
+        if (!mk) return { ok: false, state: code, problem: 'This listing has no state on its badge. Click the badge at the top of the listing and choose ' + NS_STATE_NAME[code] + ' if that is right, then calculate.' };
+        if (mk !== code) return { ok: false, state: code, problem: 'The address is in ' + NS_STATE_NAME[code] + ' but this listing is marked ' + NS_STATE_NAME[mk] + '. Correct the listing\'s state badge or the address before calculating.' };
+      }
+      return { ok: true, state: code, problem: '' };
+    }
+    const nsAddrProblem = computed(() => nsAddressCheck().problem || '');
+    function nsAddressOk() {
+      const c = nsAddressCheck();
+      if (!c.ok) showToast(c.problem, 7000);
+      return c.ok;
+    }
     function nsDetectJurisdiction() {
       const a = ns.address.toLowerCase();
       if (/\bdc\b|washington\s*,?\s*d\.?c|district of columbia/.test(a)) {
@@ -15936,6 +16002,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       return { items: items, result: Math.round((price - totalCosts) * 100) / 100 };
     }
     function calcNetSheet() {
+      if (!nsAddressOk()) return;
       const r = nsCompute();
       if (!r) { showToast('Please enter a Sale Price to calculate.', 3000); return; }
       ns.breakdown = r.items;
@@ -16242,6 +16309,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       ns.result = r.result;
     }
     function nsDownloadPDF() {
+      if (!nsAddressOk()) return;
       if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
       nsRecalcSilent();
       const doc = nsGeneratePDFDoc();
@@ -16257,6 +16325,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const nsSaved = ref(false);
     const nsSaving = ref(false);
     async function nsSaveToProperty() {
+      if (!nsAddressOk()) return;
       if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
       nsSaving.value = true;
       try {
@@ -22215,12 +22284,16 @@ const CHANGELOG = [
   {
     id: 'v2026-10-12',
     date: 'October 12, 2026',
-    title: 'Maryland and Virginia Listings Open the Right Net Sheet',
-    summary: 'A listing whose state is written out in full, such as Maryland or Virginia, now opens its net sheet in that state instead of DC.',
+    title: 'Net Sheets Need a Full Address and the Right State',
+    summary: 'The net sheet no longer assumes DC. It runs only on a full address, in the state that address is in, and a new listing must be given its state.',
     updates: [
       {
         title: 'The Net Sheet Follows the Listing\'s State, However It Is Written',
         detail: 'Each listing carries a state badge: DC, MD or VA. A few older listings had their state saved as the full word, Maryland, instead of MD. When one of those listings had no state in its address, its Seller Net Sheet opened as a DC sheet, with DC transfer tax and DC property tax rules.\n\nThe OS now reads Maryland, Virginia, District of Columbia and Washington, DC the same as MD, VA and DC, everywhere it uses the listing\'s state. The badge on those listings now shows MD or VA.\n\nHow to use: Nothing new to learn. Open a listing and press Seller Net Sheet as usual. Check the state picker at the top of the net sheet before you calculate.\n\nBest practice: Make sure every listing\'s badge shows the right state. Click the badge to change it. The net sheet starts from that badge, so a wrong badge means a wrong sheet.'
+      },
+      {
+        title: 'No Net Sheet Without a Full Address',
+        detail: 'A seller net sheet now needs the full address of the property: street, city, state and ZIP. Until it has all four, Calculate, Download PDF and Save to Property do nothing, and a red note above Calculate says what is missing.\n\nThe state in the address decides the sheet. If the state picker or the listing\'s state badge says a different state, the sheet will not calculate and the note names both. Until today a listing with no state in its address quietly got DC math, and a listing marked DC with an Arlington address got DC math too.\n\nNew listings: Market no longer starts on DC. It fills in from the State box, and if the two disagree the listing is not created until they match.\n\nHow to use: If the red note appears, type the full address in the net sheet\'s address box, for example 1300 Army Navy Dr, Arlington, VA 22202, and check the state picker and the listing\'s badge match it. Then press Calculate.\n\nBest practice: Give every listing its full address when you create it. Many older listings have only a street or a seller\'s name; fix them the next time you open them.'
       }
     ]
   }
@@ -24809,7 +24882,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      ns, nsFmt, calcNetSheet, nsAddrProblem, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)

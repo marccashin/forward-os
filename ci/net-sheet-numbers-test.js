@@ -77,7 +77,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   // Each case: fill the form, press Calculate, read the sheet at once, after the
   // PDF step has run, and after the PDF step is run once more by hand.
   const got = await page.evaluate(async (cases) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     const snap = () => JSON.parse(JSON.stringify({ lines: st.ns.breakdown, net: st.ns.result }));
     const out = [];
@@ -85,6 +85,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       Object.assign(st.ns, c.input, { result: null, breakdown: [], _propId: null });
       await tick(); await tick();
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid, nsTaxH2Paid: c.input.nsTaxH2Paid });
+      __addr();   // since Oct 12, 2026 a sheet needs a full address in its own state; the address is not in the math
       st.calcNetSheet();
       const atOnce = snap();
       await tick(); await tick(); await tick();
@@ -131,7 +132,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       input: { jurisdiction: 'va-nova', salePrice: 820000, closingDate: '2025-06-02', loan1: 245018.41, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2, transactionFee: 150, propTaxAnnual: 8691.94, nsTaxH1Paid: 'no', nsTaxH2Paid: 'no' } }
   ];
   const vaGot = await page.evaluate(async (cases) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     const base = { address: '1 Test St', unit: '', firstTimeHomebuyerDC: 'no', loan1: '', loan2: '', sellerCompMode: 'pct', sellerCompVal: '', buyerCompMode: 'pct', buyerCompVal: '', transactionFee: '', concessionMode: 'pct', concessionVal: '', hoaFreq: 'monthly', hoaAmount: '', hoaPaidCurrent: 'no', hoaResaleCert: '', hoaTransferFee: '', propTaxAnnual: '', otherCosts: '', nsTaxH1Touched: true, nsTaxH2Touched: true };
     const out = [];
@@ -139,6 +140,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       Object.assign(st.ns, base, c.input, { result: null, breakdown: [], _propId: null });
       await tick(); await tick();
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid, nsTaxH2Paid: c.input.nsTaxH2Paid });
+      __addr();
       st.calcNetSheet(); await tick(); await tick(); await tick();
       out.push(JSON.parse(JSON.stringify({ lines: st.ns.breakdown, net: st.ns.result })));
     }
@@ -167,9 +169,9 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const moved = got.filter(x => JSON.stringify(x.atOnce) !== JSON.stringify(x.afterPdf)).length;
   ok(moved === 0, 'the sheet shown the moment Calculate is pressed is the sheet the PDF step leaves (all 116 cases)', moved);
   const nodate = await page.evaluate(async () => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState; const tick = () => new Promise(r => setTimeout(r, 0));
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); }; const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, { salePrice: 800000, closingDate: '', jurisdiction: 'va-nova', loan1: 400000, sellerCompMode: 'flat', sellerCompVal: 20000, buyerCompMode: 'pct', buyerCompVal: 2.5, concessionMode: 'pct', concessionVal: 1, transactionFee: '', hoaAmount: '', propTaxAnnual: '', otherCosts: '', hoaResaleCert: '', hoaTransferFee: '', loan2: '', result: null, breakdown: [] });
-    await tick(); st.calcNetSheet(); const a = JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }); await tick(); await tick();
+    await tick(); __addr(); st.calcNetSheet(); const a = JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }); await tick(); await tick();
     return { same: a === JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }), net: st.ns.result };
   });
   ok(nodate.same && nodate.net === 800000 - 2400 - 1400 - 400000 - 20000 - 20000 - 8000, 'with no closing date the sheet still calculates, and is right: $348,200', nodate);

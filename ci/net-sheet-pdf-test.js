@@ -220,7 +220,7 @@ function check(rec, lines, salePrice, net) {
   });
   const base = { address: '1 Test St', unit: '', firstTimeHomebuyerDC: 'no', loan1: '', loan2: '', sellerCompMode: 'pct', sellerCompVal: '', buyerCompMode: 'pct', buyerCompVal: '', transactionFee: '', concessionMode: 'pct', concessionVal: '', hoaFreq: 'monthly', hoaAmount: '', hoaPaidCurrent: 'no', hoaResaleCert: '', hoaTransferFee: '', propTaxAnnual: '', otherCosts: '', nsTaxH1Touched: true, nsTaxH2Touched: true, _detectedCounty: '', _detectedState: '' };
   const run = (cases) => page.evaluate(async (a) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     const out = [];
     for (const c of a.cases) {
@@ -228,6 +228,7 @@ function check(rec, lines, salePrice, net) {
       Object.assign(st.ns, a.base, c.input, { result: null, breakdown: [], _propId: c.propId || null });
       await tick(); await tick();
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid || 'yes', nsTaxH2Paid: c.input.nsTaxH2Paid || 'yes' });
+      __addr();   // since Oct 12, 2026 a sheet needs a full address in its own state; the address is not in the math
       window.__pdfs.length = 0;
       st.calcNetSheet();
       await tick(); await tick(); await tick();
@@ -253,11 +254,11 @@ function check(rec, lines, salePrice, net) {
 
   console.log('2. Built here: the heaviest sheet, the lightest, a loss, cents, long text');
   const heavy = { jurisdiction: 'md-baltimoreco', salePrice: 2000000, closingDate: '2026-09-22', loan1: 1250000.55, loan2: 180000, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'flat', buyerCompVal: 45000, transactionFee: 495, concessionMode: 'pct', concessionVal: 1.5, hoaFreq: 'quarterly', hoaAmount: 900, hoaPaidCurrent: 'yes', hoaResaleCert: 330, hoaTransferFee: 250, propTaxAnnual: 25146.72, nsTaxH1Paid: 'no', nsTaxH2Paid: 'no', otherCosts: 7500,
-    address: '1926 Ruxton Road, Towson, Baltimore County, Maryland 21204, United States of America, with a very long legal description', unit: 'Penthouse 12B' };
+    address: '1926 Ruxton Road, Lot 7 Block C of the Ruxton Crossing Subdivision as recorded in Plat Book 14 Folio 2, Towson, Maryland 21204', unit: 'Penthouse 12B' };
   const light = { jurisdiction: 'va-other', salePrice: 300000, closingDate: '' };
   const loss = { jurisdiction: 'dc', salePrice: 500000, closingDate: '2026-06-15', loan1: 520000, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2.5 };
   const novaLabel = { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '2026-10-31', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, transactionFee: 495, concessionMode: 'flat', concessionVal: 15000, hoaAmount: 629, hoaPaidCurrent: 'yes', hoaResaleCert: 330, propTaxAnnual: 10144, otherCosts: 50, address: '635 Slaters Ln, Alexandria, VA 22314', unit: '405' };
-  const prop = { id: 'p-1', address: '635 Slaters Ln, Alexandria, VA 22314', seller_name: 'Jordan Sample', subfolder_drive_ids: { _co_seller: 'Riley Sample' } };
+  const prop = { id: 'p-1', address: '635 Slaters Ln, Alexandria, VA 22314', market: 'VA', seller_name: 'Jordan Sample', subfolder_drive_ids: { _co_seller: 'Riley Sample' } };
   const built = await run([
     { input: heavy }, { input: light }, { input: loss }, { input: novaLabel },
     { input: novaLabel, prop: prop, propId: 'p-1' },
@@ -289,10 +290,10 @@ function check(rec, lines, salePrice, net) {
   // not calculate again, so change the price and a loan after Calculate and
   // download: the page must still be the calculated sheet, and must add up.
   const stale = await page.evaluate(async (a) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, a.base, { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, result: null, breakdown: [], _propId: null });
-    await tick(); st.calcNetSheet(); await tick(); await tick(); await tick();
+    await tick(); __addr(); st.calcNetSheet(); await tick(); await tick(); await tick();
     const lines = JSON.parse(JSON.stringify(st.ns.breakdown)), net = st.ns.result;
     st.ns.salePrice = '800000'; st.ns.loan1 = '1'; await tick();
     window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
@@ -322,11 +323,11 @@ function check(rec, lines, salePrice, net) {
   fake.push({ label: 'Made-up credit', amount: -250.5 });
   const fakeNet = Math.round((5000000 - fake.reduce((s, l) => s + l.amount, 0)) * 100) / 100;
   const inj = await page.evaluate(async (a) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, a.base, { salePrice: 5000000, closingDate: '', jurisdiction: 'dc', _propId: null, breakdown: a.fake, result: a.net });
     await tick(); window.__pdfs.length = 0;
-    st.nsDownloadPDF(); await tick();
+    __addr(); st.nsDownloadPDF(); await tick();
     return { pdfs: window.__pdfs.length, rec: window.__pdfs[0] || null, lines: JSON.parse(JSON.stringify(st.ns.breakdown)) };
   }, { base, fake, net: fakeNet });
   b = inj.pdfs === 1 && JSON.stringify(inj.lines) === JSON.stringify(fake) ? check(inj.rec, fake, 5000000, fakeNet) : ['the PDF step did not draw the lines it was given'];
@@ -334,7 +335,7 @@ function check(rec, lines, salePrice, net) {
   // Every length from 18 to 70 rows, so a page break falls on every possible row:
   // the last row and its total, a heading, the summary.
   const sweep = await page.evaluate(async (a) => {
-    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     const out = [];
     for (let n = 18; n <= 70; n++) for (const k of [0, 1, 3]) {
@@ -343,7 +344,7 @@ function check(rec, lines, salePrice, net) {
       for (let i = 1; i <= k; i++) lines.push({ label: 'Made-up credit number ' + i, amount: -(50 + i + 0.5) });
       const net = Math.round((5000000 - lines.reduce((s, l) => s + l.amount, 0)) * 100) / 100;
       Object.assign(st.ns, a.base, { salePrice: 5000000, closingDate: '', jurisdiction: 'dc', _propId: null, breakdown: lines, result: net });
-      await tick(); window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
+      await tick(); window.__pdfs.length = 0; __addr(); st.nsDownloadPDF(); await tick();
       out.push({ n, k, lines, net, rec: window.__pdfs[0] || null });
     }
     return out;

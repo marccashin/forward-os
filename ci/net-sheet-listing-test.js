@@ -178,6 +178,69 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(badges.list.indexOf('Maryland') === -1 && badges.list.indexOf('Virginia') === -1 && badges.list.filter(t => t === 'MD').length >= 3, 'listing badges show MD and VA, never the written-out name', badges.list);
   ok(JSON.stringify(badges.code) === JSON.stringify(['MD', 'VA', 'DC', 'DC', 'MD', 'VA', '', '', '']), 'fosMarketCode: full names and codes to DC / MD / VA; anything else is blank, never a guess', badges.code);
 
+  console.log('No net sheet without a full address, and never in the wrong state (Marc, Oct 12, 2026)');
+  const tryAll = () => run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ns.result = null; st.ns.breakdown = []; st.ns.salePrice = st.ns.salePrice || '410000'; st.ns.closingDate = '2026-11-20';
+    let saves = 0; const realSave = st.nsSaveToProperty;
+    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    const afterCalc = st.ns.result;
+    const pdfBefore = st.pdfViewerSrc; st.nsDownloadPDF(); const pdfAfter = st.pdfViewerSrc;
+    const box = document.querySelector('[data-ns-addr-problem]');
+    return { result: afterCalc, pdfMade: pdfAfter !== pdfBefore, problem: st.nsAddrProblem, shown: box && box.offsetParent ? box.innerText : null };
+  });
+  await openListing(D); await clickNetSheet();
+  s = await tryAll();
+  ok(s.result === null && !s.pdfMade, 'D (address "211 Delta Vista Ln"): Calculate and Download PDF make nothing', s);
+  ok(/missing the state and ZIP code/.test(s.shown || ''), 'D: the reason is on screen above Calculate', s.shown);
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '211 Delta Vista Ln, Upper Marlboro, MD 20774'; await new Promise(r => setTimeout(r, 50)); });
+  s = await tryAll();
+  ok(s.result !== null && s.problem === '' && s.shown === null, 'D: with the full Maryland address typed in, it calculates and the notice is gone', s);
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '1300 Army Navy Dr #518, Arlington, VA 22202'; st.ns.jurisdiction = 'va-nova'; await new Promise(r => setTimeout(r, 50)); });
+  s = await tryAll();
+  ok(s.result === null && /in Virginia but this listing is marked Maryland/.test(s.shown || ''), 'D: a Virginia address on a listing marked Maryland is refused, and both states are named', s);
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '211 Delta Vista Ln, Upper Marlboro, MD 20774'; st.ns.jurisdiction = 'dc'; await new Promise(r => setTimeout(r, 50)); });
+  s = await tryAll();
+  ok(s.result === null && /in Maryland but the net sheet is set to DC/.test(s.shown || ''), 'D: a Maryland address with the state picker on DC is refused', s);
+  const saveTry = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ns.result = 1; st.ns.breakdown = [{ label: 'x', amount: 1 }];
+    const n0 = (window.__nsSaves = 0); await st.nsSaveToProperty(); return { note: st.lstNotes.seller_net_sheet || '' };
+  });
+  ok(saveTry.note === '', 'D: Save to Property refuses too while the state does not match', saveTry);
+  console.log('The standalone net sheet follows the same rule');
+  s = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.view = 'just-listed'; await new Promise(r => setTimeout(r, 200)); st.lpOpen('netsheet'); await new Promise(r => setTimeout(r, 200));
+    st.ns.address = '9 Typed Rd, Bethesda, MD'; st.ns.jurisdiction = 'md-montgomery'; st.ns.salePrice = '900000'; st.ns.closingDate = '2026-11-20'; st.ns.result = null;
+    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150)); const r1 = st.ns.result;
+    const box = document.querySelector('[data-ns-addr-problem]'); const shown = box && box.offsetParent ? box.innerText : null;
+    st.ns.address = '9 Typed Rd, Bethesda, MD 20814'; st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    return { r1, shown, r2: st.ns.result };
+  });
+  ok(s.r1 === null && /missing the ZIP code/.test(s.shown || '') && s.r2 !== null, 'standalone: no ZIP, no sheet and the reason shown; with the ZIP it calculates', s);
+  console.log('New Listing: no default state, and Market must agree with the State box');
+  s = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const posts = []; const f0 = window.fetch;
+    window.fetch = (u, o) => {
+      if (o && o.method === 'POST' && /\/rest\/v1\/properties/.test(String(u))) posts.push(JSON.parse(o.body));
+      if (/\/rest\/v1\/properties\?.*address=eq\./.test(String(u))) return Promise.resolve(new Response('[]', { status: 200, headers: { 'content-type': 'application/json' } }));   // the duplicate check: no such listing yet
+      return f0(u, o);
+    };
+    const fill = (state, market) => { st.lstNewStreet = '1300 Army Navy Dr'; st.lstNewUnit = '518'; st.lstNewCity = 'Arlington'; st.lstNewState = state; st.lstNewZip = '22202'; st.lstNewSeller = 'Seller Z'; st.lstNewMarket = market; st.lstCreateError = ''; };
+    const start = st.lstNewMarket;
+    fill('VA', 'DC'); await st.lstCreateProperty(); const clash = st.lstCreateError, clashPosts = posts.length;
+    fill('', ''); st.lstNewAddress = ''; await st.lstCreateProperty(); const none = st.lstCreateError, nonePosts = posts.length;
+    fill('VA', ''); await st.lstCreateProperty(); await new Promise(r => setTimeout(r, 200));
+    window.fetch = f0;
+    return { start, clash, clashPosts, none, nonePosts, sent: posts.map(p => p.market) };
+  });
+  ok(s.start === '', 'New Listing: Market starts empty, not DC', s.start);
+  ok(/State box says VA but Market says DC/.test(s.clash) && s.clashPosts === 0, 'New Listing: State VA with Market DC is refused and nothing is created', s);
+  ok(/Choose the listing's state/.test(s.none) && s.nonePosts === 0, 'New Listing: no state anywhere is refused and nothing is created', s);
+  ok(s.sent.length === 1 && s.sent[0] === 'VA', 'New Listing: State VA with Market left empty creates the listing as VA', s.sent);
+
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
