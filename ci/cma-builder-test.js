@@ -141,6 +141,7 @@ let writes = [];       // every write the page attempted
 let loadFails = false; // cma_sessions reads answer 500
 let properties = [];   // rows of the properties table (for the way back)
 let parseResults = []; // what the MLS sheet reader answers
+let parseHold = null;  // a promise the reader waits on before answering (a slow read)
 let snaps = [];        // cma_snapshots rows (earlier versions)
 let snapMode = 'ok';   // 'ok' | 'missing' (table not created yet) | 'fail'
 let snapBadWrites = []; // any PATCH or DELETE the page tried on a version
@@ -164,7 +165,7 @@ function match(u) {
 function api(route) {
   const req = route.request(), u = req.url(), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-  if (m === 'POST' && /\/api\/cma\/parse-listings/.test(u)) return J(route, 200, { success: true, results: parseResults });
+  if (m === 'POST' && /\/api\/cma\/parse-listings/.test(u)) return (parseHold || Promise.resolve()).then(() => J(route, 200, { success: true, results: parseResults }));
   if (/\/rest\/v1\/cma_sessions/.test(u)) {
     if (m === 'GET') {
       if (loadFails) return J(route, 500, { message: 'mock outage' });
@@ -1235,6 +1236,42 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok((await page.evaluate(() => comps.length + '|' + comps[0].salePrice)) === '6|502000', 'and it is updated in place');
   await page.context().close();
   proxAnswer = null; parseResults = [];
+
+  // ════════════════ A LONG READ SAYS HOW LONG IT TAKES ════════════════
+  // Oct 13, 2026: a real 16-property Bright file (4.3 MB) took about 2 minutes, and the panel
+  // said "Almost there" after 14 seconds and stayed on it, because it guessed 9 seconds a file.
+  console.log('A file with many properties: the wait is said up front and never looks stuck');
+  table = []; parseResults = [sheet('1 Closed Ct', 'closed', { salePrice: '501000' })];
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { city: 'Fairfax', state: 'VA', zip: '22030' }));
+  await page.clock.install();
+  let release; parseHold = new Promise((r) => { release = r; });
+  const panel = () => page.evaluate(() => ({ stage: document.getElementById('pdfStage').textContent, sub: document.getElementById('pdfSub').textContent, bar: parseFloat(document.getElementById('pdfBar').style.width), shown: document.getElementById('pdfProgress').style.display !== 'none' }));
+  await page.evaluate(() => { cmaUploadPDFs([new File([new Uint8Array(Math.round(4.3 * 1048576))], 'Agent_Full.pdf', { type: 'application/pdf' })]); });
+  await page.clock.runFor(1000);
+  let pn = await panel();
+  ok(pn.shown && /Expect about 2 minutes for these files\. Keep this page open\./.test(pn.sub), 'a 4.3 MB file says at once to expect about 2 minutes and to keep the page open', pn.sub);
+  await page.clock.runFor(30000);
+  pn = await panel();
+  ok(pn.stage !== 'Almost there' && pn.stage !== 'Still reading', 'after 30 seconds it is not yet "Almost there" (it used to be from 14 seconds)', pn.stage);
+  await page.clock.runFor(85000);
+  pn = await panel();
+  ok(pn.stage === 'Almost there' && /Expect about 2 minutes/.test(pn.sub), 'near the expected time it says Almost there, still with the expected time', [pn.stage, pn.sub]);
+  await page.clock.runFor(40000);
+  pn = await panel();
+  ok(pn.stage === 'Still reading' && /Keep this page open: it is still working/.test(pn.sub) && pn.bar < 100 && pn.bar > 88, 'past the expected time it says it is still reading and to keep the page open, and the bar never fills', pn);
+  const bar1 = pn.bar; await page.clock.runFor(60000); pn = await panel();
+  ok(pn.bar > bar1 && pn.bar <= 97, 'the bar keeps moving while it waits', [bar1, pn.bar]);
+  release(); parseHold = null;
+  await page.clock.runFor(2000);
+  await page.waitForFunction(() => document.getElementById('cmaImportModal').style.display === 'flex', null, { timeout: 5000 });
+  ok(true, 'when the reader answers, the review window opens as before');
+  await page.evaluate(() => cmaCloseImport && cmaCloseImport());
+  await page.evaluate(() => { cmaUploadPDFs([new File([new Uint8Array(250000)], 'one.pdf', { type: 'application/pdf' })]); });
+  await page.clock.runFor(1000);
+  pn = await panel();
+  ok(/Expect about 20 seconds\.$/.test(pn.sub) && !/Keep this page open/.test(pn.sub), 'a one-property sheet says about 20 seconds and does not warn', pn.sub);
+  await page.context().close();
+  parseResults = [];
 
   // The listing's address.
   console.log('The listing\'s address');
