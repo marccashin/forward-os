@@ -28,6 +28,15 @@
   <script>document.documentElement.classList.add('fos-booting');setTimeout(function(){document.documentElement.classList.remove('fos-booting');},8000);</script>
   <style>.fos-booting #app{visibility:hidden;}</style>
   <style>
+.pdf-view{position:fixed;inset:0;z-index:10050;background:#e9e6df;display:flex;flex-direction:column;}
+.pdf-view-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;background:var(--navy, #0d1f35);color:#fff;flex-shrink:0;}
+.pdf-view-title{flex:1;min-width:0;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;}
+.pdf-view-btn{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.55);border-radius:8px;padding:8px 14px;font-size:14px;font-weight:600;min-height:40px;cursor:pointer;}
+.pdf-view-btn:disabled{opacity:.45;}
+.pdf-view-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 8px calc(env(safe-area-inset-bottom, 0px) + 16px);}
+.pdf-view-page{display:block;width:100%;max-width:900px;margin:0 auto 12px;background:#fff;box-shadow:0 1px 6px rgba(0,0,0,.15);}
+.pdf-view-note{text-align:center;font-size:13px;color:#374151;padding:14px;}
+
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600&family=Montserrat:wght@300;400;500;600;700&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
 :root {
@@ -2100,6 +2109,7 @@ body {
 
 @keyframes fos-blink { 0%,100%{opacity:1} 50%{opacity:0} }
 .fos-stream-cursor::after { content:'\25ae'; display:inline-block; animation:fos-blink 0.7s step-end infinite; margin-left:1px; font-size:0.85em; opacity:0.7; }
+
 </style>
 </head>
 <body>
@@ -2121,6 +2131,25 @@ body {
     })();
   </script>
 <div id="app">
+
+  <!-- In-app PDF viewer (Oct 13, 2026). On the phone home-screen app a link to a PDF
+       on the OS's own site replaced the whole app with the PDF and no way back
+       (Marc: "I actually have to kill it"). Phones open the PDF here instead.
+       Kept at the top level of #app: placed beside the other modals it was not
+       drawn on a phone. -->
+  <div v-if="pdfView.show" class="pdf-view" role="dialog" aria-modal="true" :aria-label="pdfView.title">
+    <div class="pdf-view-bar">
+      <button class="pdf-view-btn" @click="pdfViewClose">&larr; Back</button>
+      <div class="pdf-view-title">{{ pdfView.title }}</div>
+      <button class="pdf-view-btn" @click="pdfViewShare" :disabled="!pdfView.ready">Share</button>
+    </div>
+    <div class="pdf-view-body">
+      <div v-if="pdfView.loading" class="pdf-view-note">Opening the PDF...</div>
+      <div v-if="pdfView.error" class="pdf-view-note" style="color:#b91c1c;">{{ pdfView.error }}</div>
+      <div v-if="pdfView.shareNote" class="pdf-view-note">{{ pdfView.shareNote }}</div>
+      <img v-for="(src, i) in pdfView.pages" :key="i" :src="src" :alt="pdfView.title + ', page ' + (i + 1)" class="pdf-view-page">
+    </div>
+  </div>
 
   <!-- ========== LOGIN ========== -->
   <div v-if="!loggedIn" style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a2744 0%,#0d1630 100%);padding:20px;">
@@ -2812,7 +2841,7 @@ body {
             </div>
             <!-- Desktop: 3-col grid -->
             <div v-if="!isMobile" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;">
-              <div class="lp-card" @click="lpOpen('sellerguide')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="1" fill="#0d1f35"/><circle cx="9" cy="8" r="2.2" fill="white"/><rect x="13" y="6.5" width="4.5" height="1.3" fill="white"/><rect x="13" y="9" width="3.2" height="1.3" fill="white"/><rect x="6.5" y="13.5" width="11" height="1.3" fill="white"/><rect x="6.5" y="16.5" width="11" height="1.3" fill="white"/></svg><div class="lp-label">Seller Guide</div><div class="lp-sub">Two-page intro to send before the appointment</div></div>
+              <div class="lp-card" @click="lpOpen('sellerguide')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="1" fill="#0d1f35"/><circle cx="9" cy="8" r="2.2" fill="white"/><rect x="13" y="6.5" width="4.5" height="1.3" fill="white"/><rect x="13" y="9" width="3.2" height="1.3" fill="white"/><rect x="6.5" y="13.5" width="11" height="1.3" fill="white"/><rect x="6.5" y="16.5" width="11" height="1.3" fill="white"/></svg><div class="lp-label">Meet Your Advisor</div><div class="lp-sub">Two-page intro to send before the appointment</div></div>
               <div class="lp-card" @click="lpOpen('presentation')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div>
               <div class="lp-card" @click="lpOpen('netsheet')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div>
               <div class="lp-card" @click="go('listing-desc')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div>
@@ -2823,7 +2852,7 @@ body {
             </div>
             <!-- Mobile: single-column list -->
             <div v-else style="background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);overflow:hidden;">
-              <div class="lp-card-mobile" @click="lpOpen('sellerguide')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="1" fill="#0d1f35"/><circle cx="9" cy="8" r="2.2" fill="white"/><rect x="13" y="6.5" width="4.5" height="1.3" fill="white"/><rect x="13" y="9" width="3.2" height="1.3" fill="white"/><rect x="6.5" y="13.5" width="11" height="1.3" fill="white"/><rect x="6.5" y="16.5" width="11" height="1.3" fill="white"/></svg><div><div class="lp-label">Seller Guide</div><div class="lp-sub">Two-page intro to send before the appointment</div></div><span class="lp-arrow">›</span></div>
+              <div class="lp-card-mobile" @click="lpOpen('sellerguide')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="1" fill="#0d1f35"/><circle cx="9" cy="8" r="2.2" fill="white"/><rect x="13" y="6.5" width="4.5" height="1.3" fill="white"/><rect x="13" y="9" width="3.2" height="1.3" fill="white"/><rect x="6.5" y="13.5" width="11" height="1.3" fill="white"/><rect x="6.5" y="16.5" width="11" height="1.3" fill="white"/></svg><div><div class="lp-label">Meet Your Advisor</div><div class="lp-sub">Two-page intro to send before the appointment</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('presentation')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg><div><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('netsheet')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="go('listing-desc')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg><div><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div><span class="lp-arrow">›</span></div>
@@ -2834,23 +2863,23 @@ body {
             </div>
           </div>
 
-          <!-- ── Panel: Seller Guide ── -->
+          <!-- ── Panel: Meet Your Advisor (was Seller Guide; internal names unchanged) ── -->
           <div v-else-if="lpActivePanel==='sellerguide'" style="max-width:640px;margin:0 auto;">
             <button class="lp-back" @click="lpActivePanel=null">&larr; Back to Listing Package</button>
             <div class="card" style="text-align:center;padding:36px 24px;">
               <div v-if="sellerGuideUrl">
-                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Seller Guide</div>
+                <div style="font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:700;color:var(--navy);margin-bottom:4px;">Meet Your Advisor: {{ agentName }}</div>
                 <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin-bottom:20px;">2 pages, with your photo, bio and contact details</div>
-                <a :href="sellerGuideUrl" target="_blank" rel="noopener" download style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
+                <a :href="sellerGuideUrl" target="_blank" rel="noopener" :download="sellerGuideFileName" @click="sellerGuideClick" style="display:inline-flex;align-items:center;gap:8px;padding:12px 28px;background:var(--navy);color:#fff;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;">
                   <span style="font-size:16px;line-height:1;">&#8595;</span> Download PDF
                 </a>
                 <div style="margin-top:12px;font-size:11px;color:#9ca3af;">Saves a PDF you can attach to an email or print</div>
               </div>
-              <div v-else style="font-size:13px;color:#6b7280;">Seller Guides are made for each agent. This login does not have one. Sign in as the agent to download theirs.</div>
+              <div v-else style="font-size:13px;color:#6b7280;">Meet Your Advisor is made for each agent. This login does not have one. Sign in as the agent to download theirs.</div>
               <div style="text-align:left;max-width:460px;margin:18px auto 0;border-top:1px solid var(--cream-mid);padding-top:14px;">
                 <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:8px;">When and how to use it</div>
-                <div style="font-size:13px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">1. Send it ahead.</strong> Email this guide as soon as the listing appointment is booked. In two pages the seller meets you, sees how we find their buyer, and gets the eight steps from consultation to close.</div>
-                <div style="font-size:13px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">2. Present the full deck in person.</strong> Your Listing Presentation is still what you walk through at the appointment. The guide gets the seller ready for it. It does not replace it, so do not send the full deck ahead in its place.</div>
+                <div style="font-size:13px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">1. Send it ahead.</strong> Email Meet Your Advisor as soon as the listing appointment is booked. In two pages the seller meets you, sees how we find their buyer, and gets the eight steps from consultation to close.</div>
+                <div style="font-size:13px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">2. Present the full deck in person.</strong> Your Listing Presentation is still what you walk through at the appointment. Meet Your Advisor gets the seller ready for it. It does not replace it, so do not send the full deck ahead in its place.</div>
                 <div style="font-size:13px;color:#374151;line-height:1.55;"><strong style="color:var(--navy);">3. Keep it in the seller packet.</strong> Add a printed copy to the packet you leave behind, so the seller has the short version next to the full presentation.</div>
               </div>
             </div>
@@ -6121,30 +6150,30 @@ body {
                 <div class="tool-category-line"></div>
               </div>
 
-              <!-- Tool: Seller Guide (two-page one-sheet, sent before the appointment) -->
+              <!-- Tool: Meet Your Advisor (was Seller Guide; two-page one-sheet, sent before the appointment) -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstToolOpen = (lstToolOpen==='sellerguide' ? null : 'sellerguide')">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="2" width="16" height="20" rx="1" fill="#0d1f35"/><circle cx="9" cy="8" r="2.2" fill="white"/><rect x="13" y="6.5" width="4.5" height="1.3" fill="white"/><rect x="13" y="9" width="3.2" height="1.3" fill="white"/><rect x="6.5" y="13.5" width="11" height="1.3" fill="white"/><rect x="6.5" y="16.5" width="11" height="1.3" fill="white"/></svg>
-                    <span class="subfolder-tool-name">Seller Guide</span>
-                    <span class="subfolder-tool-desc">Two-page intro to send before the appointment</span>
+                    <span class="subfolder-tool-name">Meet Your Advisor</span>
+                    <span class="subfolder-tool-desc">Two-page intro and bio to send before the appointment</span>
                   </div>
                   <span class="subfolder-caret" :style="{transform:lstToolOpen==='sellerguide'?'rotate(90deg)':''}">▶</span>
                 </div>
                 <div v-if="lstToolOpen==='sellerguide'" class="subfolder-body" style="text-align:center;padding:24px 16px;">
                   <div v-if="sellerGuideUrl">
-                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">{{ agentName }}'s Seller Guide</div>
+                    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:700;color:var(--navy);margin-bottom:4px;">Meet Your Advisor: {{ agentName }}</div>
                     <div style="font-size:12px;color:#6b7280;margin-bottom:16px;">2 pages, with your photo, bio and contact details</div>
-                    <a :href="sellerGuideUrl" target="_blank" rel="noopener" download class="btn-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 24px;font-size:13px;">
+                    <a :href="sellerGuideUrl" target="_blank" rel="noopener" :download="sellerGuideFileName" @click="sellerGuideClick" class="btn-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;padding:10px 24px;font-size:13px;">
                       ↓ Download PDF
                     </a>
                     <div style="margin-top:8px;font-size:10px;color:#9ca3af;">Saves a PDF you can attach to an email or print</div>
                   </div>
-                  <div v-else style="font-size:12px;color:#6b7280;">Seller Guides are made for each agent. This login does not have one. Sign in as the agent to download theirs.</div>
+                  <div v-else style="font-size:12px;color:#6b7280;">Meet Your Advisor is made for each agent. This login does not have one. Sign in as the agent to download theirs.</div>
                   <div style="text-align:left;max-width:460px;margin:18px auto 0;border-top:1px solid var(--cream-mid);padding-top:14px;">
                     <div style="font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-muted);margin-bottom:8px;">When and how to use it</div>
-                    <div style="font-size:12px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">1. Send it ahead.</strong> Email this guide as soon as the listing appointment is booked. In two pages the seller meets you, sees how we find their buyer, and gets the eight steps from consultation to close.</div>
-                    <div style="font-size:12px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">2. Present the full deck in person.</strong> Your Listing Presentation is still what you walk through at the appointment. The guide gets the seller ready for it. It does not replace it, so do not send the full deck ahead in its place.</div>
+                    <div style="font-size:12px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">1. Send it ahead.</strong> Email Meet Your Advisor as soon as the listing appointment is booked. In two pages the seller meets you, sees how we find their buyer, and gets the eight steps from consultation to close.</div>
+                    <div style="font-size:12px;color:#374151;line-height:1.55;margin-bottom:8px;"><strong style="color:var(--navy);">2. Present the full deck in person.</strong> Your Listing Presentation is still what you walk through at the appointment. Meet Your Advisor gets the seller ready for it. It does not replace it, so do not send the full deck ahead in its place.</div>
                     <div style="font-size:12px;color:#374151;line-height:1.55;"><strong style="color:var(--navy);">3. Keep it in the seller packet.</strong> Add a printed copy to the packet you leave behind, so the seller has the short version next to the full presentation.</div>
                   </div>
                 </div>
@@ -6178,6 +6207,11 @@ body {
                     <div style="margin-top:8px;font-size:10px;color:#9ca3af;">{{ lpresUpdatedLine || 'Your own deck, as a PDF. No Canva sign-in needed.' }}</div>
                     <div v-if="lpres.error" style="margin-top:8px;font-size:12px;color:#b91c1c;">{{ lpres.error }}</div>
                     <div v-if="lpres.infoError" style="margin-top:6px;font-size:11px;color:#b45309;">{{ lpres.infoError }}</div>
+                    <div v-if="agentName === 'Marc Cashin'" style="margin-top:16px;padding-top:12px;border-top:1px solid #eee;">
+                      <button @click="lpresRefresh" :disabled="lpres.refreshing" style="padding:8px 18px;background:#fff;color:var(--navy);border:1px solid var(--navy);border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">{{ lpres.refreshing ? 'Refreshing...' : 'Refresh from Canva' }}</button>
+                      <div v-if="lpres.refreshNote" style="margin-top:8px;font-size:11px;color:#374151;">{{ lpres.refreshNote }}</div>
+                      <div style="margin-top:6px;font-size:10px;color:#9ca3af;">Edits in Canva reach the OS within the hour on their own. Refresh pulls all five decks now.</div>
+                    </div>
                   </template>
                 </div>
               </div>
@@ -21603,6 +21637,82 @@ No markdown. Valid JSON only.`;
       if (a === 'presentation' || b === 'presentation') lpresLoadInfo();
     });
     const sellerGuideUrl = computed(() => SELLER_GUIDES[agentName.value] || '');
+    // Shown to agents as "Meet Your Advisor" (Marc, Oct 13, 2026). The file the
+    // seller receives is named to match; the stored path is unchanged.
+    const sellerGuideFileName = computed(() => (agentName.value || 'Agent').replace(/[^A-Za-z0-9]+/g, '_') + '_Meet_Your_Advisor.pdf');
+
+    // ── In-app PDF viewer (phones) ──
+    // The home-screen app has no address bar or back button, so a PDF on the
+    // OS's own site must never replace the app. The PDF is drawn page by page
+    // with pdf.js (already loaded) inside the app, with Back and Share.
+    const pdfView = reactive({ show: false, title: '', fileName: '', loading: false, error: '', shareNote: '', ready: false, pages: [] });
+    let _pdfViewBlob = null, _pdfViewSeq = 0;
+    function fosIsPhone() {
+      try {
+        if (window.navigator.standalone === true) return true;
+        if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true;
+      } catch (e) {}
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '');
+    }
+    async function pdfViewOpen(url, title, fileName) {
+      const seq = ++_pdfViewSeq;
+      Object.assign(pdfView, { show: true, title: title, fileName: fileName, loading: true, error: '', shareNote: '', ready: false, pages: [] });
+      _pdfViewBlob = null;
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        await fosOk(res);
+        const blob = await res.blob();
+        if (seq !== _pdfViewSeq) return;
+        _pdfViewBlob = blob;
+        pdfView.ready = true;
+        const pdfjsLib = window['pdfjs-dist/build/pdf'] || window.pdfjsLib;
+        if (!pdfjsLib) throw new Error('the PDF reader did not load. Press Share to open or save the file instead.');
+        if (!pdfjsLib.GlobalWorkerOptions.workerSrc) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+        const cssWidth = Math.min(window.innerWidth || 800, 900);
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        for (let n = 1; n <= doc.numPages; n++) {
+          if (seq !== _pdfViewSeq) return;
+          const page = await doc.getPage(n);
+          const base = page.getViewport({ scale: 1 });
+          const vp = page.getViewport({ scale: (cssWidth * dpr) / base.width });
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(vp.width); canvas.height = Math.round(vp.height);
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+          pdfView.pages.push(canvas.toDataURL('image/jpeg', 0.92));
+          canvas.width = canvas.height = 0;
+        }
+      } catch (e) {
+        if (seq === _pdfViewSeq) pdfView.error = 'The PDF could not be shown: ' + fosWhy(e);
+      } finally {
+        if (seq === _pdfViewSeq) pdfView.loading = false;
+      }
+    }
+    function pdfViewClose() {
+      _pdfViewSeq++; _pdfViewBlob = null;
+      Object.assign(pdfView, { show: false, loading: false, error: '', shareNote: '', ready: false, pages: [] });
+    }
+    async function pdfViewShare() {
+      if (!_pdfViewBlob) return;
+      pdfView.shareNote = '';
+      const file = new File([_pdfViewBlob], pdfView.fileName || 'document.pdf', { type: 'application/pdf' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], title: pdfView.title }); }
+        catch (e) { if (!e || e.name !== 'AbortError') pdfView.shareNote = 'Sharing did not work: ' + fosWhy(e); }
+        return;
+      }
+      // No share sheet (most computers): save the file instead, without leaving the app.
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(file); a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+      pdfView.shareNote = 'Saved as ' + file.name + '.';
+    }
+    function sellerGuideClick(ev) {
+      if (!sellerGuideUrl.value || !fosIsPhone()) return;   // computer: the link downloads the file
+      ev.preventDefault();
+      pdfViewOpen(sellerGuideUrl.value, 'Meet Your Advisor: ' + agentName.value, sellerGuideFileName.value);
+    }
 
     // ── Helpers ────────────────────────────────────────────
 // ── Agent Feedback ──────────────────────────────────────────────────────
@@ -22524,6 +22634,14 @@ const CHANGELOG = [
       {
         title: 'Previous Versions of MLS Data, the Prep Guide and the Letter',
         detail: 'MLS Data, the Seller Prep Guide and the campaign letter now show when and by whom the saved version was saved, and list every earlier version, the same way the net sheet, CMA and description already do. Open one to read it in full or copy it.\n\nThe campaign letter saves on its own as you type, so its list can grow quickly. The newest versions are at the top.\n\nHow to use: Open a listing, then MLS Data or Seller Prep Guide, and click Previous versions under it. For the letter, open the campaign editor and the letter section.\n\nBest practice: Before you change a list price or HOA fee in MLS Data, glance at Previous versions. The net sheet reads both from MLS Data, so you can see what the figures were before.'
+      },
+      {
+        title: 'Seller Guide Is Now Meet Your Advisor',
+        detail: 'The two-page PDF you send before a listing appointment is now called Meet Your Advisor. It is the same document: your photo, your bio, your contact details, what the seller can expect and the steps from consultation to close. The new name says what the seller gets, an introduction to you. The file you send is now named to match, for example Niki_Lang_Meet_Your_Advisor.pdf.\n\nOn a phone it now opens inside the OS with a Back button at the top. Before, opening it from the home-screen app left you stuck on the PDF with no way back except closing the app.\n\nHow to use: Open a listing and press Meet Your Advisor, the first item under Pre-Listing. On a computer, Download PDF saves the file. On a phone, it opens the PDF in the OS; press Share to email it, text it or save it to Files, and Back to return to the listing.\n\nBest practice: Send Meet Your Advisor as soon as the listing appointment is booked, and keep the full Listing Presentation for the appointment itself.'
+      },
+      {
+        title: 'Listing Presentation Photos Are Full Quality',
+        detail: 'The photos in your downloaded Listing Presentation were blurry, because the OS was asking Canva for a lower-quality copy. The OS now takes the full-quality deck from Canva, the same quality as downloading it from Canva yourself. The file is now about 30 MB instead of 11 MB, so it can take a few extra seconds on a phone.\n\nHow to use: Nothing changes. Open a listing, press Listing Presentation, then Download PDF.\n\nBest practice: Download the deck on Wi-Fi before the appointment rather than in the seller\'s driveway.'
       }
     ]
   }
@@ -25104,7 +25222,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
