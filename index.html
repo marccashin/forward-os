@@ -6391,6 +6391,7 @@ body {
                         <button class="btn-sm btn-navy" @click="lstPdfOpen(f)" :disabled="lstPdfOpening===f.path" style="font-size:11px;white-space:nowrap;">{{ lstPdfOpening===f.path ? 'Opening…' : 'Open PDF' }}</button>
                       </div>
                     </div>
+                  <div v-if="sellerPrepLoadNote" data-prep-note style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fefce8;border:1px solid #fde68a;border-radius:6px;padding:7px 10px;margin-bottom:10px;">{{ sellerPrepLoadNote }}</div>
                   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
                     <div style="display:flex;gap:0;border-radius:8px;overflow:hidden;border:1.5px solid var(--navy);">
                       <button @click="sellerPrepType='sfh'" :style="{padding:'6px 14px',fontSize:'11px',fontWeight:600,border:'none',cursor:'pointer',background:sellerPrepType==='sfh'?'var(--navy)':'#fff',color:sellerPrepType==='sfh'?'#fff':'var(--navy)',transition:'all .2s'}">SFH / Townhome</button>
@@ -12168,6 +12169,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
 
     function lstOpenTool(key) {
+      // Seller Prep: reload this listing's checklist if the lists were last used elsewhere
+      // (the standalone guide, or another listing).
+      if (key === 'sellerprep' && lstActiveProp.value && sellerPrepOwner.value !== lstActiveProp.value.id) {
+        sellerPrepLoadFor(lstActiveProp.value.id, lstNotes.seller_prep);
+      }
       // Net sheet form belongs to ONE property. `ns` is a single shared object, so
       // without this the last deal's address, price and figures follow the agent
       // into every other listing. Reset and re-fill whenever the property changes.
@@ -12323,6 +12329,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // The Price Reduction Planner's two boxes are not saved anywhere, so they
       // can only ever be the last card's. Start each card blank.
       pr.listDate = ''; pr.price = '';
+      // The Seller Prep checklist belongs to one listing: standard list until this one's notes load.
+      sellerPrepLoadFor(null, '');
       // Earlier versions belong to one listing: empty the list before the new one loads.
       lstHistory.value = []; lstHistError.value = ''; lstHistOpen.value = null; lstHistView.value = null;
       lstPdfs.value = {}; lstPdfError.value = '';   // one listing's PDFs must never show on the next
@@ -12380,6 +12388,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           }
         }
       } catch {}
+      sellerPrepLoadFor(prop.id, lstNotes.seller_prep);
       lstLoadHistory(prop.id);
       lstLoadPdfs(prop.id);
       lstApprLoad(prop.id);
@@ -12727,6 +12736,8 @@ async function campSaveOne(kind, force) {
   // Keep the in-memory note in step so reopening the panel reads the edit back.
   if (kind === 'letter') lstNotes.campaign_letter = payload;
   if (kind === 'prep')   lstNotes.seller_prep = payload;
+  // The checklist was just rewritten here: the Seller Prep Guide reads it back on its next open.
+  if (kind === 'prep')   sellerPrepOwner.value = null;
   if (kind === 'sections') {
     try { localStorage.setItem('fos_campSections_' + pid, payload); } catch (e) {}
   }
@@ -14798,6 +14809,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // A net sheet started inside a listing belongs to that listing. Do not let
       // it show in the standalone net sheet, where nothing says whose it is.
       if (panel === 'netsheet' && ns._propId) resetToolForm('net-sheet');
+      // Same for the Seller Prep checklist: the standalone guide starts from the standard list.
+      if (panel === 'sellerprep' && sellerPrepOwner.value !== '') sellerPrepLoadFor('', '');
       lpActivePanel.value = panel;
       if (panel === 'netsheet') nextTick(() => initAddressAutocomplete());
     }
@@ -15009,6 +15022,63 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     );
     function sellerPrepRestore() {
       sellerPrepSections.value.forEach(s => s.items.forEach(i => { i.removed = false; }));
+    }
+
+    // Each listing has its own Seller Prep checklist (Oct 13, 2026). The two lists
+    // above are single shared objects and nothing ever reset them, so an item removed
+    // or added on one listing was still removed or added on the next, and Save, Send to
+    // Seller or the campaign package could hand one seller another seller's checklist.
+    // The standard lists are copied once, here, before anything can change them.
+    // A listing opens with the checklist it last saved (read back from its saved text),
+    // or the standard list when it has none. The standalone guide always opens standard.
+    const _sellerPrepDefaults = { sfh: JSON.parse(JSON.stringify(sellerPrepSFH)), condo: JSON.parse(JSON.stringify(sellerPrepCondo)) };
+    const sellerPrepOwner = ref(null);     // listing id; '' = the standalone guide; null = nobody yet
+    const sellerPrepLoadNote = ref('');    // said on screen when a saved checklist cannot be shown item by item
+    function _sellerPrepResetLists() {
+      sellerPrepSFH.splice(0, sellerPrepSFH.length, ...JSON.parse(JSON.stringify(_sellerPrepDefaults.sfh)));
+      sellerPrepCondo.splice(0, sellerPrepCondo.length, ...JSON.parse(JSON.stringify(_sellerPrepDefaults.condo)));
+    }
+    // Reads the text sellerPrepBuildTextSummary() writes. Anything it cannot place
+    // exactly (text edited by hand in the campaign editor, a section title it does not
+    // know) gives null: never a guess at which items the agent meant.
+    function sellerPrepParseSaved(text) {
+      const t = String(text == null ? '' : text).replace(/\r/g, '').trim();
+      const head = t.match(/^SELLER PREP GUIDE \((Condo\/Co-op|Single Family\/Townhome)\)[ \t]*(\n|$)/);
+      if (!head) return null;
+      const type = head[1] === 'Condo/Co-op' ? 'condo' : 'sfh';
+      const defs = _sellerPrepDefaults[type];
+      const labels = defs.map(() => []);
+      let si = -1;
+      for (const raw of t.slice(head[0].length).split('\n')) {
+        const line = raw.trim();
+        if (!line) continue;
+        if (line.startsWith('\u2022 ')) { if (si < 0) return null; labels[si].push(line.slice(2).trim()); continue; }
+        if (line.endsWith(':')) { si = defs.findIndex(d => d.title === line.slice(0, -1)); if (si < 0) return null; continue; }
+        return null;
+      }
+      return { type, labels };
+    }
+    function sellerPrepLoadFor(owner, savedText) {
+      _sellerPrepResetLists();
+      sellerPrepType.value = 'sfh';
+      sellerPrepAddingSi.value = null; sellerPrepNewLabel.value = '';
+      sellerPrepSaved.value = false; sellerPrepSendModal.value = false;
+      sellerPrepRecipientEmail.value = ''; sellerPrepRecipientPhone.value = '';
+      sellerPrepLoadNote.value = '';
+      sellerPrepOwner.value = owner;
+      if (!savedText || !String(savedText).trim()) return;
+      const p = sellerPrepParseSaved(savedText);
+      if (!p) {
+        sellerPrepLoadNote.value = 'This listing\'s saved checklist was edited as text, so it cannot be shown item by item here. The list below is the standard one. The saved checklist is unchanged unless you press Save.';
+        return;
+      }
+      sellerPrepType.value = p.type;
+      const list = p.type === 'condo' ? sellerPrepCondo : sellerPrepSFH;
+      list.forEach((sec, i) => {
+        const want = p.labels[i];
+        sec.items.forEach(it => { it.removed = !want.includes(it.label); });
+        want.forEach(l => { if (!sec.items.some(it => it.label === l)) sec.items.push({ label: l, done: false, removed: false, custom: true }); });
+      });
     }
 
     // Send to Seller modal state
@@ -22389,6 +22459,18 @@ const CHANGELOG = [
         detail: 'Listing Presentation now downloads your own deck as a PDF, right from the OS. It no longer sends you to Canva, so it works whichever Canva account you are signed in to, or none. You always get your own deck and nobody else\'s.\n\nMarc keeps editing the decks in Canva. His changes reach the OS on their own within the hour, so the PDF you download is always the current version. The panel shows when your deck was last updated and how many pages it has.\n\nHow to use: Open a listing, press Listing Presentation, then Download PDF. The file arrives with your name in it, for example Niki_Lang_Listing_Presentation.pdf.\n\nBest practice: Download a fresh copy before each listing appointment rather than reusing an old file, so you present Marc\'s latest edits.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-13',
+    date: 'October 13, 2026',
+    title: 'Each Listing Keeps Its Own Seller Prep Guide',
+    summary: 'The Seller Prep Guide no longer carries one listing\'s changes into the next. Each listing opens with the checklist it saved.',
+    updates: [
+      {
+        title: 'Seller Prep Guide Belongs to One Listing',
+        detail: 'Until today, an item you removed or added in the Seller Prep Guide on one listing was still removed or added when you opened the next listing. Saving or sending the guide could then give a seller a checklist made for someone else.\n\nNow each listing opens with its own checklist: the one you last saved for that listing, with your removed items gone and your own items in place, or the standard checklist if nothing has been saved yet. The Seller Prep Guide on the Just Listed page always starts from the standard checklist.\n\nIf a listing\'s saved checklist was rewritten by hand in the campaign editor, the guide says so and shows the standard checklist. Your saved text is not touched unless you press Save.\n\nHow to use: Open a listing, then Seller Prep Guide. Remove or add items, then press Save before you leave the listing.\n\nBest practice: Press Save as soon as the checklist is right. Changes you do not save are gone when you open another listing, by design, so they can never reach the wrong seller.'
+      }
+    ]
   }
 
 ];
@@ -24969,7 +25051,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Package
       lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl,
       checklistSections, checklistProgress,
-      sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore,
+      sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
       mktLoadError, mktMeta,
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
