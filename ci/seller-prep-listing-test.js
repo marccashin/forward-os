@@ -201,6 +201,18 @@ function savedText(kind, sections) {
   s = await see();
   ok(s.type === 'sfh' && s.removed === 0, 'standalone: what was changed there earlier is gone too', s);
 
+  console.log('A checklist rewritten in the campaign editor shows in the guide on its next open');
+  await openListing(A); await clickPrep();
+  const campText = savedText('sfh', std.sfh.map((x, i) => ({ title: x.title, labels: i === 0 ? [x.labels[1], 'Campaign editor item'] : [] })));
+  await run(async (t) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.campPrepEditVal = t; await st.campSaveNow('prep', 'prep'); await new Promise(r => setTimeout(r, 200)); }, campText);
+  await clickPrep(); await clickPrep();
+  s = await see();
+  ok(s.summary === campText && s.note === '', 'A: the guide shows what the campaign editor saved', s.summary.slice(0, 200));
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.campPrepEditVal = 'Typed by hand in the campaign editor'; await st.campSaveNow('prep', 'prep'); await new Promise(r => setTimeout(r, 200)); });
+  await clickPrep(); await clickPrep();
+  s = await see();
+  ok(s.summary === stdSfhText && /edited as text/.test(s.note), 'A: hand-typed text there gives the standard list and the notice', s.note);
+
   console.log('Every standard item round-trips: save text, reopen, same checklist');
   const trips = await run(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;

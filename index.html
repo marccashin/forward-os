@@ -12736,6 +12736,8 @@ async function campSaveOne(kind, force) {
   // Keep the in-memory note in step so reopening the panel reads the edit back.
   if (kind === 'letter') lstNotes.campaign_letter = payload;
   if (kind === 'prep')   lstNotes.seller_prep = payload;
+  // The checklist was just rewritten here: the Seller Prep Guide reads it back on its next open.
+  if (kind === 'prep')   sellerPrepOwner.value = null;
   if (kind === 'sections') {
     try { localStorage.setItem('fos_campSections_' + pid, payload); } catch (e) {}
   }
