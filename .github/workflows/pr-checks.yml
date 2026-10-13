@@ -35,6 +35,9 @@
 #   ci/net-sheet-listing-test.js  every listing opens its own net sheet: a
 #                        panel left open on one listing never shows on the
 #                        next, and the form fills from that listing's MLS Data.
+#   ci/seller-prep-listing-test.js  every listing opens its own Seller Prep
+#                        checklist: what one listing removed or added never
+#                        shows on another; a saved checklist reopens exactly.
 #   ci/note-history-test.js  a listing shows when and by whom its net sheet, CMA
 #                        and description were saved, and every earlier version.
 #   ci/net-sheet-numbers-test.js  the seller net sheet's numbers: two executed
@@ -140,6 +143,10 @@ jobs:
       - name: Net sheet per listing test (no card shows another card's net sheet)
         if: always()
         run: node head/ci/net-sheet-listing-test.js head
+
+      - name: Seller Prep per listing test (no listing shows another listing's checklist)
+        if: always()
+        run: node head/ci/seller-prep-listing-test.js head
 
       - name: Dashboard rows test (a row opens that listing or that buyer)
         if: always()
