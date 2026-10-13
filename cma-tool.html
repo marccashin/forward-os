@@ -3313,7 +3313,24 @@ async function findComps() {
   window.cmaPickPDFs = function () { document.getElementById('pdfFileInput').click(); };
 
   // ── progress panel ──
-  var progTimer = null, progT0 = 0, progStep = 0;
+  var progTimer = null, progT0 = 0, progStep = 0, progExpected = 15;
+  // How long a read takes depends on how many properties the files hold, not how many
+  // files there are: one Bright export can hold 16 (Oct 13, 2026: Agent_Full3535.pdf,
+  // 16 properties, 4.3 MB, about 2 minutes; Agent_Full6755.pdf, 16, 3.4 MB, about
+  // 1 minute 45). The page cannot count properties before the upload, but file size
+  // tracks the count, at about 30 seconds per MB. Until then the guess was 9 seconds a
+  // file, so a 16-property file showed "Almost there" after 14 seconds and sat on it for
+  // nearly two minutes, and an agent could think the page had hung.
+  function progGuessSeconds(files) {
+    var mb = files.reduce(function (s, f) { return s + (f.size || 0); }, 0) / 1048576;
+    return Math.max(15, Math.min(240, Math.round(30 * mb)));
+  }
+  function progSay(sec) {
+    if (sec < 50) return 'about ' + (Math.round(sec / 10) * 10 || 10) + ' seconds';
+    if (sec < 80) return 'about a minute';
+    if (sec < 105) return 'about a minute and a half';
+    return 'about ' + Math.round(sec / 60) + ' minutes';
+  }
   var STAGES = [
     ['Uploading your sheets',      'Sending the files over. This part is quick.'],
     ['Reading the pages',          'Pulling the text out of each PDF.'],
@@ -3322,28 +3339,35 @@ async function findComps() {
     ['Sorting active, pending and sold', 'Working out where each property belongs.'],
     ['Almost there',               'Putting the review list together.']
   ];
-  function progStart(nFiles) {
+  function progStart(files) {
     var drop = document.getElementById('pdfDrop');
     var panel = document.getElementById('pdfProgress');
     if (drop) drop.classList.add('busy');
     if (panel) panel.style.display = '';
     progT0 = Date.now(); progStep = 0;
+    var expected = progExpected = progGuessSeconds(files);
     setStage(0);
-    var expected = Math.max(14, 9 * nFiles);   // rough seconds
     clearInterval(progTimer);
     progTimer = setInterval(function () {
       var el = (Date.now() - progT0) / 1000;
       var t = document.getElementById('pdfTimer'); if (t) t.textContent = Math.round(el) + 's';
-      var pct = Math.min(94, 6 + (el / expected) * 88);
+      // Past the guess the bar keeps creeping (never full) and the panel says it is still
+      // working, instead of sitting on "Almost there".
+      var pct = el <= expected ? 6 + (el / expected) * 82 : Math.min(97, 88 + 9 * (1 - expected / el));
       var bar = document.getElementById('pdfBar'); if (bar) bar.style.width = pct.toFixed(1) + '%';
-      var want = Math.min(STAGES.length - 1, Math.floor((pct / 94) * STAGES.length));
+      var want = el > expected ? STAGES.length : Math.min(STAGES.length - 1, Math.floor((el / expected) * STAGES.length));
       if (want !== progStep) { progStep = want; setStage(want); }
     }, 400);
   }
   function setStage(i) {
     var a = document.getElementById('pdfStage'), b = document.getElementById('pdfSub');
-    if (a) a.textContent = STAGES[i][0];
-    if (b) b.textContent = STAGES[i][1];
+    var stage = i < STAGES.length ? STAGES[i]
+      : ['Still reading', 'Files with many properties take longer. Keep this page open: it is still working, and nothing is lost by waiting.'];
+    var sub = stage[1];
+    // Say how long to expect from the start, and keep saying it, so the wait is never a surprise.
+    if (i < STAGES.length) sub += ' Expect ' + progSay(progExpected) + (progExpected >= 50 ? ' for these files. Keep this page open.' : '.');
+    if (a) a.textContent = stage[0];
+    if (b) b.textContent = sub;
   }
   function progStop() {
     clearInterval(progTimer); progTimer = null;
@@ -3362,7 +3386,7 @@ async function findComps() {
     if (files.length > 12) { status.textContent = 'Up to 12 PDFs at a time.'; status.style.color = '#c0392b'; return; }
 
     status.textContent = '';
-    progStart(files.length);
+    progStart(files);
 
     var fd = new FormData();
     files.forEach(function (f) { fd.append('files', f, f.name); });
