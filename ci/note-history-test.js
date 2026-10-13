@@ -34,7 +34,9 @@ function reset() {
     { id: 'n3', property_id: B, subfolder: 'mls_data', content: MLS(PROPS[1].address), updated_at: '2026-10-01T00:00:00Z' },
     { id: 'n4', property_id: B, subfolder: 'seller_net_sheet', content: 'B SHEET V2 CURRENT', updated_at: '2026-10-05T23:00:00Z' },
     { id: 'n5', property_id: B, subfolder: 'cma', content: 'B CMA CURRENT', updated_at: '2026-10-04T00:00:00Z' },
-    { id: 'n6', property_id: B, subfolder: 'listing_remarks', content: 'B DESCRIPTION CURRENT', updated_at: '2026-10-04T00:00:00Z' }
+    { id: 'n6', property_id: B, subfolder: 'listing_remarks', content: 'B DESCRIPTION CURRENT', updated_at: '2026-10-04T00:00:00Z' },
+    { id: 'n7', property_id: B, subfolder: 'seller_prep', content: 'B PREP CURRENT', updated_at: '2026-10-04T00:00:00Z' },
+    { id: 'n8', property_id: B, subfolder: 'campaign_letter', content: 'B LETTER CURRENT', updated_at: '2026-10-04T00:00:00Z' }
   ];
   hist = [];
   const add = (p, sf, c, by, at) => hist.push({ id: ++hid, property_id: p, subfolder: sf, content: c, saved_by: by, saved_at: at });
@@ -45,6 +47,14 @@ function reset() {
   add(B, 'cma', 'B CMA EARLIER', 'Niki Lang', '2026-10-01T00:00:00Z');
   add(B, 'cma', 'B CMA CURRENT', 'Marc Cashin', '2026-10-04T00:00:00Z');
   add(B, 'listing_remarks', 'B DESCRIPTION CURRENT', null, '2026-10-04T00:00:00Z');
+  // MLS Data, Seller Prep and the campaign letter (lists added Oct 13, 2026)
+  add(B, 'mls_data', 'B MLS EARLIER', 'Niki Lang', '2026-09-28T00:00:00Z');
+  add(B, 'mls_data', MLS(PROPS[1].address), 'Marc Cashin', '2026-10-01T00:00:00Z');
+  add(B, 'seller_prep', 'B PREP EARLIER', 'Charlotte Lee', '2026-10-02T00:00:00Z');
+  add(B, 'seller_prep', 'B PREP CURRENT', 'Marc Cashin', '2026-10-04T00:00:00Z');
+  add(B, 'campaign_letter', 'B LETTER EARLIER', 'Charlotte Lee', '2026-10-02T00:00:00Z');
+  add(B, 'campaign_letter', 'B LETTER CURRENT', 'Marc Cashin', '2026-10-04T00:00:00Z');
+  add(A, 'mls_data', MLS(PROPS[0].address), null, '2026-10-01T00:00:00Z');
 }
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function saveNote(b) {   // what the database function plus its history trigger do
@@ -174,8 +184,38 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/A SHEET ONLY VERSION/.test(s.page) && !s.listOnScreen, 'A shows its own sheet and no Previous versions list', s.toggle);
   ok(!/B SHEET/.test(s.page), 'nothing of B\'s on A', null);
 
+  console.log('MLS Data, Seller Prep and the campaign letter list their earlier versions too');
+  await open(B, 'MLS Data');
+  s = await see('mls_data', true, 0);
+  ok(/^Saved .*2026.* by Marc Cashin$/.test(s.current), 'MLS Data: when and by whom the one on screen was saved', s.current);
+  ok(/Previous versions \(1\)/i.test(s.toggle) && s.openText === 'B MLS EARLIER' && /Niki Lang/.test(s.rows[0]), 'MLS Data: one earlier version, opens its text, names the agent', s);
+  await open(B, 'Seller Prep Guide');
+  s = await see('seller_prep', true, 0);
+  ok(/^Saved .*2026.* by Marc Cashin$/.test(s.current) && /Previous versions \(1\)/i.test(s.toggle) && s.openText === 'B PREP EARLIER' && /Charlotte Lee/.test(s.rows[0]), 'Seller Prep: saved line, one earlier version, opens, names the agent', s);
+  const openLetter = () => page.evaluate(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.campOpenPreview(); await new Promise(r => setTimeout(r, 300));
+    st.campOpenSection = '__letter__'; await new Promise(r => setTimeout(r, 200));
+  });
+  await page.evaluate(async (id) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; await st.lstOpenProperty(st.lstProperties.find(p => p.id === id)); await new Promise(r => setTimeout(r, 300)); }, B);
+  await openLetter();
+  s = await see('campaign_letter', true, 0);
+  ok(/^Saved .*2026.* by Marc Cashin$/.test(s.current) && /Previous versions \(1\)/i.test(s.toggle) && s.openText === 'B LETTER EARLIER', 'campaign letter: saved line, one earlier version, opens its text', s);
+  sent = [];
+  await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.campLetterEditVal = 'B LETTER REWRITTEN TODAY'; await st.campSaveNow('letter', 'letter'); await new Promise(r => setTimeout(r, 600)); });
+  s = await see('campaign_letter', true, 0);
+  ok(/Previous versions \(2\)/i.test(s.toggle) && s.openText === 'B LETTER CURRENT' && /by Marc Cashin$/.test(s.current), 'campaign letter: a new save is listed without reopening, the letter it replaced first', s);
+  ok(sent.filter(x => /property_note_history/.test(x.u)).length === 0, 'the letter save never writes the history table itself', sent.map(x => x.m + ' ' + x.u));
+  await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.campClosePreview && st.campClosePreview(); st.campOpenSection = null; await new Promise(r => setTimeout(r, 200)); });
+  await open(A, 'MLS Data');
+  s = await see('mls_data', false);
+  ok(!s.listOnScreen && /^Saved /.test(s.current) && !/B MLS/.test(s.page), 'A: MLS Data saved once, no list, nothing of B\'s', s.toggle);
+
   console.log('History cannot be loaded');
   mode.histFails = true;
+  await open(B, 'MLS Data');
+  s = await see('mls_data', false);
+  ok(/could not be loaded/i.test(s.error) && /MLS Data above is the current one/.test(s.error) && !s.listOnScreen, 'MLS Data: says earlier versions could not be loaded', s.error);
   await open(B, 'Seller Net Sheet');
   s = await see('seller_net_sheet', false);
   ok(/Net Proceeds/.test(s.page), 'the current net sheet still shows', null);
