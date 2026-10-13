@@ -6093,6 +6093,23 @@ body {
                     <button class="btn-gold" @click="mlsSaveManual" :disabled="lstActiveProp.status==='running'||lstActiveProp.status==='submitted'||mlsSaving" style="width:100%;margin-top:4px;">
                       <span class="spinner" v-if="mlsSaving"></span>{{ mlsSaving ? '' : 'Save MLS Data' }}
                     </button>
+                    <!-- Previous versions of this listing's MLS Data (kept by the database, read only here) -->
+                    <div v-if="lstHistCurrent('mls_data')" data-hist-current="mls_data" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('mls_data') }}</div>
+                    <div v-if="lstHistError" data-hist-error="mls_data" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The MLS Data above is the current one.</div>
+                    <div v-if="lstHistFor('mls_data').length" data-hist="mls_data" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='mls_data' ? null : 'mls_data'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('mls_data').length }}) {{ lstHistOpen==='mls_data' ? '▲' : '▼' }}</div>
+                      <div v-if="lstHistOpen==='mls_data'" style="margin-top:6px;">
+                        <div v-for="h in lstHistFor('mls_data')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                          <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                            <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                          </div>
+                          <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                            <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                            <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                 </div>
@@ -6424,6 +6441,23 @@ body {
                       <button @click="sellerPrepAddingSi=null;sellerPrepNewLabel=''" style="font-size:11px;padding:6px 10px;border-radius:6px;border:1px solid #e5e7eb;cursor:pointer;background:#fff;color:#6b7280;">Cancel</button>
                     </div>
                     <button v-else @click="sellerPrepAddingSi=si;sellerPrepNewLabel=''" style="margin-top:6px;font-size:11px;font-weight:600;color:var(--gold);background:none;border:none;cursor:pointer;padding:4px 0;">+ Add item to this section</button>
+                  </div>
+                  <!-- Previous versions of this listing's saved checklist -->
+                  <div v-if="lstHistCurrent('seller_prep')" data-hist-current="seller_prep" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('seller_prep') }}</div>
+                  <div v-if="lstHistError" data-hist-error="seller_prep" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The checklist above is the current one.</div>
+                  <div v-if="lstHistFor('seller_prep').length" data-hist="seller_prep" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                    <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='seller_prep' ? null : 'seller_prep'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('seller_prep').length }}) {{ lstHistOpen==='seller_prep' ? '▲' : '▼' }}</div>
+                    <div v-if="lstHistOpen==='seller_prep'" style="margin-top:6px;">
+                      <div v-for="h in lstHistFor('seller_prep')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                        <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                          <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                        </div>
+                        <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                          <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                          <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -6904,6 +6938,23 @@ body {
                           {{ campSavedFlash==='letter' ? '✓ Saved' : (campSaveState==='saving' ? 'Saving…' : 'Save Letter') }}
                         </button>
                         <span style="font-family:'Montserrat',sans-serif;font-size:7.5px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);">Also saves on its own as you type</span>
+                      </div>
+                      <!-- Previous versions of this listing's letter. Every autosave is a version. -->
+                      <div v-if="lstHistCurrent('campaign_letter')" data-hist-current="campaign_letter" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:10px;">{{ lstHistCurrent('campaign_letter') }}</div>
+                      <div v-if="lstHistError" data-hist-error="campaign_letter" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}). The letter above is the current one.</div>
+                      <div v-if="lstHistFor('campaign_letter').length" data-hist="campaign_letter" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                        <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='campaign_letter' ? null : 'campaign_letter'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#0d1f35;">Previous versions ({{ lstHistFor('campaign_letter').length }}) {{ lstHistOpen==='campaign_letter' ? '▲' : '▼' }}</div>
+                        <div v-if="lstHistOpen==='campaign_letter'" style="margin-top:6px;">
+                          <div v-for="h in lstHistFor('campaign_letter')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                            <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#1f2937;">
+                              <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                            </div>
+                            <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                              <div data-hist-text style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;">{{ h.content }}</div>
+                              <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                     <div v-else-if="!campLetterIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
@@ -22469,6 +22520,10 @@ const CHANGELOG = [
       {
         title: 'Seller Prep Guide Belongs to One Listing',
         detail: 'Until today, an item you removed or added in the Seller Prep Guide on one listing was still removed or added when you opened the next listing. Saving or sending the guide could then give a seller a checklist made for someone else.\n\nNow each listing opens with its own checklist: the one you last saved for that listing, with your removed items gone and your own items in place, or the standard checklist if nothing has been saved yet. The Seller Prep Guide on the Just Listed page always starts from the standard checklist.\n\nIf a listing\'s saved checklist was rewritten by hand in the campaign editor, the guide says so and shows the standard checklist. Your saved text is not touched unless you press Save.\n\nHow to use: Open a listing, then Seller Prep Guide. Remove or add items, then press Save before you leave the listing.\n\nBest practice: Press Save as soon as the checklist is right. Changes you do not save are gone when you open another listing, by design, so they can never reach the wrong seller.'
+      },
+      {
+        title: 'Previous Versions of MLS Data, the Prep Guide and the Letter',
+        detail: 'MLS Data, the Seller Prep Guide and the campaign letter now show when and by whom the saved version was saved, and list every earlier version, the same way the net sheet, CMA and description already do. Open one to read it in full or copy it.\n\nThe campaign letter saves on its own as you type, so its list can grow quickly. The newest versions are at the top.\n\nHow to use: Open a listing, then MLS Data or Seller Prep Guide, and click Previous versions under it. For the letter, open the campaign editor and the letter section.\n\nBest practice: Before you change a list price or HOA fee in MLS Data, glance at Previous versions. The net sheet reads both from MLS Data, so you can see what the figures were before.'
       }
     ]
   }
