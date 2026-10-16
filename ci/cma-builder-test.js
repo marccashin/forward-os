@@ -1276,12 +1276,14 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   // The listing's address.
   console.log('The listing\'s address');
   page = await os('Marc Cashin', '/');
-  const sp = await page.evaluate(() => ['1415 Riverside Ave. Baltimore, MD', '4202 Woodland Dr Fairfax, VA', '601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004', '2909 7th st NW, DC 20001', '13717 Martin Rd'].map((a) => fosSplitListingAddress(a)));
+  const sp = await page.evaluate(() => ['1415 Riverside Ave. Baltimore, MD', '4202 Woodland Dr Fairfax, VA', '601 Pennsylvania Ave NW, Unit #1403, Washington, DC 20004', '2909 7th st NW, DC 20001', '13717 Martin Rd', '4200 Mass. Ave Unit 106 Washington, DC 20016', '123 Main St #4 Bethesda, MD 20814'].map((a) => fosSplitListingAddress(a)));
   ok(sp[0].street === '1415 Riverside Ave.' && sp[0].city === 'Baltimore' && sp[0].state === 'MD' && sp[0].unsure === true, '"1415 Riverside Ave. Baltimore, MD" is the street, Baltimore, MD, marked to check (City used to read MD)', sp[0]);
   ok(sp[1].street === '4202 Woodland Dr' && sp[1].city === 'Fairfax' && sp[1].state === 'VA', '"4202 Woodland Dr Fairfax, VA" the same', sp[1]);
   ok(sp[2].street === '601 Pennsylvania Ave NW, Unit #1403' && sp[2].city === 'Washington' && sp[2].state === 'DC' && sp[2].zip === '20004' && sp[2].unsure === false, 'a fully written address is split as before, not marked, and the city has no comma left on it', sp[2]);
   ok(sp[3].street === '2909 7th st NW' && sp[3].city === '' && sp[3].state === 'DC' && sp[3].zip === '20001' && sp[3].unsure === true, 'a state with no city goes to State, never to City, and is marked to check', sp[3]);
   ok(sp[4].street === '13717 Martin Rd' && sp[4].state === '' && sp[4].unsure === false, 'a street on its own is left alone', sp[4]);
+  ok(sp[5].street === '4200 Mass. Ave Unit 106' && sp[5].city === 'Washington' && sp[5].state === 'DC' && sp[5].zip === '20016' && sp[5].unsure === true, 'a unit between the street and the city stays with the street and the city is found (Oct 16)', sp[5]);
+  ok(sp[6].street === '123 Main St #4' && sp[6].city === 'Bethesda' && sp[6].state === 'MD', 'the same with a # unit', sp[6]);
   await page.context().close();
   table = [];
   page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { address: '1415 Riverside Ave.', city: 'Baltimore', state: 'MD', addressUnsure: true }));
