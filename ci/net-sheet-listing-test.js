@@ -222,6 +222,13 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     return { r1, shown, r2: st.ns.result };
   });
   ok(s.r1 === null && /missing the ZIP code/.test(s.shown || '') && s.r2 !== null, 'standalone: no ZIP, no sheet and the reason shown; with the ZIP it calculates', s);
+  s = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ns.address = '4200 Mass. Ave Unit 106 Washington, DC 20016'; st.ns.jurisdiction = 'dc'; st.ns.result = null;
+    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    return { r: st.ns.result, problem: st.nsAddrProblem };
+  });
+  ok(s.r !== null && s.problem === '', 'a unit written before the city with no comma ("4200 Mass. Ave Unit 106 Washington, DC 20016", Marc Oct 16) is a full address and calculates', s);
   console.log('New Listing: no default state, and Market must agree with the State box');
   s = await run(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;

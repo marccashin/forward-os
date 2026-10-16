@@ -8701,6 +8701,11 @@ function fosSplitListingAddress(addr) {
       if (last > -1) {
         let end = last;
         while (end + 1 < tok.length && QUAD.test(tok[end + 1])) end++;
+        // A unit written between the street and the city stays with the street (Oct 16, 2026):
+        // "4200 Mass. Ave Unit 106 Washington, DC 20016" found no city, so the net sheet refused
+        // a full address ("missing the city") and the CMA prefill left City blank.
+        if (end + 1 < tok.length && /^#\S*\d/.test(tok[end + 1])) end++;
+        else if (end + 2 < tok.length && /^(unit|apt|apartment|suite|ste|#)\.?$/i.test(tok[end + 1]) && /\d/.test(tok[end + 2])) end += 2;
         const tail = tok.slice(end + 1);
         if (tail.length && tail.length <= 3 && tail.every(w => /^[A-Za-z.'\-]+$/.test(w)) && !/^(unit|apt|suite|ste|floor|fl)$/i.test(tail[0])) {
           city = tail.join(' ');
@@ -22646,6 +22651,18 @@ const CHANGELOG = [
       {
         title: 'The CMA Builder Says How Long a Big MLS File Takes',
         detail: 'A Bright export with many properties in it takes longer to read: about 2 minutes for 16. The CMA Builder used to say Almost there after a few seconds and then sit on it, which looked like it had stopped. It now tells you at the start how long to expect for the files you added, and if a read runs long it says it is still reading.\n\nHow to use: Add your MLS sheets as before. Read the line under the progress bar for how long to expect.\n\nBest practice: Keep the page open until the review window appears. Nothing is lost by waiting, and closing the page stops the read.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-10-16',
+    date: 'October 16, 2026',
+    title: 'Net Sheet Accepts a Unit Before the City',
+    summary: 'A listing address with the unit written before the city, such as "4200 Mass. Ave Unit 106 Washington, DC 20016", no longer stops the net sheet.',
+    updates: [
+      {
+        title: 'Full Address With a Unit Now Calculates',
+        detail: 'When a listing\'s address had a unit between the street and the city and no comma, the net sheet said the city was missing and would not calculate, even though the address was complete. It now reads the unit as part of the street and finds the city. The CMA Builder fills the City box from the same address.\n\nHow to use: Nothing changes. Open the net sheet inside the listing and press Calculate.\n\nBest practice: Write listing addresses as "street, unit, city, state ZIP" with commas, for example "4200 Massachusetts Ave NW, Unit 106, Washington, DC 20016". Every tool reads that form without guessing.'
       }
     ]
   }
