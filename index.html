@@ -32,6 +32,7 @@
 .dp-tab-on{color:var(--navy,#0A2342);border-bottom-color:var(--gold,#C8A96E)}
 .dp-wrap{display:flex;flex-direction:column;gap:18px;font-family:'Montserrat',sans-serif;color:var(--navy,#0A2342)}
 .dp-note{font-size:13px;color:#5c5a55;line-height:1.5;background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:14px 16px}
+.dp-rename{border:1px solid #d9b45a;background:#fff8e6;}
 .dp-err{font-size:13px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 14px}
 .dp-err-line{font-size:12px;color:#b91c1c;margin-top:4px}
 .dp-stage{background:#0A2342;color:#F7F4EF;border-radius:12px;padding:20px 22px}
@@ -5989,6 +5990,10 @@ body {
           <div v-if="lstDetailTab==='progress'" class="dp-wrap">
             <div v-if="dp.loading" class="dp-note">Loading what the team has done…</div>
             <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
+            <div v-if="!dp.loading && dpRenameDeal" class="dp-note dp-rename" role="note">
+              <div class="dp-kicker">Rename the deal card</div>
+              This Follow Up Boss deal card is named after a person, not the property. Put the property address in the Follow Up Boss deal card's name field, not the seller's name. FORWARD OS uses it as the listing's address.
+            </div>
             <!-- Not in the Command Center yet: the deal's stage in Follow Up Boss and the guide for it (Oct 17, 2026) -->
             <template v-if="!dp.loading && dp.ccMissing && !dp.error">
               <section class="dp-stage" aria-label="Where the deal is">
@@ -12943,8 +12948,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       } catch (e) {
         if (dp.forId === id) dp.error = 'Deal Progress could not be loaded: ' + fosWhy(e);
       }
-      // Not in the Command Center yet: where the deal is in Follow Up Boss instead.
-      if (dp.forId === id && !dp.error && !dp.cc && !dp.closed) {
+      // Where the deal is in Follow Up Boss: the stage for a listing the Command Center
+      // does not have yet, and for every listing whether the deal card is named after a
+      // person instead of the address (Marc, Oct 17, 2026).
+      if (dp.forId === id && !dp.error && !dp.closed) {
         try {
           const res = await fetch(RAILWAY_URL + '/api/fub/listing-stage?property_id=' + encodeURIComponent(id));
           await fosOk(res, 'could not load');
@@ -12972,6 +12979,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const dpStage = computed(() => (dp.cc && dp.cc.stage) || '');
     const dpFubStage = computed(() => (!dp.cc && !dp.closed && dp.fub && dp.fub.found && dp.fub.stage) || '');
     const dpPre = computed(() => DP_PRE[dpFubStage.value] || null);
+    // The guide (Seller Engaged): put the property address in the deal card's name, not the
+    // seller's name. Shown on any open seller deal whose name is a person's.
+    const dpRenameDeal = computed(() => !dp.closed && !!dp.fub && dp.fub.found === true && dp.fub.name_is_address === false);
     const dpAgentItems = computed(() => dp.items.filter(i => i.owner === 'agent'));
     const dpConciergeItems = computed(() => dp.items.filter(i => i.owner !== 'agent'));
     // When the deal entered this stage: the Command Center opens the stage's lists then.
@@ -23304,6 +23314,10 @@ const CHANGELOG = [
       {
         title: 'Before the Listing Agreement Is Signed',
         detail: 'A listing that has not reached Listing Agreement Signed now shows its stage in Follow Up Boss and since when, your next steps for that stage, and what Concierge, Transactions and the automations do at that step, all from the If This, Then That guide. If FORWARD OS cannot find the listing\'s Follow Up Boss deal, it says so and what to do.\n\nHow to use: Open the listing and press Deal Progress. Work down Your Next Steps. There is nothing to tick until the deal card reaches Listing Agreement Signed, when Concierge\'s checklist and Transactions\' Open To Close file begin.\n\nBest practice: Put the property address in the Follow Up Boss deal card\'s name field. That is how FORWARD OS finds the deal when the listing was not created from it.'
+      },
+      {
+        title: 'Rename a Deal Card Named After the Seller',
+        detail: 'If the Follow Up Boss deal card for a listing is named after the seller instead of the property, Deal Progress shows a reminder at the top: put the property address in the deal card\'s name field. FORWARD OS uses that name as the listing\'s address, so a seller\'s name there leaves the listing without a real address.\n\nHow to use: Open the deal card in Follow Up Boss, change its name to the full property address, and save. The reminder goes away the next time you open Deal Progress.\n\nBest practice: Name the deal card with the address the day you create it at Seller Engaged, as the If This, Then That guide says.'
       }
     ]
   }
@@ -25983,7 +25997,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,

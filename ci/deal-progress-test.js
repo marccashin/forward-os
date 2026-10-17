@@ -39,9 +39,11 @@ const P5 = { id: '55555555-5555-4555-8555-555555555555', address: '77 No Deal Av
 const P6 = { id: '66666666-6666-4666-8666-666666666666', address: '88 Listed Ln, Rockville, MD 20850', seller_name: 'Seller Six', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-10-04T00:00:00Z' };
 const P7 = { id: '77777777-7777-4777-8777-777777777777', address: '99 Broken Blvd, Arlington, VA 22201', seller_name: 'Seller Seven', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-10-03T00:00:00Z' };
 const FUB_STAGE = {
-  '22222222-2222-4222-8222-222222222222': { status: 200, body: { found: true, how: 'linked', deal_id: 940, pipeline: 'Sellers', stage: 'Listing App. Scheduled', entered_stage_at: '2026-10-09T15:00:00Z' } },
+  '22222222-2222-4222-8222-222222222222': { status: 200, body: { found: true, how: 'linked', deal_id: 940, pipeline: 'Sellers', stage: 'Listing App. Scheduled', entered_stage_at: '2026-10-09T15:00:00Z', name_is_address: false } },
+  '11111111-1111-4111-8111-111111111111': { status: 200, body: { found: true, how: 'address', deal_id: 899, pipeline: 'Sellers', stage: 'Listed', entered_stage_at: '2026-10-01T15:00:00Z', name_is_address: true } },
+  '33333333-3333-4333-8333-333333333333': { status: 200, body: { found: true, how: 'linked', deal_id: 777, pipeline: 'Sellers', stage: 'Pending', entered_stage_at: '2026-10-01T15:00:00Z', name_is_address: false } },
   '55555555-5555-4555-8555-555555555555': { status: 200, body: { found: false, how: 'none', count: 0 } },
-  '66666666-6666-4666-8666-666666666666': { status: 200, body: { found: true, how: 'address', deal_id: 941, pipeline: 'Sellers', stage: 'Listed', entered_stage_at: '2026-10-01T15:00:00Z' } },
+  '66666666-6666-4666-8666-666666666666': { status: 200, body: { found: true, how: 'address', deal_id: 941, pipeline: 'Sellers', stage: 'Listed', entered_stage_at: '2026-10-01T15:00:00Z', name_is_address: true } },
   '77777777-7777-4777-8777-777777777777': { status: 502, body: { detail: 'Follow Up Boss could not be read: 401 Unauthorized' } }
 };
 // Seller post-closing records: Ruxton closed 60 days ago (its Command Center listing is
@@ -226,7 +228,18 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/Stage in Follow Up Boss\s*Listed/i.test(t) && t.includes('The Command Center has no active listing at this address. Concierge can link it by hand'), 'a listing past the agreement but missing from the Command Center is flagged', t.slice(0, 400));
   await open(P7); await progress(); t = await text();
   ok(t.includes('its stage in Follow Up Boss could not be read') && t.includes('401 Unauthorized'), 'a failed Follow Up Boss read is said with its reason', t.slice(0, 400));
-  ok(!seen.some(s => /listing-stage\?property_id=(11111111|33333333|44444444)/.test(s.u)), 'never asks Follow Up Boss for a listing the Command Center has or that is closed');
+  ok(!seen.some(s => /listing-stage\?property_id=44444444/.test(s.u)), 'never asks Follow Up Boss for a closed listing');
+  // Rename reminder: a deal card named after a person, on any open listing
+  await open(P2); await progress(); t = await text();
+  ok(t.includes("This Follow Up Boss deal card is named after a person, not the property. Put the property address in the Follow Up Boss deal card's name field, not the seller's name. FORWARD OS uses it as the listing's address.") && await page.locator('.dp-rename').count() === 1, 'a deal named after a person gets the rename reminder, in the guide\'s words', t.slice(0, 500));
+  await open(P6); await progress();
+  ok(await page.locator('.dp-rename').count() === 0, 'a deal named with its address gets no reminder');
+  await open(P7); await progress();
+  ok(await page.locator('.dp-rename').count() === 0, 'a failed Follow Up Boss read shows no reminder');
+  await open(P3); await progress(); t = await text();
+  ok(await page.locator('.dp-rename').count() === 1 && /Stage now\s*Pending/i.test(t) && !/Stage in Follow Up Boss/.test(t), 'a Command Center listing whose deal is named after a person also gets the reminder; its stage still comes from the Command Center', t.slice(0, 400));
+  await open(P1); await progress();
+  ok(await page.locator('.dp-rename').count() === 0, 'a Command Center listing named with its address gets none');
 
   // ── a closed deal: only that Concierge runs post-closing, and it is safe to archive ──
   await open(P4); await progress();
@@ -235,7 +248,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day(60));
     const want = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
     ok(/Closed/i.test(t) && t.toLowerCase().includes(want.toLowerCase()) && t.includes('Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client.') && t.includes('It is now safe to archive this listing card in FORWARD OS.'), 'a closed deal says Concierge runs post-closing and it is safe to archive, with the closing date as written', t.slice(0, 500));
-    ok(!/Stage in Follow Up Boss|No Follow Up Boss Sellers deal/.test(t) && await page.locator('.dp-lane').count() === 0 && await page.locator('.dp-agent').count() === 0, 'a closed deal shows no checklists, no Transactions lane and no Follow Up Boss stage');
+    ok(!/Stage in Follow Up Boss|No Follow Up Boss Sellers deal/.test(t) && await page.locator('.dp-lane').count() === 0 && await page.locator('.dp-agent').count() === 0 && await page.locator('.dp-rename').count() === 0, 'a closed deal shows no checklists, no Transactions lane, no Follow Up Boss stage and no rename reminder');
   }
   await open(P2); await progress();
   t = await text();
