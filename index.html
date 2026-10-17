@@ -6039,7 +6039,7 @@ body {
                 <div v-if="!dpConciergeItems.length" class="dp-meta" style="padding:10px 0;">Nothing on Concierge's list for this stage.</div>
                 <div v-for="item in dpConciergeItems" :key="item.id" class="dp-row">
                   <span :class="['dp-dot', item.completed ? 'dp-dot-done' : '']" aria-hidden="true">{{ item.completed ? '✓' : '' }}</span>
-                  <div><div class="dp-tt">{{ item.title }}</div><div :class="item.completed ? 'dp-meta' : 'dp-meta-open'">{{ item.completed ? dpDoneLabel(item) : dpOpenLabel(item.created_at, dp.loadedAt) }}</div></div>
+                  <div><div class="dp-tt">{{ item.title }}</div><div :class="item.completed || dpIsWaiting(item) ? 'dp-meta' : 'dp-meta-open'">{{ item.completed ? dpDoneLabel(item) : dpItemOpenLabel(item, dp.loadedAt) }}</div></div>
                 </div>
               </div>
 
@@ -9219,6 +9219,22 @@ function dpOpenDays(ts, now) {
   const t = new Date(ts).getTime();
   if (isNaN(t)) return null;
   return Math.max(0, Math.floor(((now || Date.now()) - t) / 86400000));
+}
+// Concierge rows that wait on an event (Marc, Oct 17, 2026): worded as the event that
+// ends them, and not overdue while they wait, so they show "Waiting" instead of days
+// open. Word for word the waiting: true rows of the Command Center's
+// src/lib/conciergeTasks.js; change both together.
+const DP_WAITING = new Set([
+  'Clear to close received from Transactions',
+  'All contingencies cleared',
+  'Post-closing plan started in Command Center (if not, mark closed manually)',
+  'Closing gift ready in office'
+]);
+function dpIsWaiting(item) {
+  return !!item && DP_WAITING.has(String(item.title || '').trim());
+}
+function dpItemOpenLabel(item, now) {
+  return dpIsWaiting(item) ? 'Waiting · not overdue while it waits' : dpOpenLabel(item && item.created_at, now);
 }
 function dpOpenLabel(ts, now) {
   const n = dpOpenDays(ts, now);
@@ -23117,6 +23133,10 @@ const CHANGELOG = [
       {
         title: 'Your Own Items, Ticked by You',
         detail: 'The gold Agent Responsibility box lists what is yours to do at this stage, word for word from the If This, Then That guide. Tick each job as you finish it: your tick shows in the Command Center with your name and the time, so Concierge knows without asking. Under Keep in mind are the habits and reminders for the stage, such as the Monday Weekly Status Report. They have no box because they are never done once and for all.\n\nHow to use: Tick the box beside an item when it is done. Untick it if you ticked it by mistake. If a tick could not be saved, the box goes back and a red line says why.\n\nBest practice: Move the deal card in Follow Up Boss the moment the stage changes. The new stage\'s items for you, Concierge and Transactions start from that move.'
+      },
+      {
+        title: 'Waiting Items Are Not Late',
+        detail: 'Some of Concierge\'s items wait on something to happen first, such as the clear to close or all contingencies clearing. These now read as that event and say Waiting instead of how many days they have been open, because they are not late while they wait. Concierge\'s weekly habits, such as checking that your Weekly Status Report went out, are no longer on the checklist: they repeat every week and are never done once and for all.\n\nHow to use: In Deal Progress, an item marked Waiting needs nothing from anyone yet. An item marked Open with a number of days is the one being worked on.\n\nBest practice: If an item has said Waiting for longer than you expect, ask Concierge what it is waiting on.'
       }
     ]
   }
@@ -25796,7 +25816,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
