@@ -42,9 +42,7 @@ function items() {
     { id: 'c2', listing_id: L, owner: 'concierge', title: 'Post Active listing content on social media', sort_order: 1, completed: true, completed_at: null, completed_by: null, created_at: ago(5) },
     { id: 'c3', listing_id: L, owner: 'concierge', title: 'EVERY MONDAY — Ensure agent has sent Weekly Status Report to seller', sort_order: 2, completed: false, completed_at: null, completed_by: null, created_at: ago(5) },
     { id: 'a1', listing_id: L, owner: 'agent', title: 'Make sure the showing instructions in ShowingTime are set up and clear.', sort_order: 0, completed: true, completed_at: '2026-10-04T13:00:00Z', completed_by: 'Marc Cashin', created_at: ago(5) },
-    { id: 'a2', listing_id: L, owner: 'agent', title: 'Every Monday: send the Weekly Status Report to your seller. Concierge checks that it went out.', sort_order: 1, completed: false, completed_at: null, completed_by: null, created_at: ago(5) },
-    { id: 'a3', listing_id: L, owner: 'agent', title: 'Once under contract: update the price, commission and close date on the Follow Up Boss deal card, slide it to Pending, and change the Follow Up Boss lead stage to Listing Pending.', sort_order: 2, completed: false, created_at: ago(5) },
-    { id: 'a4', listing_id: L, owner: 'agent', title: 'Send the ratified contract to Transactions: FORWARD OS, Agent Tools, Contract to Close (Listing Agent).', sort_order: 3, completed: false, created_at: ago(5) },
+    { id: 'a4', listing_id: L, owner: 'agent', title: 'Send the ratified contract to Transactions: FORWARD OS, Agent Tools, Contract to Close (Listing Agent).', sort_order: 1, completed: false, completed_at: null, completed_by: null, created_at: ago(5) },
     { id: 'p1', listing_id: L3, owner: 'concierge', title: 'LINKED LISTING ITEM', sort_order: 0, completed: false, created_at: ago(1) }
   ];
 }
@@ -136,7 +134,9 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   let t = await text();
   ok(/Stage now\s*Listed/i.test(t) && t.includes('You are here'), 'stage now and the strip', t.slice(0, 300));
   ok(t.includes('In Listed since'), 'says since when (from when the stage\'s lists were opened)');
-  ok(await page.locator('.dp-agent .dp-row-tick').count() === 4 && t.includes('1 of 4 done'), 'agent box: the four agent items, one done');
+  ok(await page.locator('.dp-agent .dp-row-tick').count() === 2 && t.includes('1 of 2 done'), 'agent box: the two agent tasks, one done');
+  const rem = await page.locator('.dp-agent .dp-reminder').allInnerTexts();
+  ok(/Keep in mind/i.test(t) && rem.length === 2 && rem[0].includes('Every Monday: send the Weekly Status Report to your seller. Concierge checks that it went out.') && rem[1].includes('Once under contract: update the price') && await page.locator('.dp-agent .dp-reminder input').count() === 0, 'Listed reminders shown word for word under Keep in mind, with no box', rem);
   ok(t.includes('Done Oct 3, 2:14 PM · Abby Lee'), 'Concierge item: who and when', t);
   ok(/Post Active listing content on social media\s*Done\s*\n/.test(t + '\n') && !/Post Active listing content on social media\s*Done (Oct|by)/.test(t), 'Concierge item ticked before stamps: Done with no invented date');
   ok(t.includes('Open 5 days'), 'open Concierge item: how long');
@@ -157,15 +157,15 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
   // ── an agent tick ──
   seen.length = 0;
-  await page.locator('.dp-row-tick', { hasText: 'Every Monday: send the Weekly Status Report' }).locator('input').check(); await page.waitForTimeout(400);
+  await page.locator('.dp-row-tick', { hasText: 'Send the ratified contract' }).locator('input').check(); await page.waitForTimeout(400);
   const patches = seen.filter(s => s.m === 'PATCH');
-  ok(patches.length === 1 && /id=eq\.a2/.test(patches[0].u) && /owner=eq\.agent/.test(patches[0].u), 'a tick sends one request, for that agent row only', patches.map(p => p.u));
+  ok(patches.length === 1 && /id=eq\.a4/.test(patches[0].u) && /owner=eq\.agent/.test(patches[0].u), 'a tick sends one request, for that agent row only', patches.map(p => p.u));
   ok(patches.length === 1 && JSON.stringify(JSON.parse(patches[0].body)) === JSON.stringify({ completed: true, completed_by: 'Marc Cashin' }), 'with completed and the signed-in agent\'s name, nothing else', patches[0] && patches[0].body);
   t = await text();
-  ok(t.includes('2 of 4 done') && t.includes('Done Oct 17, 10:05 AM · Marc Cashin'), 'the stamp the database returned is shown', t.slice(0, 1200));
+  ok(t.includes('2 of 2 done') && t.includes('Done Oct 17, 10:05 AM · Marc Cashin'), 'the stamp the database returned is shown', t.slice(0, 1200));
   // untick
   seen.length = 0;
-  await page.locator('.dp-row-tick', { hasText: 'Every Monday: send the Weekly Status Report' }).locator('input').uncheck(); await page.waitForTimeout(400);
+  await page.locator('.dp-row-tick', { hasText: 'Send the ratified contract' }).locator('input').uncheck(); await page.waitForTimeout(400);
   ok(seen.filter(s => s.m === 'PATCH').length === 1 && JSON.parse(seen.find(s => s.m === 'PATCH').body).completed === false, 'an untick sends completed false');
   // failed tick
   mode.tickFail = true;

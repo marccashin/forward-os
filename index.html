@@ -48,6 +48,7 @@
 .dp-now .dp-strip-label,.dp-past .dp-strip-label{color:#F7F4EF}
 .dp-here{font-size:10px;color:#dfc28e;font-weight:700}
 .dp-agent{background:#fff8ea;border:1px solid #C8A96E;border-radius:10px;padding:16px 18px}
+.dp-reminder .dp-tt{font-weight:400}
 .dp-agent-name{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#7a6340}
 .dp-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 .dp-lane{background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:16px 18px;min-width:0;display:flex;flex-direction:column}
@@ -6009,8 +6010,8 @@ body {
             </section>
 
             <!-- The agent's own items -->
-            <section v-if="dp.cc && dpAgentItems.length" class="dp-agent" aria-label="Agent responsibility">
-              <div class="dp-lane-hd"><div class="dp-agent-name">Agent Responsibility</div><div class="dp-count">{{ dpAgentItems.filter(i => i.completed).length }} of {{ dpAgentItems.length }} done</div></div>
+            <section v-if="dp.cc && (dpAgentItems.length || (DP_REMINDERS[dpStage] || []).length)" class="dp-agent" aria-label="Agent responsibility">
+              <div class="dp-lane-hd"><div class="dp-agent-name">Agent Responsibility</div><div v-if="dpAgentItems.length" class="dp-count">{{ dpAgentItems.filter(i => i.completed).length }} of {{ dpAgentItems.length }} done</div></div>
               <div v-for="item in dpAgentItems" :key="item.id">
                 <label class="dp-row dp-row-tick">
                   <input type="checkbox" :checked="item.completed" :disabled="!!dp.busy[item.id]" @change="dpTick(item)">
@@ -6021,7 +6022,14 @@ body {
                   </div>
                 </label>
               </div>
-              <div class="dp-foot">Your ticks show in the Command Center with your name and the time.</div>
+              <div v-if="dpAgentItems.length" class="dp-foot">Your ticks show in the Command Center with your name and the time.</div>
+              <template v-if="(DP_REMINDERS[dpStage] || []).length">
+                <div class="dp-kicker" style="margin-top:14px;">Keep in mind</div>
+                <div v-for="(r, ri) in DP_REMINDERS[dpStage]" :key="'r' + ri" class="dp-row dp-reminder">
+                  <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                  <div class="dp-tt">{{ r }}</div>
+                </div>
+              </template>
             </section>
 
             <section v-if="!dp.loading && !dp.error" class="dp-lanes" aria-label="This stage">
@@ -9110,6 +9118,33 @@ const DP_AUTOMATIONS = {
     "Email to Concierge and Operations: “Just Sold Post Needed”.",
     "The Command Center starts the 365 day post-closing program. Every touchpoint gets a due date counted from the closing date. Concierge is emailed that the deal moved.",
     "A note is added to your Follow Up Boss lead record: Concierge will reach out when it is time for you to follow up with your client."
+  ]
+};
+
+// The agent's REMINDERS for each stage: always shown, never ticked (Marc, Oct 17, 2026): weekly
+// habits, moves done by sliding the deal card, things Concierge does. Word for word the same as
+// AGENT_LISTING_REMINDERS in the Command Center (src/lib/agentListingTasks.js), from the guide.
+// The agent's TASKS are rows in the Command Center (owner = agent), ticked below.
+const DP_REMINDERS = {
+  "Listing Agreement Signed": [
+    "Expect Concierge to contact you to schedule and coordinate listing photos.",
+    "Going Coming Soon? Once all information is loaded and accurate in Bright, slide the Follow Up Boss deal card to Coming Soon and tell Transactions to mark it Coming Soon in the MLS.",
+    "Every Tuesday morning Concierge emails the team “Open Houses This Week (Reply All Requested)”. Reply all by 5 PM Wednesday with the address, date and time of every open house you are hosting that weekend, so Concierge can post it on social media and Transactions can send the Active Pipe emails.",
+    "Do not mark the property live until Concierge has sent the seller the “Listing Launch Week” email.",
+    "When the home is ready for showings: update the status in Bright to Active, slide the Follow Up Boss deal card to Listed, and change the Follow Up Boss lead stage to Active Listing."
+  ],
+  "Listed": [
+    "Every Monday: send the Weekly Status Report to your seller. Concierge checks that it went out.",
+    "Once under contract: update the price, commission and close date on the Follow Up Boss deal card, slide it to Pending, and change the Follow Up Boss lead stage to Listing Pending."
+  ],
+  "Back on the Market": [
+    "Every Monday: send the Weekly Status Report to your seller."
+  ],
+  "Pending": [
+    "Communicate with your sellers at least twice a week.",
+    "Watch your email for inspection and appraisal communication. Negotiate and notify as needed.",
+    "Concierge will tell you when the team closing gift is ready for you at the Mass Ave office.",
+    "Once officially closed: slide the Follow Up Boss deal card to Closed This Quarter. This starts the post-closing program."
   ]
 };
 
@@ -23081,7 +23116,7 @@ const CHANGELOG = [
       },
       {
         title: 'Your Own Items, Ticked by You',
-        detail: 'The gold Agent Responsibility box lists what is yours to do at this stage, word for word from the If This, Then That guide. Tick each one as you finish it. Your tick shows in the Command Center with your name and the time, so Concierge knows without asking.\n\nHow to use: Tick the box beside an item when it is done. Untick it if you ticked it by mistake. If a tick could not be saved, the box goes back and a red line says why.\n\nBest practice: Move the deal card in Follow Up Boss the moment the stage changes. The new stage\'s items for you, Concierge and Transactions start from that move.'
+        detail: 'The gold Agent Responsibility box lists what is yours to do at this stage, word for word from the If This, Then That guide. Tick each job as you finish it: your tick shows in the Command Center with your name and the time, so Concierge knows without asking. Under Keep in mind are the habits and reminders for the stage, such as the Monday Weekly Status Report. They have no box because they are never done once and for all.\n\nHow to use: Tick the box beside an item when it is done. Untick it if you ticked it by mistake. If a tick could not be saved, the box goes back and a red line says why.\n\nBest practice: Move the deal card in Follow Up Boss the moment the stage changes. The new stage\'s items for you, Concierge and Transactions start from that move.'
       }
     ]
   }
@@ -25761,7 +25796,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
