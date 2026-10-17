@@ -30,6 +30,15 @@ const ago = d => new Date(NOW - d * DAY - 3600000).toISOString();
 const P1 = { id: '11111111-1111-4111-8111-111111111111', address: '138 U Street Northeast, Washington, DC 20002', seller_name: 'Seller One', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-10-08T00:00:00Z' };
 const P2 = { id: '22222222-2222-4222-8222-222222222222', address: '9 Nowhere Road, Bethesda, MD 20814', seller_name: 'Seller Two', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-10-07T00:00:00Z' };
 const P3 = { id: '33333333-3333-4333-8333-333333333333', address: '500 Linked Lane, Arlington, VA 22201', seller_name: 'Seller Three', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-10-06T00:00:00Z' };
+const P4 = { id: '44444444-4444-4444-8444-444444444444', address: '1926 Ruxton Rd, Baltimore MD 21204', seller_name: 'Seller Four', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-05-23T00:00:00Z' };
+const day = d => ago(d).slice(0, 10);
+// Seller post-closing records: Ruxton closed 60 days ago (its Command Center listing is
+// archived, so only the address ties them); 9 Nowhere Road closed two years ago, an older
+// deal at that address, which must not mark today's listing closed.
+const PC = [
+  { id: 'pc1', address: '1926 Ruxton Rd, Baltimore, MD 21204', closing_date: day(60), listing_id: 'cc-archived-ruxton', created_at: ago(60) },
+  { id: 'pc2', address: '9 Nowhere Rd, Bethesda, MD 20814', closing_date: day(730), listing_id: null, created_at: ago(730) }
+];
 const CC = [
   { id: 'cc000001-0000-4000-8000-000000000001', address: '138 U St NE', stage: 'Listed', status: 'active', agent: 'Marc Cashin', os_property_id: null },
   { id: 'cc000003-0000-4000-8000-000000000003', address: 'Something else entirely 1', stage: 'Pending', status: 'active', agent: 'Marc Cashin', os_property_id: P3.id },
@@ -72,7 +81,8 @@ function api(route) {
   const req = route.request(), u = decodeURIComponent(req.url()), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
   if (/\/rest\/v1\/(listings|listing_checklist_items|task_history|otc_)/.test(u)) seen.push({ m, u, body: req.postData() });
-  if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, [P1, P2, P3]);
+  if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, [P1, P2, P3, P4]);
+  if (m === 'GET' && /\/rest\/v1\/seller_post_closing\?/.test(u)) return J(route, 200, PC);
   if (m === 'GET' && /\/rest\/v1\/listings\?/.test(u)) {
     if (mode.ccFail) return J(route, 500, { message: 'database is down' });
     const link = q(u, 'os_property_id');
@@ -190,6 +200,19 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await progress();
   t = await text();
   ok(t.includes('not in the Command Center yet') && t.includes('No Open To Close file found') && !t.includes('Abby Lee') && !t.includes('138 U'), 'a listing with no Command Center or Open To Close match shows nothing of the last one', t.slice(0, 500));
+
+  // ── a closed deal: only that Concierge runs post-closing, and it is safe to archive ──
+  await open(P4); await progress();
+  t = await text();
+  {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day(60));
+    const want = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
+    ok(/Closed/i.test(t) && t.toLowerCase().includes(want.toLowerCase()) && t.includes('Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client.') && t.includes('It is now safe to archive this listing card in FORWARD OS.'), 'a closed deal says Concierge runs post-closing and it is safe to archive, with the closing date as written', t.slice(0, 500));
+    ok(!t.includes('not in the Command Center yet') && await page.locator('.dp-lane').count() === 0 && await page.locator('.dp-agent').count() === 0, 'a closed deal shows no checklists, no Transactions lane and no not-in-Command-Center note');
+  }
+  await open(P2); await progress();
+  t = await text();
+  ok(t.includes('not in the Command Center yet') && !/post-closing program/.test(t), 'an old closing at the same address does not mark a new listing closed');
 
   // ── hand link wins over the address ──
   await open(P3); await progress();

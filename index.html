@@ -5991,6 +5991,12 @@ body {
             <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
             <div v-if="!dp.loading && dp.ccMissing && !dp.error" class="dp-note">This listing is not in the Command Center yet, so there are no Concierge or agent items to show. It is added when the Follow Up Boss deal card reaches Listing Agreement Signed. Concierge can also link it by hand from the listing in the Command Center.</div>
 
+            <div v-if="!dp.loading && dp.closed" class="dp-note dp-closed">
+              <div class="dp-kicker">Closed<template v-if="dp.closed.closing_date"> · {{ dpClosingDay(dp.closed.closing_date) }}</template></div>
+              Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client. It is now safe to archive this listing card in FORWARD OS.
+            </div>
+
+            <template v-if="!dp.closed">
             <!-- Where the deal is -->
             <section v-if="dp.cc" class="dp-stage" aria-label="Where the deal is">
               <div class="dp-stage-top">
@@ -6092,6 +6098,7 @@ body {
                 </div>
               </details>
             </section>
+            </template>
 
             <button type="button" class="dp-link" @click="dpLoad(lstActiveProp)" :disabled="dp.loading">Refresh</button>
           </div>
@@ -9212,6 +9219,23 @@ function dpDay(ts) {
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+}
+// A closing date is a calendar date ("2026-05-27"), not a moment: read it as written,
+// never through a time zone (new Date("2026-05-27") is the evening of May 26 in DC).
+function dpClosingDay(d) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d || ''));
+  if (!m) return '';
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return months[+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
+}
+// The seller post-closing record that says this listing has closed, or null.
+function dpPickClosed(osAddress, cc, pcs, now) {
+  const recent = pc => { const t = new Date(pc.closing_date || pc.created_at || 0).getTime(); return !isNaN(t) && t > 0 && (now - t) < 400 * 86400000; };
+  const hits = (pcs || []).filter(pc =>
+    (cc && pc.listing_id === cc.id) ||
+    (!(cc && cc.status === 'active') && dpSameAddress(osAddress, pc.address) && recent(pc)));
+  hits.sort((a, b) => String(b.closing_date || b.created_at || '').localeCompare(String(a.closing_date || a.created_at || '')));
+  return hits[0] || null;
 }
 // Whole days an item has been open (0 on its first day).
 function dpOpenDays(ts, now) {
@@ -12764,10 +12788,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // sends completed and the agent's name; the database stamps the time
     // (forward-command-center supabase/2026-10-17_task_history.sql).
     const lstDetailTab = ref('tools');
-    const dp = reactive({ forId: null, loading: false, error: '', cc: null, ccMissing: false, items: [], history: [],
+    const dp = reactive({ forId: null, loading: false, error: '', cc: null, ccMissing: false, closed: null, items: [], history: [],
       otc: null, otcOthers: 0, otcTasks: [], otcError: '', showAllOtc: false, busy: {}, tickError: {}, loadedAt: 0 });
     function dpReset() {
-      dp.forId = null; dp.loading = false; dp.error = ''; dp.cc = null; dp.ccMissing = false; dp.items = []; dp.history = [];
+      dp.forId = null; dp.loading = false; dp.error = ''; dp.cc = null; dp.ccMissing = false; dp.closed = null; dp.items = []; dp.history = [];
       dp.otc = null; dp.otcOthers = 0; dp.otcTasks = []; dp.otcError = ''; dp.showAllOtc = false; dp.busy = {}; dp.tickError = {}; dp.loadedAt = 0;
     }
     async function dpGet(path) {
@@ -12789,8 +12813,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           if (hits.length > 1) dp.error = 'The Command Center has ' + hits.length + ' listings at this address. Concierge can link the right one from the listing in the Command Center.';
         }
         if (dp.forId !== id) return;
-        dp.cc = cc; dp.ccMissing = !cc;
-        if (cc) {
+        // Closed (Marc, Oct 17, 2026): once the deal is in the Command Center's seller
+        // post-closing program, the agent sees only that Concierge is running it. The
+        // post-closing record belongs to this listing when it names the Command Center
+        // listing, or, with no active Command Center listing, when it is at the same
+        // address and closed within the last 400 days (an older sale at the address is
+        // a different deal).
+        const pcs = await dpGet('seller_post_closing?select=id,address,closing_date,listing_id,created_at');
+        if (dp.forId !== id) return;
+        dp.closed = dpPickClosed(prop.address, cc, pcs, Date.now());
+        dp.cc = cc; dp.ccMissing = !cc && !dp.closed;
+        if (cc && !dp.closed) {
           dp.items = await dpGet('listing_checklist_items?select=*&listing_id=eq.' + cc.id + '&order=sort_order.asc');
           dp.history = await dpGet('task_history?select=owner,stage,title,completed,completed_at,completed_by,removed_at&source=eq.listing_checklist_items&parent_id=eq.' + cc.id + '&order=removed_at.desc');
         }
@@ -23137,6 +23170,10 @@ const CHANGELOG = [
       {
         title: 'Waiting Items Are Not Late',
         detail: 'Some of Concierge\'s items wait on something to happen first, such as the clear to close or all contingencies clearing. These now read as that event and say Waiting instead of how many days they have been open, because they are not late while they wait. Concierge\'s weekly habits, such as checking that your Weekly Status Report went out, are no longer on the checklist: they repeat every week and are never done once and for all.\n\nHow to use: In Deal Progress, an item marked Waiting needs nothing from anyone yet. An item marked Open with a number of days is the one being worked on.\n\nBest practice: If an item has said Waiting for longer than you expect, ask Concierge what it is waiting on.'
+      },
+      {
+        title: 'Closed Deals Say So',
+        detail: 'Once a deal has closed and is in Concierge\'s 365 day post-closing program, Deal Progress shows the closing date and one line: Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client. The checklists are no longer shown, because the post-closing program is run entirely by Concierge.\n\nHow to use: When Deal Progress says the deal is closed, go back to All Listings and archive the listing card.\n\nBest practice: Archive closed listings so your list shows only the deals you are working.'
       }
     ]
   }
@@ -25816,7 +25853,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
