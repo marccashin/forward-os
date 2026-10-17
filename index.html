@@ -5989,7 +5989,53 @@ body {
           <div v-if="lstDetailTab==='progress'" class="dp-wrap">
             <div v-if="dp.loading" class="dp-note">Loading what the team has done…</div>
             <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
-            <div v-if="!dp.loading && dp.ccMissing && !dp.error" class="dp-note">This listing is not in the Command Center yet, so there are no Concierge or agent items to show. It is added when the Follow Up Boss deal card reaches Listing Agreement Signed. Concierge can also link it by hand from the listing in the Command Center.</div>
+            <!-- Not in the Command Center yet: the deal's stage in Follow Up Boss and the guide for it (Oct 17, 2026) -->
+            <template v-if="!dp.loading && dp.ccMissing && !dp.error">
+              <section class="dp-stage" aria-label="Where the deal is">
+                <template v-if="dpFubStage">
+                  <div class="dp-stage-top">
+                    <div>
+                      <div class="dp-kicker">Stage in Follow Up Boss</div>
+                      <div class="dp-stage-name">{{ dpFubStage }}</div>
+                    </div>
+                    <div v-if="dp.fub.entered_stage_at" class="dp-stage-since">In {{ dpFubStage }} since {{ dpDay(dp.fub.entered_stage_at) }}</div>
+                  </div>
+                  <div v-if="dpFubNote(dpFubStage)" class="dp-stage-since" style="margin-top:12px;color:rgba(255,255,255,.82);">{{ dpFubNote(dpFubStage) }}</div>
+                </template>
+                <div v-else-if="dp.fubError" class="dp-err-line">This listing is not in the Command Center yet, and its stage in Follow Up Boss could not be read: {{ dp.fubError }}</div>
+                <div v-else-if="dp.fub && dp.fub.how === 'ambiguous'" class="dp-meta">Follow Up Boss has {{ dp.fub.count }} Sellers deals named with this address, so FORWARD OS cannot tell which one is this listing.</div>
+                <div v-else class="dp-meta">No Follow Up Boss Sellers deal was found for this listing. Create the deal card in the Sellers pipeline at Seller Engaged, with the property address as its name.</div>
+              </section>
+
+              <template v-if="dpPre">
+                <section class="dp-agent" aria-label="Your next steps">
+                  <div class="dp-lane-hd"><div class="dp-agent-name">Your Next Steps</div></div>
+                  <div v-for="(y, yi) in dpPre.you" :key="'y' + yi" class="dp-row dp-reminder">
+                    <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                    <div class="dp-tt">{{ y }}</div>
+                  </div>
+                  <div class="dp-foot">From the If This, Then That guide. Nothing to tick until the deal card reaches Listing Agreement Signed.</div>
+                </section>
+                <section class="dp-lanes" aria-label="This stage">
+                  <div class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Concierge</div><div class="dp-lane-who">Abby Lee · Command Center</div></div></div>
+                    <div v-if="!dpPre.concierge.length" class="dp-meta" style="padding:10px 0;">Nothing for this team at this step.</div>
+                    <div v-for="(c, ci) in dpPre.concierge" :key="'c' + ci" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ c }}</div></div>
+                  </div>
+                  <div v-if="!dp.otc" class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Transactions</div><div class="dp-lane-who">Sofia Burton · Open To Close</div></div></div>
+                    <div v-if="!dpPre.transactions.length" class="dp-meta" style="padding:10px 0;">Nothing for this team at this step.</div>
+                    <div v-for="(t, ti) in dpPre.transactions" :key="'t' + ti" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ t }}</div></div>
+                    <div class="dp-foot">The Open To Close file starts once the listing agreement is signed.</div>
+                  </div>
+                  <div class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What happens on its own</div></div></div>
+                    <div class="dp-meta" style="padding:10px 0 2px;">{{ dpPre.trigger }}:</div>
+                    <div v-for="(a, ai) in dpPre.auto" :key="'a' + ai" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ a }}</div></div>
+                  </div>
+                </section>
+              </template>
+            </template>
 
             <div v-if="!dp.loading && dp.closed" class="dp-note dp-closed">
               <div class="dp-kicker">Closed<template v-if="dp.closed.closing_date"> · {{ dpClosingDay(dp.closed.closing_date) }}</template></div>
@@ -6038,7 +6084,7 @@ body {
               </template>
             </section>
 
-            <section v-if="!dp.loading && !dp.error" class="dp-lanes" aria-label="This stage">
+            <section v-if="!dp.loading && !dp.error && (!dpPre || dp.otc)" class="dp-lanes" aria-label="This stage">
               <!-- Concierge -->
               <div v-if="dp.cc" class="dp-lane">
                 <div class="dp-lane-hd"><div><div class="dp-lane-name">Concierge</div><div class="dp-lane-who">Abby Lee · Command Center</div></div><div class="dp-count">{{ dpConciergeItems.filter(i => i.completed).length }} of {{ dpConciergeItems.length }} done</div></div>
@@ -9219,6 +9265,73 @@ function dpDay(ts) {
   const d = new Date(ts);
   if (isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+}
+// Before Listing Agreement Signed the Command Center has nothing for a listing, so Deal
+// Progress shows the deal's stage in Follow Up Boss (backend GET /api/fub/listing-stage)
+// and what the If This, Then That guide says happens at that stage (Marc, Oct 17, 2026).
+// Word for word from FORWARD_If_This_Then_That.pdf (October 2026), sections 2, 3 and 4.
+// Listing App. Complete has no section of its own: the guide's next steps there are the
+// last two of section 3 and then section 4 (the FWRD Seller Onboarding tag).
+const DP_PRE = {
+  "Seller Engaged": {
+    "trigger": "You create the Follow Up Boss deal card in the Sellers pipeline",
+    "auto": [
+      "A listing card for this property is created in FORWARD OS under your name."
+    ],
+    "you": [
+      "Put the property address in the Follow Up Boss deal card's name field, not the seller's name. FORWARD OS uses it as the listing's address.",
+      "Slide the Follow Up Boss deal card to Listing App. Scheduled once the appointment is booked."
+    ],
+    "concierge": [],
+    "transactions": []
+  },
+  "Listing App. Scheduled": {
+    "trigger": "You slide the Follow Up Boss deal card to Listing App. Scheduled",
+    "auto": [
+      "Email to Transactions: “Listing Agreement Needed”.",
+      "Follow Up Boss starts the Listing Appointment Prep Checklist, if it is not already running from Appointment Set."
+    ],
+    "you": [
+      "Review the sample Listing Agreement from Transactions before the appointment, so you can walk the seller through it.",
+      "After the appointment, slide the Follow Up Boss deal card to Listing App. Complete.",
+      "Next day: change the Follow Up Boss lead stage to Intent to Sell or Nurture, based on how the appointment went.",
+      "When the seller is ready to move forward: add the tag FWRD Seller Onboarding to the Follow Up Boss lead record. This starts onboarding."
+    ],
+    "concierge": [],
+    "transactions": [
+      "Drafts a sample Listing Agreement PDF and sends it to you to review with the seller at the appointment."
+    ]
+  },
+  "Listing App. Complete": {
+    "trigger": "You add the tag FWRD Seller Onboarding to the Follow Up Boss lead record",
+    "auto": [
+      "Follow Up Boss starts your “Seller Onboarding” action plan.",
+      "A note is added to your Follow Up Boss lead record: go to FORWARD OS, Agent Tools, and fill out the Listing Agreement and Disclosure Request."
+    ],
+    "you": [
+      "Next day: change the Follow Up Boss lead stage to Intent to Sell or Nurture, based on how the appointment went.",
+      "When the seller is ready to move forward: add the tag FWRD Seller Onboarding to the Follow Up Boss lead record. This starts onboarding.",
+      "In FORWARD OS, go to Agent Tools and fill out the Listing Agreement and Disclosure Request.",
+      "Review and approve the Listing Agreement and disclosures PDF that Transactions sends you, so Transactions can send it to the sellers for signatures.",
+      "Next day: follow up with the sellers if the Listing Agreement and disclosures have not been signed.",
+      "Only after the Listing Agreement and disclosures are signed: slide the Follow Up Boss deal card to Listing Agreement Signed and change the Follow Up Boss lead stage to Pre-Listing."
+    ],
+    "concierge": [],
+    "transactions": [
+      "Prepares the Listing Agreement and disclosures from your request in FORWARD OS.",
+      "Sends you the PDF of the Listing Agreement and disclosures to review and approve. Nothing goes to the sellers before you approve.",
+      "Once you approve, sends the Listing Agreement and disclosures to the sellers for signatures."
+    ]
+  }
+};
+const DP_FUB_AFTER_AGREEMENT = ['Listing Agreement Signed', 'Coming Soon', 'Listed', 'Back on the Market', 'Pending'];
+const DP_FUB_CLOSED = ['Closed This Quarter', 'Total Closed This Year', 'Previous Year', 'Total'];
+function dpFubNote(stage) {
+  if (DP_PRE[stage]) return "Concierge's checklist and Transactions' Open To Close file start when the deal card reaches Listing Agreement Signed.";
+  if (DP_FUB_AFTER_AGREEMENT.includes(stage)) return 'The Command Center has no active listing at this address. Concierge can link it by hand from the listing in the Command Center.';
+  if (DP_FUB_CLOSED.includes(stage)) return 'The Command Center has no post-closing program for this address. Ask Concierge.';
+  if (stage === 'Terminated') return 'This deal was terminated in Follow Up Boss.';
+  return '';
 }
 // A closing date is a calendar date ("2026-05-27"), not a moment: read it as written,
 // never through a time zone (new Date("2026-05-27") is the evening of May 26 in DC).
@@ -12788,10 +12901,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // sends completed and the agent's name; the database stamps the time
     // (forward-command-center supabase/2026-10-17_task_history.sql).
     const lstDetailTab = ref('tools');
-    const dp = reactive({ forId: null, loading: false, error: '', cc: null, ccMissing: false, closed: null, items: [], history: [],
+    const dp = reactive({ forId: null, loading: false, error: '', cc: null, ccMissing: false, closed: null, fub: null, fubError: '', items: [], history: [],
       otc: null, otcOthers: 0, otcTasks: [], otcError: '', showAllOtc: false, busy: {}, tickError: {}, loadedAt: 0 });
     function dpReset() {
-      dp.forId = null; dp.loading = false; dp.error = ''; dp.cc = null; dp.ccMissing = false; dp.closed = null; dp.items = []; dp.history = [];
+      dp.forId = null; dp.loading = false; dp.error = ''; dp.cc = null; dp.ccMissing = false; dp.closed = null; dp.fub = null; dp.fubError = ''; dp.items = []; dp.history = [];
       dp.otc = null; dp.otcOthers = 0; dp.otcTasks = []; dp.otcError = ''; dp.showAllOtc = false; dp.busy = {}; dp.tickError = {}; dp.loadedAt = 0;
     }
     async function dpGet(path) {
@@ -12830,6 +12943,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       } catch (e) {
         if (dp.forId === id) dp.error = 'Deal Progress could not be loaded: ' + fosWhy(e);
       }
+      // Not in the Command Center yet: where the deal is in Follow Up Boss instead.
+      if (dp.forId === id && !dp.error && !dp.cc && !dp.closed) {
+        try {
+          const res = await fetch(RAILWAY_URL + '/api/fub/listing-stage?property_id=' + encodeURIComponent(id));
+          await fosOk(res, 'could not load');
+          const fub = await res.json();
+          if (dp.forId === id) dp.fub = fub;
+        } catch (e) {
+          if (dp.forId === id) dp.fubError = fosWhy(e);
+        }
+      }
       try {
         const props = await dpGet('otc_properties?select=id,address,status,task_count,done_count,tasks_polled_at');
         if (dp.forId !== id) return;
@@ -12846,6 +12970,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (tab === 'progress' && lstActiveProp.value && dp.forId !== lstActiveProp.value.id) dpLoad(lstActiveProp.value);
     }
     const dpStage = computed(() => (dp.cc && dp.cc.stage) || '');
+    const dpFubStage = computed(() => (!dp.cc && !dp.closed && dp.fub && dp.fub.found && dp.fub.stage) || '');
+    const dpPre = computed(() => DP_PRE[dpFubStage.value] || null);
     const dpAgentItems = computed(() => dp.items.filter(i => i.owner === 'agent'));
     const dpConciergeItems = computed(() => dp.items.filter(i => i.owner !== 'agent'));
     // When the deal entered this stage: the Command Center opens the stage's lists then.
@@ -23174,6 +23300,10 @@ const CHANGELOG = [
       {
         title: 'Closed Deals Say So',
         detail: 'Once a deal has closed and is in Concierge\'s 365 day post-closing program, Deal Progress shows the closing date and one line: Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client. The checklists are no longer shown, because the post-closing program is run entirely by Concierge.\n\nHow to use: When Deal Progress says the deal is closed, go back to All Listings and archive the listing card.\n\nBest practice: Archive closed listings so your list shows only the deals you are working.'
+      },
+      {
+        title: 'Before the Listing Agreement Is Signed',
+        detail: 'A listing that has not reached Listing Agreement Signed now shows its stage in Follow Up Boss and since when, your next steps for that stage, and what Concierge, Transactions and the automations do at that step, all from the If This, Then That guide. If FORWARD OS cannot find the listing\'s Follow Up Boss deal, it says so and what to do.\n\nHow to use: Open the listing and press Deal Progress. Work down Your Next Steps. There is nothing to tick until the deal card reaches Listing Agreement Signed, when Concierge\'s checklist and Transactions\' Open To Close file begin.\n\nBest practice: Put the property address in the Follow Up Boss deal card\'s name field. That is how FORWARD OS finds the deal when the listing was not created from it.'
       }
     ]
   }
@@ -25853,7 +25983,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
