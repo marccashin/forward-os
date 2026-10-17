@@ -5988,6 +5988,10 @@ body {
           </div>
 
           <div v-if="lstDetailTab==='progress'" class="dp-wrap">
+            <!-- "How it works": the If This, Then That guide every line of Deal Progress comes from (Marc, Oct 17, 2026) -->
+            <div class="dp-howto" style="display:flex;justify-content:flex-end;margin:0 0 10px;font-size:13px;">
+              <a href="/guides/FORWARD_If_This_Then_That.pdf" target="_blank" rel="noopener" @click="dpGuideClick" style="color:var(--navy);font-weight:600;text-decoration:underline;">How it works</a>
+            </div>
             <div v-if="dp.loading" class="dp-note">Loading what the team has done…</div>
             <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
             <div v-if="!dp.loading && dpRenameDeal" class="dp-note dp-rename" role="note">
@@ -22336,6 +22340,14 @@ No markdown. Valid JSON only.`;
       setTimeout(() => URL.revokeObjectURL(a.href), 10000);
       pdfView.shareNote = 'Saved as ' + file.name + '.';
     }
+    // Deal Progress "How it works": the If This, Then That guide. On a computer the link opens the
+    // PDF in a new tab; on a phone it opens in the app's own viewer, because a link to a PDF
+    // replaces the home-screen app with no way back (same reason as sellerGuideClick).
+    function dpGuideClick(ev) {
+      if (!fosIsPhone()) return;
+      ev.preventDefault();
+      pdfViewOpen('/guides/FORWARD_If_This_Then_That.pdf', 'How it works: If This, Then That', 'FORWARD_If_This_Then_That.pdf');
+    }
     function sellerGuideClick(ev) {
       if (!sellerGuideUrl.value || !fosIsPhone()) return;   // computer: the link downloads the file
       ev.preventDefault();
@@ -23291,7 +23303,7 @@ const CHANGELOG = [
   },
   {
     id: 'v2026-10-17',
-    date: 'October 17, 2026',
+    date: 'October 19, 2026',
     title: 'Deal Progress: See Who Has Done What on Your Listing',
     summary: 'Every listing now has a Deal Progress tab next to Listing Tools. It shows the stage, your own items for that stage, what Concierge and Transactions have done and what is next, and what moving the deal card set off.',
     updates: [
@@ -23318,6 +23330,10 @@ const CHANGELOG = [
       {
         title: 'Rename a Deal Card Named After the Seller',
         detail: 'If the Follow Up Boss deal card for a listing is named after the seller instead of the property, Deal Progress shows a reminder at the top: put the property address in the deal card\'s name field. FORWARD OS uses that name as the listing\'s address, so a seller\'s name there leaves the listing without a real address.\n\nHow to use: Open the deal card in Follow Up Boss, change its name to the full property address, and save. The reminder goes away the next time you open Deal Progress.\n\nBest practice: Name the deal card with the address the day you create it at Seller Engaged, as the If This, Then That guide says.'
+      },
+      {
+        title: 'How It Works: The Guide Behind Deal Progress',
+        detail: 'Deal Progress has a How it works link at the top. It opens the If This, Then That guide: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Every line in Deal Progress comes from this guide.\n\nHow to use: Open a listing, press Deal Progress, then press How it works. On a phone it opens inside FORWARD OS; press Back to return.\n\nBest practice: Read the guide once from start to finish, then use Deal Progress day to day. When you are unsure what moving a deal card will set off, check the guide first.'
       }
     ]
   }
@@ -25899,7 +25915,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, pdfView, pdfViewClose, pdfViewShare,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
