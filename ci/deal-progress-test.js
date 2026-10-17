@@ -41,6 +41,7 @@ function items() {
     { id: 'c1', listing_id: L, owner: 'concierge', title: 'Confirm listing is live on MLS, Zillow, and Realtor.com', sort_order: 0, completed: true, completed_at: '2026-10-03T18:14:00Z', completed_by: 'Abby Lee', created_at: ago(5) },
     { id: 'c2', listing_id: L, owner: 'concierge', title: 'Post Active listing content on social media', sort_order: 1, completed: true, completed_at: null, completed_by: null, created_at: ago(5) },
     { id: 'c3', listing_id: L, owner: 'concierge', title: 'EVERY MONDAY — Ensure agent has sent Weekly Status Report to seller', sort_order: 2, completed: false, completed_at: null, completed_by: null, created_at: ago(5) },
+    { id: 'c4', listing_id: L, owner: 'concierge', title: 'Clear to close received from Transactions', sort_order: 3, completed: false, completed_at: null, completed_by: null, created_at: ago(9) },
     { id: 'a1', listing_id: L, owner: 'agent', title: 'Make sure the showing instructions in ShowingTime are set up and clear.', sort_order: 0, completed: true, completed_at: '2026-10-04T13:00:00Z', completed_by: 'Marc Cashin', created_at: ago(5) },
     { id: 'a4', listing_id: L, owner: 'agent', title: 'Send the ratified contract to Transactions: FORWARD OS, Agent Tools, Contract to Close (Listing Agent).', sort_order: 1, completed: false, completed_at: null, completed_by: null, created_at: ago(5) },
     { id: 'p1', listing_id: L3, owner: 'concierge', title: 'LINKED LISTING ITEM', sort_order: 0, completed: false, created_at: ago(1) }
@@ -140,6 +141,10 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(t.includes('Done Oct 3, 2:14 PM · Abby Lee'), 'Concierge item: who and when', t);
   ok(/Post Active listing content on social media\s*Done\s*\n/.test(t + '\n') && !/Post Active listing content on social media\s*Done (Oct|by)/.test(t), 'Concierge item ticked before stamps: Done with no invented date');
   ok(t.includes('Open 5 days'), 'open Concierge item: how long');
+  {
+    const w = await page.locator('.dp-row', { hasText: 'Clear to close received from Transactions' }).innerText();
+    ok(/Waiting/.test(w) && !/Open \d+ day/.test(w), 'an item waiting on an event says Waiting, not days open', w);
+  }
   ok(!t.includes('LINKED LISTING ITEM'), 'another Command Center listing\'s items never show');
   const otcReq = seen.filter(s => /otc_tasks/.test(s.u));
   ok(otcReq.length === 1 && /property_id=eq\.1471375/.test(otcReq[0].u) && /removed_at=is\.null/.test(otcReq[0].u), 'Open To Close: only the newest file\'s tasks are read', otcReq.map(s => s.u));
