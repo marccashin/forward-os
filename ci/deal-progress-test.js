@@ -32,6 +32,18 @@ const P2 = { id: '22222222-2222-4222-8222-222222222222', address: '9 Nowhere Roa
 const P3 = { id: '33333333-3333-4333-8333-333333333333', address: '500 Linked Lane, Arlington, VA 22201', seller_name: 'Seller Three', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-10-06T00:00:00Z' };
 const P4 = { id: '44444444-4444-4444-8444-444444444444', address: '1926 Ruxton Rd, Baltimore MD 21204', seller_name: 'Seller Four', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-05-23T00:00:00Z' };
 const day = d => ago(d).slice(0, 10);
+// Listings the Command Center does not have: their Follow Up Boss stage comes from the
+// backend (GET /api/fub/listing-stage). P2 is at Listing App. Scheduled; P5 has no deal;
+// P6 is at Listed (so the Command Center should have it); P7's read fails.
+const P5 = { id: '55555555-5555-4555-8555-555555555555', address: '77 No Deal Ave, Silver Spring, MD 20910', seller_name: 'Seller Five', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-10-05T00:00:00Z' };
+const P6 = { id: '66666666-6666-4666-8666-666666666666', address: '88 Listed Ln, Rockville, MD 20850', seller_name: 'Seller Six', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-10-04T00:00:00Z' };
+const P7 = { id: '77777777-7777-4777-8777-777777777777', address: '99 Broken Blvd, Arlington, VA 22201', seller_name: 'Seller Seven', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-10-03T00:00:00Z' };
+const FUB_STAGE = {
+  '22222222-2222-4222-8222-222222222222': { status: 200, body: { found: true, how: 'linked', deal_id: 940, pipeline: 'Sellers', stage: 'Listing App. Scheduled', entered_stage_at: '2026-10-09T15:00:00Z' } },
+  '55555555-5555-4555-8555-555555555555': { status: 200, body: { found: false, how: 'none', count: 0 } },
+  '66666666-6666-4666-8666-666666666666': { status: 200, body: { found: true, how: 'address', deal_id: 941, pipeline: 'Sellers', stage: 'Listed', entered_stage_at: '2026-10-01T15:00:00Z' } },
+  '77777777-7777-4777-8777-777777777777': { status: 502, body: { detail: 'Follow Up Boss could not be read: 401 Unauthorized' } }
+};
 // Seller post-closing records: Ruxton closed 60 days ago (its Command Center listing is
 // archived, so only the address ties them); 9 Nowhere Road closed two years ago, an older
 // deal at that address, which must not mark today's listing closed.
@@ -81,7 +93,8 @@ function api(route) {
   const req = route.request(), u = decodeURIComponent(req.url()), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
   if (/\/rest\/v1\/(listings|listing_checklist_items|task_history|otc_)/.test(u)) seen.push({ m, u, body: req.postData() });
-  if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, [P1, P2, P3, P4]);
+  if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, [P1, P2, P3, P4, P5, P6, P7]);
+  if (m === 'GET' && /\/api\/fub\/listing-stage\?/.test(u)) { seen.push({ m, u }); const r = FUB_STAGE[q(u, 'property_id')] || { status: 404, body: { detail: 'No FORWARD OS listing with that id.' } }; return J(route, r.status, r.body); }
   if (m === 'GET' && /\/rest\/v1\/seller_post_closing\?/.test(u)) return J(route, 200, PC);
   if (m === 'GET' && /\/rest\/v1\/listings\?/.test(u)) {
     if (mode.ccFail) return J(route, 500, { message: 'database is down' });
@@ -199,7 +212,21 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(await page.getByRole('tab', { name: 'Listing Tools' }).getAttribute('aria-selected') === 'true', 'the next listing opens on Listing Tools');
   await progress();
   t = await text();
-  ok(t.includes('not in the Command Center yet') && t.includes('No Open To Close file found') && !t.includes('Abby Lee') && !t.includes('138 U'), 'a listing with no Command Center or Open To Close match shows nothing of the last one', t.slice(0, 500));
+  ok(!t.includes('138 U') && !t.includes('Done Oct 3') && !t.includes('Send the ratified contract') && !t.includes('Send client portal invite'), 'a listing with no Command Center or Open To Close match shows nothing of the last one', t.slice(0, 500));
+  // Not in the Command Center: its stage in Follow Up Boss and the guide for that stage
+  ok(seen.some(s => /\/api\/fub\/listing-stage\?property_id=22222222-2222-4222-8222-222222222222/.test(s.u)), 'asks the backend for the listing\'s Follow Up Boss stage by its id');
+  ok(/Stage in Follow Up Boss\s*Listing App\. Scheduled/i.test(t) && t.includes('In Listing App. Scheduled since Oct 9'), 'says the Follow Up Boss stage and since when', t.slice(0, 400));
+  ok(t.includes("Concierge's checklist and Transactions' Open To Close file start when the deal card reaches Listing Agreement Signed."), 'says what starts the next lists');
+  ok(t.includes('Review the sample Listing Agreement from Transactions before the appointment, so you can walk the seller through it.') && t.includes('When the seller is ready to move forward: add the tag FWRD Seller Onboarding to the Follow Up Boss lead record. This starts onboarding.') && await page.locator('.dp-agent input').count() === 0, 'your next steps word for word from the guide, with no tick boxes');
+  ok(t.includes('Drafts a sample Listing Agreement PDF and sends it to you to review with the seller at the appointment.') && t.includes('The Open To Close file starts once the listing agreement is signed.') && /Concierge[\s\S]*Nothing for this team at this step\./.test(t), 'Transactions and Concierge for this stage, from the guide');
+  ok(t.includes('Email to Transactions: “Listing Agreement Needed”.') && !t.includes('not in the Command Center yet') && !t.includes('No Open To Close file found'), 'the automations for this stage, and none of the old empty notes', t.slice(0, 800));
+  await open(P5); await progress(); t = await text();
+  ok(t.includes('No Follow Up Boss Sellers deal was found for this listing. Create the deal card in the Sellers pipeline at Seller Engaged, with the property address as its name.') && await page.locator('.dp-agent').count() === 0, 'a listing with no Follow Up Boss deal says so and what to do', t.slice(0, 400));
+  await open(P6); await progress(); t = await text();
+  ok(/Stage in Follow Up Boss\s*Listed/i.test(t) && t.includes('The Command Center has no active listing at this address. Concierge can link it by hand'), 'a listing past the agreement but missing from the Command Center is flagged', t.slice(0, 400));
+  await open(P7); await progress(); t = await text();
+  ok(t.includes('its stage in Follow Up Boss could not be read') && t.includes('401 Unauthorized'), 'a failed Follow Up Boss read is said with its reason', t.slice(0, 400));
+  ok(!seen.some(s => /listing-stage\?property_id=(11111111|33333333|44444444)/.test(s.u)), 'never asks Follow Up Boss for a listing the Command Center has or that is closed');
 
   // ── a closed deal: only that Concierge runs post-closing, and it is safe to archive ──
   await open(P4); await progress();
@@ -208,11 +235,11 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(day(60));
     const want = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][+m[2] - 1] + ' ' + (+m[3]) + ', ' + m[1];
     ok(/Closed/i.test(t) && t.toLowerCase().includes(want.toLowerCase()) && t.includes('Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client.') && t.includes('It is now safe to archive this listing card in FORWARD OS.'), 'a closed deal says Concierge runs post-closing and it is safe to archive, with the closing date as written', t.slice(0, 500));
-    ok(!t.includes('not in the Command Center yet') && await page.locator('.dp-lane').count() === 0 && await page.locator('.dp-agent').count() === 0, 'a closed deal shows no checklists, no Transactions lane and no not-in-Command-Center note');
+    ok(!/Stage in Follow Up Boss|No Follow Up Boss Sellers deal/.test(t) && await page.locator('.dp-lane').count() === 0 && await page.locator('.dp-agent').count() === 0, 'a closed deal shows no checklists, no Transactions lane and no Follow Up Boss stage');
   }
   await open(P2); await progress();
   t = await text();
-  ok(t.includes('not in the Command Center yet') && !/post-closing program/.test(t), 'an old closing at the same address does not mark a new listing closed');
+  ok(/Stage in Follow Up Boss\s*Listing App\. Scheduled/i.test(t) && !/post-closing program/.test(t), 'an old closing at the same address does not mark a new listing closed');
 
   // ── hand link wins over the address ──
   await open(P3); await progress();
