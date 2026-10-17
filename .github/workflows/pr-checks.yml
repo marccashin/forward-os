@@ -29,6 +29,9 @@
 #                        and Back to Listing returns to the listing.
 #   ci/dashboard-rows-test.js  a row under Active Listings or Buyer Pipeline on
 #                        the Dashboard opens that listing or that buyer.
+#   ci/deal-progress-test.js  the Deal Progress tab: the right Command Center
+#                        and Open To Close records, who and when, an agent tick
+#                        writes only that agent row with the agent's name.
 #   ci/listing-presentation-test.js  every agent downloads only their own
 #                        listing presentation, as a PDF from the backend; no
 #                        Canva link is left; Operations and Concierge get none.
@@ -151,6 +154,10 @@ jobs:
       - name: Dashboard rows test (a row opens that listing or that buyer)
         if: always()
         run: node head/ci/dashboard-rows-test.js head
+
+      - name: Deal Progress test (who did what on a listing; agent ticks)
+        if: always()
+        run: node head/ci/deal-progress-test.js head
 
       - name: Listing presentation test (each agent downloads only their own deck)
         if: always()

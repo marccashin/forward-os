@@ -26,7 +26,56 @@
        hidden until the app has started. If it never starts, it is shown after 8 seconds
        so a failure is not turned into a blank page. -->
   <script>document.documentElement.classList.add('fos-booting');setTimeout(function(){document.documentElement.classList.remove('fos-booting');},8000);</script>
-  <style>.fos-booting #app{visibility:hidden;}</style>
+  <style>.fos-booting #app{visibility:hidden;}/* Deal Progress (Oct 17, 2026) */
+.dp-tabs{display:flex;gap:2px;border-bottom:1px solid var(--cream-dark,#ddd9d0);margin:4px 0 16px;flex-wrap:wrap}
+.dp-tab{background:none;border:none;border-bottom:3px solid transparent;padding:12px 16px;min-height:44px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#5c5a55;cursor:pointer}
+.dp-tab-on{color:var(--navy,#0A2342);border-bottom-color:var(--gold,#C8A96E)}
+.dp-wrap{display:flex;flex-direction:column;gap:18px;font-family:'Montserrat',sans-serif;color:var(--navy,#0A2342)}
+.dp-note{font-size:13px;color:#5c5a55;line-height:1.5;background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:14px 16px}
+.dp-err{font-size:13px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:12px 14px}
+.dp-err-line{font-size:12px;color:#b91c1c;margin-top:4px}
+.dp-stage{background:#0A2342;color:#F7F4EF;border-radius:12px;padding:20px 22px}
+.dp-stage-top{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.dp-kicker{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#7a6340}
+.dp-stage .dp-kicker{color:#dfc28e}
+.dp-stage-name{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:600}
+.dp-stage-since{font-size:12px;color:rgba(247,244,239,.82)}
+.dp-strip{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.dp-strip li{display:flex;flex-direction:column;gap:6px;min-width:0}
+.dp-bar{height:6px;border-radius:3px;background:#243d6b}
+.dp-past .dp-bar{background:#C8A96E}.dp-now .dp-bar{background:#F7F4EF}
+.dp-strip-label{font-size:11px;font-weight:600;color:rgba(247,244,239,.7);overflow-wrap:anywhere}
+.dp-now .dp-strip-label,.dp-past .dp-strip-label{color:#F7F4EF}
+.dp-here{font-size:10px;color:#dfc28e;font-weight:700}
+.dp-agent{background:#fff8ea;border:1px solid #C8A96E;border-radius:10px;padding:16px 18px}
+.dp-reminder .dp-tt{font-weight:400}
+.dp-agent-name{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:#7a6340}
+.dp-lanes{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.dp-lane{background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:16px 18px;min-width:0;display:flex;flex-direction:column}
+.dp-lane-hd{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding-bottom:8px;border-bottom:2px solid #0A2342}
+.dp-agent .dp-lane-hd{border-bottom-color:#e0c995}
+.dp-lane-name{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.dp-lane-who{font-size:11px;color:#5c5a55}
+.dp-count{font-size:12px;font-weight:600;white-space:nowrap}
+.dp-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px solid #edeae3}
+.dp-row:first-of-type{border-top:0}
+.dp-row-tick{cursor:pointer;text-transform:none;letter-spacing:normal;font-family:'Montserrat',sans-serif;font-size:inherit;font-weight:inherit;color:inherit;margin:0}
+.dp-row-tick input{width:20px;height:20px;margin:1px 2px 0 0;accent-color:#0A2342;flex:0 0 20px}
+.dp-tt{font-size:13px;line-height:1.4;font-weight:500}
+.dp-meta{font-size:12px;line-height:1.4;color:#5c5a55;margin-top:2px}
+.dp-meta-open{font-size:12px;line-height:1.4;color:#7a6340;font-weight:600;margin-top:2px}
+.dp-dot{flex:0 0 20px;width:20px;height:20px;border-radius:50%;border:2px solid #9e8158;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;color:#F7F4EF}
+.dp-dot-done{background:#0A2342;border-color:#0A2342}
+.dp-dot-auto{border:none;color:#0A2342;font-size:18px}
+.dp-prog{height:6px;border-radius:3px;background:#edeae3;margin:12px 0 8px;overflow:hidden}.dp-prog div{height:6px;background:#0A2342}
+.dp-link{background:none;border:none;padding:10px 0;min-height:44px;text-align:left;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:#0A2342;text-decoration:underline;cursor:pointer;align-self:flex-start}
+.dp-foot{font-size:11px;line-height:1.5;color:#5c5a55;margin-top:8px}
+.dp-h2{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;margin-bottom:6px}
+.dp-earlier-row{background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:12px 16px;margin-bottom:8px}
+.dp-earlier-row summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;min-height:28px;align-items:center;flex-wrap:wrap}
+@media (max-width:600px){.dp-strip{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.dp-strip-label{font-size:9px}.dp-stage{padding:16px}}
+
+</style>
   <style>
 .pdf-view{position:fixed;inset:0;z-index:10050;background:#e9e6df;display:flex;flex-direction:column;}
 .pdf-view-bar{display:flex;align-items:center;gap:10px;padding:calc(env(safe-area-inset-top, 0px) + 10px) 12px 10px;background:var(--navy, #0d1f35);color:#fff;flex-shrink:0;}
@@ -5930,6 +5979,124 @@ body {
               <span class="prop-completion-pct">{{ lstAssetCount }}/5 folders</span>
             </div>
           </div>
+
+          <!-- Listing Tools / Deal Progress (Oct 17, 2026) -->
+          <div class="dp-tabs" role="tablist" aria-label="Listing sections">
+            <button type="button" role="tab" :aria-selected="lstDetailTab!=='progress'" :class="['dp-tab', lstDetailTab!=='progress' ? 'dp-tab-on' : '']" @click="dpOpenTab('tools')">Listing Tools</button>
+            <button type="button" role="tab" :aria-selected="lstDetailTab==='progress'" :class="['dp-tab', lstDetailTab==='progress' ? 'dp-tab-on' : '']" @click="dpOpenTab('progress')">Deal Progress</button>
+          </div>
+
+          <div v-if="lstDetailTab==='progress'" class="dp-wrap">
+            <div v-if="dp.loading" class="dp-note">Loading what the team has done…</div>
+            <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
+            <div v-if="!dp.loading && dp.ccMissing && !dp.error" class="dp-note">This listing is not in the Command Center yet, so there are no Concierge or agent items to show. It is added when the Follow Up Boss deal card reaches Listing Agreement Signed. Concierge can also link it by hand from the listing in the Command Center.</div>
+
+            <!-- Where the deal is -->
+            <section v-if="dp.cc" class="dp-stage" aria-label="Where the deal is">
+              <div class="dp-stage-top">
+                <div>
+                  <div class="dp-kicker">Stage now</div>
+                  <div class="dp-stage-name">{{ dpStage || 'Not set' }}</div>
+                </div>
+                <div v-if="dpStageSince" class="dp-stage-since">In {{ dpStage }} since {{ dpWhen(dpStageSince) }}</div>
+              </div>
+              <ol v-if="dpStageIndex(dpStage) >= 0" class="dp-strip">
+                <li v-for="(s, si) in DP_STAGES" :key="s.key" :class="si < dpStageIndex(dpStage) ? 'dp-past' : (si === dpStageIndex(dpStage) ? 'dp-now' : 'dp-next')">
+                  <div class="dp-bar"></div>
+                  <div class="dp-strip-label">{{ si === dpStageIndex(dpStage) && dpStage === 'Back on the Market' ? 'Back on the Market' : s.label }}</div>
+                  <div v-if="si === dpStageIndex(dpStage)" class="dp-here">You are here</div>
+                </li>
+              </ol>
+            </section>
+
+            <!-- The agent's own items -->
+            <section v-if="dp.cc && (dpAgentItems.length || (DP_REMINDERS[dpStage] || []).length)" class="dp-agent" aria-label="Agent responsibility">
+              <div class="dp-lane-hd"><div class="dp-agent-name">Agent Responsibility</div><div v-if="dpAgentItems.length" class="dp-count">{{ dpAgentItems.filter(i => i.completed).length }} of {{ dpAgentItems.length }} done</div></div>
+              <div v-for="item in dpAgentItems" :key="item.id">
+                <label class="dp-row dp-row-tick">
+                  <input type="checkbox" :checked="item.completed" :disabled="!!dp.busy[item.id]" @change="dpTick(item)">
+                  <div>
+                    <div class="dp-tt">{{ item.title }}</div>
+                    <div v-if="item.completed" class="dp-meta">{{ dpDoneLabel(item) }}</div>
+                    <div v-if="dp.tickError[item.id]" class="dp-err-line">{{ dp.tickError[item.id] }}</div>
+                  </div>
+                </label>
+              </div>
+              <div v-if="dpAgentItems.length" class="dp-foot">Your ticks show in the Command Center with your name and the time.</div>
+              <template v-if="(DP_REMINDERS[dpStage] || []).length">
+                <div class="dp-kicker" style="margin-top:14px;">Keep in mind</div>
+                <div v-for="(r, ri) in DP_REMINDERS[dpStage]" :key="'r' + ri" class="dp-row dp-reminder">
+                  <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                  <div class="dp-tt">{{ r }}</div>
+                </div>
+              </template>
+            </section>
+
+            <section v-if="!dp.loading && !dp.error" class="dp-lanes" aria-label="This stage">
+              <!-- Concierge -->
+              <div v-if="dp.cc" class="dp-lane">
+                <div class="dp-lane-hd"><div><div class="dp-lane-name">Concierge</div><div class="dp-lane-who">Abby Lee · Command Center</div></div><div class="dp-count">{{ dpConciergeItems.filter(i => i.completed).length }} of {{ dpConciergeItems.length }} done</div></div>
+                <div v-if="!dpConciergeItems.length" class="dp-meta" style="padding:10px 0;">Nothing on Concierge's list for this stage.</div>
+                <div v-for="item in dpConciergeItems" :key="item.id" class="dp-row">
+                  <span :class="['dp-dot', item.completed ? 'dp-dot-done' : '']" aria-hidden="true">{{ item.completed ? '✓' : '' }}</span>
+                  <div><div class="dp-tt">{{ item.title }}</div><div :class="item.completed ? 'dp-meta' : 'dp-meta-open'">{{ item.completed ? dpDoneLabel(item) : dpOpenLabel(item.created_at, dp.loadedAt) }}</div></div>
+                </div>
+              </div>
+
+              <!-- Transactions -->
+              <div class="dp-lane">
+                <div class="dp-lane-hd"><div><div class="dp-lane-name">Transactions</div><div class="dp-lane-who">Sofia Burton · Open To Close</div></div><div v-if="dp.otc" class="dp-count">{{ dpOtcDone.length }} of {{ dp.otcTasks.length }} done</div></div>
+                <div v-if="dp.otcError" class="dp-err-line">{{ dp.otcError }}</div>
+                <div v-else-if="!dp.otc" class="dp-meta" style="padding:10px 0;">No Open To Close file found for this address yet.</div>
+                <template v-else>
+                  <div class="dp-prog"><div :style="{ width: (dp.otcTasks.length ? Math.round(dpOtcDone.length / dp.otcTasks.length * 100) : 0) + '%' }"></div></div>
+                  <div v-if="dp.otcOthers" class="dp-meta">Open To Close has this address {{ dp.otcOthers + 1 }} times; showing the newest file.</div>
+                  <div v-if="dpOtcLast" class="dp-meta">Last checked off: <b>{{ dpOtcLast.title }}</b> · by {{ dpWhen(dpOtcLast.completed_seen_at) }}</div>
+                  <div class="dp-kicker" style="margin-top:12px;">{{ dp.showAllOtc ? 'Left · ' + dpOtcOpen.length : 'Next up' }}</div>
+                  <div v-if="!dpOtcOpen.length" class="dp-meta" style="padding:8px 0;">Every item is checked off.</div>
+                  <div v-for="t in (dp.showAllOtc ? dpOtcOpen : dpOtcOpen.slice(0, 4))" :key="t.task_id" class="dp-row">
+                    <span class="dp-dot" aria-hidden="true"></span>
+                    <div><div class="dp-tt">{{ t.title }}</div><div class="dp-meta-open">{{ dpOpenLabel(t.otc_created, dp.loadedAt) }}</div></div>
+                  </div>
+                  <template v-if="dp.showAllOtc">
+                    <div class="dp-kicker" style="margin-top:12px;">Done · {{ dpOtcDone.length }}</div>
+                    <div v-for="t in dpOtcDone" :key="t.task_id" class="dp-row">
+                      <span class="dp-dot dp-dot-done" aria-hidden="true">✓</span>
+                      <div><div class="dp-tt">{{ t.title }}</div><div class="dp-meta">{{ dpOtcDoneLabel(t) }}</div></div>
+                    </div>
+                  </template>
+                  <button type="button" class="dp-link" @click="dp.showAllOtc = !dp.showAllOtc">{{ dp.showAllOtc ? 'Show fewer' : 'See all ' + dp.otcTasks.length + ': ' + dpOtcDone.length + ' done, ' + dpOtcOpen.length + ' left' }}</button>
+                  <div class="dp-foot">Open To Close does not record when or by whom an item was ticked. The time shown is when FORWARD OS first saw it ticked (checked every 15 minutes).</div>
+                </template>
+              </div>
+
+              <!-- Automations -->
+              <div v-if="dp.cc && DP_AUTOMATIONS[dpStage]" class="dp-lane">
+                <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What moving the deal card set off</div></div></div>
+                <div class="dp-meta" style="padding:10px 0 2px;">When the Follow Up Boss deal card moved to <b>{{ dpStage }}</b><template v-if="dpStageSince"> ({{ dpWhen(dpStageSince) }})</template>:</div>
+                <div v-for="(a, ai) in DP_AUTOMATIONS[dpStage]" :key="ai" class="dp-row">
+                  <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                  <div class="dp-tt">{{ a }}</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Earlier stages -->
+            <section v-if="dpEarlier.length" class="dp-earlier" aria-label="Earlier stages">
+              <div class="dp-h2">Earlier stages</div>
+              <details v-for="g in dpEarlier" :key="g.stage" class="dp-earlier-row">
+                <summary><span class="dp-tt">{{ g.stage }}</span><span class="dp-meta">{{ g.done }} of {{ g.total }} done · moved on {{ dpDay(g.left) }}</span></summary>
+                <div v-for="(r, ri) in g.rows" :key="ri" class="dp-row">
+                  <span :class="['dp-dot', r.completed ? 'dp-dot-done' : '']" aria-hidden="true">{{ r.completed ? '✓' : '' }}</span>
+                  <div><div class="dp-tt">{{ r.title }}</div><div class="dp-meta">{{ r.owner === 'agent' ? 'Agent · ' : 'Concierge · ' }}{{ r.completed ? dpDoneLabel(r) : 'Not done when the deal moved on' }}</div></div>
+                </div>
+              </details>
+            </section>
+
+            <button type="button" class="dp-link" @click="dpLoad(lstActiveProp)" :disabled="dp.loading">Refresh</button>
+          </div>
+
+          <div v-show="lstDetailTab!=='progress'">
             <!-- Campaign Complete Modal (full-screen, must be dismissed) -->
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-bg"></div>
             <div v-if="lstActiveProp.status==='complete' && lstShowCompleteModal" class="cc-modal-box">
@@ -7290,6 +7457,7 @@ body {
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </template>
 
@@ -8904,6 +9072,173 @@ const fosListingFiles = {
     return await res.blob();
   }
 };
+
+
+// ─── Deal Progress (Oct 17, 2026) ────────────────────────────────────────────
+// One view per listing of who is doing what: the agent, Concierge (Command Center
+// checklist, listing_checklist_items), Transactions (Open To Close, read by the backend
+// every 15 minutes into otc_properties / otc_tasks) and what was set off automatically.
+// "Happens automatically" for each stage, word for word from FORWARD_If_This_Then_That.pdf
+// (October 2026). Change the guide first, then this.
+const DP_AUTOMATIONS = {
+  "Listing Agreement Signed": [
+    "Email to Concierge and Transactions: “Order Sign Install”. Concierge orders it.",
+    "Email to Transactions: “Prep. Listing in Bright”.",
+    "A listing folder for the property is created in Google Drive. Email to Transactions: “New Listing Folder Created in Google Drive”.",
+    "A RAW photo folder for the property is created in Google Drive. Email to Concierge (copying Operations) to schedule listing photos.",
+    "The Command Center opens Concierge's Listing Agreement Signed checklist. Concierge is emailed that the deal moved.",
+    "A note is added to your Follow Up Boss lead record that Concierge has been notified to coordinate photos.",
+    "Follow Up Boss starts your “Seller Prepping Listing to Listing Launch” action plan.",
+    "When you approve both descriptions in FORWARD OS, Concierge is notified in the Command Center and emailed the approved text."
+  ],
+  "Coming Soon": [
+    "Email to Transactions: “Please send Coming Soon Active Pipe”.",
+    "Email to Concierge and Operations: “New Coming Soon Post Needed”.",
+    "The Command Center opens Concierge's Coming Soon checklist. Concierge is emailed that the deal moved."
+  ],
+  "Listed": [
+    "Email to Transactions: “Please send Just Listed Active Pipe”.",
+    "Email to Concierge and Operations: “New Just Listed Post Needed”.",
+    "Email to Concierge: send the seller the “We’re Officially on the Market” email.",
+    "The Command Center opens Concierge's Listed checklist. Concierge is emailed that the deal moved.",
+    "Follow Up Boss starts your “Seller Listing Active on MLS” action plan."
+  ],
+  "Back on the Market": [
+    "The Command Center opens Concierge's Back on the Market checklist. Concierge is emailed that the deal moved."
+  ],
+  "Pending": [
+    "Email to Concierge and Operations: “New Listing Under Contract Post Needed”.",
+    "The Command Center opens Concierge's Pending checklist. Concierge is emailed that the deal moved.",
+    "Follow Up Boss starts your “Seller Listing Pending” action plan.",
+    "Follow Up Boss gives Transactions a task: update Bright and mark the listing Active Under Contract."
+  ],
+  "Closed This Quarter": [
+    "Email to Concierge: “Sign Removal”. Concierge orders the sign removed.",
+    "Email to Concierge and Transactions: “Google Review” request for this client.",
+    "Email to Concierge and Operations: “Just Sold Post Needed”.",
+    "The Command Center starts the 365 day post-closing program. Every touchpoint gets a due date counted from the closing date. Concierge is emailed that the deal moved.",
+    "A note is added to your Follow Up Boss lead record: Concierge will reach out when it is time for you to follow up with your client."
+  ]
+};
+
+// The agent's REMINDERS for each stage: always shown, never ticked (Marc, Oct 17, 2026): weekly
+// habits, moves done by sliding the deal card, things Concierge does. Word for word the same as
+// AGENT_LISTING_REMINDERS in the Command Center (src/lib/agentListingTasks.js), from the guide.
+// The agent's TASKS are rows in the Command Center (owner = agent), ticked below.
+const DP_REMINDERS = {
+  "Listing Agreement Signed": [
+    "Expect Concierge to contact you to schedule and coordinate listing photos.",
+    "Going Coming Soon? Once all information is loaded and accurate in Bright, slide the Follow Up Boss deal card to Coming Soon and tell Transactions to mark it Coming Soon in the MLS.",
+    "Every Tuesday morning Concierge emails the team “Open Houses This Week (Reply All Requested)”. Reply all by 5 PM Wednesday with the address, date and time of every open house you are hosting that weekend, so Concierge can post it on social media and Transactions can send the Active Pipe emails.",
+    "Do not mark the property live until Concierge has sent the seller the “Listing Launch Week” email.",
+    "When the home is ready for showings: update the status in Bright to Active, slide the Follow Up Boss deal card to Listed, and change the Follow Up Boss lead stage to Active Listing."
+  ],
+  "Listed": [
+    "Every Monday: send the Weekly Status Report to your seller. Concierge checks that it went out.",
+    "Once under contract: update the price, commission and close date on the Follow Up Boss deal card, slide it to Pending, and change the Follow Up Boss lead stage to Listing Pending."
+  ],
+  "Back on the Market": [
+    "Every Monday: send the Weekly Status Report to your seller."
+  ],
+  "Pending": [
+    "Communicate with your sellers at least twice a week.",
+    "Watch your email for inspection and appraisal communication. Negotiate and notify as needed.",
+    "Concierge will tell you when the team closing gift is ready for you at the Mass Ave office.",
+    "Once officially closed: slide the Follow Up Boss deal card to Closed This Quarter. This starts the post-closing program."
+  ]
+};
+
+// The stages a listing moves through, left to right. Back on the Market sits where Listed
+// does; the Command Center's older 'Under Contract' list sits where Pending does.
+const DP_STAGES = [
+  { key: 'Listing Agreement Signed', label: 'Agreement Signed' },
+  { key: 'Coming Soon', label: 'Coming Soon' },
+  { key: 'Listed', label: 'Listed' },
+  { key: 'Pending', label: 'Pending' },
+  { key: 'Closed This Quarter', label: 'Closed' }
+];
+function dpStageIndex(stage) {
+  const s = String(stage || '');
+  if (s === 'Back on the Market') return 2;
+  if (s === 'Under Contract') return 3;
+  return DP_STAGES.findIndex(x => x.key === s);
+}
+
+// Address match between FORWARD OS, the Command Center and Open To Close. Same rule as
+// the Command Center's src/lib/osListingDescription.js (addressTokens / sameStreetAddress):
+// the shorter address must be the start of the longer one, with a house number and at
+// least three parts lining up. Keep the two the same.
+const DP_SUFFIXES = {
+  street: 'st', avenue: 'ave', av: 'ave', road: 'rd', drive: 'dr', court: 'ct',
+  place: 'pl', boulevard: 'blvd', lane: 'ln', terrace: 'ter', circle: 'cir',
+  highway: 'hwy', parkway: 'pkwy', square: 'sq', trail: 'trl', way: 'way',
+  north: 'n', south: 's', east: 'e', west: 'w',
+  northwest: 'nw', northeast: 'ne', southwest: 'sw', southeast: 'se'
+};
+function dpAddrTokens(raw) {
+  const s = String(raw || '').toLowerCase()
+    .replace(/#/g, ' unit ')
+    .replace(/\b(apt|apartment|suite|ste|unit)\b\.?/g, ' unit ')
+    .replace(/[.,]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!s) return [];
+  const out = [];
+  for (const t of s.split(' ')) {
+    const tok = DP_SUFFIXES[t] || t;
+    if (tok === 'unit' && out[out.length - 1] === 'unit') continue;
+    out.push(tok);
+  }
+  return out;
+}
+function dpSameAddress(a, b) {
+  const x = dpAddrTokens(a), y = dpAddrTokens(b);
+  const [short, long] = x.length <= y.length ? [x, y] : [y, x];
+  if (short.length < 3 || !/\d/.test(short[0])) return false;
+  return short.every((tok, i) => long[i] === tok);
+}
+// Open To Close may hold one address more than once (138 U St NE had three files, Oct 2026).
+// The newest file (highest id) is the live one (Marc, Oct 17, 2026).
+function dpPickOtc(address, otcProps) {
+  const hits = (otcProps || []).filter(p => dpSameAddress(address, p.address)).sort((a, b) => Number(b.id) - Number(a.id));
+  return { prop: hits[0] || null, others: hits.length - 1 };
+}
+function dpWhen(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+function dpDay(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { timeZone: 'America/New_York', month: 'short', day: 'numeric' });
+}
+// Whole days an item has been open (0 on its first day).
+function dpOpenDays(ts, now) {
+  if (!ts) return null;
+  const t = new Date(ts).getTime();
+  if (isNaN(t)) return null;
+  return Math.max(0, Math.floor(((now || Date.now()) - t) / 86400000));
+}
+function dpOpenLabel(ts, now) {
+  const n = dpOpenDays(ts, now);
+  if (n === null) return 'Open';
+  if (n === 0) return 'Open since today';
+  return 'Open ' + n + (n === 1 ? ' day' : ' days');
+}
+// Concierge or agent item: "Done Oct 3, 2:14 PM by Abby Lee". Ticked before Oct 17, 2026
+// (no stamp kept then): "Done", no date.
+function dpDoneLabel(item) {
+  if (!item || !item.completed) return '';
+  const when = dpWhen(item.completed_at), who = item.completed_by ? String(item.completed_by) : '';
+  return 'Done' + (when ? ' ' + when : '') + (who ? ' · ' + who : '');
+}
+// Open To Close keeps no date: the time is the first 15-minute read that saw the tick.
+function dpOtcDoneLabel(t) {
+  if (!t || !t.completed) return '';
+  if (t.completed_before_tracking || !t.completed_seen_at) return 'Done before tracking began';
+  return 'Checked off by ' + dpWhen(t.completed_seen_at);
+}
 
 const supaRest = {
   headers() {
@@ -12406,6 +12741,107 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       lstCreating.value = false;
     }
 
+    // ─── Deal Progress tab (Oct 17, 2026) ───────────────────────────────────────
+    // Reads the Command Center's listing and checklist (owner 'concierge' / 'agent'),
+    // the history of earlier stages (task_history) and Open To Close (otc_properties,
+    // otc_tasks). The agent's own items are the only thing written from here: a tick
+    // sends completed and the agent's name; the database stamps the time
+    // (forward-command-center supabase/2026-10-17_task_history.sql).
+    const lstDetailTab = ref('tools');
+    const dp = reactive({ forId: null, loading: false, error: '', cc: null, ccMissing: false, items: [], history: [],
+      otc: null, otcOthers: 0, otcTasks: [], otcError: '', showAllOtc: false, busy: {}, tickError: {}, loadedAt: 0 });
+    function dpReset() {
+      dp.forId = null; dp.loading = false; dp.error = ''; dp.cc = null; dp.ccMissing = false; dp.items = []; dp.history = [];
+      dp.otc = null; dp.otcOthers = 0; dp.otcTasks = []; dp.otcError = ''; dp.showAllOtc = false; dp.busy = {}; dp.tickError = {}; dp.loadedAt = 0;
+    }
+    async function dpGet(path) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, { headers: supaRest.headers() });
+      await fosOk(res, 'could not load');
+      return res.json();
+    }
+    async function dpLoad(prop) {
+      if (!prop) return;
+      const id = prop.id;
+      dpReset(); dp.forId = id; dp.loading = true;
+      try {
+        // The Command Center listing: linked by hand (os_property_id), else the same street address.
+        let cc = (await dpGet('listings?select=id,address,stage,status,agent&os_property_id=eq.' + encodeURIComponent(id)))[0] || null;
+        if (!cc) {
+          const all = await dpGet('listings?select=id,address,stage,status,agent,os_property_id&status=eq.active');
+          const hits = all.filter(l => !l.os_property_id && dpSameAddress(prop.address, l.address));
+          cc = hits.length === 1 ? hits[0] : null;
+          if (hits.length > 1) dp.error = 'The Command Center has ' + hits.length + ' listings at this address. Concierge can link the right one from the listing in the Command Center.';
+        }
+        if (dp.forId !== id) return;
+        dp.cc = cc; dp.ccMissing = !cc;
+        if (cc) {
+          dp.items = await dpGet('listing_checklist_items?select=*&listing_id=eq.' + cc.id + '&order=sort_order.asc');
+          dp.history = await dpGet('task_history?select=owner,stage,title,completed,completed_at,completed_by,removed_at&source=eq.listing_checklist_items&parent_id=eq.' + cc.id + '&order=removed_at.desc');
+        }
+      } catch (e) {
+        if (dp.forId === id) dp.error = 'Deal Progress could not be loaded: ' + fosWhy(e);
+      }
+      try {
+        const props = await dpGet('otc_properties?select=id,address,status,task_count,done_count,tasks_polled_at');
+        if (dp.forId !== id) return;
+        const pick = dpPickOtc(prop.address, props);
+        dp.otc = pick.prop; dp.otcOthers = pick.others;
+        if (pick.prop) dp.otcTasks = await dpGet('otc_tasks?select=*&property_id=eq.' + pick.prop.id + '&removed_at=is.null&order=position.asc');
+      } catch (e) {
+        if (dp.forId === id) dp.otcError = 'Open To Close could not be loaded: ' + fosWhy(e);
+      }
+      if (dp.forId === id) { dp.loading = false; dp.loadedAt = Date.now(); }
+    }
+    function dpOpenTab(tab) {
+      lstDetailTab.value = tab;
+      if (tab === 'progress' && lstActiveProp.value && dp.forId !== lstActiveProp.value.id) dpLoad(lstActiveProp.value);
+    }
+    const dpStage = computed(() => (dp.cc && dp.cc.stage) || '');
+    const dpAgentItems = computed(() => dp.items.filter(i => i.owner === 'agent'));
+    const dpConciergeItems = computed(() => dp.items.filter(i => i.owner !== 'agent'));
+    // When the deal entered this stage: the Command Center opens the stage's lists then.
+    const dpStageSince = computed(() => {
+      const t = dp.items.map(i => i.created_at).filter(Boolean).sort();
+      return t[0] || '';
+    });
+    const dpEarlier = computed(() => {
+      const by = {};
+      for (const r of dp.history) {
+        const k = r.stage || 'Earlier';
+        if (k === dpStage.value) continue;   // re-entered stage: its old rows belong to the stage now on screen
+        if (!by[k]) by[k] = { stage: k, done: 0, total: 0, left: r.removed_at || '', rows: [] };
+        by[k].total++; if (r.completed) by[k].done++;
+        if (r.removed_at > by[k].left) by[k].left = r.removed_at;
+        by[k].rows.push(r);
+      }
+      return Object.values(by).sort((a, b) => (a.left < b.left ? 1 : -1));
+    });
+    const dpOtcOpen = computed(() => dp.otcTasks.filter(t => !t.completed));
+    const dpOtcDone = computed(() => dp.otcTasks.filter(t => t.completed).sort((a, b) => String(b.completed_seen_at || '').localeCompare(String(a.completed_seen_at || ''))));
+    const dpOtcLast = computed(() => dpOtcDone.value.find(t => t.completed_seen_at) || null);
+    async function dpTick(item) {
+      if (!item || item.owner !== 'agent' || dp.busy[item.id]) return;
+      const want = !item.completed;
+      const before = { completed: item.completed, completed_at: item.completed_at, completed_by: item.completed_by };
+      dp.busy[item.id] = true; dp.tickError[item.id] = '';
+      item.completed = want;
+      try {
+        const res = await fetch(SUPABASE_URL + '/rest/v1/listing_checklist_items?id=eq.' + item.id + '&owner=eq.agent', {
+          method: 'PATCH', headers: supaRest.headers(),
+          body: JSON.stringify(want ? { completed: true, completed_by: agentName.value } : { completed: false })
+        });
+        await fosOk(res, 'not saved');
+        const rows = await res.json();
+        if (!Array.isArray(rows) || !rows.length) throw new Error('not saved: the Command Center did not accept the change');
+        Object.assign(item, { completed: rows[0].completed, completed_at: rows[0].completed_at, completed_by: rows[0].completed_by });
+      } catch (e) {
+        Object.assign(item, before);
+        dp.tickError[item.id] = (want ? 'Your tick was ' : 'Your untick was ') + fosWhy(e);
+      } finally {
+        dp.busy[item.id] = false;
+      }
+    }
+
     async function lstOpenProperty(prop) {
       // Every card opens its own tools. A tool panel left open on the last listing
       // used to stay open here, still holding that listing's form: the net sheet's
@@ -12416,6 +12852,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // else. Callers that want a panel open set lstToolOpen after this call.
       lstToolOpen.value = null;
       if (ns._propId && ns._propId !== prop.id) resetToolForm('net-sheet');
+      // Deal Progress belongs to one listing: start on Listing Tools with nothing loaded.
+      lstDetailTab.value = 'tools'; dpReset();
       // The Price Reduction Planner's two boxes are not saved anywhere, so they
       // can only ever be the last card's. Start each card blank.
       pr.listDate = ''; pr.price = '';
@@ -22665,7 +23103,24 @@ const CHANGELOG = [
         detail: 'When a listing\'s address had a unit between the street and the city and no comma, the net sheet said the city was missing and would not calculate, even though the address was complete. It now reads the unit as part of the street and finds the city. The CMA Builder fills the City box from the same address.\n\nHow to use: Nothing changes. Open the net sheet inside the listing and press Calculate.\n\nBest practice: Write listing addresses as "street, unit, city, state ZIP" with commas, for example "4200 Massachusetts Ave NW, Unit 106, Washington, DC 20016". Every tool reads that form without guessing.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-17',
+    date: 'October 17, 2026',
+    title: 'Deal Progress: See Who Has Done What on Your Listing',
+    summary: 'Every listing now has a Deal Progress tab next to Listing Tools. It shows the stage, your own items for that stage, what Concierge and Transactions have done and what is next, and what moving the deal card set off.',
+    updates: [
+      {
+        title: 'One Place to See Your Deal Moving',
+        detail: 'Open a listing and press Deal Progress. You see the stage the deal is in and since when, Concierge\'s checklist from the Command Center with who checked each item and when, Transactions\' checklist from Open To Close with the next four open items and how long each has been open (See all shows the rest), and what happened automatically when the Follow Up Boss deal card moved. Earlier stages are listed underneath with what was done in each.\n\nHow to use: Open the listing, press Deal Progress, and press Refresh to see the latest. Open To Close is read every 15 minutes, so a Transactions tick can take that long to show, and the time shown is when FORWARD OS first saw it ticked.\n\nBest practice: Check Deal Progress before you call Concierge or Transactions to ask where something stands. If an item has been open for days, that is the one to ask about.'
+      },
+      {
+        title: 'Your Own Items, Ticked by You',
+        detail: 'The gold Agent Responsibility box lists what is yours to do at this stage, word for word from the If This, Then That guide. Tick each job as you finish it: your tick shows in the Command Center with your name and the time, so Concierge knows without asking. Under Keep in mind are the habits and reminders for the stage, such as the Monday Weekly Status Report. They have no box because they are never done once and for all.\n\nHow to use: Tick the box beside an item when it is done. Untick it if you ticked it by mistake. If a tick could not be saved, the box goes back and a red line says why.\n\nBest practice: Move the deal card in Follow Up Boss the moment the stage changes. The new stage\'s items for you, Concierge and Transactions start from that move.'
+      }
+    ]
   }
+
 
 ];
 
@@ -25341,6 +25796,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpOpenLabel, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
