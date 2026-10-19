@@ -70,6 +70,14 @@
 .dp-dot{flex:0 0 20px;width:20px;height:20px;border-radius:50%;border:2px solid #9e8158;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;color:#F7F4EF}
 .dp-dot-done{background:#0A2342;border-color:#0A2342}
 .dp-dot-auto{border:none;color:#0A2342;font-size:18px}
+.dp-howto{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:#fff;border:1.5px solid var(--gold,#C8A96E);border-radius:10px;padding:14px 18px;margin:0 0 14px}
+.dp-howto-txt{flex:1 1 320px;min-width:0}
+.dp-howto-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy,#0A2342)}
+.dp-howto-body{font-size:13px;line-height:1.45;color:#3f3d39;margin-top:4px}
+.dp-howto-btn{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border-radius:6px;background:var(--navy,#0A2342);color:#fff !important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-decoration:none}
+.dp-howto-btn:hover{background:#13305a}
+.dp-howto-btn:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
+.dp-agent-note{margin:4px 0 6px}
 .dp-otc-note{font-size:12px;line-height:1.45;color:#5c5a55;background:#f7f4ee;border-left:3px solid var(--gold,#C8A96E);padding:8px 10px;margin:10px 0 4px}
 .dp-auto-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0A2342;padding-top:12px}
 .dp-auto-next{margin-top:14px;border-top:2px solid #edeae3}
@@ -5995,8 +6003,13 @@ body {
 
           <div v-if="lstDetailTab==='progress'" class="dp-wrap">
             <!-- "How it works": the If This, Then That guide every line of Deal Progress comes from (Marc, Oct 17, 2026) -->
-            <div class="dp-howto" style="display:flex;justify-content:flex-end;margin:0 0 10px;font-size:13px;">
-              <a href="/guides/FORWARD_If_This_Then_That.pdf" target="_blank" rel="noopener" @click="dpGuideClick" style="color:var(--navy);font-weight:600;text-decoration:underline;">How it works</a>
+            <!-- Made a card with an explanation and a button (Marc, Oct 19, 2026: "needs to be more pronounced and further explain what this doc shows") -->
+            <div class="dp-howto">
+              <div class="dp-howto-txt">
+                <div class="dp-howto-title">How it works</div>
+                <div class="dp-howto-body">The If This, Then That guide. For every Follow Up Boss stage it shows what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Everything on this page comes from it.</div>
+              </div>
+              <a class="dp-howto-btn" href="/guides/FORWARD_If_This_Then_That.pdf" target="_blank" rel="noopener" @click="dpGuideClick">Open the guide (PDF)</a>
             </div>
             <div v-if="dp.loading" class="dp-note">Loading what the team has done…</div>
             <div v-if="dp.error" class="dp-err">{{ dp.error }}</div>
@@ -6079,6 +6092,7 @@ body {
             <!-- The agent's own items -->
             <section v-if="dp.cc && (dpAgentItems.length || (DP_REMINDERS[dpStage] || []).length)" class="dp-agent" aria-label="Agent responsibility">
               <div class="dp-lane-hd"><div class="dp-agent-name">Agent Responsibility</div><div v-if="dpAgentItems.length" class="dp-count">{{ dpAgentItems.filter(i => i.completed).length }} of {{ dpAgentItems.length }} done</div></div>
+              <div v-if="dpAgentItems.length" class="dp-otc-note dp-agent-note">When you tick an item, Concierge sees it in the Command Center with your name and the time.</div>
               <div v-for="item in dpAgentItems" :key="item.id">
                 <label class="dp-row dp-row-tick">
                   <input type="checkbox" :checked="item.completed" :disabled="!!dp.busy[item.id]" @change="dpTick(item)">
@@ -6089,7 +6103,6 @@ body {
                   </div>
                 </label>
               </div>
-              <div v-if="dpAgentItems.length" class="dp-foot">Your ticks show in the Command Center with your name and the time.</div>
               <template v-if="(DP_REMINDERS[dpStage] || []).length">
                 <div class="dp-kicker" style="margin-top:14px;">Keep in mind</div>
                 <div v-for="(r, ri) in DP_REMINDERS[dpStage]" :key="'r' + ri" class="dp-row dp-reminder">
@@ -23378,6 +23391,10 @@ const CHANGELOG = [
       {
         title: 'Clearer Tabs, and a Note on Open To Close Tasks',
         detail: 'Listing Tools and Deal Progress are now two clear buttons at the top of every listing. The one you are on is filled in navy. In Deal Progress, the Transactions column now explains that Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.\n\nHow to use: Open a listing and press Deal Progress to see who has done what, or Listing Tools to get back to your tools.\n\nBest practice: If a Transactions task looks like it does not belong on your deal, give it a few days before asking: Transactions clears those as the file moves along.'
+      },
+      {
+        title: 'How It Works, Explained, and What Concierge Sees When You Tick',
+        detail: 'The How it works link at the top of Deal Progress is now a card that says what it opens: the If This, Then That guide, which shows for every Follow Up Boss stage what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Under Agent Responsibility, a note now says that when you tick an item, Concierge sees it in the Command Center with your name and the time.\n\nHow to use: Open a listing, press Deal Progress, then press Open the guide (PDF). Tick your own items as you finish them.\n\nBest practice: Tick an item the day you finish it, so Concierge sees it without having to ask you.'
       }
     ]
   }
