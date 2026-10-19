@@ -175,6 +175,17 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(otcReq.length === 1 && /property_id=eq\.1471375/.test(otcReq[0].u) && /removed_at=is\.null/.test(otcReq[0].u), 'Open To Close: only the newest file\'s tasks are read', otcReq.map(s => s.u));
   ok(t.includes('has this address 3 times; showing the newest'), 'says Open To Close has the address more than once');
   ok(t.includes('2 of 7 done'), 'Transactions count');
+  {
+    // How it works card and the agent note (Marc, Oct 19, 2026)
+    const card = page.locator('.dp-howto');
+    const ct = await card.innerText();
+    const href = await card.locator('a').getAttribute('href');
+    ok(ct.includes('The If This, Then That guide. For every Follow Up Boss stage it shows what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Everything on this page comes from it.') && /Open the guide \(PDF\)/.test(ct) && href === '/guides/FORWARD_If_This_Then_That.pdf', 'How it works is a card that explains the guide, with a button to the PDF', ct);
+    const btn = await card.locator('a').evaluate(b => { const c = getComputedStyle(b); return { h: b.getBoundingClientRect().height, bg: c.backgroundColor }; });
+    ok(btn.h >= 44 && btn.bg !== 'rgba(0, 0, 0, 0)', 'the guide button is a filled button at least 44px tall', btn);
+    const an = await page.locator('.dp-agent .dp-agent-note').allInnerTexts();
+    ok(an.length === 1 && an[0] === 'When you tick an item, Concierge sees it in the Command Center with your name and the time.', 'Agent Responsibility says Concierge sees ticks in the Command Center (no promise of a notification)', an);
+  }
   ok(t.includes('Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.'), 'Transactions: says some Open To Close tasks may not apply and Transactions deletes them (Marc, Oct 19, 2026)');
   {
     const tabs = await page.evaluate(() => [...document.querySelectorAll('.dp-tab')].map(b => { const c = getComputedStyle(b); return { on: b.classList.contains('dp-tab-on'), bg: c.backgroundColor, border: c.borderTopWidth, h: b.getBoundingClientRect().height, fs: parseFloat(c.fontSize) }; }));
