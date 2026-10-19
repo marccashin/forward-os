@@ -175,6 +175,11 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(otcReq.length === 1 && /property_id=eq\.1471375/.test(otcReq[0].u) && /removed_at=is\.null/.test(otcReq[0].u), 'Open To Close: only the newest file\'s tasks are read', otcReq.map(s => s.u));
   ok(t.includes('has this address 3 times; showing the newest'), 'says Open To Close has the address more than once');
   ok(t.includes('2 of 7 done'), 'Transactions count');
+  ok(t.includes('Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.'), 'Transactions: says some Open To Close tasks may not apply and Transactions deletes them (Marc, Oct 19, 2026)');
+  {
+    const tabs = await page.evaluate(() => [...document.querySelectorAll('.dp-tab')].map(b => { const c = getComputedStyle(b); return { on: b.classList.contains('dp-tab-on'), bg: c.backgroundColor, border: c.borderTopWidth, h: b.getBoundingClientRect().height, fs: parseFloat(c.fontSize) }; }));
+    ok(tabs.length === 2 && tabs.every(x => parseFloat(x.border) >= 1 && x.h >= 44 && x.fs >= 14) && tabs.filter(x => x.on).length === 1 && tabs.find(x => x.on).bg !== tabs.find(x => !x.on).bg, 'Listing Tools and Deal Progress are bordered buttons, 44px or taller, the open one filled (Marc, Oct 19, 2026)', tabs);
+  }
   const next = await page.locator('.dp-lane').filter({ has: page.locator('.dp-lane-name', { hasText: /^Transactions$/ }) }).locator('.dp-row').allInnerTexts();
   ok(next.length === 4 && next[0].startsWith('Send client portal invite') && next[3].startsWith('Upload executed listing agreement') && next.every(x => x.includes('Open 8 days')), 'Next up: four open items in Open To Close\'s order, with days open', next);
   ok(t.includes('Last checked off: Add Google Drive folder link to FUB deal · by Oct 17, 9:15 AM'), 'last checked off, with the time it was first seen');
@@ -183,6 +188,16 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(t.includes('Fifth open item') && /Done · 2/i.test(t) && t.includes('Done before tracking began') && t.includes('Checked off by Oct 17, 9:15 AM'), 'See all: the rest, and done items say when first seen or that tracking began later');
   ok(t.includes('Open To Close does not record when or by whom'), 'says what the time means');
   ok(t.includes('Email to Transactions: “Please send Just Listed Active Pipe”.') && t.includes('Follow Up Boss starts your “Seller Listing Active on MLS” action plan.'), 'automations for Listed, word for word from the guide');
+  {
+    // Automations box: this stage, then what the next move (Listed -> Pending) will set off (Marc, Oct 19, 2026)
+    const lane = page.locator('.dp-lane').filter({ has: page.locator('.dp-lane-name', { hasText: /^Automations$/ }) });
+    const now = await lane.locator('.dp-row:not(.dp-row-next)').allInnerTexts();
+    const nxt = await lane.locator('.dp-row-next').allInnerTexts();
+    const lt = await lane.innerText();
+    ok(now.length === 5 && now[0].includes('Please send Just Listed Active Pipe') && !now.some(x => /Under Contract Post Needed/.test(x)), 'This stage: the five Listed automations and nothing from the next stage', now);
+    ok(/This stage[\s\S]*Next stage/i.test(lt) && lt.includes('When you move the Follow Up Boss deal card to Pending:'), 'Next stage comes after This stage and names Pending', lt.slice(0, 600));
+    ok(nxt.length === 4 && nxt[0].includes('Email to Concierge and Operations: “New Listing Under Contract Post Needed”.') && nxt[3].includes('Follow Up Boss gives Transactions a task: update Bright and mark the listing Active Under Contract.'), 'Next stage: the four Pending automations, word for word from the guide, in order', nxt);
+  }
   ok(t.includes('Earlier stages') && /Listing Agreement Signed\s*1 of 2 done/.test(t), 'earlier stage with its count');
 
   // ── an agent tick ──
@@ -258,6 +273,12 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await open(P3); await progress();
   t = await text();
   ok(/Stage now\s*Pending/i.test(t) && t.includes('LINKED LISTING ITEM'), 'the Command Center listing linked by hand is used, not the one at the same address', t.slice(0, 400));
+  {
+    const lane = page.locator('.dp-lane').filter({ has: page.locator('.dp-lane-name', { hasText: /^Automations$/ }) });
+    const nxt = await lane.locator('.dp-row-next').allInnerTexts();
+    const lt = await lane.innerText();
+    ok(lt.includes('When you move the Follow Up Boss deal card to Closed:') && nxt.length === 5 && nxt[0].includes('Email to Concierge: “Sign Removal”.') && !lt.includes('Back on the Market'), 'from Pending, Next stage shows Closed only (not Back on the Market)', lt.slice(0, 800));
+  }
 
   // ── failed load ──
   mode.ccFail = true;

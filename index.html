@@ -27,9 +27,11 @@
        so a failure is not turned into a blank page. -->
   <script>document.documentElement.classList.add('fos-booting');setTimeout(function(){document.documentElement.classList.remove('fos-booting');},8000);</script>
   <style>.fos-booting #app{visibility:hidden;}/* Deal Progress (Oct 17, 2026) */
-.dp-tabs{display:flex;gap:2px;border-bottom:1px solid var(--cream-dark,#ddd9d0);margin:4px 0 16px;flex-wrap:wrap}
-.dp-tab{background:none;border:none;border-bottom:3px solid transparent;padding:12px 16px;min-height:44px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#5c5a55;cursor:pointer}
-.dp-tab-on{color:var(--navy,#0A2342);border-bottom-color:var(--gold,#C8A96E)}
+.dp-tabs{display:flex;gap:10px;margin:8px 0 18px;flex-wrap:wrap}
+.dp-tab{background:#fff;border:1.5px solid var(--navy,#0A2342);border-radius:6px;padding:12px 22px;min-height:48px;font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:.02em;color:var(--navy,#0A2342);cursor:pointer;box-shadow:0 1px 3px rgba(10,35,66,.12)}
+.dp-tab:hover{background:#f3efe6}
+.dp-tab-on,.dp-tab-on:hover{background:var(--navy,#0A2342);color:#fff}
+.dp-tab:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
 .dp-wrap{display:flex;flex-direction:column;gap:18px;font-family:'Montserrat',sans-serif;color:var(--navy,#0A2342)}
 .dp-note{font-size:13px;color:#5c5a55;line-height:1.5;background:#fff;border:1px solid #ddd9d0;border-radius:10px;padding:14px 16px}
 .dp-rename{border:1px solid #d9b45a;background:#fff8e6;}
@@ -68,6 +70,10 @@
 .dp-dot{flex:0 0 20px;width:20px;height:20px;border-radius:50%;border:2px solid #9e8158;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;color:#F7F4EF}
 .dp-dot-done{background:#0A2342;border-color:#0A2342}
 .dp-dot-auto{border:none;color:#0A2342;font-size:18px}
+.dp-otc-note{font-size:12px;line-height:1.45;color:#5c5a55;background:#f7f4ee;border-left:3px solid var(--gold,#C8A96E);padding:8px 10px;margin:10px 0 4px}
+.dp-auto-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0A2342;padding-top:12px}
+.dp-auto-next{margin-top:14px;border-top:2px solid #edeae3}
+.dp-row-next .dp-tt,.dp-row-next .dp-dot-auto{color:#5c5a55}
 .dp-prog{height:6px;border-radius:3px;background:#edeae3;margin:12px 0 8px;overflow:hidden}.dp-prog div{height:6px;background:#0A2342}
 .dp-link{background:none;border:none;padding:10px 0;min-height:44px;text-align:left;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:600;color:#0A2342;text-decoration:underline;cursor:pointer;align-self:flex-start}
 .dp-foot{font-size:11px;line-height:1.5;color:#5c5a55;margin-top:8px}
@@ -6111,6 +6117,7 @@ body {
                 <div v-else-if="!dp.otc" class="dp-meta" style="padding:10px 0;">No Open To Close file found for this address yet.</div>
                 <template v-else>
                   <div class="dp-prog"><div :style="{ width: (dp.otcTasks.length ? Math.round(dpOtcDone.length / dp.otcTasks.length * 100) : 0) + '%' }"></div></div>
+                  <div class="dp-otc-note">Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.</div>
                   <div v-if="dp.otcOthers" class="dp-meta">Open To Close has this address {{ dp.otcOthers + 1 }} times; showing the newest file.</div>
                   <div v-if="dpOtcLast" class="dp-meta">Last checked off: <b>{{ dpOtcLast.title }}</b> · by {{ dpWhen(dpOtcLast.completed_seen_at) }}</div>
                   <div class="dp-kicker" style="margin-top:12px;">{{ dp.showAllOtc ? 'Left · ' + dpOtcOpen.length : 'Next up' }}</div>
@@ -6133,11 +6140,20 @@ body {
 
               <!-- Automations -->
               <div v-if="dp.cc && DP_AUTOMATIONS[dpStage]" class="dp-lane">
-                <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What moving the deal card set off</div></div></div>
-                <div class="dp-meta" style="padding:10px 0 2px;">When the Follow Up Boss deal card moved to <b>{{ dpStage }}</b><template v-if="dpStageSince"> ({{ dpWhen(dpStageSince) }})</template>:</div>
+                <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What moving the deal card set off, and what the next move will</div></div></div>
+                <div class="dp-auto-hd">This stage</div>
+                <div class="dp-meta" style="padding:4px 0 2px;">When the Follow Up Boss deal card moved to <b>{{ dpStage }}</b><template v-if="dpStageSince"> ({{ dpWhen(dpStageSince) }})</template>:</div>
                 <div v-for="(a, ai) in DP_AUTOMATIONS[dpStage]" :key="ai" class="dp-row">
                   <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
                   <div class="dp-tt">{{ a }}</div>
+                </div>
+                <div v-if="dpNext" class="dp-auto-next">
+                  <div class="dp-auto-hd">Next stage</div>
+                  <div class="dp-meta" style="padding:4px 0 2px;">When you move the Follow Up Boss deal card to <b>{{ dpNext.label }}</b>:</div>
+                  <div v-for="(a, ai) in dpNext.items" :key="'n' + ai" class="dp-row dp-row-next">
+                    <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                    <div class="dp-tt">{{ a }}</div>
+                  </div>
                 </div>
               </div>
             </section>
@@ -9181,6 +9197,19 @@ const DP_AUTOMATIONS = {
     "The Command Center starts the 365 day post-closing program. Every touchpoint gets a due date counted from the closing date. Concierge is emailed that the deal moved.",
     "A note is added to your Follow Up Boss lead record: Concierge will reach out when it is time for you to follow up with your client."
   ]
+};
+
+// The move that comes next from each stage, for the Next stage part of the Automations box
+// (Marc, Oct 19, 2026). ONE move per stage, Marc's choice: Listing Agreement Signed shows
+// Listed (not Coming Soon) and Pending shows Closed (not Back on the Market). A closed deal
+// has no next move. The lines shown are DP_AUTOMATIONS for that stage, so they stay word for
+// word the guide's.
+const DP_NEXT_STAGE = {
+  "Listing Agreement Signed": "Listed",
+  "Coming Soon": "Listed",
+  "Listed": "Pending",
+  "Back on the Market": "Pending",
+  "Pending": "Closed This Quarter"
 };
 
 // The agent's REMINDERS for each stage: always shown, never ticked (Marc, Oct 17, 2026): weekly
@@ -12982,6 +13011,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     const dpStage = computed(() => (dp.cc && dp.cc.stage) || '');
     const dpFubStage = computed(() => (!dp.cc && !dp.closed && dp.fub && dp.fub.found && dp.fub.stage) || '');
+    // What the next move of the deal card will set off (Automations box, Next stage part).
+    const dpNext = computed(() => {
+      const k = DP_NEXT_STAGE[dpStage.value];
+      if (!k || !DP_AUTOMATIONS[k]) return null;
+      const st = DP_STAGES.find(x => x.key === k);
+      return { stage: k, label: st ? st.label : k, items: DP_AUTOMATIONS[k] };
+    });
     const dpPre = computed(() => DP_PRE[dpFubStage.value] || null);
     // The guide (Seller Engaged): put the property address in the deal card's name, not the
     // seller's name. Shown on any open seller deal whose name is a person's.
@@ -23334,6 +23370,14 @@ const CHANGELOG = [
       {
         title: 'How It Works: The Guide Behind Deal Progress',
         detail: 'Deal Progress has a How it works link at the top. It opens the If This, Then That guide: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Every line in Deal Progress comes from this guide.\n\nHow to use: Open a listing, press Deal Progress, then press How it works. On a phone it opens inside FORWARD OS; press Back to return.\n\nBest practice: Read the guide once from start to finish, then use Deal Progress day to day. When you are unsure what moving a deal card will set off, check the guide first.'
+      },
+      {
+        title: 'Automations: See What Your Next Move Sets Off',
+        detail: 'The Automations box in Deal Progress now has two parts. This stage lists what moving the deal card to its current stage set off. Next stage lists what will happen the moment you move the deal card to the next stage: the emails, the Command Center checklist and the Follow Up Boss action plan.\n\nHow to use: Open a listing, press Deal Progress and look at the Automations box. Read Next stage before you slide the Follow Up Boss deal card, so you know who will be told what.\n\nBest practice: From Listing Agreement Signed, Next stage shows Listed. From Pending, it shows Closed. If you go to Coming Soon or a contract falls through, check the How it works guide for what that move sets off.'
+      },
+      {
+        title: 'Clearer Tabs, and a Note on Open To Close Tasks',
+        detail: 'Listing Tools and Deal Progress are now two clear buttons at the top of every listing. The one you are on is filled in navy. In Deal Progress, the Transactions column now explains that Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.\n\nHow to use: Open a listing and press Deal Progress to see who has done what, or Listing Tools to get back to your tools.\n\nBest practice: If a Transactions task looks like it does not belong on your deal, give it a few days before asking: Transactions clears those as the file moves along.'
       }
     ]
   }
@@ -26013,7 +26057,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
