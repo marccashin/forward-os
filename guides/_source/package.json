@@ -1,0 +1,14 @@
+{
+  "name": "forward-if-this-then-that",
+  "private": true,
+  "description": "Generator for the FORWARD: If This, Then That agent guide (PDF). See README.md.",
+  "scripts": {
+    "build:original": "node build.js --edition original --out ../build/rebuilt.pdf",
+    "build": "node build.js --edition corrected --out ../build/FORWARD_If_This_Then_That.pdf"
+  },
+  "fontDependencies": {
+    "@fontsource/cormorant-garamond": "5.2.5",
+    "@fontsource/montserrat": "5.1.0",
+    "@fontsource-variable/montserrat": "5.3.0"
+  }
+}
