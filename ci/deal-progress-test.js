@@ -89,6 +89,10 @@ const OTC_TASKS = [
 
 const seen = [];
 let mode = { ccFail: false, tickFail: false };
+// Open To Close "check now" (Oct 19, 2026): a stand-in for the backend's status and poll
+// routes. waitAt = when (test clock, ms) the one-minute wait ends; refuse = force a 429.
+const OTCNOW = { waitAt: 0, posts: 0, refuse: 0, fail: false, statusFails: false };
+const otcWait = () => Math.max(0, Math.ceil((OTCNOW.waitAt - Date.now()) / 1000));
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function q(u, k) { const m = u.match(new RegExp('[?&]' + k + '=([^&]*)')); return m ? m[1] : null; }
 function api(route) {
@@ -96,6 +100,17 @@ function api(route) {
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
   if (/\/rest\/v1\/(listings|listing_checklist_items|task_history|otc_)/.test(u)) seen.push({ m, u, body: req.postData() });
   if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, [P1, P2, P3, P4, P5, P6, P7]);
+  if (m === 'GET' && /\/api\/otc\/poll\/status/.test(u)) { if (OTCNOW.statusFails) return J(route, 502, {}); return J(route, 200, { running: false, fail_streak: 0, last_run: { ok: true, ran_at: '2026-10-19T22:30:00+00:00' }, manual_wait_seconds: otcWait(), manual_gap_seconds: 60 }); }
+  if (m === 'POST' && /\/api\/otc\/poll$/.test(u)) {
+    OTCNOW.posts++;
+    if (OTCNOW.fail) return J(route, 502, { detail: 'Open To Close answered 503' });
+    if (OTCNOW.refuse) { const w = OTCNOW.refuse; OTCNOW.waitAt = Date.now() + w * 1000; return J(route, 429, { detail: 'Open To Close was checked less than a minute ago. Next check in ' + w + ' seconds.' }); }
+    if (otcWait() > 0) return J(route, 429, { detail: 'Open To Close was checked less than a minute ago. Next check in ' + otcWait() + ' seconds.' });
+    OTCNOW.waitAt = Date.now() + 60000;
+    // Transactions ticked an item since the last 15-minute read: the check now sees it.
+    const t = OTC_TASKS.find(x => x.task_id === 100); t.completed = true; t.completed_seen_at = new Date().toISOString();
+    return J(route, 200, { ok: true, ran_at: new Date().toISOString(), read: [1471375], changes: [], manual_wait_seconds: 60 });
+  }
   if (m === 'GET' && /\/api\/fub\/listing-stage\?/.test(u)) { seen.push({ m, u }); const r = FUB_STAGE[q(u, 'property_id')] || { status: 404, body: { detail: 'No FORWARD OS listing with that id.' } }; return J(route, r.status, r.body); }
   if (m === 'GET' && /\/rest\/v1\/seller_post_closing\?/.test(u)) return J(route, 200, PC);
   if (m === 'GET' && /\/rest\/v1\/listings\?/.test(u)) {
@@ -230,6 +245,58 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(!(await box.locator('input').isChecked()) && (await box.innerText()).includes('Your tick was not saved: permission denied'), 'a failed tick is put back and says why', await box.innerText());
   mode.tickFail = false;
   ok(!seen.some(s => s.m === 'PATCH' && !/owner=eq\.agent/.test(s.u)), 'never writes a Concierge row');
+
+  // ── Check Open To Close now (Marc, Oct 19, 2026) ──
+  {
+    const lane = page.locator('.dp-lane').filter({ has: page.locator('.dp-lane-name', { hasText: /^Transactions$/ }) });
+    const btn = lane.getByRole('button', { name: /Check Open To Close now/ });
+    ok(await btn.isEnabled() && (await lane.innerText()).includes('Open To Close is also checked every 15 minutes.'), 'Transactions has a Check Open To Close now button, available');
+    const loadsBefore = seen.filter(s => /otc_tasks/.test(s.u)).length;
+    await btn.click();
+    await page.waitForFunction(() => !document.querySelector('#app').__vue_app__._instance.setupState.otcNow.busy);
+    await page.waitForTimeout(300);
+    let lt = await lane.innerText();
+    ok(OTCNOW.posts === 1 && seen.filter(s => /otc_tasks/.test(s.u)).length > loadsBefore, 'pressing it asks the backend to read Open To Close once, then reloads the page', { posts: OTCNOW.posts });
+    ok(!/Next up[\s\S]*Send client portal invite to sellers/.test(lt.split('See all')[0]) && lt.includes('Checked Open To Close just now.'), 'the tick Transactions just made shows at once', lt.slice(0, 700));
+    ok(await lane.locator('.dp-otcnow-btn').isDisabled() && /Available again in 0:(59|60)|Available again in 1:00/.test(lt), 'then it is greyed out with a countdown from 1:00', lt.slice(0, 300));
+    await lane.locator('.dp-otcnow-btn').click({ force: true }).catch(() => {});
+    await page.waitForTimeout(1300);
+    lt = await lane.innerText();
+    ok(OTCNOW.posts === 1 && /Available again in 0:5[0-9]/.test(lt), 'a press while greyed out sends nothing, and the countdown runs', { posts: OTCNOW.posts, lt: lt.slice(0, 200) });
+    // Another agent opening Deal Progress 20 seconds into someone else's minute sees ~40 left
+    OTCNOW.waitAt = Date.now() + 40000;
+    await page.getByRole('tab', { name: 'Listing Tools' }).click(); await progress();
+    lt = await lane.innerText();
+    ok(await lane.locator('.dp-otcnow-btn').isDisabled() && /Available again in 0:(39|40)/.test(lt), 'opening Deal Progress shows the shared countdown from the backend (40 seconds left)', lt.slice(0, 300));
+    // It comes back by itself when the countdown ends
+    OTCNOW.waitAt = Date.now() + 1500;
+    await page.getByRole('tab', { name: 'Listing Tools' }).click(); await progress();
+    await page.waitForTimeout(2200);
+    ok(await lane.locator('.dp-otcnow-btn').isEnabled() && (await lane.innerText()).includes('also checked every 15 minutes'), 'when the countdown ends the button is available again');
+    // The backend refuses (someone pressed on another device a moment ago): countdown from the backend, no error
+    OTCNOW.refuse = 25;
+    await lane.locator('.dp-otcnow-btn').click(); await page.waitForTimeout(600);
+    lt = await lane.innerText();
+    ok(/Available again in 0:2[45]/.test(lt) && lt.includes('Someone on the team checked Open To Close less than a minute ago') && await lane.locator('.dp-err-line').count() === 0, 'a refusal shows the seconds the backend gives and says why, not an error', lt.slice(0, 400));
+    OTCNOW.refuse = 0; OTCNOW.waitAt = 0;
+    // A failed check is said, and the button is usable again
+    await page.getByRole('tab', { name: 'Listing Tools' }).click(); await progress();
+    OTCNOW.fail = true;
+    await lane.locator('.dp-otcnow-btn').click(); await page.waitForTimeout(600);
+    lt = await lane.innerText();
+    ok(lt.includes('Open To Close was NOT checked') && lt.includes('503') && await lane.locator('.dp-otcnow-btn').isEnabled(), 'a failed check says it was NOT checked and why, and the button stays usable', lt.slice(0, 400));
+    OTCNOW.fail = false;
+    // Status unreadable (backend down): the button still shows and works
+    OTCNOW.statusFails = true;
+    await page.getByRole('tab', { name: 'Listing Tools' }).click(); await progress();
+    ok(await lane.locator('.dp-otcnow-btn').isEnabled(), 'if the status cannot be read the button is still there and usable');
+    OTCNOW.statusFails = false;
+    const ft = await page.locator('.dp-wrap').innerText();
+    ok(ft.includes('Reloads this page. To ask Open To Close for its latest, use Check Open To Close now.'), 'the bottom Refresh says what it does');
+    // put the fixture back for the rest of the test
+    const t0 = OTC_TASKS.find(x => x.task_id === 100); t0.completed = false; t0.completed_seen_at = null;
+    await page.getByRole('tab', { name: 'Listing Tools' }).click(); await progress();
+  }
 
   // ── Listing Tools tab again ──
   await page.getByRole('tab', { name: 'Listing Tools' }).click(); await page.waitForTimeout(200);

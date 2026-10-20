@@ -70,6 +70,11 @@
 .dp-dot{flex:0 0 20px;width:20px;height:20px;border-radius:50%;border:2px solid #9e8158;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;color:#F7F4EF}
 .dp-dot-done{background:#0A2342;border-color:#0A2342}
 .dp-dot-auto{border:none;color:#0A2342;font-size:18px}
+.dp-otcnow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:10px 0 2px}
+.dp-otcnow-btn{min-height:44px;padding:10px 16px;border-radius:6px;border:1.5px solid var(--navy,#0A2342);background:var(--navy,#0A2342);color:#fff;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+.dp-otcnow-btn:disabled{background:#e9e6df;border-color:#cfcac0;color:#6b6862;cursor:not-allowed}
+.dp-otcnow-btn:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
+.dp-otcnow-meta{font-size:12px;line-height:1.4;color:#5c5a55}
 .dp-howto{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:#fff;border:1.5px solid var(--gold,#C8A96E);border-radius:10px;padding:14px 18px;margin:0 0 14px}
 .dp-howto-txt{flex:1 1 320px;min-width:0}
 .dp-howto-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy,#0A2342)}
@@ -6126,6 +6131,16 @@ body {
               <!-- Transactions -->
               <div class="dp-lane">
                 <div class="dp-lane-hd"><div><div class="dp-lane-name">Transactions</div><div class="dp-lane-who">Sofia Burton · Open To Close</div></div><div v-if="dp.otc" class="dp-count">{{ dpOtcDone.length }} of {{ dp.otcTasks.length }} done</div></div>
+                <div class="dp-otcnow">
+                  <button type="button" class="dp-otcnow-btn" :disabled="otcNow.busy || dpOtcLeft > 0 || dp.loading" @click="dpCheckOtcNow">{{ otcNow.busy ? 'Checking Open To Close…' : 'Check Open To Close now' }}</button>
+                  <div class="dp-otcnow-meta">
+                    <template v-if="otcNow.busy">Reading every open file. About 15 seconds.</template>
+                    <template v-else-if="dpOtcLeft > 0">Available again in <b>{{ dpOtcLeftLabel }}</b></template>
+                    <template v-else>Open To Close is also checked every 15 minutes.</template>
+                  </div>
+                </div>
+                <div v-if="otcNow.error" class="dp-err-line">{{ otcNow.error }}</div>
+                <div v-else-if="otcNow.note && !otcNow.busy" class="dp-meta">{{ otcNow.note }}</div>
                 <div v-if="dp.otcError" class="dp-err-line">{{ dp.otcError }}</div>
                 <div v-else-if="!dp.otc" class="dp-meta" style="padding:10px 0;">No Open To Close file found for this address yet.</div>
                 <template v-else>
@@ -6185,6 +6200,7 @@ body {
             </template>
 
             <button type="button" class="dp-link" @click="dpLoad(lstActiveProp)" :disabled="dp.loading">Refresh</button>
+            <span class="dp-foot" style="margin-left:8px;">Reloads this page. To ask Open To Close for its latest, use Check Open To Close now.</span>
           </div>
 
           <div v-show="lstDetailTab!=='progress'">
@@ -13021,6 +13037,71 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function dpOpenTab(tab) {
       lstDetailTab.value = tab;
       if (tab === 'progress' && lstActiveProp.value && dp.forId !== lstActiveProp.value.id) dpLoad(lstActiveProp.value);
+      if (tab === 'progress') dpOtcStatus();
+    }
+    // "Check Open To Close now" (Marc, Oct 19, 2026). Open To Close is read by the backend
+    // every 15 minutes; this asks it to read now (POST /api/otc/poll, once a minute across
+    // ALL agents, forward-os-backend #74). The seconds left come from the BACKEND
+    // (manual_wait_seconds), so every agent sees the same countdown whatever their device's
+    // clock says; the browser only counts them down from when it was told. Not part of dp:
+    // the countdown is for everyone, not one listing, and must survive dpReset().
+    const otcNow = reactive({ busy: false, until: 0, now: Date.now(), error: '', note: '', lastRunAt: '' });
+    let _otcNowTimer = null;
+    function _otcNowSetWait(sec) {
+      const n = Math.max(0, Math.ceil(Number(sec) || 0));
+      otcNow.until = n ? Date.now() + n * 1000 : 0;
+      otcNow.now = Date.now();
+      if (n && !_otcNowTimer) {
+        _otcNowTimer = setInterval(() => {
+          otcNow.now = Date.now();
+          if (otcNow.now >= otcNow.until) { clearInterval(_otcNowTimer); _otcNowTimer = null; otcNow.until = 0; }
+        }, 250);
+      }
+    }
+    const dpOtcLeft = computed(() => (otcNow.until > otcNow.now ? Math.ceil((otcNow.until - otcNow.now) / 1000) : 0));
+    const dpOtcLeftLabel = computed(() => { const n = dpOtcLeft.value; return Math.floor(n / 60) + ':' + String(n % 60).padStart(2, '0'); });
+    async function dpOtcStatus() {
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/otc/poll/status');
+        if (!res.ok) return;
+        const j = await res.json();
+        if (!j || Array.isArray(j)) return;
+        if (!otcNow.busy) _otcNowSetWait(j.manual_wait_seconds);
+        if (j.last_run && j.last_run.ran_at) otcNow.lastRunAt = j.last_run.ran_at;
+      } catch (e) { /* the button still works; it just shows no countdown until pressed */ }
+    }
+    async function dpCheckOtcNow() {
+      if (otcNow.busy || dpOtcLeft.value > 0) return;
+      const prop = lstActiveProp.value;
+      otcNow.busy = true; otcNow.error = ''; otcNow.note = '';
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/otc/poll', { method: 'POST' });
+        if (res.status === 429) {
+          // The browser cannot read Retry-After from another site (the backend's CORS does not
+          // expose it), so ask the status for the seconds left; the refusal's own text says
+          // them too; a minute if neither can be read.
+          let wait = 0;
+          try { const st = await fetch(RAILWAY_URL + '/api/otc/poll/status'); if (st.ok) { const sj = await st.json(); wait = Number(sj && sj.manual_wait_seconds) || 0; } } catch (e) { /* fall through */ }
+          if (!wait) { try { const m = /in (\d+) seconds/.exec(((await res.json()) || {}).detail || ''); wait = m ? Number(m[1]) : 0; } catch (e) { /* fall through */ } }
+          _otcNowSetWait(wait > 0 ? wait : 60);
+          otcNow.note = 'Someone on the team checked Open To Close less than a minute ago. Press Refresh at the bottom of the page to see what they got.';
+          return;
+        }
+        await fosOk(res, 'could not check Open To Close');
+        const j = await res.json();
+        _otcNowSetWait(j.manual_wait_seconds != null ? j.manual_wait_seconds : 60);
+        if (j.ran_at) otcNow.lastRunAt = j.ran_at;
+        if (!j.ok) {
+          const e0 = (j.errors && j.errors[0] && j.errors[0].error) || 'no reason given';
+          otcNow.error = 'Open To Close could not be fully read: ' + e0 + '. What it last showed is below.';
+        }
+        if (prop && lstActiveProp.value && lstActiveProp.value.id === prop.id) await dpLoad(prop);
+        if (!otcNow.error) otcNow.note = 'Checked Open To Close just now.';
+      } catch (e) {
+        otcNow.error = 'Open To Close was NOT checked: ' + fosWhy(e) + '. What it last showed is below.';
+      } finally {
+        otcNow.busy = false;
+      }
     }
     const dpStage = computed(() => (dp.cc && dp.cc.stage) || '');
     const dpFubStage = computed(() => (!dp.cc && !dp.closed && dp.fub && dp.fub.found && dp.fub.stage) || '');
@@ -23395,6 +23476,10 @@ const CHANGELOG = [
       {
         title: 'How It Works, Explained, and What Concierge Sees When You Tick',
         detail: 'The How it works link at the top of Deal Progress is now a card that says what it opens: the If This, Then That guide, which shows for every Follow Up Boss stage what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Under Agent Responsibility, a note now says that when you tick an item, Concierge sees it in the Command Center with your name and the time.\n\nHow to use: Open a listing, press Deal Progress, then press Open the guide (PDF). Tick your own items as you finish them.\n\nBest practice: Tick an item the day you finish it, so Concierge sees it without having to ask you.'
+      },
+      {
+        title: 'Check Open To Close Now',
+        detail: 'Deal Progress reads Open To Close every 15 minutes. The Transactions column now has a Check Open To Close now button that reads it on the spot, so a box Transactions just ticked shows up right away. Open To Close allows only so many requests, so the button can be used once a minute by the whole team: after anyone presses it, it greys out for everyone and shows how long until it is available again.\n\nHow to use: Open a listing, press Deal Progress, then press Check Open To Close now in the Transactions column. Give it about 15 seconds; the page reloads with the latest.\n\nBest practice: If it is greyed out, someone just checked: press Refresh at the bottom of the page to see what they got.'
       }
     ]
   }
@@ -26074,7 +26159,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fileSwipedId, fileTouchStart, fileTouchMove, fileTouchEnd,
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
-      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, otcNow, dpOtcLeft, dpOtcLeftLabel, dpCheckOtcNow, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
