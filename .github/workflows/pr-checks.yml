@@ -63,6 +63,13 @@
 #   ci/description-approval-db-test.js  the same rule in a real Postgres: the
 #                        repo's SQL, run as the app's own database role. Also the
 #                        editing marker's table and functions.
+#   ci/meeting-briefs-test.js  saved Meeting Prep briefs on a card: they say they
+#                        open, Move to another card and Remove send one call with
+#                        the signed-in agent and show only what the database
+#                        confirmed, and a card holds a brief for each person.
+#   ci/meeting-briefs-db-test.js  moving and removing briefs in a real Postgres:
+#                        the repo's SQL, additive only, the app still cannot change
+#                        a brief directly, every refusal changes nothing.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -190,3 +197,13 @@ jobs:
         run: |
           ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
           node head/ci/description-approval-db-test.js head
+
+      - name: Meeting briefs test (open, move to the right card, remove, one per person)
+        if: always()
+        run: node head/ci/meeting-briefs-test.js head
+
+      - name: Meeting briefs database test (the repo's SQL in a throwaway Postgres)
+        if: always()
+        run: |
+          ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
+          node head/ci/meeting-briefs-db-test.js head
