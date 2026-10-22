@@ -124,12 +124,17 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       const st = document.querySelector('#app').__vue_app__._instance.setupState;
       const seen = [];
       st.toast.msg = ''; st.toast.show = false; st.goldToast.msg = ''; st.goldToast.show = false;
-      const iv = setInterval(() => { [st.toast.msg, st.goldToast.msg].forEach(x => { if (x && !seen.includes(x)) seen.push(x); }); }, 5);
+      // Record every message the moment it is set. Sampling every 5 ms missed a message
+      // replaced within one sample on a busy runner (FUB key save: "FUB key saved!" is
+      // followed at once by "FUB sync failed", since this test does not imitate FUB).
+      const note = (x) => { if (x && !seen.includes(x)) seen.push(x); };
+      const stopWatch = Vue.watch(() => [st.toast.msg, st.goldToast.msg], (v) => v.forEach(note), { flush: 'sync' });
+      const iv = setInterval(() => { [st.toast.msg, st.goldToast.msg].forEach(note); }, 5);
       let ret, extra;
       try { ret = await (new Function('st', 'arg', 'return (async () => {' + src + '})()'))(st, arg); } catch (e) { extra = 'threw: ' + e.message; }
       await new Promise(r => setTimeout(r, 250));
-      clearInterval(iv);
-      [st.toast.msg, st.goldToast.msg].forEach(x => { if (x && !seen.includes(x)) seen.push(x); });
+      clearInterval(iv); stopWatch();
+      [st.toast.msg, st.goldToast.msg].forEach(note);
       return { msgs: seen, ret: ret === undefined ? null : ret, extra: extra || null };
     }, [body, arg]);
   }

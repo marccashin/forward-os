@@ -774,6 +774,15 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Subfolder tool header typography */
 .subfolder-tool-name { font-family:'Montserrat',sans-serif; font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:var(--navy); }
 .subfolder-tool-desc { font-family:'Montserrat',sans-serif; font-size:8px; color:var(--gold-muted); letter-spacing:0.06em; }
+.mp-result-item { cursor:pointer; }
+.mb-row { border:1px solid var(--cream-mid); border-radius:8px; background:#fff; margin-bottom:10px; transition:border-color .15s, box-shadow .15s; }
+.mb-row:hover { border-color:var(--gold); box-shadow:0 2px 8px rgba(13,31,53,0.08); }
+.mb-row-open { display:flex; gap:12px; align-items:flex-start; padding:12px 14px; cursor:pointer; }
+.mb-open-link { display:inline-block; margin-top:8px; font-family:'Montserrat',sans-serif; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--gold); }
+.mb-row-actions { display:flex; gap:14px; justify-content:flex-end; padding:0 14px 10px; }
+.mb-act { background:none; border:none; padding:4px 0; cursor:pointer; font-family:'Montserrat',sans-serif; font-size:11px; color:#6b7280; text-decoration:underline; text-underline-offset:2px; }
+.mb-act:hover { color:var(--navy); }
+.mb-edit { border-top:1px solid var(--cream-mid); background:var(--cream); padding:12px 14px; border-radius:0 0 8px 8px; }
 .subfolder-tool-badge { font-family:'Montserrat',sans-serif; font-size:7.5px; font-weight:700; letter-spacing:0.12em; color:var(--gold); }
 .subfolder-caret { font-size:8px; color:var(--gold-muted); transition:transform 0.2s; display:inline-block; }
 /* Campaign settings panel */
@@ -3373,6 +3382,7 @@ body {
 
               <!-- Search -->
               <template v-if="!mp.selectedPerson && !mp.brief">
+                <div v-if="mp.target" data-mb-target-note style="font-size:12px;color:#6b7280;margin:0 0 12px;line-height:1.5;">This brief will be saved to {{ mp.target.name }}'s {{ mp.target.type === 'buyer' ? 'buyer' : 'seller' }} file. Search for the person you are meeting.</div>
                 <!-- FUB Search -->
                 <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Search Follow Up Boss</div>
                 <div class="mp-search-box">
@@ -4076,17 +4086,57 @@ body {
 <span style="font-size:12px;color:#9ca3af;">{{ mbBuyerOpen ? '&#9660;' : '&#9654;' }}</span>
 </div>
 <div v-if="mbBuyerOpen" class="subfolder-body" style="padding:14px 16px;">
-                  <button class="btn-gold" @click="goPrepFor('buyer', byrActiveBuyer)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:12px;">&#10022; Run Meeting Prep</button>
+                  <button class="btn-gold" @click="goPrepFor('buyer', byrActiveBuyer)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:8px;">&#10022; Run Meeting Prep</button>
+                  <button class="btn-outline" data-mb-another @click="goPrepFor('buyer', byrActiveBuyer, true)" style="width:100%;min-height:40px;font-size:12px;margin-bottom:6px;">&#65291; Brief for another person on this card</button>
+                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5;">Two people on one card, such as a couple? Run a brief for each. Every brief is kept here.</div>
+                  <div v-if="mbNotice[mbKey('buyer', byrActiveBuyer && byrActiveBuyer.id)]" data-mb-notice style="font-size:13px;color:#16a34a;font-weight:600;margin-bottom:10px;">&#10003; {{ mbNotice[mbKey('buyer', byrActiveBuyer && byrActiveBuyer.id)] }}</div>
                   <div v-if="mbList('buyer', byrActiveBuyer).unloaded"><button class="btn-outline" @click="mbLoad('buyer', byrActiveBuyer)" style="font-size:12px;padding:6px 12px;">Show saved briefs</button></div>
                   <div v-else-if="mbList('buyer', byrActiveBuyer).loading" style="font-size:13px;color:#6b7280;">Loading saved briefs&hellip;</div>
                   <div v-else-if="mbList('buyer', byrActiveBuyer).error" style="font-size:13px;color:#dc2626;">{{ mbList('buyer', byrActiveBuyer).error }}</div>
                   <div v-else-if="!mbList('buyer', byrActiveBuyer).rows.length" style="font-size:13px;color:#9ca3af;">No briefs saved yet.</div>
-                  <div v-for="r in mbList('buyer', byrActiveBuyer).rows" :key="r.id" class="mp-result-item" @click="mbOpenSaved(r, 'buyer', byrActiveBuyer)" style="display:flex;gap:12px;align-items:flex-start;">
-                    <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
-                    <div style="flex:1;min-width:0;">
-                      <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
-                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
-                      <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                  <div v-for="r in mbList('buyer', byrActiveBuyer).rows" :key="r.id" class="mb-row" data-mb-row>
+                    <div class="mb-row-open" data-mb-open @click="mbOpenSaved(r, 'buyer', byrActiveBuyer)">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
+                        <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                        <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                        <span class="mb-open-link">Open full brief &rsaquo;</span>
+                      </div>
+                    </div>
+                    <div class="mb-row-actions">
+                      <button class="mb-act" data-mb-move @click.stop="mbEditOpen(r, 'move')">Move to another card</button>
+                      <button class="mb-act" data-mb-remove @click.stop="mbEditOpen(r, 'remove')">Remove</button>
+                    </div>
+                    <div v-if="mbEdit.id === r.id && mbEdit.mode === 'move'" class="mb-edit" data-mb-move-panel @click.stop>
+                      <template v-if="!mbEdit.pick">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Move {{ r.subject_name || 'this' }}'s brief to</div>
+                        <input v-model="mbEdit.query" data-mb-move-query placeholder="Type a buyer name, seller name or address&hellip;" style="width:100%;box-sizing:border-box;">
+                        <div v-for="c in mbMoveCandidates('buyer', byrActiveBuyer)" :key="c.type + c.id" class="mp-result-item" data-mb-move-pick @click="mbEdit.pick = c">
+                          <div class="subfolder-tool-name">{{ c.name }}</div>
+                          <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ c.sub }}</div>
+                        </div>
+                        <div v-if="mbEdit.lists" style="font-size:12px;color:#6b7280;margin-top:8px;">Loading buyers and sellers&hellip;</div>
+                        <div v-else-if="mbEdit.query.trim() && !mbMoveCandidates('buyer', byrActiveBuyer).length" style="font-size:12px;color:#9ca3af;margin-top:8px;">No other buyer or seller matches. Check the spelling.</div>
+                        <button class="mb-act" @click="mbEditClose" style="margin-top:8px;">Cancel</button>
+                      </template>
+                      <template v-else>
+                        <div data-mb-move-confirm style="font-size:13px;color:var(--navy);line-height:1.5;margin-bottom:10px;">Move {{ r.subject_name || 'this' }}'s brief from <strong>{{ mbPersonName('buyer', byrActiveBuyer) }}</strong> (buyer) to <strong>{{ mbEdit.pick.name }}</strong> ({{ mbEdit.pick.type }})?</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                          <button class="btn-navy" data-mb-move-go @click="mbMoveDo(r, 'buyer', byrActiveBuyer, mbEdit.pick)" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">{{ mbEdit.busy ? 'Moving\u2026' : 'Move it' }}</button>
+                          <button class="btn-outline" @click="mbEdit.pick = null" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">Pick another</button>
+                          <button class="mb-act" @click="mbEditClose" :disabled="mbEdit.busy">Cancel</button>
+                        </div>
+                      </template>
+                      <div v-if="mbEdit.error" data-mb-error style="font-size:13px;color:#dc2626;margin-top:8px;">{{ mbEdit.error }}</div>
+                    </div>
+                    <div v-if="mbEdit.id === r.id && mbEdit.mode === 'remove'" class="mb-edit" data-mb-remove-panel @click.stop>
+                      <div style="font-size:13px;color:var(--navy);line-height:1.5;margin-bottom:10px;">Take {{ r.subject_name || 'this' }}'s brief off this card? It is kept in the database and Marc can put it back.</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn-navy" data-mb-remove-go @click="mbRemoveDo(r, 'buyer', byrActiveBuyer)" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">{{ mbEdit.busy ? 'Removing\u2026' : 'Remove it' }}</button>
+                        <button class="mb-act" @click="mbEditClose" :disabled="mbEdit.busy">Cancel</button>
+                      </div>
+                      <div v-if="mbEdit.error" data-mb-error style="font-size:13px;color:#dc2626;margin-top:8px;">{{ mbEdit.error }}</div>
                     </div>
                   </div>
 </div>
@@ -6314,17 +6364,57 @@ body {
                   <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='meetingprep' ? '&#9660;' : '&#9654;' }}</span>
                 </div>
                 <div v-if="lstToolOpen==='meetingprep'" class="subfolder-body" style="padding:14px 16px;">
-                  <button class="btn-gold" @click="goPrepFor('seller', lstActiveProp)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:12px;">&#10022; Run Meeting Prep</button>
+                  <button class="btn-gold" @click="goPrepFor('seller', lstActiveProp)" style="width:100%;min-height:46px;font-size:14px;margin-bottom:8px;">&#10022; Run Meeting Prep</button>
+                  <button class="btn-outline" data-mb-another @click="goPrepFor('seller', lstActiveProp, true)" style="width:100%;min-height:40px;font-size:12px;margin-bottom:6px;">&#65291; Brief for another person on this card</button>
+                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5;">Two people on one card, such as a couple? Run a brief for each. Every brief is kept here.</div>
+                  <div v-if="mbNotice[mbKey('seller', lstActiveProp && lstActiveProp.id)]" data-mb-notice style="font-size:13px;color:#16a34a;font-weight:600;margin-bottom:10px;">&#10003; {{ mbNotice[mbKey('seller', lstActiveProp && lstActiveProp.id)] }}</div>
                   <div v-if="mbList('seller', lstActiveProp).unloaded"><button class="btn-outline" @click="mbLoad('seller', lstActiveProp)" style="font-size:12px;padding:6px 12px;">Show saved briefs</button></div>
                   <div v-else-if="mbList('seller', lstActiveProp).loading" style="font-size:13px;color:#6b7280;">Loading saved briefs&hellip;</div>
                   <div v-else-if="mbList('seller', lstActiveProp).error" style="font-size:13px;color:#dc2626;">{{ mbList('seller', lstActiveProp).error }}</div>
                   <div v-else-if="!mbList('seller', lstActiveProp).rows.length" style="font-size:13px;color:#9ca3af;">No briefs saved yet.</div>
-                  <div v-for="r in mbList('seller', lstActiveProp).rows" :key="r.id" class="mp-result-item" @click="mbOpenSaved(r, 'seller', lstActiveProp)" style="display:flex;gap:12px;align-items:flex-start;">
-                    <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
-                    <div style="flex:1;min-width:0;">
-                      <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
-                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
-                      <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                  <div v-for="r in mbList('seller', lstActiveProp).rows" :key="r.id" class="mb-row" data-mb-row>
+                    <div class="mb-row-open" data-mb-open @click="mbOpenSaved(r, 'seller', lstActiveProp)">
+                      <div style="font-family:'Montserrat',sans-serif;font-size:22px;font-weight:900;color:var(--gold);line-height:1;min-width:22px;">{{ (r.brief && r.brief.disc && r.brief.disc.type) || '?' }}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div class="subfolder-tool-name">{{ r.subject_name || r.person_name }}<span v-if="r.brief && r.brief.disc && r.brief.disc.label" style="font-weight:400;color:#6b7280;"> &middot; {{ r.brief.disc.label }}</span></div>
+                        <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ mbFmtDate(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                        <div v-if="r.brief && r.brief.summary" style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">{{ r.brief.summary.length > 160 ? r.brief.summary.slice(0, 160) + '\u2026' : r.brief.summary }}</div>
+                        <span class="mb-open-link">Open full brief &rsaquo;</span>
+                      </div>
+                    </div>
+                    <div class="mb-row-actions">
+                      <button class="mb-act" data-mb-move @click.stop="mbEditOpen(r, 'move')">Move to another card</button>
+                      <button class="mb-act" data-mb-remove @click.stop="mbEditOpen(r, 'remove')">Remove</button>
+                    </div>
+                    <div v-if="mbEdit.id === r.id && mbEdit.mode === 'move'" class="mb-edit" data-mb-move-panel @click.stop>
+                      <template v-if="!mbEdit.pick">
+                        <div style="font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Move {{ r.subject_name || 'this' }}'s brief to</div>
+                        <input v-model="mbEdit.query" data-mb-move-query placeholder="Type a buyer name, seller name or address&hellip;" style="width:100%;box-sizing:border-box;">
+                        <div v-for="c in mbMoveCandidates('seller', lstActiveProp)" :key="c.type + c.id" class="mp-result-item" data-mb-move-pick @click="mbEdit.pick = c">
+                          <div class="subfolder-tool-name">{{ c.name }}</div>
+                          <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ c.sub }}</div>
+                        </div>
+                        <div v-if="mbEdit.lists" style="font-size:12px;color:#6b7280;margin-top:8px;">Loading buyers and sellers&hellip;</div>
+                        <div v-else-if="mbEdit.query.trim() && !mbMoveCandidates('seller', lstActiveProp).length" style="font-size:12px;color:#9ca3af;margin-top:8px;">No other buyer or seller matches. Check the spelling.</div>
+                        <button class="mb-act" @click="mbEditClose" style="margin-top:8px;">Cancel</button>
+                      </template>
+                      <template v-else>
+                        <div data-mb-move-confirm style="font-size:13px;color:var(--navy);line-height:1.5;margin-bottom:10px;">Move {{ r.subject_name || 'this' }}'s brief from <strong>{{ mbPersonName('seller', lstActiveProp) }}</strong> (seller) to <strong>{{ mbEdit.pick.name }}</strong> ({{ mbEdit.pick.type }})?</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                          <button class="btn-navy" data-mb-move-go @click="mbMoveDo(r, 'seller', lstActiveProp, mbEdit.pick)" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">{{ mbEdit.busy ? 'Moving\u2026' : 'Move it' }}</button>
+                          <button class="btn-outline" @click="mbEdit.pick = null" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">Pick another</button>
+                          <button class="mb-act" @click="mbEditClose" :disabled="mbEdit.busy">Cancel</button>
+                        </div>
+                      </template>
+                      <div v-if="mbEdit.error" data-mb-error style="font-size:13px;color:#dc2626;margin-top:8px;">{{ mbEdit.error }}</div>
+                    </div>
+                    <div v-if="mbEdit.id === r.id && mbEdit.mode === 'remove'" class="mb-edit" data-mb-remove-panel @click.stop>
+                      <div style="font-size:13px;color:var(--navy);line-height:1.5;margin-bottom:10px;">Take {{ r.subject_name || 'this' }}'s brief off this card? It is kept in the database and Marc can put it back.</div>
+                      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="btn-navy" data-mb-remove-go @click="mbRemoveDo(r, 'seller', lstActiveProp)" :disabled="mbEdit.busy" style="font-size:12px;padding:8px 14px;">{{ mbEdit.busy ? 'Removing\u2026' : 'Remove it' }}</button>
+                        <button class="mb-act" @click="mbEditClose" :disabled="mbEdit.busy">Cancel</button>
+                      </div>
+                      <div v-if="mbEdit.error" data-mb-error style="font-size:13px;color:#dc2626;margin-top:8px;">{{ mbEdit.error }}</div>
                     </div>
                   </div>
                 </div>
@@ -9465,7 +9555,11 @@ const supaRest = {
   },
   async select(table, query = '') {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, { headers: this.headers() });
-    if (!res.ok) throw new Error(`Supabase select error: ${res.status}`);
+    if (!res.ok) {
+      let detail = '';
+      try { const e = await res.json(); detail = e && (e.message || e.hint || ''); } catch (x) {}
+      throw new Error(`Supabase select error: ${res.status}` + (detail ? ' (' + detail + ')' : ''));
+    }
     return res.json();
   },
   // Replace a listing's note of one type in ONE database step (Postgres function
@@ -10929,6 +11023,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     function mbErrText(e, verb) {
       const m = (e && e.message) ? e.message : String(e);
+      if (/removed_at/.test(m)) return verb + ': the one-time database setup for moving briefs has not been run (column removed_at is missing). Ask Marc.';
       if (/404|does not exist|Could not find the table|relation/i.test(m)) return 'Saved briefs are not switched on yet: the meeting_briefs table is missing in Supabase. Ask Marc to run the one-time setup.';
       return verb + ': ' + m;
     }
@@ -10941,7 +11036,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const k = mbKey(type, rec.id);
       mbStore[k] = { loading: true, rows: (mbStore[k] && mbStore[k].rows) || [], error: '', unloaded: false };
       try {
-        const rows = await supaRest.select('meeting_briefs', 'select=*&person_type=eq.' + type + '&person_id=eq.' + encodeURIComponent(String(rec.id)) + '&order=created_at.desc');
+        const rows = await supaRest.select('meeting_briefs', 'select=*&person_type=eq.' + type + '&person_id=eq.' + encodeURIComponent(String(rec.id)) + '&removed_at=is.null&order=created_at.desc');
         mbStore[k] = { loading: false, rows: rows || [], error: '', unloaded: false };
       } catch(e) {
         mbStore[k] = { loading: false, rows: [], error: mbErrText(e, 'Could not load saved briefs'), unloaded: false };
@@ -11001,13 +11096,114 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (mbBuyerOpen.value) mbLoad('buyer', byrActiveBuyer.value);
     }
     function mbAssignTo(c) { mp.target = { type: c.type, id: c.id, name: c.name }; mbAssign.query = ''; mbSave(mp.target); }
-    function goPrepFor(type, rec) {
+    // other === true: a brief for a second person on the same card (a couple on one
+    // buyer or seller card). The brief still saves to this card; the agent types the
+    // person's name instead of starting from the card's name.
+    function goPrepFor(type, rec, other) {
       if (!rec || !rec.id) return;
       mpReset();
       mp.target = { type: type, id: rec.id, name: mbPersonName(type, rec) };
-      mp.query = type === 'buyer' ? mbPersonName('buyer', rec) : (rec.seller_name || rec.address || '');
+      mp.query = other === true ? '' : (type === 'buyer' ? mbPersonName('buyer', rec) : (rec.seller_name || rec.address || ''));
       go('meeting-prep');
       if (mp.query) nextTick(mpSearch);
+    }
+
+    // ── Move a saved brief to another card, or take it off this one (Oct 22, 2026) ──
+    // The app cannot change meeting_briefs directly. Two database functions do it
+    // (sql/2026-10-22_meeting_briefs_move.sql): move_meeting_brief reads the new card's
+    // name itself and logs from/to/who/when in meeting_brief_changes; remove_meeting_brief
+    // stamps removed_at and keeps the brief. Only what the database confirms is shown.
+    const mbEdit = reactive({ id: null, mode: '', query: '', pick: null, busy: false, error: '', lists: false });
+    const mbNotice = reactive({});
+    function mbEditClose() { if (mbEdit.busy) return; mbEdit.id = null; mbEdit.mode = ''; mbEdit.query = ''; mbEdit.pick = null; mbEdit.error = ''; }
+    function mbEditOpen(row, mode) {
+      if (mbEdit.busy) return;
+      if (mbEdit.id === row.id && mbEdit.mode === mode) { mbEditClose(); return; }
+      mbEdit.id = row.id; mbEdit.mode = mode; mbEdit.query = ''; mbEdit.pick = null; mbEdit.error = '';
+      if (mode === 'move') mbEnsureCardLists();
+    }
+    async function mbEnsureCardLists() {
+      const needB = !(byrBuyers.value || []).length, needS = !(lstProperties.value || []).length;
+      if (!needB && !needS) return;
+      mbEdit.lists = true;
+      try { await Promise.all([needB ? byrFetchBuyers() : null, needS ? lstFetchProperties() : null]); } catch (e) { console.error('[move brief] could not load cards:', e); }
+      mbEdit.lists = false;
+    }
+    function mbMoveCandidates(type, rec) {
+      const q = mbEdit.query.trim().toLowerCase();
+      if (!q) return [];
+      const here = mbKey(type, rec && rec.id);
+      const out = [];
+      (byrBuyers.value || []).forEach(b => {
+        const n = mbPersonName('buyer', b);
+        if (mbKey('buyer', b.id) !== here && n.toLowerCase().indexOf(q) !== -1) out.push({ type: 'buyer', id: b.id, name: n, sub: 'Buyer' + (b.stage ? ' \u00b7 ' + b.stage : '') });
+      });
+      (lstProperties.value || []).forEach(pr => {
+        const n = mbPersonName('seller', pr);
+        if (mbKey('seller', pr.id) !== here && (n + ' ' + (pr.address || '')).toLowerCase().indexOf(q) !== -1) out.push({ type: 'seller', id: pr.id, name: n, sub: 'Seller' + (pr.address ? ' \u00b7 ' + pr.address : '') });
+      });
+      return out.slice(0, 8);
+    }
+    async function _mbRpc(fn, body) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/rpc/' + fn, { method: 'POST', headers: supaRest.headers(), body: JSON.stringify(body) });
+      if (!res.ok) {
+        let code = '', detail = 'error ' + res.status;
+        try { const j = await res.json(); code = j.code || ''; detail = j.message || j.hint || detail; } catch (x) {}
+        if (code === 'PGRST202' || res.status === 404) detail = 'moving and removing briefs is not switched on yet (the one-time database setup has not been run)';
+        const err = new Error(detail); err._mbSaid = true; throw err;
+      }
+      let got = await res.json();
+      if (Array.isArray(got)) got = got[0];
+      return got;
+    }
+    async function mbMoveDo(row, fromType, fromRec, to) {
+      if (!row || !to || mbEdit.busy) return;
+      const who = agentName.value || '';
+      const subject = row.subject_name || 'The';
+      mbEdit.busy = true; mbEdit.error = '';
+      let ok = false, why = '';
+      try {
+        const got = await _mbRpc('move_meeting_brief', { p_id: row.id, p_to_type: to.type, p_to_id: String(to.id), p_by: who });
+        if (!got || got.id !== row.id || got.person_type !== to.type || String(got.person_id) !== String(to.id)) throw Object.assign(new Error('the database did not confirm the move'), { _mbSaid: true });
+        ok = true;
+      } catch (e) {
+        why = fosWhy(e);
+        console.error('[move brief] NOT moved:', e);
+      }
+      mbEdit.busy = false;
+      await mbLoad(fromType, fromRec);
+      if (!ok) {
+        // No answer is not the same as no move: the list above was just read again.
+        const still = (mbList(fromType, fromRec).rows || []).some(x => x.id === row.id);
+        if (still) { mbEdit.error = 'Not moved: ' + why + '. The brief is still on this card.'; return; }
+        ok = true;
+      }
+      mbEditClose();
+      mbNotice[mbKey(fromType, fromRec && fromRec.id)] = subject + "'s brief was moved to " + to.name + ' (' + to.type + ').';
+      mbNotice[mbKey(to.type, to.id)] = '';
+      mbLoad(to.type, { id: to.id });
+    }
+    async function mbRemoveDo(row, type, rec) {
+      if (!row || mbEdit.busy) return;
+      const subject = row.subject_name || 'The';
+      mbEdit.busy = true; mbEdit.error = '';
+      let ok = false, why = '';
+      try {
+        const got = await _mbRpc('remove_meeting_brief', { p_id: row.id, p_by: agentName.value || '' });
+        if (!got || got.id !== row.id || !got.removed_at) throw Object.assign(new Error('the database did not confirm the removal'), { _mbSaid: true });
+        ok = true;
+      } catch (e) {
+        why = fosWhy(e);
+        console.error('[remove brief] NOT removed:', e);
+      }
+      mbEdit.busy = false;
+      await mbLoad(type, rec);
+      if (!ok) {
+        const still = (mbList(type, rec).rows || []).some(x => x.id === row.id);
+        if (still) { mbEdit.error = 'Not removed: ' + why + '. The brief is still on this card.'; return; }
+      }
+      mbEditClose();
+      mbNotice[mbKey(type, rec && rec.id)] = subject + "'s brief was taken off this card. It is kept in the database.";
     }
     function mbOpenSaved(row, type, rec) {
       mpReset();
@@ -23480,6 +23676,26 @@ const CHANGELOG = [
         detail: 'A listing with no description used to show a yellow box in the CMA tool saying to complete the Listing Description Writer first. The CMA Builder never used the description or its buyer personas, so the box is gone. Nothing about how the CMA is calculated has changed.\n\nHow to use: Open a listing, open CMA Snapshot, and press Open CMA Builder. You no longer need a description first.\n\nBest practice: Run the CMA early, before the listing appointment, so your price conversation and your net sheet start from the same comps.'
       }
     ]
+  },
+  {
+    id: 'v2026-10-22',
+    date: 'October 22, 2026',
+    title: 'Meeting Prep Briefs: Open, Move, and One for Each Person',
+    summary: 'Saved DISC briefs on a buyer or seller card now say they open, can be moved to the right card, and a card can hold a brief for each person on it.',
+    updates: [
+      {
+        title: 'Open the Full Brief',
+        detail: 'Each saved brief under Meeting Prep on a buyer or seller card now shows Open full brief, and highlights when you point at it. Pressing it opens the whole brief: personality, conversation topics and communication tips.\n\nHow to use: Open a buyer or seller, open Meeting Prep, and press the brief.\n\nBest practice: Read the full brief, not just the first lines, before the appointment.'
+      },
+      {
+        title: 'Move a Brief Saved to the Wrong Card',
+        detail: 'Under each saved brief there is now Move to another card. Type the right buyer, seller or address, pick it, and confirm. The brief moves with its date and who ran it, and FORWARD OS keeps a record of the move. Remove takes a brief off the card without deleting it; Marc can put it back.\n\nHow to use: Open Meeting Prep on the card, press Move to another card under the brief, search, pick the right card and press Move it.\n\nBest practice: Check the name at the top of the brief before you save it, so it lands on the right card the first time.'
+      },
+      {
+        title: 'A Brief for Each Person on the Card',
+        detail: 'When two people share a buyer or seller card, such as a couple, you can now run a brief for each of them on the same card. Each brief is listed under Meeting Prep with that person\'s name.\n\nHow to use: Open Meeting Prep on the card and press Brief for another person on this card. Search for the second person and generate the brief: it saves to the same card.\n\nBest practice: Run a brief for both decision makers before a listing appointment or a buyer consultation, so you know how each one likes to hear things.'
+      }
+    ]
   }
 
 
@@ -26053,6 +26269,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       fubKeySet, settFubKey, showFubKey, fubSyncing, fubUserCount, fubUsersList, saveFubKey, clearFubKey, fubSyncUsers,
       goPrep, mp, mpSearch, mpSelectPerson, mpStart, mpGenerate, mpConfirmResearch, mpResearchAgain, mpSkipResearch, mpReset, mpSelectedPersonFallback, mpAddLinkedInShots, mpRemoveLinkedInShot,
       goPrepFor, mbList, mbLoad, mbFmtDate, mbAssign, mbCandidates, mbAssignTo, mbSave, mbOpenSaved, mbBackToTarget, mbBuyerOpen, mbToggleSeller, mbToggleBuyer,
+      mbKey, mbPersonName, mbEdit, mbNotice, mbEditOpen, mbEditClose, mbMoveCandidates, mbMoveDo, mbRemoveDo,
       // Library
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
