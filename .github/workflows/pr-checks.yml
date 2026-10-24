@@ -211,3 +211,7 @@ jobs:
       - name: Campaign headline test (the Listing Description headline is never cut, no copy is dropped)
         if: always()
         run: node head/ci/campaign-headline-test.js head
+
+      - name: Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)
+        if: always()
+        run: node head/ci/campaign-avatars-test.js head

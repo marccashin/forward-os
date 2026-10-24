@@ -14010,10 +14010,87 @@ function buildCampPkg(sections, prop, agName, mls) {
   }
 
   // ── BUYER PROFILES ────────────────────────────────────────────────────────
+  // Oct 24, 2026 (Marc): avatars redone in the Listing Description Writer's chat
+  // ("**1. Margaret & Theodore Hale, 59 and 62**", an italic role line, a short story,
+  // "**Why this residence now:**", "**Hook:**") were pasted into this section and came out
+  // as ONE card holding the second avatar's text, cut at 400 characters. The chat format
+  // and this page's own labeled format are now both read. Numbered headers are tried
+  // first; the older header styles below still work as before. Nothing is cut: text that
+  // fits no field is printed as the card's summary.
+  var AV_LABELS = [
+    ['whyNow', 'Why this (?:residence|home|property) now|Why now'],
+    ['stopScrolling', 'Stop.Scrolling Sentence|Stop.Scrolling|Hook|Headline|Key Line|Catchphrase'],
+    ['netWorth', 'Net Worth Range|Net Worth|Wealth|Assets'],
+    ['leavingBehind', 'Leaving Behind|Moving From|What They.re Leaving'],
+    ['movingToward', 'Moving Toward|Moving To|Seeking|What They.re Seeking'],
+    ['afraidOf', 'Afraid Of|Worried About|Pain Point|Fear|Concern'],
+    ['age', 'Ages?'],
+    ['occupation', 'Occupation|Career|Profession'],
+    ['household', 'Household Situation|Household'],
+    ['name', 'Name']
+  ];
+  // The text under each label, up to the next label. A label is either at the start of a
+  // line ("Age: 59", "**Hook:** ...") or bold in the middle of a line ("... **Hook:** ...").
+  function avFields(block) {
+    var alt = AV_LABELS.map(function(l) { return l[1]; }).join('|');
+    var rx = new RegExp('(?:^[ \\t]*\\**[ \\t]*(' + alt + ')[ \\t]*\\**[ \\t]*[:\\-][ \\t]*\\**[ \\t]*)|(?:\\*\\*[ \\t]*(' + alt + ')[ \\t]*[:\\-]?[ \\t]*\\*\\*[ \\t]*[:\\-]?[ \\t]*)', 'gim');
+    var marks = [], m;
+    while ((m = rx.exec(block)) !== null) {
+      var lab = (m[1] || m[2] || '').trim(), key = '';
+      AV_LABELS.forEach(function(l) { if (!key && new RegExp('^(?:' + l[1] + ')$', 'i').test(lab)) key = l[0]; });
+      marks.push({ key: key, start: m.index, end: rx.lastIndex });
+      if (m[0].length === 0) rx.lastIndex++;
+    }
+    var out = { pre: block.slice(0, marks.length ? marks[0].start : block.length) };
+    marks.forEach(function(mk, i) {
+      var val = stripMd(block.slice(mk.end, i + 1 < marks.length ? marks[i + 1].start : block.length)).replace(/\s*\n\s*/g, ' ');
+      if (mk.key) out[mk.key] = out[mk.key] ? out[mk.key] + ' ' + val : val;
+    });
+    return out;
+  }
+  function avHeaderMatch(line, expect) {
+    if (line.length > 140) return null;
+    var m = line.match(/^(?:\*\*)?[ \t]*(?:(?:Profile|Buyer|Dossier|Persona|Avatar)[ \t]+)?(\d{1,2})[ \t]*[.):][ \t]+(\S.*)$/i);
+    return (m && parseInt(m[1], 10) === expect) ? m : null;
+  }
   var avatarSec = find(/buyer.*profile|avatar|persona|target buyer/);
   var buyerProfiles = [];
+  var buyerIntro = '';
   if (avatarSec) {
     var atext = avatarSec.content || '';
+    // Numbered headers: "1. Name, ages" (bold or plain), counting 1, 2, 3 in order.
+    var aLines = atext.split('\n'), aHeads = [], aExpect = 1;
+    aLines.forEach(function(l, li) { if (avHeaderMatch(l.trim(), aExpect)) { aHeads.push(li); aExpect++; } });
+    if (aHeads.length >= 2) {
+      var pre = aLines.slice(0, aHeads[0]).join('\n').replace(/^[ \t]*[-_*]{3,}[ \t]*$/gm, '').trim();
+      if (pre && (pre.indexOf('\n') >= 0 || pre.length > 160)) buyerIntro = stripMd(pre);
+      aHeads.forEach(function(h, hi) {
+        var blockLines = aLines.slice(h, hi + 1 < aHeads.length ? aHeads[hi + 1] : aLines.length);
+        var headLine = blockLines[0].trim();
+        var rest = blockLines.slice(1).join('\n').replace(/^[ \t]*[-_*]{3,}[ \t]*$/gm, '');
+        var head = stripMd(headLine.replace(/^(?:\*\*)?[ \t]*(?:(?:Profile|Buyer|Dossier|Persona|Avatar)[ \t]+)?\d{1,2}[ \t]*[.):][ \t]+/i, '')).replace(/^Name\s*[:\-]\s*/i, '').trim();
+        var hname = head, hage = '';
+        var am = head.match(/^(.*?\S)\s*,\s*(\d{2}(?:\s*(?:and|&|\/|,)\s*\d{2})*)\s*$/i);
+        if (am) { hname = am[1]; hage = am[2]; }
+        var f = avFields(rest);
+        var roleLines = [], storyLines = [];
+        lns(f.pre).forEach(function(l) { (/^\*([^*].*[^*]|[^*])\*$/.test(l) ? roleLines : storyLines).push(stripMd(l)); });
+        buyerProfiles.push({
+          indexLabel: 'Buyer Profile 0' + (hi + 1),
+          name: f.name || hname || ('Buyer ' + (hi + 1)),
+          age: f.age || hage,
+          occupation: f.occupation || roleLines.join(' '),
+          household: f.household || '',
+          netWorth: f.netWorth || '',
+          leavingBehind: f.leavingBehind || '',
+          movingToward: f.movingToward || '',
+          afraidOf: f.afraidOf || '',
+          whyNow: f.whyNow || '',
+          stopScrolling: f.stopScrolling || '',
+          summary: storyLines.join(' ')
+        });
+      });
+    } else {
     // Try splitting on profile header lines (numbered or labeled)
     var splits = atext.split(/\n(?=(?:Profile\s+\d+|Buyer\s+\d+|Dossier\s+\d+|Persona\s+\d+|Avatar\s+\d+|\*\*[A-Z][^*\n]{2,40}\*\*\s*\n))/i).filter(function(s) { return s.trim(); });
     if (splits.length < 2) {
@@ -14044,23 +14121,29 @@ function buildCampPkg(sections, prop, agName, mls) {
           name: nameLine || xf('Name') || ('Buyer ' + (idx + 1)),
           age: xf('Age', 'Ages'),
           occupation: xf('Occupation', 'Career', 'Profession'),
+          household: '',
           netWorth: xf('Net Worth Range', 'Net Worth', 'Wealth', 'Assets'),
           leavingBehind: xf('Leaving Behind', 'Moving From', "What They.re Leaving"),
           movingToward: xf('Moving Toward', 'Moving To', 'Seeking', "What They.re Seeking"),
           afraidOf: xf('Afraid Of', 'Fear', 'Concern', 'Worried About', 'Pain Point'),
+          whyNow: '',
           stopScrolling: (xf('Stop.Scrolling Sentence', 'Stop.Scrolling', 'Hook', 'Headline', 'Key Line', 'Catchphrase') ||
                          stripMd(blines[blines.length - 1] || '')).replace(/^Sentence\s*[:\-]\s*/i, '').trim(),
+          summary: ''
         });
       });
     } else {
-      // Fall back: treat whole section as one card with raw content as stopScrolling
+      // Fall back: treat the whole section as one card. Every word is kept (it used to be
+      // cut at 400 characters).
       var alines = lns(atext);
       buyerProfiles = [{
         indexLabel: 'Buyer Profile 01',
         name: stripMd(alines[0] || 'Target Buyer'),
-        age: '', occupation: '', netWorth: '', leavingBehind: '', movingToward: '', afraidOf: '',
-        stopScrolling: paras(atext).slice(1).join(' ').substring(0, 400),
+        age: '', occupation: '', household: '', netWorth: '', leavingBehind: '', movingToward: '', afraidOf: '', whyNow: '',
+        stopScrolling: '',
+        summary: paras(atext).slice(1).map(stripMd).join(' ')
       }];
+    }
     }
   }
 
@@ -14274,7 +14357,7 @@ function buildCampPkg(sections, prop, agName, mls) {
   var _debug = sections.map(function(s) {
     return { title: s.title, len: (s.content || s.text || s.body || '').length, hasContent: !!(s.content || s.text || s.body) };
   });
-  return { cover: cover, letter: letter, listing: listing, buyerProfiles: buyerProfiles,
+  return { cover: cover, letter: letter, listing: listing, buyerProfiles: buyerProfiles, buyerIntro: buyerIntro,
            campaign: campaign, social: social, tiktok: tiktok, flyer: flyer,
            linkedin: linkedin, prep: prep };
 }
@@ -23711,12 +23794,16 @@ const CHANGELOG = [
   {
     id: 'v2026-10-24',
     date: 'October 24, 2026',
-    title: 'Campaign Package: The Listing Headline Is No Longer Cut Off',
-    summary: 'The large headline on the Listing Description page of a seller campaign now shows the whole first sentence, and nothing after it is left off the page.',
+    title: 'Campaign Package: Headline and Buyer Avatars Fixed',
+    summary: 'The seller campaign now shows the whole Listing Description headline, and buyer avatars you redo in the description writer now print as five separate cards.',
     updates: [
       {
         title: 'The Listing Description Headline Shows in Full',
         detail: 'The large headline at the top of the Listing Description page used to stop at 100 characters, sometimes in the middle of a word ("one of Old Town Al"). It now shows your whole first sentence. Anything else in that first paragraph used to be left off the page entirely; it now appears at the start of the text under the headline.\n\nHow to use: Open the campaign, check the Listing Description page, and print or download it again. A campaign you already sent to a seller still has the old cut headline until you download a fresh copy.\n\nBest practice: The first sentence of the description becomes the headline, so lead with your strongest sentence. A long one still prints in full; it simply takes more lines.'
+      },
+      {
+        title: 'Revised Buyer Avatars Now Print as Separate Cards',
+        detail: 'If you redo the buyer avatars in the Listing Description Writer and paste them into the Buyer Avatars section of the campaign, they used to come out as one card, cut off after a few lines. Each avatar now gets its own card: name and ages, role, a short story, Why This Residence Now, and the Hook as the pull quote. Nothing is cut. Avatars in the older layout (Name, Age, Occupation, Net Worth, Leaving Behind, Moving Toward, Afraid Of) print as before.\n\nHow to use: Open the campaign, replace the text in the Buyer Avatars section with your revised avatars, then print or download the campaign again. Start each avatar with its number and name on its own line, for example 1. Margaret and Theodore Hale, 59 and 62.\n\nBest practice: Paste only the avatars. Remove chat remarks before or after them, and any wording about how an avatar changed from an earlier set, because this page can go in front of the seller.'
       }
     ]
   }
