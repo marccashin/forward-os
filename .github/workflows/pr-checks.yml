@@ -207,3 +207,7 @@ jobs:
         run: |
           ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
           node head/ci/meeting-briefs-db-test.js head
+
+      - name: Campaign headline test (the Listing Description headline is never cut, no copy is dropped)
+        if: always()
+        run: node head/ci/campaign-headline-test.js head

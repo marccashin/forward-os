@@ -13988,10 +13988,21 @@ function buildCampPkg(sections, prop, agName, mls) {
     var stmt  = stripMd(lps2[0] || '');
     // Split statement at sentence boundary for better typography
     var sm = stmt.match(/^(.{20,100}[.!?])\s(.+)/s);
-    var stmtWords = (sm ? sm[1] : stmt.substring(0, 100)).trim().split(/\s+/);
+    // Oct 24, 2026: a first sentence over 100 characters was cut at character 100
+    // ("... one of Old Town Al") and the rest of the paragraph was dropped. The
+    // headline is now the WHOLE first sentence, and whatever follows it in that
+    // paragraph becomes the first body paragraph, so no copy is ever lost.
+    var stmtLead = stmt, stmtRest = '';
+    if (sm) { stmtLead = sm[1]; stmtRest = sm[2]; }
+    else {
+      var fm = stmt.match(/^(.{20,}?[.!?])(?:\s+(.+))?$/s);
+      if (fm) { stmtLead = fm[1]; stmtRest = fm[2] || ''; }
+    }
+    var stmtWords = stmtLead.trim().split(/\s+/);
     var lastW = stmtWords.pop() || '';
     var stmtHtml = stmtWords.join(' ') + (stmtWords.length ? ' <em>' + lastW + '</em>' : lastW);
     var body = lps2.slice(1).map(stripMd);
+    if (stmtRest.trim()) body.unshift(stmtRest.trim());
     var closer = body.length > 1 ? body.pop() : '';
     listing = { specs: specs, propBadge: propBadge, statementHtml: stmtHtml, columns: body, closer: closer };
   } else {
@@ -23694,6 +23705,18 @@ const CHANGELOG = [
       {
         title: 'A Brief for Each Person on the Card',
         detail: 'When two people share a buyer or seller card, such as a couple, you can now run a brief for each of them on the same card. Each brief is listed under Meeting Prep with that person\'s name.\n\nHow to use: Open Meeting Prep on the card and press Brief for another person on this card. Search for the second person and generate the brief: it saves to the same card.\n\nBest practice: Run a brief for both decision makers before a listing appointment or a buyer consultation, so you know how each one likes to hear things.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-10-24',
+    date: 'October 24, 2026',
+    title: 'Campaign Package: The Listing Headline Is No Longer Cut Off',
+    summary: 'The large headline on the Listing Description page of a seller campaign now shows the whole first sentence, and nothing after it is left off the page.',
+    updates: [
+      {
+        title: 'The Listing Description Headline Shows in Full',
+        detail: 'The large headline at the top of the Listing Description page used to stop at 100 characters, sometimes in the middle of a word ("one of Old Town Al"). It now shows your whole first sentence. Anything else in that first paragraph used to be left off the page entirely; it now appears at the start of the text under the headline.\n\nHow to use: Open the campaign, check the Listing Description page, and print or download it again. A campaign you already sent to a seller still has the old cut headline until you download a fresh copy.\n\nBest practice: The first sentence of the description becomes the headline, so lead with your strongest sentence. A long one still prints in full; it simply takes more lines.'
       }
     ]
   }
