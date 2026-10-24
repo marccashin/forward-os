@@ -97,6 +97,9 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
 .fwd-avatar-card__blocks { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-bottom: 34px; }
 .fwd-avatar-card__block-label { font-family: var(--fwd-font-body); font-weight: 600; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fwd-navy); padding-bottom: 10px; margin-bottom: 14px; border-bottom: 1px solid var(--fwd-rule-gold); }
 .fwd-avatar-card__block-text { font-size: 13px; line-height: 1.72; color: var(--fwd-ink); }
+.fwd-avatars__intro { font-size: 13px; line-height: 1.72; color: var(--fwd-ink); margin-bottom: 26px; }
+.fwd-avatar-card__summary { font-size: 13px; line-height: 1.72; color: var(--fwd-ink); margin-bottom: 26px; }
+.fwd-avatar-card__why { margin-bottom: 30px; }
 .fwd-avatar-card__quote { position: relative; background: var(--fwd-paper); border-left: 3px solid var(--fwd-gold); padding: 26px 30px 26px 32px; }
 .fwd-avatar-card__quote-label { font-family: var(--fwd-font-body); font-weight: 600; font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fwd-gold); margin-bottom: 12px; }
 .fwd-avatar-card__quote-text { font-family: var(--fwd-font-display); font-style: italic; font-weight: 500; font-size: 21px; line-height: 1.42; color: var(--fwd-navy); }
@@ -220,6 +223,9 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
   .fwd-avatar-card__blocks { gap: 20px; margin-bottom: 15px; }
   .fwd-avatar-card__block-label { padding-bottom: 7px; margin-bottom: 10px; }
   .fwd-avatar-card__block-text { font-size: 11.5px; line-height: 1.48; }
+  .fwd-avatars__intro { font-size: 11.5px; line-height: 1.48; margin-bottom: 14px; }
+  .fwd-avatar-card__summary { font-size: 11.5px; line-height: 1.48; margin-bottom: 14px; }
+  .fwd-avatar-card__why { margin-bottom: 15px; }
   .fwd-avatar-card__quote { padding: 14px 20px; }
   .fwd-avatar-card__quote-label { margin-bottom: 8px; }
   .fwd-avatar-card__quote-text { font-size: 16px; line-height: 1.3; }
@@ -357,6 +363,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
     <FwdDivider index="Section Three" title="Buyer Profiles" />
     <section class="fwd-page fwd-avatars" data-screen-label="Buyer Profiles">
       <div class="fwd-runninghead"><span class="fwd-section-label">Buyer Profiles</span><span class="fwd-page-number">04</span></div>
+      <p class="fwd-avatars__intro" v-if="pkg.buyerIntro">{{ pkg.buyerIntro }}</p>
       <div class="fwd-avatars__grid">
         <article class="fwd-avatar-card" v-for="(b, i) in pkg.buyerProfiles" :key="i">
           <header class="fwd-avatar-card__head">
@@ -366,6 +373,7 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
               <div class="fwd-avatar-card__meta">
                 <span v-if="b.age"><strong>Age</strong> {{ b.age }}</span>
                 <span v-if="b.occupation"><strong>Occupation</strong> {{ b.occupation }}</span>
+                <span v-if="b.household"><strong>Household</strong> {{ b.household }}</span>
               </div>
             </div>
             <div class="fwd-avatar-card__networth" v-if="b.netWorth">
@@ -373,10 +381,15 @@ body { font-family: var(--fwd-font-body); color: var(--fwd-ink); background: var
               <div class="fwd-avatar-card__networth-value">{{ b.netWorth }}</div>
             </div>
           </header>
-          <div class="fwd-avatar-card__blocks">
+          <p class="fwd-avatar-card__summary" v-if="b.summary">{{ b.summary }}</p>
+          <div class="fwd-avatar-card__blocks" v-if="b.leavingBehind || b.movingToward || b.afraidOf">
             <div v-if="b.leavingBehind"><div class="fwd-avatar-card__block-label">Leaving Behind</div><p class="fwd-avatar-card__block-text">{{ b.leavingBehind }}</p></div>
             <div v-if="b.movingToward"><div class="fwd-avatar-card__block-label">Moving Toward</div><p class="fwd-avatar-card__block-text">{{ b.movingToward }}</p></div>
             <div v-if="b.afraidOf"><div class="fwd-avatar-card__block-label">Afraid Of</div><p class="fwd-avatar-card__block-text">{{ b.afraidOf }}</p></div>
+          </div>
+          <div class="fwd-avatar-card__why" v-if="b.whyNow">
+            <div class="fwd-avatar-card__block-label">Why This Residence Now</div>
+            <p class="fwd-avatar-card__block-text">{{ b.whyNow }}</p>
           </div>
           <div class="fwd-avatar-card__quote" v-if="b.stopScrolling">
             <div class="fwd-avatar-card__quote-label">Stop-Scrolling Sentence</div>
