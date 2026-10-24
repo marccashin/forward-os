@@ -2801,6 +2801,10 @@ body {
                   <div v-else-if="lstAppr.row" data-appr-writer="will-clear" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">The description saved on this listing is approved for marketing ({{ lstAppr.row.approved_by }}, {{ lstApprWhen(lstAppr.row.approved_at) }}). The text here is different: saving it clears that approval.</div>
                 </div>
                 <div v-if="ldStarted && ldResumeNote" style="margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;line-height:1.5;">{{ ldResumeNote }}</div>
+                <div v-if="lstActiveProp" data-av="writer-line" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;line-height:1.5;">
+                  <template v-if="lstNotes.buyer_avatars">Using the {{ lstAvCards(lstNotes.buyer_avatars).length }} buyer avatars saved on this listing. <a @click.prevent="lstAvGoListing()" href="#" style="color:var(--navy);font-weight:600;">Open Buyer Avatars</a></template>
+                  <template v-else>No buyer avatars are saved on this listing, so the writer will ask for them. <a @click.prevent="lstAvGoListing()" href="#" style="color:var(--navy);font-weight:600;">Build them in Buyer Avatars</a></template>
+                </div>
               </div>
               <!-- Chat messages -->
               <div id="ld-chat-scroll" style="flex:1;overflow-y:auto;padding:8px 4px;display:flex;flex-direction:column;gap:12px;">
@@ -6641,6 +6645,71 @@ body {
               </div>
 
               
+              <!-- Tool: Buyer Avatars (Oct 24, 2026). Listed above the writer; either can go first. -->
+              <div class="subfolder-panel">
+                <div class="subfolder-header" data-av="header" @click="lstOpenTool('buyeravatars')">
+                  <div style="display:flex;align-items:center;gap:10px;">
+                    <svg viewBox="0 0 24 24" style="width:16px;height:16px;display:inline-block;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="8" r="3.5" fill="#0d1f35"/><circle cx="17.5" cy="9" r="2.5" fill="#c8a96e"/><path d="M2 20c0-3.6 3.1-6 7-6s7 2.4 7 6z" fill="#0d1f35"/><path d="M15 14.2c.7-.2 1.5-.2 2.5-.2 2.8 0 4.5 1.8 4.5 4.5V20h-5.2c0-2.2-.7-4-1.8-5.8z" fill="#c8a96e"/></svg>
+                    <span class="subfolder-tool-name">Buyer Avatars</span>
+                    <span class="subfolder-tool-desc">Five buyers for the writer and the campaign</span>
+                    <span v-if="lstNotes.buyer_avatars" data-av="saved-badge" style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:#16a34a;font-weight:600;margin-left:4px;">✓ Saved</span>
+                  </div>
+                  <span style="font-size:12px;color:#9ca3af;">{{ lstToolOpen==='buyeravatars' ? '▼' : '▶' }}</span>
+                </div>
+                <div v-if="lstToolOpen==='buyeravatars'" class="subfolder-body">
+                  <div data-av="intro" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:12px;">Do this before or after the description, in either order. The Listing Description Writer builds the description around saved avatars, and the campaign's Buyer Profiles page prints them. Saving here also updates the Buyer Avatars page of this listing's campaign.</div>
+                  <div v-if="lstAv.busy" data-av="busy" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;"><span class="fwd-thinking"><span></span><span></span><span></span></span> Writing five avatars from this listing. This takes about a minute.</div>
+                  <template v-else-if="lstAv.editing">
+                    <div v-if="lstAv.fromAi" data-av="ai-note" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">Written by AI from this listing. Read it, change anything, then press Save. Nothing is saved yet.</div>
+                    <textarea data-av="textarea" v-model="lstAv.draft" placeholder="Paste or type the five avatars. Start each one with its number and name on its own line, for example: 1. Margaret and Theodore Hale, 59 and 62" style="width:100%;min-height:340px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.6;color:var(--navy);background:var(--white);border:1px solid var(--cream-dark);border-radius:2px;padding:12px;box-sizing:border-box;margin-bottom:8px;"></textarea>
+                    <div data-av="readback" style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;margin-bottom:10px;">
+                      <div v-if="lstAvReadback(lstAv.draft).warn" data-av="readback-warn" style="color:#b91c1c;">{{ lstAvReadback(lstAv.draft).warn }}</div>
+                      <div v-if="lstAvReadback(lstAv.draft).n" data-av="readback-names" style="color:#6b7280;">The campaign reads {{ lstAvReadback(lstAv.draft).n }} avatar{{ lstAvReadback(lstAv.draft).n === 1 ? '' : 's' }}: {{ lstAvReadback(lstAv.draft).names.join('; ') }}.</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                      <button class="btn-sm" data-av="save" :disabled="lstAv.saving || !lstAv.draft.trim()" @click="lstAvSave()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">{{ lstAv.saving ? 'Saving...' : 'Save to this listing' }}</button>
+                      <button class="btn-sm" data-av="cancel" :disabled="lstAv.saving" @click="lstAvCancel()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Cancel</button>
+                    </div>
+                  </template>
+                  <template v-else-if="lstNotes.buyer_avatars">
+                    <div data-av="text" style="white-space:pre-wrap;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.6;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:420px;overflow:auto;margin-bottom:8px;">{{ lstNotes.buyer_avatars }}</div>
+                    <div data-av="readback" style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;margin-bottom:8px;">
+                      <div v-if="lstAvReadback(lstNotes.buyer_avatars).warn" data-av="readback-warn" style="color:#b91c1c;">{{ lstAvReadback(lstNotes.buyer_avatars).warn }}</div>
+                      <div v-if="lstAvReadback(lstNotes.buyer_avatars).n" data-av="readback-names" style="color:#6b7280;">The campaign reads {{ lstAvReadback(lstNotes.buyer_avatars).n }} avatar{{ lstAvReadback(lstNotes.buyer_avatars).n === 1 ? '' : 's' }}: {{ lstAvReadback(lstNotes.buyer_avatars).names.join('; ') }}.</div>
+                    </div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                      <button class="btn-sm btn-navy" data-av="copy" @click="copy(lstNotes.buyer_avatars)">Copy</button>
+                      <button class="btn-sm" data-av="edit" @click="lstAvEdit()" style="background:var(--white);border:1px solid var(--gold);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Edit</button>
+                      <button class="btn-sm" data-av="rewrite" @click="lstAvWrite()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Rewrite with AI</button>
+                    </div>
+                    <div v-if="lstHistCurrent('buyer_avatars')" data-hist-current="buyer_avatars" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:8px;">{{ lstHistCurrent('buyer_avatars') }}</div>
+                    <div v-if="lstHistError" data-hist-error="buyer_avatars" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;">Earlier versions could not be loaded ({{ lstHistError }}).</div>
+                    <div v-if="lstHistFor('buyer_avatars').length" data-hist="buyer_avatars" style="margin-top:10px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                      <div data-hist-toggle @click="lstHistOpen = (lstHistOpen==='buyer_avatars' ? null : 'buyer_avatars'); lstHistView = null" style="cursor:pointer;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:600;color:var(--navy);">{{ lstHistOpen==='buyer_avatars' ? '▼' : '▶' }} Previous versions ({{ lstHistFor('buyer_avatars').length }})</div>
+                      <div v-if="lstHistOpen==='buyer_avatars'" style="margin-top:6px;">
+                        <div v-for="h in lstHistFor('buyer_avatars')" :key="h.id" data-hist-row style="border:1px solid #e5e7eb;border-radius:6px;background:#fff;margin-bottom:6px;">
+                          <div @click="lstHistView = (lstHistView===h.id ? null : h.id)" style="cursor:pointer;display:flex;justify-content:space-between;gap:10px;padding:8px 10px;font-family:'Montserrat',sans-serif;font-size:11px;color:#374151;">
+                            <span>{{ lstHistWhen(h) }} · {{ lstHistWho(h) }}</span><span style="color:#9ca3af;">{{ lstHistView===h.id ? 'Close ▲' : 'Open ▼' }}</span>
+                          </div>
+                          <div v-if="lstHistView===h.id" style="padding:0 10px 10px;">
+                            <div data-hist-text style="white-space:pre-wrap;font-family:'Cormorant Garamond',serif;font-size:13px;color:#1f2937;background:#f9fafb;border:1px solid #e5e7eb;border-radius:6px;padding:10px;max-height:260px;overflow:auto;">{{ h.content }}</div>
+                            <button class="btn-sm btn-navy" @click="copy(h.content)" style="font-size:12px;margin-top:8px;">Copy this version</button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div data-av="none" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">No buyer avatars are saved for this listing yet. Have AI write five from this listing's MLS Data and description, or paste the ones you already have.</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                      <button class="btn-sm" data-av="write" @click="lstAvWrite()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Write 5 avatars with AI</button>
+                      <button class="btn-sm" data-av="self" @click="lstAvEdit()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Paste or type my own</button>
+                    </div>
+                  </template>
+                  <div v-if="lstAv.error" data-av="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">{{ lstAv.error }}</div>
+                </div>
+              </div>
+
               <!-- Tool: Listing Description -->
               <div class="subfolder-panel">
                 <div class="subfolder-header" @click="lstOpenTool('listingdesc')">
@@ -7532,7 +7601,7 @@ body {
                   <div class="camp-label">Sections to Include</div>
                   <div style="display:flex;flex-wrap:wrap;gap:6px;">
                     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#374151;cursor:pointer;background:#f1f5f9;padding:4px 10px;border-radius:20px;border:1px solid #e2e8f0;">
-                      <input type="checkbox" v-model="campSections.buyerAvatars" style="cursor:pointer;accent-color:var(--navy);"> Buyer Avatars
+                      <input type="checkbox" v-model="campSections.buyerAvatars" style="cursor:pointer;accent-color:var(--navy);"> Buyer Avatars<span v-if="lstNotes.buyer_avatars" style="color:#16a34a;font-weight:600;">&nbsp;(your saved ones)</span>
                     </label>
                     <label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#374151;cursor:pointer;background:#f1f5f9;padding:4px 10px;border-radius:20px;border:1px solid #e2e8f0;">
                       <input type="checkbox" v-model="campSections.socialMedia" style="cursor:pointer;accent-color:var(--navy);"> Social Media
@@ -12167,7 +12236,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
     });
     const lstActiveFiles = ref([]);
-    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'', campaign_letter:'' });
+    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'', campaign_letter:'', buyer_avatars:'' });
     const campBrokersOpenDays = ref(10);
     const campPhotoDays = ref(7);
     const campVideoDays = ref(7);
@@ -12489,6 +12558,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // The five buyer personas the writer produced for this listing, if they were kept:
     // in the writer's saved conversation, or in the campaign's buyer section.
     function _lstFlyerPersonas() {
+      if ((lstNotes.buyer_avatars || '').trim()) return lstNotes.buyer_avatars.trim().slice(0, 7000);
       let best = '';
       const chat = ldSavedChat.value;
       if (chat && Array.isArray(chat.messages)) {
@@ -12582,6 +12652,151 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return _lstFlyerStore(prop.id, text, 'Flyer version saved.');
     }
     function lstApprGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'listingdesc'; window.scrollTo(0, 0); }
+
+    // ── Buyer Avatars tool (Marc, Oct 24, 2026) ───────────────────────────────
+    // Five buyers for one listing, kept as the listing note `buyer_avatars` (plain text, so
+    // version history, Copy and the campaign editor all show what is saved). Three readers
+    // share that one note: the Listing Description Writer builds the description around it,
+    // the campaign's Buyer Profiles page prints it, and the flyer writer takes its steer from
+    // it. The cards are read from the text by buildCampPkg(), the same function the campaign
+    // prints with, so what this tool says it read is what the page will show. The agent can do
+    // this before or after the description, in either order.
+    const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false });
+    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; }
+    const LST_AV_LAYOUT = '1. First names and last name, ages (for a couple: Margaret and Theodore Hale, 59 and 62)\nOccupation: what they do\nHousehold: how many adults and how they use the home\nNet Worth: an estimated range\nLeaving Behind: what they are moving away from\nMoving Toward: what they want next\nAfraid Of: what worries them about this purchase\nWhy this residence now: why this home, for this buyer, at this time\nHook: one sentence this buyer would stop scrolling for';
+    function lstAvCards(text) {
+      const t = String(text || '').trim();
+      if (!t) return [];
+      try { return buildCampPkg([{ title: 'Buyer Avatars', content: t }], lstActiveProp.value || {}, '', {}).buyerProfiles || []; }
+      catch (e) { console.warn('[avatars] could not read the text back:', e); return []; }
+    }
+    // What the campaign will read out of this text, in words an agent can check.
+    function lstAvReadback(text) {
+      const t = String(text || '').trim();
+      if (!t) return { n: 0, names: [], warn: '' };
+      const cards = lstAvCards(t), names = cards.map(function (c) { return c.name; });
+      let warn = '';
+      if (cards.length === 1 && t.length > 700) warn = 'This reads as ONE avatar. Start each avatar with its number and name on its own line, for example 1. Margaret and Theodore Hale, 59 and 62.';
+      else if (cards.length && cards.length !== 5) warn = cards.length + ' avatars read. The campaign page is built for five; save it like this only if that is what you want.';
+      return { n: cards.length, names: names, warn: warn };
+    }
+    function _lstAvSystem() {
+      return 'You write buyer avatars for FORWARD, a luxury service real estate team in Washington, DC, Maryland and Virginia. An avatar is one specific, believable buyer this home is right for. FORWARD uses them to decide what to lead with, and they print on a campaign page the seller reads.\n\n'
+        + _lstFlyerVoice() + '\n\n'
+        + 'AVATAR RULES. These come first wherever they differ from anything above:\n'
+        + '- Write exactly 5 avatars. They must differ from each other in profession, life situation and reason for buying.\n'
+        + '- Use ONLY facts about the home that appear in the material given. Add no feature, number, distance or claim about the home that is not in it.\n'
+        + '- Use this exact layout for every avatar, with one blank line between avatars, and nothing else in your answer: no preface, no closing remark, no markdown, no bold, no asterisks.\n\n' + LST_AV_LAYOUT + '\n\n'
+        + '- Net Worth is an estimated range, for example $4M to $6M.\n'
+        + '- Why this residence now: one to three sentences that tie this home to this buyer.\n'
+        + '- Hook: one sentence.\n'
+        + '- Never use these words: ' + LST_FLYER_BANNED.join(', ') + '.\n'
+        + '- Never use em dashes or en dashes. Use commas, colons or semicolons.\n'
+        + '- Never refer to an earlier set of avatars. Never write "carried over", "new to the set", "revised" or "updated".\n'
+        + '- FAIR HOUSING, REQUIRED: describe each buyer by profession, how they live and what they want from a home. Never use race, color, religion, sex, national origin, familial status, disability or age as the reason someone fits the home. Never mention children or the absence of children. Ages appear only in the header line.\n';
+    }
+    // What is wrong with an AI answer, in words the model can act on. [] when nothing is.
+    function lstAvIssues(text) {
+      const t = String(text || ''), low = t.toLowerCase(), cards = lstAvCards(t), out = [];
+      if (cards.length !== 5) out.push('it has ' + cards.length + ' avatars and it must have exactly 5, each starting with its number and name on its own line');
+      const fields = [['name', 'a name'], ['age', 'ages'], ['occupation', 'Occupation'], ['netWorth', 'Net Worth'], ['leavingBehind', 'Leaving Behind'], ['movingToward', 'Moving Toward'], ['afraidOf', 'Afraid Of'], ['whyNow', 'Why this residence now'], ['stopScrolling', 'Hook']];
+      cards.forEach(function (c, i) {
+        const miss = fields.filter(function (f) { return !String(c[f[0]] || '').trim(); }).map(function (f) { return f[1]; });
+        if (miss.length) out.push('avatar ' + (i + 1) + ' is missing ' + miss.join(', '));
+      });
+      LST_FLYER_BANNED.forEach(function (w) {
+        if (new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)').test(low)) out.push('it uses "' + w + '", a word FORWARD does not use');
+      });
+      if (/[—–]/.test(t)) out.push('it has a long dash; use a comma, a colon or a semicolon');
+      if (/\bchild(?:ren)?\b|\bkids?\b/i.test(t)) out.push('it mentions children; never mention children or the absence of children');
+      if (/\b(?:carried over|new to the set|revised|updated)\b/i.test(t)) out.push('it refers to an earlier set of avatars');
+      return out;
+    }
+    // Write five avatars with AI from what the listing already holds, check them, and put
+    // them in the editor. NOTHING is saved here: the agent reads, edits and presses Save.
+    // Up to three tries; an answer that breaks a rule is sent back with the reason.
+    async function lstAvWrite() {
+      const prop = lstActiveProp.value;
+      if (!prop || !prop.id || lstAv.busy || lstAv.saving) return false;
+      const pid = prop.id;
+      const desc = (lstNotes.listing_remarks || '').trim(), mls = (lstNotes.mls_data || '').trim();
+      lstAv.error = '';
+      if (!_fosApiKey && !localStorage.getItem(agentKey('fos_key'))) { lstAv.error = FOS_NO_AI_KEY; showToast(FOS_NO_AI_KEY, 7000); return false; }
+      if (!desc && !mls) { lstAv.error = 'There is nothing to write the avatars from yet. Save this listing\'s MLS Data or a listing description first, or paste avatars you already have.'; return false; }
+      lstAv.busy = true;
+      const base = 'PROPERTY: ' + (prop.address || '') + '\n\n'
+        + (mls ? 'MLS DATA (saved on the listing):\n' + mls.slice(0, 6000) + '\n\n' : '')
+        + (desc ? 'LISTING DESCRIPTION (saved on the listing):\n' + desc + '\n\n' : '')
+        + 'Write the five buyer avatars for this home.';
+      let good = '', lastWhy = '', failure = '';
+      try {
+        const system = _lstAvSystem();
+        let prompt = base;
+        for (let attempt = 1; attempt <= 3 && !good; attempt++) {
+          let out = await claude(prompt, system, 4000);
+          out = _lstFlyerClean(String(out || '').replace(/\*\*/g, '').replace(/^\s*```[a-z]*\s*|\s*```\s*$/g, ''));
+          const problems = lstAvIssues(out);
+          if (!problems.length) { good = out; break; }
+          lastWhy = problems.join('; ');
+          prompt = base + '\n\nYOUR LAST ANSWER WAS REJECTED: ' + lastWhy + '. Write all five avatars again, following every rule and the exact layout.';
+        }
+        if (!good) failure = 'three tries did not produce avatars inside the rules (last try: ' + lastWhy + ')';
+      } catch (e) { failure = fosWhy(e); }
+      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { lstAv.busy = false; return false; }
+      lstAv.busy = false;
+      if (!good) {
+        lstAv.error = 'The avatars were NOT written: ' + failure + '. Nothing was changed. Try again, or paste avatars you already have.';
+        console.warn('[avatars] not written. listing ' + pid + ': ' + failure);
+        return false;
+      }
+      lstAv.draft = good; lstAv.fromAi = true; lstAv.editing = true;
+      return true;
+    }
+    function lstAvEdit() { lstAv.draft = lstNotes.buyer_avatars || ''; lstAv.fromAi = false; lstAv.editing = true; lstAv.error = ''; }
+    function lstAvCancel() { lstAv.editing = false; lstAv.draft = ''; lstAv.fromAi = false; lstAv.error = ''; }
+    // Put the saved avatars on the campaign's Buyer Avatars page. 'none' = this listing has no
+    // campaign yet (the campaign will take the saved avatars when it is generated).
+    async function lstAvSyncCampaign(text) {
+      const secs = campParsed.value;
+      if (!Array.isArray(secs) || !secs.length) return 'none';
+      const rx = /buyer.*profile|avatar|persona|target buyer/;
+      const i = secs.findIndex(function (x) { return rx.test(String((x && x.title) || '').toLowerCase()); });
+      if (i >= 0) secs[i].content = text; else secs.unshift({ title: 'Buyer Avatars', content: text, included: true });
+      return (await campSaveOne('sections', true)) ? 'updated' : 'failed';
+    }
+    async function lstAvSave() {
+      const prop = lstActiveProp.value, text = _lstFlyerClean(lstAv.draft);
+      if (!prop || !prop.id || !text || lstAv.saving) return false;
+      const pid = prop.id;
+      lstAv.saving = true; lstAv.error = '';
+      try {
+        await supaRest.saveNote(pid, 'buyer_avatars', text);
+      } catch (e) {
+        lstAv.saving = false;
+        if (lstActiveProp.value && lstActiveProp.value.id === pid) lstAv.error = 'The avatars were NOT saved (' + fosWhy(e) + '). Your text is still here: save it again.';
+        showToast('Buyer avatars NOT saved (' + fosWhy(e) + ').', 9000);
+        return false;
+      }
+      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { lstAv.saving = false; return true; }
+      lstNotes.buyer_avatars = text; lstAv.editing = false; lstAv.draft = ''; lstAv.fromAi = false;
+      const sync = await lstAvSyncCampaign(text);
+      lstAv.saving = false;
+      if (sync === 'failed') {
+        lstAv.error = 'The avatars are saved, but the campaign\'s Buyer Avatars page was NOT updated. Open the campaign and press Save, or save here again.';
+        showToast('Buyer avatars saved. The campaign page was NOT updated: open the campaign and press Save.', 9000);
+      } else {
+        showToast(sync === 'updated' ? 'Buyer avatars saved. The campaign\'s Buyer Avatars page now uses them.' : 'Buyer avatars saved.', 4000);
+      }
+      return true;
+    }
+    function lstAvGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'buyeravatars'; window.scrollTo(0, 0); }
+    // Added to the Listing Description Writer's prompt only when this listing has saved
+    // avatars, the way the resume note is, so every conversation without them is unchanged.
+    function _ldAvatarNote() {
+      const t = (lstNotes.buyer_avatars || '').trim();
+      if (!t || !lstActiveProp.value) return '';
+      return '\n\nSAVED BUYER AVATARS: The agent already developed the five buyer avatars for this listing with the Buyer Avatars tool. They are below. Step 5 of the process is already answered: do not ask whether the personas have been developed, do not create new ones and do not ask the agent to paste them. Write the listing description tailored to these avatars: let them decide which features lead and what the description gives the most room. FAIR HOUSING still applies: the avatars are for you alone. Never name, quote or describe an avatar in the description, and never describe the buyer or who should live there.\n\n' + t;
+    }
 
     // ── Branded PDF of the approved description ─────────────────────────────
     // Made in the browser on approval, with the same header, footer and colors as the
@@ -13373,6 +13588,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       lstPdfs.value = {}; lstPdfError.value = '';   // one listing's PDFs must never show on the next
       // An approval belongs to one listing: forget the last listing's before the new one loads.
       _lstApprReset();
+      _lstAvReset();   // the Buyer Avatars editor belongs to one listing
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -13629,7 +13845,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   const secs = campSections;
 
   let sectionList = [];
-  if (secs.buyerAvatars) sectionList.push('---SECTION: BUYER AVATARS---\nCreate 5 detailed buyer personas. For each: Name, Age, Occupation, Net Worth Range, Leaving Behind, Moving Toward, Afraid Of, and a Stop-Scrolling Sentence tailored to this property.');
+  // Oct 24, 2026: avatars saved with the Buyer Avatars tool are used as they are; the AI only
+  // invents new ones when none are saved.
+  const _savedAv = (lstNotes.buyer_avatars || '').trim();
+  if (secs.buyerAvatars && !_savedAv) sectionList.push('---SECTION: BUYER AVATARS---\nCreate 5 detailed buyer personas. For each: Name, Age, Occupation, Net Worth Range, Leaving Behind, Moving Toward, Afraid Of, and a Stop-Scrolling Sentence tailored to this property.');
   if (secs.socialMedia) sectionList.push('---SECTION: SOCIAL MEDIA COPY---\nWrite: (1) Aspirational Instagram post (2) Property detail Instagram post (3) Neighborhood Instagram post (4) Instagram Story bullet stats (5) Instagram Story heritage/lifestyle angle');
   if (secs.tiktok) sectionList.push('---SECTION: TIKTOK SCRIPTS---\nWrite 2 TikTok scripts each with Hook (0-2s) and Narration (2-15s).');
   if (secs.linkedin) sectionList.push('---SECTION: LINKEDIN POST---\nWrite a professional investment-focused LinkedIn post.');
@@ -13673,6 +13892,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       parsed.push({ title: 'Generated Campaign Content', content: raw.trim(), included: true });
     }
     parsed = parsed.filter(function(s){ var stripped = (s.content||'').replace(/^#{1,6}\s+.*$/gm,'').replace(/^-{3,}$/gm,'').replace(/\*/g,'').trim(); return stripped.length > 80; }); if(parsed.length===0){parsed=[{title:'Generated Campaign Content',content:raw.trim(),included:true}];} // Append saved tool outputs as literal campaign sections so they appear in the PDF
+    if (secs.buyerAvatars && _savedAv) parsed.unshift({ title: 'Buyer Avatars', content: _savedAv, included: true });
     if (campIncludes.seller_net_sheet && lstNotes.seller_net_sheet && lstNotes.seller_net_sheet.trim()) {
       parsed.push({ title: 'Seller Net Sheet', content: lstNotes.seller_net_sheet.trim(), included: true });
     }
@@ -23804,6 +24024,10 @@ const CHANGELOG = [
       {
         title: 'Revised Buyer Avatars Now Print as Separate Cards',
         detail: 'If you redo the buyer avatars in the Listing Description Writer and paste them into the Buyer Avatars section of the campaign, they used to come out as one card, cut off after a few lines. Each avatar now gets its own card: name and ages, role, a short story, Why This Residence Now, and the Hook as the pull quote. Nothing is cut. Avatars in the older layout (Name, Age, Occupation, Net Worth, Leaving Behind, Moving Toward, Afraid Of) print as before.\n\nHow to use: Open the campaign, replace the text in the Buyer Avatars section with your revised avatars, then print or download the campaign again. Start each avatar with its number and name on its own line, for example 1. Margaret and Theodore Hale, 59 and 62.\n\nBest practice: Paste only the avatars. Remove chat remarks before or after them, and any wording about how an avatar changed from an earlier set, because this page can go in front of the seller.'
+      },
+      {
+        title: 'Buyer Avatars Is Now Its Own Tool On The Listing',
+        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes.\n\nBest practice: Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
       }
     ]
   }
@@ -25813,7 +26037,7 @@ async function dismissUpdates() {
           try {
             reply = await claudeChatStream(
               [{ role:'user', content:'Begin the listing description process.' }],
-              LD_SYSTEM,
+              LD_SYSTEM + _ldAvatarNote(),
               function (chunk, full) { _bTyper.setTarget(ldDisplayText(full)); }
             );
             _bTyper.setTarget(ldDisplayText(reply));
@@ -25921,7 +26145,7 @@ async function dismissUpdates() {
           try {
             reply = await claudeChatStream(
               apiMessages,
-              effectiveSystem + (ldResumed.value ? LD_RESUME_NOTE : ''),
+              effectiveSystem + (ldResumed.value ? LD_RESUME_NOTE : '') + _ldAvatarNote(),
               function (chunk, full) { _sTyper.setTarget(ldDisplayText(full)); }
             );
             _sTyper.setTarget(ldDisplayText(reply));
@@ -26475,7 +26699,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
