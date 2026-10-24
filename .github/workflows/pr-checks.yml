@@ -215,3 +215,6 @@ jobs:
       - name: Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)
         if: always()
         run: node head/ci/campaign-avatars-test.js head
+      - name: Buyer Avatars test (own tool on the listing, saved note, campaign and writer read it)
+        if: always()
+        run: node head/ci/buyer-avatars-test.js head
