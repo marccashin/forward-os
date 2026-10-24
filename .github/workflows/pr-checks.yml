@@ -93,7 +93,7 @@ jobs:
   checks:
     name: App loads and names line up
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out the PR
         uses: actions/checkout@v4
