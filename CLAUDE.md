@@ -90,6 +90,8 @@
 
 GitHub runs `.github/workflows/pr-checks.yml` on every PR to `main` or `staging`:
 
+Every test runs on every PR (Oct 24, 2026). They run in four groups at once (`matrix.group` 1 to 4, each about 4 minutes) instead of one after another; the install is cached. The job the main branch rule requires is still named **App loads and names line up**: it runs last and passes only when every group passed, so never rename it. A new test goes into the lightest group's `case` entry, and a group's test that fails does not stop the rest of its group.
+
 - `ci/static-checks.js`: scripts parse, the `#app` template compiles, every name the template uses is returned from `setup()` and declared, `index.html` did not shrink, CHANGELOG is well formed.
 - `ci/mount-check.js`: opens the real app in headless Chromium, logged out and as every login, and opens every view. All network calls are intercepted; it never touches production.
 

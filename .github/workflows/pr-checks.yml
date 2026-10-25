@@ -75,6 +75,15 @@
 # main already has do not fail a PR, new ones do.
 #
 # To allow an intended large removal, add the label "allow-shrink" to the PR.
+#
+# Speed (Marc, Oct 24, 2026: "20 minutes for each update is too long"). Every test
+# still runs on every PR; nothing is skipped by what a PR touches, because the whole
+# app is one file and a slip anywhere can blank every screen. The tests run in four
+# groups at the same time instead of one after another (about 16 minutes in a row in
+# the run of Oct 24), each group about 4 minutes. The install is cached between runs.
+# The last job, "App loads and names line up", is the one the main branch rule
+# requires: it passes only when every group passed. Keep that name.
+# A new test goes into the lightest group in the case statement below.
 name: PR checks
 
 on:
@@ -90,10 +99,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  checks:
-    name: App loads and names line up
+  group:
+    name: Checks, group ${{ matrix.group }}
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [1, 2, 3, 4]
     steps:
       - name: Check out the PR
         uses: actions/checkout@v4
@@ -110,111 +123,94 @@ jobs:
         with:
           node-version: 22
 
+      # Same versions as before. Change the key with the versions.
+      - name: Restore check tools from the cache
+        id: tools-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ runner.temp }}/tools
+            ~/.cache/ms-playwright
+          key: check-tools-${{ runner.os }}-vue3.4.21-parse5.7-acorn8-jspdf2.5.1-playwright1.56.0-v1
+
       # Installed outside both checkouts. Never npm install inside the repo.
       - name: Install check tools
         run: |
           mkdir -p "$RUNNER_TEMP/tools"
           cd "$RUNNER_TEMP/tools"
-          npm init -y >/dev/null
-          npm install --no-audit --no-fund \
-            @vue/compiler-dom@3.4.21 vue@3.4.21 parse5@7 acorn@8 acorn-walk@8 jspdf@2.5.1 playwright@1.56.0
-          npx playwright install --with-deps chromium
+          if [ "${{ steps.tools-cache.outputs.cache-hit }}" != "true" ]; then
+            npm init -y >/dev/null
+            npm install --no-audit --no-fund \
+              @vue/compiler-dom@3.4.21 vue@3.4.21 parse5@7 acorn@8 acorn-walk@8 jspdf@2.5.1 playwright@1.56.0
+            npx playwright install chromium
+          fi
+          npx playwright install-deps chromium
           echo "NODE_PATH=$RUNNER_TEMP/tools/node_modules" >> "$GITHUB_ENV"
 
-      - name: Static checks
+      # Every test in the group runs even when an earlier one fails, and each one's
+      # output is folded under its own heading. The group fails if any test failed.
+      - name: Run the tests in this group
         env:
           ALLOW_SHRINK: ${{ contains(github.event.pull_request.labels.*.name, 'allow-shrink') && '1' || '0' }}
-        run: node head/ci/static-checks.js head base
-
-      - name: Mount check (real browser, every login, every view)
-        if: always()
-        run: node head/ci/mount-check.js head base
-
-      - name: Offer Tracker test (saves, retries, removed offers, moving old offers)
-        if: always()
-        run: node head/ci/offers-test.js head
-
-      - name: Save failure test (never says saved when it did not save)
-        if: always()
-        run: node head/ci/save-failure-test.js head
-
-      - name: Meeting Prep test (says when research did not run, uses slow research)
-        if: always()
-        run: node head/ci/meeting-prep-test.js head
-
-      - name: AI key test (notice when the key is missing, no demo output anywhere)
-        if: always()
-        run: node head/ci/ai-key-test.js head
-
-      - name: CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)
-        if: always()
-        run: node head/ci/cma-builder-test.js head
-
-      - name: Net sheet per listing test (no card shows another card's net sheet)
-        if: always()
-        run: node head/ci/net-sheet-listing-test.js head
-
-      - name: Seller Prep per listing test (no listing shows another listing's checklist)
-        if: always()
-        run: node head/ci/seller-prep-listing-test.js head
-
-      - name: Dashboard rows test (a row opens that listing or that buyer)
-        if: always()
-        run: node head/ci/dashboard-rows-test.js head
-
-      - name: Deal Progress test (who did what on a listing; agent ticks)
-        if: always()
-        run: node head/ci/deal-progress-test.js head
-
-      - name: Listing presentation test (each agent downloads only their own deck)
-        if: always()
-        run: node head/ci/listing-presentation-test.js head
-
-      - name: Version history test (every earlier save of a listing item can be opened)
-        if: always()
-        run: node head/ci/note-history-test.js head
-
-      - name: Net sheet numbers test (executed statements to the penny, every jurisdiction)
-        if: always()
-        run: node head/ci/net-sheet-numbers-test.js head
-
-      - name: Net sheet PDF test (charges, credits and summary say what the calculator said)
-        if: always()
-        run: node head/ci/net-sheet-pdf-test.js head
-
-      - name: Approve for marketing test (approved only when the database says so, failures shown)
-        if: always()
-        run: node head/ci/description-approval-test.js head
-
-      - name: Editing marker test (writer open marks the listing, refreshes while visible, clears on save or leave)
-        if: always()
-        run: node head/ci/description-editing-test.js head
-
-      # The rule that clears an approval is SQL, so it is tested in a real Postgres.
-      # GitHub's Ubuntu runners ship the server binaries; install them if one does not.
-      - name: Approve for marketing database test (the repo's SQL in a throwaway Postgres)
-        if: always()
         run: |
-          ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
-          node head/ci/description-approval-db-test.js head
+          failed=""
+          t() {
+            label="$1"; shift
+            echo "::group::$label"
+            start=$(date +%s)
+            if "$@"; then r=ok; else r=FAILED; failed="$failed
+            - $label"; fi
+            echo "::endgroup::"
+            echo "$r  $label ($(( $(date +%s) - start ))s)"
+          }
+          case "${{ matrix.group }}" in
+            1)
+              t "Approve for marketing test (approved only when the database says so, failures shown)" node head/ci/description-approval-test.js head
+              t "Editing marker test (writer open marks the listing, refreshes while visible, clears on save or leave)" node head/ci/description-editing-test.js head
+              ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
+              t "Approve for marketing database test (the repo's SQL in a throwaway Postgres)" node head/ci/description-approval-db-test.js head
+              t "Meeting briefs test (open, move to the right card, remove, one per person)" node head/ci/meeting-briefs-test.js head
+              t "Meeting briefs database test (the repo's SQL in a throwaway Postgres)" node head/ci/meeting-briefs-db-test.js head
+              t "AI key test (notice when the key is missing, no demo output anywhere)" node head/ci/ai-key-test.js head
+              ;;
+            2)
+              t "Listing presentation test (each agent downloads only their own deck)" node head/ci/listing-presentation-test.js head
+              t "Offer Tracker test (saves, retries, removed offers, moving old offers)" node head/ci/offers-test.js head
+              t "Meeting Prep test (says when research did not run, uses slow research)" node head/ci/meeting-prep-test.js head
+              t "Save failure test (never says saved when it did not save)" node head/ci/save-failure-test.js head
+              ;;
+            3)
+              t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head
+              t "Net sheet per listing test (no card shows another card's net sheet)" node head/ci/net-sheet-listing-test.js head
+              t "Seller Prep per listing test (no listing shows another listing's checklist)" node head/ci/seller-prep-listing-test.js head
+              t "Dashboard rows test (a row opens that listing or that buyer)" node head/ci/dashboard-rows-test.js head
+              t "Deal Progress test (who did what on a listing; agent ticks)" node head/ci/deal-progress-test.js head
+              t "Version history test (every earlier save of a listing item can be opened)" node head/ci/note-history-test.js head
+              t "Net sheet numbers test (executed statements to the penny, every jurisdiction)" node head/ci/net-sheet-numbers-test.js head
+              t "Net sheet PDF test (charges, credits and summary say what the calculator said)" node head/ci/net-sheet-pdf-test.js head
+              ;;
+            4)
+              t "Static checks" node head/ci/static-checks.js head base
+              t "Mount check (real browser, every login, every view)" node head/ci/mount-check.js head base
+              t "Buyer Avatars test (own tool on the listing, saved note, campaign and writer read it)" node head/ci/buyer-avatars-test.js head
+              t "Campaign headline test (the Listing Description headline is never cut, no copy is dropped)" node head/ci/campaign-headline-test.js head
+              t "Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)" node head/ci/campaign-avatars-test.js head
+              ;;
+          esac
+          if [ -n "$failed" ]; then
+            echo "Failed in group ${{ matrix.group }}:$failed"
+            exit 1
+          fi
 
-      - name: Meeting briefs test (open, move to the right card, remove, one per person)
-        if: always()
-        run: node head/ci/meeting-briefs-test.js head
-
-      - name: Meeting briefs database test (the repo's SQL in a throwaway Postgres)
-        if: always()
+  # The check the main branch rule requires. Passes only when every group passed.
+  checks:
+    name: App loads and names line up
+    needs: group
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Every group passed
         run: |
-          ls /usr/lib/postgresql/*/bin/initdb >/dev/null 2>&1 || (sudo apt-get update -y && sudo apt-get install -y postgresql)
-          node head/ci/meeting-briefs-db-test.js head
-
-      - name: Campaign headline test (the Listing Description headline is never cut, no copy is dropped)
-        if: always()
-        run: node head/ci/campaign-headline-test.js head
-
-      - name: Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)
-        if: always()
-        run: node head/ci/campaign-avatars-test.js head
-      - name: Buyer Avatars test (own tool on the listing, saved note, campaign and writer read it)
-        if: always()
-        run: node head/ci/buyer-avatars-test.js head
+          echo "Groups: ${{ needs.group.result }}"
+          test "${{ needs.group.result }}" = "success"
