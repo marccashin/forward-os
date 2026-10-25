@@ -6665,8 +6665,45 @@ body {
                 </div>
                 <div v-if="lstToolOpen==='buyeravatars'" class="subfolder-body">
                   <div data-av="intro" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:12px;">Do this before or after the description, in either order. The Listing Description Writer builds the description around saved avatars, and the campaign's Buyer Profiles page prints them. Saving here also updates the Buyer Avatars page of this listing's campaign.</div>
-                  <div v-if="lstAv.busy" data-av="busy" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;"><span class="fwd-thinking"><span></span><span></span><span></span></span> Writing five avatars from this listing. This takes about a minute.</div>
+                  <div data-avr="panel" style="margin-bottom:12px;border:1px solid var(--cream-dark);border-radius:2px;background:#fcfbf8;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;">
+                    <div data-avr="toggle" @click="lstAvRes.open = !lstAvRes.open" style="cursor:pointer;padding:8px 10px;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+                      <span style="font-weight:700;color:var(--navy);">{{ lstAvRes.open ? '▼' : '▶' }} Research for these avatars <span style="font-weight:400;color:#6b7280;">(for you and the AI; never on the seller's page)</span></span>
+                      <span v-if="lstAvRes.loading && lstAvRes.propId === (lstActiveProp && lstActiveProp.id)" data-avr="loading" style="color:#6b7280;"><span class="fwd-thinking"><span></span><span></span><span></span></span> Researching now</span>
+                      <span v-else-if="lstAvResFresh()" data-avr="when" style="color:#16a34a;">Researched {{ lstAvResWhen(lstAvResFresh()) }}</span>
+                      <span v-else-if="lstAvRes.error" data-avr="failed" style="color:#b91c1c;">Did not run</span>
+                    </div>
+                    <div v-if="lstAvRes.error && !lstAvRes.loading" data-avr="error" style="color:#b91c1c;padding:0 10px 8px;">{{ lstAvRes.error }}</div>
+                    <div v-if="lstAvRes.saveError" data-avr="save-error" style="color:#b91c1c;padding:0 10px 8px;">{{ lstAvRes.saveError }}</div>
+                    <div v-if="lstAvRes.open && lstAvResFresh()" data-avr="body" style="padding:0 10px 10px;color:#374151;">
+                      <template v-for="r in [lstAvResFresh()]" :key="'avr'">
+                        <div style="font-weight:700;color:var(--navy);margin-top:4px;">Census, ZIP {{ r.zip || 'unknown' }}</div>
+                        <div v-if="r.census && r.census.error" data-avr="census-error" style="color:#b91c1c;">{{ r.census.error }}.</div>
+                        <template v-else-if="r.census">
+                          <div v-for="f in r.census.figures" :key="f.key" data-avr="figure">{{ f.label }}: {{ f.display }}</div>
+                          <div style="color:#6b7280;">Source: <a :href="r.census.source_url" target="_blank" rel="noopener" style="color:var(--navy);">{{ r.census.source }}</a>. {{ r.census.note }}</div>
+                        </template>
+                        <div style="font-weight:700;color:var(--navy);margin-top:8px;">Job clusters<span v-if="r.jobs && r.jobs.county">, {{ r.jobs.county }}</span></div>
+                        <div v-if="r.jobs && r.jobs.error" data-avr="jobs-error" style="color:#b91c1c;">{{ r.jobs.error }}.</div>
+                        <template v-else-if="r.jobs">
+                          <div v-for="j in r.jobs.sectors" :key="j.code" data-avr="sector">{{ j.sector }}: {{ j.employees.toLocaleString('en-US') }} employees</div>
+                          <div style="color:#6b7280;">Source: <a :href="r.jobs.source_url" target="_blank" rel="noopener" style="color:var(--navy);">{{ r.jobs.source }}</a></div>
+                        </template>
+                        <div style="font-weight:700;color:var(--navy);margin-top:8px;">Found on the web</div>
+                        <div v-if="r.web && r.web.error" data-avr="web-error" style="color:#b91c1c;">{{ r.web.error }}.</div>
+                        <template v-else-if="r.web">
+                          <div v-for="(e, i) in r.web.employers" :key="'e' + i" data-avr="employer">Employer: {{ e.name }}<span v-if="e.what">, {{ e.what }}</span><span v-if="e.where"> ({{ e.where }})</span> <a :href="e.source_url" target="_blank" rel="noopener" style="color:var(--navy);">source</a></div>
+                          <div v-for="(m, i) in r.web.moving" :key="'m' + i" data-avr="moving">Moving: {{ m.finding }} <a :href="m.source_url" target="_blank" rel="noopener" style="color:var(--navy);">source</a></div>
+                          <div v-for="(p, i) in r.web.salaries" :key="'p' + i" data-avr="salary">Pay: {{ p.occupation }}: {{ p.range }}<span v-if="p.year"> ({{ p.year }})</span> <a :href="p.source_url" target="_blank" rel="noopener" style="color:var(--navy);">source</a></div>
+                          <div v-if="r.web.dropped_without_source" style="color:#6b7280;">{{ r.web.dropped_without_source }} finding{{ r.web.dropped_without_source === 1 ? ' was' : 's were' }} left out because no source was given.</div>
+                        </template>
+                      </template>
+                      <button class="btn-sm" data-avr="again" :disabled="lstAvRes.loading" @click="lstAvResEnsure(true)" style="margin-top:8px;background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:7px 12px;">Research again</button>
+                    </div>
+                    <div v-if="!lstAvRes.loading && !lstAvResFresh() && lstAvRes.error" style="padding:0 10px 8px;"><button class="btn-sm" data-avr="retry" @click="lstAvResEnsure(true)" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:7px 12px;">Try the research again</button></div>
+                  </div>
+                  <div v-if="lstAv.busy" data-av="busy" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;"><span class="fwd-thinking"><span></span><span></span><span></span></span> {{ lstAv.stage === 'research' ? 'Finishing the research on this listing\'s area (Census figures, job clusters, web). Then the five avatars, about a minute more.' : 'Writing five avatars from this listing and its research. This takes about a minute.' }}</div>
                   <template v-else-if="lstAv.editing">
+                    <div v-if="lstAv.fromAi && lstAv.noResearch" data-av="no-research" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-bottom:6px;line-height:1.5;">Written WITHOUT research. {{ lstAv.noResearch }}</div>
                     <div v-if="lstAv.fromAi" data-av="ai-note" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">Written by AI from this listing. Read it, change anything, then press Save. Nothing is saved yet.</div>
                     <textarea data-av="textarea" v-model="lstAv.draft" placeholder="Paste or type the five avatars. Start each one with its number and name on its own line, for example: 1. Margaret and Theodore Hale, 59 and 62" style="width:100%;min-height:340px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.6;color:var(--navy);background:var(--white);border:1px solid var(--cream-dark);border-radius:2px;padding:12px;box-sizing:border-box;margin-bottom:8px;"></textarea>
                     <div data-av="readback" style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;margin-bottom:10px;">
@@ -12256,7 +12293,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
     });
     const lstActiveFiles = ref([]);
-    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'', campaign_letter:'', buyer_avatars:'' });
+    const lstNotes = reactive({ listing_photos:'', cma:'', seller_net_sheet:'', listing_remarks:'', mls_data:'', seller_prep:'', campaign_letter:'', buyer_avatars:'', avatar_research:'' });
     const campBrokersOpenDays = ref(10);
     const campPhotoDays = ref(7);
     const campVideoDays = ref(7);
@@ -12681,8 +12718,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // it. The cards are read from the text by buildCampPkg(), the same function the campaign
     // prints with, so what this tool says it read is what the page will show. The agent can do
     // this before or after the description, in either order.
-    const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false, ideas: '' });
-    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; lstAv.ideas = ''; if (typeof _ldAvChatReset === 'function') _ldAvChatReset(); }
+    const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false, ideas: '', stage: '', noResearch: '' });
+    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; lstAv.ideas = ''; lstAv.stage = ''; lstAv.noResearch = ''; lstAvRes.propId = ''; lstAvRes.loading = false; lstAvRes.error = ''; lstAvRes.saveError = ''; lstAvRes.open = false; if (typeof _ldAvChatReset === 'function') _ldAvChatReset(); }
     const LST_AV_LAYOUT = '1. First names and last name, ages (for a couple: Margaret and Theodore Hale, 59 and 62)\nOccupation: what they do\nHousehold: how many adults and how they use the home\nNet Worth: an estimated range\nLeaving Behind: what they are moving away from\nMoving Toward: what they want next\nAfraid Of: what worries them about this purchase\nWhy this residence now: why this home, for this buyer, at this time\nHook: one sentence this buyer would stop scrolling for';
     function lstAvCards(text) {
       const t = String(text || '').trim();
@@ -12742,6 +12779,74 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       return 'THE AGENT\'S OWN IDEAS. The agent has specific buyers in mind (exact words between the lines):\n-----\n' + t + '\n-----\n'
         + 'Build one avatar around EACH idea above, in the order given, keeping the agent\'s wording for that buyer\'s work, situation and wants. If the ideas describe more than five buyers, use the first five. Then write the remaining avatars yourself from the facts about the home, so the five still differ from each other. Do not add a fact about the home to make an idea fit; if an idea fits the home only partly, still write it and make Why this residence now honest about what the home does offer. Fair housing still applies: if an idea describes the buyer by race, color, religion, sex, national origin, familial status, disability or age, or mentions children, write that avatar around the buyer\'s work, situation and what they want from a home instead.\n\n';
     }
+    // Research behind the avatars (Marc, Oct 24, 2026): Census figures for the ZIP, the
+    // county's job clusters and web research with sources, from the backend
+    // (POST /api/avatar-research, forward-os-backend avatar_research.py). It is an ADDED
+    // accuracy measure: every avatar instruction stays as it was and the research is one
+    // more block in the same request. It starts as soon as Buyer Avatars or the writer
+    // opens on a listing, so it is usually done before the agent presses Write. Saved on
+    // the listing as the note avatar_research (the backend's JSON) and reused for 30 days
+    // while the address is the same. For the agent and the AI only: never printed for the
+    // seller. A failure is said and never stops the avatars being written.
+    const lstAvRes = reactive({ propId: '', loading: false, error: '', saveError: '', open: false });
+    const LST_AV_RES_DAYS = 30;
+    let _lstAvResJob = null, _lstAvResJobPid = '';
+    function lstAvResFresh() {
+      const prop = lstActiveProp.value;
+      if (!prop || !lstNotes.avatar_research) return null;
+      let d = null;
+      try { d = JSON.parse(lstNotes.avatar_research); } catch (e) { return null; }
+      if (!d || typeof d !== 'object' || !d.prompt) return null;
+      if (String(d.address || '').trim() !== String(prop.address || '').trim()) return null;
+      const t = Date.parse(d.researched_at || '');
+      if (!t || Date.now() - t > LST_AV_RES_DAYS * 864e5) return null;
+      return d;
+    }
+    function lstAvResWhen(d) {
+      const t = Date.parse((d && d.researched_at) || '');
+      return t ? new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+    }
+    function lstAvResEnsure(force) {
+      const prop = lstActiveProp.value;
+      if (!prop || !prop.id) return Promise.resolve(null);
+      const pid = prop.id;
+      if (!force) { const d = lstAvResFresh(); if (d) return Promise.resolve(d); }
+      lstAvRes.propId = pid; lstAvRes.loading = true; lstAvRes.error = ''; lstAvRes.saveError = '';
+      if (_lstAvResJob && _lstAvResJobPid === pid) return _lstAvResJob;
+      const job = (async function () {
+        let data = null;
+        try {
+          const res = await fetch(RAILWAY_URL + '/api/avatar-research', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ property_id: pid })
+          });
+          if (!res.ok) {
+            let why = 'the research service answered ' + res.status;
+            try { const j = await res.json(); if (j && j.detail) why = String(j.detail); } catch (e) {}
+            throw new Error(why);
+          }
+          data = await res.json();
+          if (!data || typeof data !== 'object' || !data.prompt) throw new Error('the research answer could not be read');
+        } catch (e) {
+          if (lstAvRes.propId === pid) lstAvRes.error = 'The research did NOT run: ' + fosWhy(e) + '. Avatars can still be written from the listing alone.';
+          console.warn('[avatar research] listing ' + pid + ': ' + fosWhy(e));
+          data = null;
+        }
+        if (_lstAvResJobPid === pid) { _lstAvResJob = null; _lstAvResJobPid = ''; }
+        if (lstAvRes.propId === pid) lstAvRes.loading = false;
+        if (!data) return null;
+        const text = JSON.stringify(data);
+        if (lstActiveProp.value && lstActiveProp.value.id === pid) lstNotes.avatar_research = text;
+        try {
+          await supaRest.saveNote(pid, 'avatar_research', text);
+        } catch (e) {
+          if (lstAvRes.propId === pid) lstAvRes.saveError = 'The research was not saved to the listing (' + fosWhy(e) + '), so it will run again next time.';
+        }
+        return data;
+      })();
+      _lstAvResJob = job; _lstAvResJobPid = pid;
+      return job;
+    }
+    const LST_AV_RES_RULE = 'Use the research above IN ADDITION to every rule and instruction: let it shape each buyer\'s profession, employer, pay and where they are moving from. Copy any figure from it exactly as written; never round, widen or invent one, and put no figure in an avatar that is not in the research or the listing material (Net Worth stays an estimated range). Where a part of the research says it was not pulled, leave that subject alone.';
     // Write five avatars with AI from what the listing already holds, check them, and put
     // them in the editor. NOTHING is saved here: the agent reads, edits and presses Save.
     // Up to three tries; an answer that breaks a rule is sent back with the reason.
@@ -12753,10 +12858,16 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       lstAv.error = '';
       if (!_fosApiKey && !localStorage.getItem(agentKey('fos_key'))) { lstAv.error = FOS_NO_AI_KEY; showToast(FOS_NO_AI_KEY, 7000); return false; }
       if (!desc && !mls) { lstAv.error = 'There is nothing to write the avatars from yet. Save this listing\'s MLS Data or a listing description first, or paste avatars you already have.'; return false; }
-      lstAv.busy = true;
+      lstAv.busy = true; lstAv.stage = 'research'; lstAv.noResearch = '';
+      let research = null;
+      try { research = await lstAvResEnsure(false); } catch (e) { research = null; }
+      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { lstAv.busy = false; lstAv.stage = ''; return false; }
+      lstAv.stage = 'write';
+      const noResearchWhy = research ? '' : (lstAvRes.error || 'The research did NOT run.');
       const base = 'PROPERTY: ' + (prop.address || '') + '\n\n'
         + (mls ? 'MLS DATA (saved on the listing):\n' + mls.slice(0, 6000) + '\n\n' : '')
         + (desc ? 'LISTING DESCRIPTION (saved on the listing):\n' + desc + '\n\n' : '')
+        + (research ? research.prompt + '\n\n' + LST_AV_RES_RULE + '\n\n' : '')
         + _lstAvIdeasBlock(lstAv.ideas)
         + 'Write the five buyer avatars for this home.';
       let good = '', lastWhy = '', failure = '';
@@ -12773,14 +12884,14 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         }
         if (!good) failure = 'three tries did not produce avatars inside the rules (last try: ' + lastWhy + ')';
       } catch (e) { failure = fosWhy(e); }
-      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { lstAv.busy = false; return false; }
-      lstAv.busy = false;
+      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { lstAv.busy = false; lstAv.stage = ''; return false; }
+      lstAv.busy = false; lstAv.stage = '';
       if (!good) {
         lstAv.error = 'The avatars were NOT written: ' + failure + '. Nothing was changed. Try again, or paste avatars you already have.';
         console.warn('[avatars] not written. listing ' + pid + ': ' + failure);
         return false;
       }
-      lstAv.draft = good; lstAv.fromAi = true; lstAv.editing = true;
+      lstAv.draft = good; lstAv.fromAi = true; lstAv.editing = true; lstAv.noResearch = noResearchWhy;
       return true;
     }
     function lstAvEdit() { lstAv.draft = lstNotes.buyer_avatars || ''; lstAv.fromAi = false; lstAv.editing = true; lstAv.error = ''; }
@@ -12820,7 +12931,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       }
       return true;
     }
-    function lstAvGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'buyeravatars'; window.scrollTo(0, 0); }
+    function lstAvGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'buyeravatars'; window.scrollTo(0, 0); lstAvResEnsure(false); }
     // Added to the Listing Description Writer's prompt only when this listing has saved
     // avatars, the way the resume note is, so every conversation without them is unchanged.
     // Avatars the writer created in its chat (between LD_AV_START and LD_AV_END), waiting for
@@ -12865,7 +12976,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     function _ldAvatarNote() {
       const t = (lstNotes.buyer_avatars || '').trim();
-      if (!t || !lstActiveProp.value) return '';
+      if (!lstActiveProp.value) return '';
+      if (!t) {
+        const r = lstAvResFresh();
+        return r ? '\n\nRESEARCH FOR THE BUYER AVATARS: FORWARD OS researched this listing\'s area for step 5. When you create the five avatars, use this IN ADDITION to every instruction above. ' + LST_AV_RES_RULE + ' Fair housing applies to the research too. Never quote the research in the listing description.\n\n' + r.prompt : '';
+      }
       return '\n\nSAVED BUYER AVATARS: The agent already developed the five buyer avatars for this listing with the Buyer Avatars tool. They are below. Step 5 of the process is already answered: do not ask whether the personas have been developed, do not create new ones and do not ask the agent to paste them. Write the listing description tailored to these avatars: let them decide which features lead and what the description gives the most room. FAIR HOUSING still applies: the avatars are for you alone. Never name, quote or describe an avatar in the description, and never describe the buyer or who should live there. If the agent asks you to change the avatars, write all five again in the same layout as the saved ones, between ' + LD_AV_START + ' and ' + LD_AV_END + ' with each marker on its own line and nothing else between them, following the same fair housing rule (never mention children or the absence of children; ages only in the header line), so the agent can save them to the listing.\n\n' + t;
     }
 
@@ -13348,6 +13463,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstToolOpen.value = 'mlsdata'; // redirect to MLS tool
         return;
       }
+      if (key === 'buyeravatars' && lstToolOpen.value !== 'buyeravatars') lstAvResEnsure(false);
       lstToolOpen.value = lstToolOpen.value === key ? null : key;
     }
 
@@ -15928,6 +16044,7 @@ async function lstSubmitToPipeline() {
     // Open Writer from a listing: continue the saved description when there is one.
     function ldOpenWriter() {
       view.value = 'listing-desc';
+      if (lstActiveProp.value && lstActiveProp.value.id && !(lstNotes.buyer_avatars || '').trim()) lstAvResEnsure(false);
       if (!ldStarted.value && ldHasSaved.value) ldResume();
     }
 
@@ -24102,7 +24219,7 @@ const CHANGELOG = [
       },
       {
         title: 'Buyer Avatars Is Now Its Own Tool On The Listing',
-        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing. If you skip this step, the Listing Description Writer now creates the five in the same layout and asks whether to change any. When you are happy with them, press Save to Buyer Avatars above the chat, and the campaign uses them too.\n\nBest practice: Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
+        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing. If you skip this step, the Listing Description Writer now creates the five in the same layout and asks whether to change any. When you are happy with them, press Save to Buyer Avatars above the chat, and the campaign uses them too. The avatars are now built on real research as well: as soon as you open Buyer Avatars or the writer, FORWARD OS looks up the ZIP code\'s Census figures (income, home values, owners, who moved in and from where), the county\'s largest industries, and nearby employers, moving trends and pay ranges found online, each with its source. Open Research for these avatars to read it. It is for you and the AI only and never prints on the seller\'s page.\n\nBest practice: Open Buyer Avatars a minute before you need it, so the research is done when you press Write. If a draft says Written WITHOUT research, read the reason and press Rewrite with AI once the research is back. Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
       }
     ]
   }
@@ -26775,7 +26892,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
