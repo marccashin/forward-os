@@ -2529,7 +2529,7 @@ body {
                 <div class="panel-link" @click="go('listings')">View all →</div>
               </div>
               <template v-if="lstProperties.length">
-                <div class="lrow" v-for="p in lstProperties.slice(0,4)" :key="p.id" @click="lstOpenProperty(p)">
+                <div class="lrow" v-for="p in lstDashRows" :key="p.id" @click="lstOpenProperty(p)">
                   <div class="lswatch">{{ (p.address||'').split(' ').slice(0,1).join('').substring(0,3).toUpperCase() }}</div>
                   <div class="linfo">
                     <div class="laddr">{{ p.address }}</div>
@@ -2552,7 +2552,7 @@ body {
                 <div class="panel-link" @click="go('buyer-package')">View all →</div>
               </div>
               <template v-if="byrBuyers.length">
-                <div class="prow" v-for="b in byrBuyers.slice(0,4)" :key="b.id" @click="byrOpenBuyer(b)">
+                <div class="prow" v-for="b in byrDashRows" :key="b.id" @click="byrOpenBuyer(b)">
                   <div class="pavatar">{{ ((b.buyer_name||b.first_name||'?').split(' ').map(n=>n[0]).join('').substring(0,2)).toUpperCase() }}</div>
                   <div style="flex:1;min-width:0;">
                     <div class="pname">{{ b.buyer_name || (b.first_name + ' ' + b.last_name).trim() }}</div>
@@ -3926,15 +3926,15 @@ body {
             <!-- Admin: grouped by agent -->
             <template v-if="isAdmin">
               <div v-for="agentGroup in byrGroupedByAgent" :key="agentGroup.name" style="margin-bottom:24px;">
-                <div class="agent-group-header" @click="agentGroup._open = agentGroup._open === false ? true : false">
+                <div class="agent-group-header" @click="fosGroupToggle('byr', agentGroup.name)">
                   <div class="agent-group-avatar">{{ agentGroup.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
                   <div>
                     <div class="agent-group-name">{{ agentGroup.name }}</div>
                     <div class="agent-group-count">{{ agentGroup.buyers.length }} buyer{{ agentGroup.buyers.length===1?'':'s' }}</div>
                   </div>
-                  <span class="agent-group-caret">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
+                  <span class="agent-group-caret">{{ fosGroupClosed('byr', agentGroup.name) ? '▶' : '▼' }}</span>
                 </div>
-                <div v-if="agentGroup._open !== false" class="prop-grid">
+                <div v-if="!fosGroupClosed('byr', agentGroup.name)" class="prop-grid">
                   <div v-for="buyer in agentGroup.buyers" :key="buyer.id" class="listing-card-wrap">
                     <div class="listing-card" @click="byrOpenBuyer(buyer)">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
@@ -5910,15 +5910,15 @@ body {
             <!-- Admin: grouped by agent -->
             <template v-if="isAdmin">
               <div v-for="agentGroup in lstGroupedByAgent" :key="agentGroup.name" style="margin-bottom:24px;">
-                <div class="agent-group-header" @click="agentGroup._open = agentGroup._open === false ? true : false">
+                <div class="agent-group-header" @click="fosGroupToggle('lst', agentGroup.name)">
                   <div class="agent-group-avatar">{{ agentGroup.name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() }}</div>
                   <div>
                     <div class="agent-group-name">{{ agentGroup.name }}</div>
                     <div class="agent-group-count">{{ agentGroup.props.length }} listing{{ agentGroup.props.length===1?'':'s' }}</div>
                   </div>
-                  <span class="agent-group-caret">{{ agentGroup._open === false ? '▶' : '▼' }}</span>
+                  <span class="agent-group-caret">{{ fosGroupClosed('lst', agentGroup.name) ? '▶' : '▼' }}</span>
                 </div>
-                <div v-if="agentGroup._open !== false" class="prop-grid">
+                <div v-if="!fosGroupClosed('lst', agentGroup.name)" class="prop-grid">
                   <div v-for="prop in agentGroup.props" :key="prop.id" class="listing-card-wrap"
                        @touchstart.passive="lstTouchStart($event,prop.id)"
                        @touchmove.passive="lstTouchMove($event,prop.id)"
@@ -11481,10 +11481,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const map = {};
       for (const p of lstProperties.value) {
         const name = normalizeAgent(p.agent_name || 'Unknown');
-        if (!map[name]) map[name] = { name, props: [], _open: true };
+        if (!map[name]) map[name] = { name, props: [] };
         map[name].props.push(p);
       }
-      return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+      return fosSortGroups(Object.values(map));
     });
 
     // Group buyers by agent_name for Marc's admin view
@@ -11492,11 +11492,45 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const map = {};
       for (const b of byrBuyers.value) {
         const name = normalizeAgent(b.agent_name || 'Unknown');
-        if (!map[name]) map[name] = { name, buyers: [], _open: true };
+        if (!map[name]) map[name] = { name, buyers: [] };
         map[name].buyers.push(b);
       }
-      return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
+      return fosSortGroups(Object.values(map));
     });
+
+    // Your own deals first (Marc, Oct 25, 2026: "My deals should be top on my
+    // dashboard. I don't want to scroll through everyone else to see mine. I do
+    // need to keep access to them all though."). Nothing is hidden or dropped:
+    // only the order changes. A deal is yours when you are its agent or a
+    // co-agent on it (subfolder_drive_ids._co_agents, same field partnerGetCoAgents
+    // reads). Each part keeps the order it came in (newest first).
+    function fosIsMine(rec) {
+      const me = agentName.value;
+      if (!me || !rec) return false;
+      if (normalizeAgent(rec.agent_name || '') === me) return true;
+      const co = ((rec.subfolder_drive_ids || {})._co_agents) || [];
+      return co.some(a => normalizeAgent(a) === me);
+    }
+    function fosMineFirst(list) {
+      const mine = [], rest = [];
+      for (const r of (list || [])) (fosIsMine(r) ? mine : rest).push(r);
+      return mine.concat(rest);
+    }
+    // The signed-in agent's group first, everyone else A to Z (as before).
+    // Operations and Concierge own no group, so they keep plain A to Z.
+    function fosSortGroups(groups) {
+      const me = agentName.value;
+      return groups.sort((a, b) => ((b.name === me) - (a.name === me)) || a.name.localeCompare(b.name));
+    }
+    const lstDashRows = computed(() => fosMineFirst(lstProperties.value).slice(0, 4));
+    const byrDashRows = computed(() => fosMineFirst(byrBuyers.value).slice(0, 4));
+
+    // Folded agent groups on My Listings and Buyer Package. Until Oct 25, 2026
+    // the arrow set _open on an object built inside a computed, which Vue does
+    // not watch, so pressing it did nothing. Kept for this visit only.
+    const fosGroupFold = reactive({});
+    function fosGroupClosed(kind, name) { return !!fosGroupFold[kind + ':' + name]; }
+    function fosGroupToggle(kind, name) { const k = kind + ':' + name; fosGroupFold[k] = !fosGroupFold[k]; }
 
     const propFiles = ref([]);
     const allAgentFiles = ref([]);
@@ -24349,6 +24383,10 @@ const CHANGELOG = [
       {
         title: 'Social Posts Stay Together on the Page',
         detail: 'A social post or TikTok script used to start at the bottom of one page and finish on the next, sometimes leaving its heading alone above the page break. Each one now starts on a fresh page when it does not fit, and a very long one keeps its heading with its first lines.\n\nHow to use: Download the campaign PDF as usual.\n\nBest practice: Keep each post to what fits on one page so every card reads as a single piece.'
+      },
+      {
+        title: 'Your Own Deals Come First',
+        detail: 'If you can see the whole team\'s listings and buyers (My Listings and Buyer Package grouped by agent), your own group is now at the top and everyone else follows A to Z. On the Dashboard, Active Listings and Buyer Pipeline show your own deals first, including deals you co-list, newest first. Nothing is hidden: every agent\'s deals are still on the page, just below yours.\n\nThe arrow on an agent\'s group now folds it away and opens it again. Before today it did nothing.\n\nHow to use: Open My Listings or Buyer Package; your deals are first. Press a teammate\'s name to fold their group out of the way, and press it again to open it.\n\nBest practice: Fold the groups you are not working today. They open again with one press, and everything is back as it was the next time you open the OS.'
       }
     ]
   }
@@ -26997,7 +27035,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // CMA
       cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
       // Client Files
-      isAdmin, lstGroupedByAgent, byrGroupedByAgent,
+      isAdmin, lstGroupedByAgent, byrGroupedByAgent, lstDashRows, byrDashRows, fosGroupClosed, fosGroupToggle,
       auditRows, auditLoading, auditFilterAgent, auditFilterAction, auditLimit, auditAgents, auditLoad, auditFmtDate, auditActionStyle, auditDetailStr, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress, newPropSellerName,
       showSaveToProp, saveToPropData, saveToPropSelected, saveToPropNewAddr,
       refreshPropFiles, createPropFile, removePropFile, openPropFile, closePropFile,

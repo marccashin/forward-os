@@ -29,6 +29,9 @@
 #                        and Back to Listing returns to the listing.
 #   ci/dashboard-rows-test.js  a row under Active Listings or Buyer Pipeline on
 #                        the Dashboard opens that listing or that buyer.
+#   ci/mine-first-test.js  the signed-in agent's own deals first on My Listings,
+#                        Buyer Package and the Dashboard; every deal still shown;
+#                        the arrow on an agent's group folds only that group.
 #   ci/deal-progress-test.js  the Deal Progress tab: the right Command Center
 #                        and Open To Close records, who and when, an agent tick
 #                        writes only that agent row with the agent's name.
@@ -178,6 +181,7 @@ jobs:
               t "Offer Tracker test (saves, retries, removed offers, moving old offers)" node head/ci/offers-test.js head
               t "Meeting Prep test (says when research did not run, uses slow research)" node head/ci/meeting-prep-test.js head
               t "Save failure test (never says saved when it did not save)" node head/ci/save-failure-test.js head
+              t "Mine first test (your own deals on top, every deal still there, group arrows fold)" node head/ci/mine-first-test.js head
               ;;
             3)
               t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head
