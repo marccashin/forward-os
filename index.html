@@ -12752,6 +12752,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         + '- Never refer to an earlier set of avatars. Never write "carried over", "new to the set", "revised" or "updated".\n'
         + '- FAIR HOUSING, REQUIRED: describe each buyer by profession, how they live and what they want from a home. Never use race, color, religion, sex, national origin, familial status, disability or age as the reason someone fits the home. Never mention children or the absence of children. Ages appear only in the header line.\n';
     }
+    // Research data quoted in an avatar (Marc, Oct 24, 2026: "too specific for the client
+    // facing product"). Caught: wages and pay rates, statistics and the agencies behind them,
+    // counts of people, jobs or businesses, percentages.
+    const LST_AV_FIGURE_RX = /\b(?:per hour|hourly|mean (?:hourly |annual )?wage|median (?:household )?income|census|bureau of labor|county business patterns|american community survey|employs [\d,]+|[\d,]{4,} (?:people|residents|employees|households|jobs|establishments|movers)|of the [\d,]{3,} )|\d+(?:\.\d+)?\s?%/i;
     // What is wrong with an AI answer, in words the model can act on. [] when nothing is.
     function lstAvIssues(text) {
       const t = String(text || ''), low = t.toLowerCase(), cards = lstAvCards(t), out = [];
@@ -12767,6 +12771,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (/[—–]/.test(t)) out.push('it has a long dash; use a comma, a colon or a semicolon');
       if (/\bchild(?:ren)?\b|\bkids?\b/i.test(t)) out.push('it mentions children; never mention children or the absence of children');
       if (/\b(?:carried over|new to the set|revised|updated)\b/i.test(t)) out.push('it refers to an earlier set of avatars');
+      const fig = t.match(LST_AV_FIGURE_RX);
+      if (fig) out.push('it quotes research data ("' + fig[0].trim() + '"); the research shapes the avatars but no statistic, count, percentage, wage or source goes into them');
       return out;
     }
     // The agent's own buyer ideas (Marc, Oct 24, 2026), typed in the box above Write 5 with AI.
@@ -12846,7 +12852,31 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       _lstAvResJob = job; _lstAvResJobPid = pid;
       return job;
     }
-    const LST_AV_RES_RULE = 'Use the research above IN ADDITION to every rule and instruction: let it shape each buyer\'s profession, employer, pay and where they are moving from. Copy any figure from it exactly as written; never round, widen or invent one, and put no figure in an avatar that is not in the research or the listing material (Net Worth stays an estimated range). Where a part of the research says it was not pulled, leave that subject alone.';
+    // Marc, Oct 24, 2026 (first live set): hourly wages and mover counts ended up IN the
+    // avatars, which go in front of the seller. The research shapes the avatars; it is never
+    // quoted in them. The campaign page names the sources instead (lstAvMethodNote).
+    const LST_AV_RES_RULE = 'Use the research above IN ADDITION to every rule and instruction: let it shape each buyer\'s profession, employer, income level and where they are moving from, so the avatars match who really buys here. It is background for you, not content for the avatars: never quote a statistic, count, percentage, wage, salary figure, date or source from it in an avatar. Write about people, not data. Net Worth stays an estimated range. Where a part of the research says it was not pulled, leave that subject alone.';
+    // "How these profiles were formed" for the campaign's Buyer Profiles page (Marc, Oct 24,
+    // 2026). Names the sources the research actually reached, with NO figures, and says the
+    // profiles are illustrative. Parts that failed are not named.
+    function lstAvMethodNote() {
+      let d = null;
+      try { d = lstNotes.avatar_research ? JSON.parse(lstNotes.avatar_research) : null; } catch (e) { d = null; }
+      const prop = lstActiveProp.value || {};
+      if (d && String(d.address || '').trim() !== String(prop.address || '').trim()) d = null;
+      const parts = [];
+      if (d) {
+        if (d.census && !d.census.error && d.census.figures) parts.push('U.S. Census Bureau data for ZIP code ' + d.zip + ' on household income, home values, homeownership and where new residents are moving from');
+        if (d.jobs && !d.jobs.error && d.jobs.sectors && d.jobs.sectors.length) parts.push('Census employment by industry' + (d.jobs.county ? ' for ' + d.jobs.county : ''));
+        const w = d.web && !d.web.error ? d.web : null;
+        if (w && ((w.employers || []).length || (w.moving || []).length)) parts.push('the largest employers and recent relocations nearby');
+        if (w && (w.salaries || []).length) parts.push((w.salaries.some(function (x) { return /bls\.gov/i.test(x.source_url || ''); }) ? 'regional pay data from the U.S. Bureau of Labor Statistics' : 'published regional pay data'));
+      }
+      const list = parts.length > 1 ? parts.slice(0, -1).join('; ') + '; and ' + parts[parts.length - 1] : parts.join('');
+      return 'How these profiles were formed: FORWARD built these buyer profiles from the residence\'s own details'
+        + (list ? ' and from research into the area around it: ' + list : ' and our knowledge of this market')
+        + '. The profiles are illustrative, not real people. They describe who this residence is likely to appeal to and how it lives, never who should live there.';
+    }
     // Write five avatars with AI from what the listing already holds, check them, and put
     // them in the editor. NOTHING is saved here: the agent reads, edits and presses Save.
     // Up to three tries; an answer that breaks a rule is sent back with the reason.
@@ -14860,6 +14890,7 @@ async function campExportPDF() {
 
   // Override letter with the user-edited value from the preview panel.
   campApplyLetterOverride(pkg, _letterText, campLetterIncluded.value !== false);
+  if (pkg.buyerProfiles && pkg.buyerProfiles.length) pkg.buyerMethod = lstAvMethodNote();
 
   // Stash the print package BEFORE opening the tab. A tab opened with
   // window.open() receives a one-time COPY of the opener's sessionStorage taken
@@ -24219,7 +24250,7 @@ const CHANGELOG = [
       },
       {
         title: 'Buyer Avatars Is Now Its Own Tool On The Listing',
-        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing. If you skip this step, the Listing Description Writer now creates the five in the same layout and asks whether to change any. When you are happy with them, press Save to Buyer Avatars above the chat, and the campaign uses them too. The avatars are now built on real research as well: as soon as you open Buyer Avatars or the writer, FORWARD OS looks up the ZIP code\'s Census figures (income, home values, owners, who moved in and from where), the county\'s largest industries, and nearby employers, moving trends and pay ranges found online, each with its source. Open Research for these avatars to read it. It is for you and the AI only and never prints on the seller\'s page.\n\nBest practice: Open Buyer Avatars a minute before you need it, so the research is done when you press Write. If a draft says Written WITHOUT research, read the reason and press Rewrite with AI once the research is back. Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
+        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing. If you skip this step, the Listing Description Writer now creates the five in the same layout and asks whether to change any. When you are happy with them, press Save to Buyer Avatars above the chat, and the campaign uses them too. The avatars are now built on real research as well: as soon as you open Buyer Avatars or the writer, FORWARD OS looks up the ZIP code\'s Census figures (income, home values, owners, who moved in and from where), the county\'s largest industries, and nearby employers, moving trends and pay ranges found online, each with its source. Open Research for these avatars to read it. It is for you and the AI only and never prints on the seller\'s page. The research shapes the avatars, but no statistic, wage or count from it ever appears in them. Instead, the Buyer Profiles page in the campaign now ends with a short note on how the profiles were formed, naming the sources with no numbers.\n\nBest practice: Open Buyer Avatars a minute before you need it, so the research is done when you press Write. If a draft says Written WITHOUT research, read the reason and press Rewrite with AI once the research is back. Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
       }
     ]
   }
@@ -26892,7 +26923,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,

@@ -365,7 +365,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await click(page, 'write'); await page.waitForSelector('[data-av="textarea"]', { timeout: 15000 });
   const P1 = ai.calls[0].prompt, S1 = ai.calls[0].system;
   ok(rs.calls.length === 1, 'Write with AI reuses the research already done, no second request');
-  ok(P1.includes(RES_PROMPT('22306')) && /Use the research above IN ADDITION to every rule and instruction/.test(P1) && /Copy any figure from it exactly as written; never round, widen or invent one/.test(P1), 'the request carries the research and the rule to copy its figures exactly');
+  ok(P1.includes(RES_PROMPT('22306')) && /Use the research above IN ADDITION to every rule and instruction/.test(P1) && /never quote a statistic, count, percentage, wage, salary figure, date or source from it in an avatar/.test(P1), 'the request carries the research and the rule that it shapes the avatars but is never quoted in them');
   ok(P1.includes('MLS DATA') && P1.includes(DESC), 'and still everything it carried before');
   ok(!(await has(page, 'no-research')), 'no warning when the research was used');
   await click(page, 'cancel');
@@ -390,6 +390,25 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const phone = await page.evaluate(() => { const p = document.querySelector('[data-avr="panel"]'), b = document.querySelector('[data-avr="body"]'); const r = p.getBoundingClientRect(); return { open: !!b, pageScroll: document.documentElement.scrollWidth, view: window.innerWidth, panelScroll: p.scrollWidth, panelView: p.clientWidth, right: Math.round(r.right) }; });
   ok(phone.open && phone.panelScroll <= phone.panelView + 1 && phone.right <= phone.view && phone.pageScroll <= phone.view + 1, 'on a phone the research panel fits the screen with no sideways scroll', phone);
   await page.setViewportSize({ width: 1280, height: 720 });
+
+  console.log('Research data is never quoted in an avatar, and the campaign says how the profiles were formed');
+  // Marc's first live set (Oct 24, 2026) quoted an hourly wage, mover counts and an employment count.
+  const QUOTED = GOOD.replace('Why this residence now: reason number 1 good.', 'Why this residence now: Legal occupations carry a mean hourly wage of $91.10 here.').replace('Leaving Behind: old life 2', 'Leaving Behind: a move made by 3,533 of the 7,389 residents');
+  ai.calls = []; ai.answers = [QUOTED, GOOD];
+  await click(page, 'write'); await page.waitForSelector('[data-av="textarea"]', { timeout: 15000 });
+  ok(ai.calls.length === 2 && /REJECTED/.test(ai.calls[1].prompt) && /it quotes research data \("mean hourly wage"\)/.test(ai.calls[1].prompt), 'an answer that quotes research figures is sent back with the reason', ai.calls.length > 1 && ai.calls[1].prompt.slice(-400));
+  ok((await txt(page, 'textarea')) === GOOD, 'only the clean answer reaches the editor');
+  await click(page, 'cancel');
+  const method = await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.lstAvMethodNote());
+  ok(/^How these profiles were formed: FORWARD built these buyer profiles from the residence's own details and from research into the area around it: U\.S\. Census Bureau data for ZIP code 22306 on household income, home values, homeownership and where new residents are moving from; the largest employers and recent relocations nearby; and regional pay data from the U\.S\. Bureau of Labor Statistics\. The profiles are illustrative, not real people\./.test(method), 'the method note names the sources the research reached', method);
+  ok(!/Census employment by industry/.test(method), 'a part that failed (job clusters here) is not named');
+  ok(!/\d{2,}[,.]\d|\$|%/.test(method.replace('22306', '')), 'and holds no figures');
+  ok(/never who should live there\.$/.test(method), 'and ends with the fair housing line');
+  const noRes = await page.evaluate(() => { const s2 = document.querySelector('#app').__vue_app__._instance.setupState; const keep = s2.lstNotes.avatar_research; s2.lstNotes.avatar_research = ''; const m = s2.lstAvMethodNote(); s2.lstNotes.avatar_research = keep; return m; });
+  ok(noRes === "How these profiles were formed: FORWARD built these buyer profiles from the residence's own details and our knowledge of this market. The profiles are illustrative, not real people. They describe who this residence is likely to appeal to and how it lives, never who should live there.", 'with no research it says the profiles come from the residence and FORWARD\'s knowledge', noRes);
+  const tpl = require('fs').readFileSync(require('path').join(dir, 'campaign-print.html'), 'utf8');
+  ok(/<p class="fwd-avatars__method" v-if="pkg\.buyerMethod">\{\{ pkg\.buyerMethod \}\}<\/p>\s*<\/section>/.test(tpl), 'the campaign page prints the note under the profiles');
+  ok(/if \(pkg\.buyerProfiles && pkg\.buyerProfiles\.length\) pkg\.buyerMethod = lstAvMethodNote\(\);/.test(require('fs').readFileSync(require('path').join(dir, 'index.html'), 'utf8')), 'and the campaign package carries it whenever it has profiles');
 
   console.log('Saved research is reused for 30 days at the same address, then done again');
   reset();
