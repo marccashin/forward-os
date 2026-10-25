@@ -195,6 +195,7 @@ jobs:
               t "Buyer Avatars test (own tool on the listing, saved note, campaign and writer read it)" node head/ci/buyer-avatars-test.js head
               t "Campaign headline test (the Listing Description headline is never cut, no copy is dropped)" node head/ci/campaign-headline-test.js head
               t "Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)" node head/ci/campaign-avatars-test.js head
+              t "Campaign editor test (one Seller Prep card, typing and clicking never move the panel)" node head/ci/campaign-editor-test.js head
               ;;
           esac
           if [ -n "$failed" ]; then
