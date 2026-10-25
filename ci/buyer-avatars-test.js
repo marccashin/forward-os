@@ -383,6 +383,14 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await page.click('[data-avr="retry"]'); await page.waitForTimeout(800);
   ok(rs.calls.length === 3 && await page.evaluate(() => !!document.querySelector('[data-avr="when"]')), 'trying again runs it and shows it');
 
+  // On a phone the research panel and its long source names stay inside the screen.
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page, A, 'Buyer Avatars'); await page.waitForTimeout(500);
+  if (!(await page.evaluate(() => !!document.querySelector('[data-avr="body"]')))) { await page.click('[data-avr="toggle"]'); await page.waitForTimeout(300); }
+  const phone = await page.evaluate(() => { const p = document.querySelector('[data-avr="panel"]'), b = document.querySelector('[data-avr="body"]'); const r = p.getBoundingClientRect(); return { open: !!b, pageScroll: document.documentElement.scrollWidth, view: window.innerWidth, panelScroll: p.scrollWidth, panelView: p.clientWidth, right: Math.round(r.right) }; });
+  ok(phone.open && phone.panelScroll <= phone.panelView + 1 && phone.right <= phone.view && phone.pageScroll <= phone.view + 1, 'on a phone the research panel fits the screen with no sideways scroll', phone);
+  await page.setViewportSize({ width: 1280, height: 720 });
+
   console.log('Saved research is reused for 30 days at the same address, then done again');
   reset();
   const fresh = JSON.stringify(RES_FOR(PROPS[2], new Date(Date.now() - 5 * 864e5).toISOString()));
