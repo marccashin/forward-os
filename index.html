@@ -7545,6 +7545,10 @@ body {
                         </div>
                       </div>
                     </div>
+                    <div v-if="section.included !== false && campNoteParas(section.content).length" data-camp="note-warn" style="padding:10px 18px;background:#fef2f2;border-top:1px solid #fecaca;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;color:#b91c1c;">
+                      This section has a note to the agent or the seller, and it would print: "{{ campNoteParas(section.content)[0].slice(0, 140) }}{{ campNoteParas(section.content)[0].length > 140 ? '…' : '' }}". The PDF will not be made until it is removed.
+                      <button class="btn-sm" data-camp="note-remove" @click.stop="campRemoveNotes(idx)" style="margin-left:8px;background:#b91c1c;color:#fff;border:none;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;">Remove the note</button>
+                    </div>
                     <!-- Expanded edit area -->
                     <div v-if="campOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
@@ -14069,7 +14073,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   if (secs.flyerCopy) sectionList.push('---SECTION: FLYER COPY---\nWrite a 250-300 word property flyer with headline.');
   if (secs.campaignPlan) sectionList.push('---SECTION: 30-DAY CAMPAIGN PLAN---\nPre-Market: Custom branding 2 weeks before, Broker Open ' + campBrokersOpenDays.value + ' days before, Photography ' + campPhotoDays.value + ' days before, Video ' + campVideoDays.value + ' days before. Weeks 1-2: list 5 activities. Weeks 3-4: list 5 targeting activities. Ongoing: list 5 sustained activities.');
 
-  const formatRules = '\n\nFORMATTING RULES (strictly follow):\n- Never use em dashes. Use a comma or period instead.\n- Never bold text with ** markers. Use plain text.\n- Never escape hashtags. Write #Example not \\#Example.\n- Never include the agent name as a hashtag.\n- Never wrap text in code blocks or use monospace formatting.\n- Write all text as plain paragraphs.';
+  const formatRules = '\n\nFORMATTING RULES (strictly follow):\n- Never use em dashes. Use a comma or period instead.\n- Never bold text with ** markers. Use plain text.\n- Never escape hashtags. Write #Example not \\#Example.\n- Never include the agent name as a hashtag.\n- Never wrap text in code blocks or use monospace formatting.\n- Write all text as plain paragraphs.\n- This is a finished presentation the seller will read. Never write a note, comment or instruction to the agent, the seller or anyone else (no "Note for", "Note to", "Agent note", placeholders, brackets to fill in or TBD). Write only the finished copy.';
 
   // Build supplemental context from all saved tool outputs
   let supplementalCtx = '';
@@ -14271,6 +14275,29 @@ function campDedupePrep() {
   campParsed.value = secs.filter(function (x) { return !(x && CAMP_PREP_RX.test(x.title || '')); });
   campQueueSave('sections');
   return true;
+}
+// Notes to the agent or the seller never print (Marc, Oct 25, 2026: "there shouldn't be any
+// notes to the agent or to the client in this deliverable"; the AI had written "Note for
+// Charlotte and the Chapmans: every caption below is fully editable..." into the social copy).
+// A paragraph whose first line starts with Note / Notes / Agent note / Internal note and a
+// colon is a note. The editor names it and offers Remove; the PDF step refuses while one is in
+// an included section, so nothing is ever dropped without the agent pressing Remove.
+var CAMP_NOTE_RX = /^\s*(?:agent |internal |a quick |quick |an? )?notes?\b[^:\n]{0,90}:/i;
+function campNoteParas(text) {
+  return String(text || '').split(/\n{2,}/).filter(function (p) { return CAMP_NOTE_RX.test(p.replace(/^[\s*#_>-]+/, '')); });
+}
+function campRemoveNotes(idx) {
+  var sec = campParsed.value && campParsed.value[idx];
+  if (!sec) return;
+  sec.content = String(sec.content || '').split(/\n{2,}/).filter(function (p) { return !CAMP_NOTE_RX.test(p.replace(/^[\s*#_>-]+/, '')); }).join('\n\n');
+  campQueueSave('sections');
+  campSizeEditors();
+}
+function campNotesBlocking() {
+  var hits = [];
+  (campParsed.value || []).forEach(function (x) { if (x && x.included !== false && campNoteParas(x.content).length) hits.push(x.title || 'a section'); });
+  if (campLetterIncluded.value !== false && campNoteParas(campLetterEditVal.value).length) hits.push('Letter to Seller');
+  return hits;
 }
 function campSizeEditors() {
   nextTick(function () { document.querySelectorAll('.camp-section-ta').forEach(fosAutoGrow); });
@@ -14876,6 +14903,11 @@ function campApplyLetterOverride(pkg, letterText, included) {
 }
 
 async function campExportPDF() {
+  var _notes = campNotesBlocking();
+  if (_notes.length) {
+    showToast('The PDF was NOT made: ' + _notes.join(', ') + (_notes.length === 1 ? ' has' : ' have') + ' a note to the agent or the seller in it. Open the section and press Remove the note, then try again.', 9000);
+    return;
+  }
   var sections = campParsed.value;
   if (!sections || !sections.length) {
     showToast('No campaign content to export. Use the Campaign Generator first.', 5000);
@@ -14927,6 +14959,12 @@ async function campExportPDF() {
   // Override letter with the user-edited value from the preview panel.
   campApplyLetterOverride(pkg, _letterText, campLetterIncluded.value !== false);
   if (pkg.buyerProfiles && pkg.buyerProfiles.length) pkg.buyerMethod = lstAvMethodNote();
+  // Unticked means not in the PDF (Marc, Oct 25, 2026: an unticked Seller Prep Guide printed as
+  // a blank page). These pages used to print whether or not anything was ticked.
+  var _allOff = function (rx) { var c = (campParsed.value || []).filter(function (x) { return x && rx.test(x.title || ''); }); return c.length > 0 && c.every(function (x) { return x.included === false; }); };
+  if (campLdIncluded.value === false) pkg.listing._skip = true;
+  if (_allOff(/flyer/i)) pkg.flyer._skip = true;
+  if (campPrepIncluded.value === false) pkg.prep._skip = true;
 
   // Stash the print package BEFORE opening the tab. A tab opened with
   // window.open() receives a one-time COPY of the opener's sessionStorage taken
@@ -24303,6 +24341,14 @@ const CHANGELOG = [
       {
         title: 'The Seller Prep Guide Appears Once',
         detail: 'The campaign used to show the Seller Prep Guide twice: once as a plain section and once as its own card with the Single Family and Condo switch. When both were ticked, the plain copy printed and changes made in the card were ignored. Now there is only the card. If you had edited the plain copy, your wording moves into the card and is saved as the listing guide, and the earlier guide stays under Previous versions.\n\nHow to use: Open the campaign and edit the guide in the Seller Prep Guide card. Tick Include to put it in the package.\n\nBest practice: Make checklist changes in the Seller Prep Guide tool on the listing, so the guide and the campaign always match.'
+      },
+      {
+        title: 'The PDF Shows Only What You Tick, and No Notes',
+        detail: 'An unticked Seller Prep Guide used to print as a blank page, and the PDF ignored the Include box on the listing description and Flyer Copy. Unticked now means left out. The campaign writer is also told never to write notes to you or the seller, and if a section still has one (for example a line starting Note for), the editor shows it in red with a Remove the note button, and the PDF is not made until it is gone.\n\nHow to use: Tick Include on the sections you want in the package. If a red note warning appears, press Remove the note, then download the PDF.\n\nBest practice: Read each section once before you send the package, since it goes to the seller as written.'
+      },
+      {
+        title: 'Social Posts Stay Together on the Page',
+        detail: 'A social post or TikTok script used to start at the bottom of one page and finish on the next, sometimes leaving its heading alone above the page break. Each one now starts on a fresh page when it does not fit, and a very long one keeps its heading with its first lines.\n\nHow to use: Download the campaign PDF as usual.\n\nBest practice: Keep each post to what fits on one page so every card reads as a single piece.'
       }
     ]
   }
@@ -26985,7 +27031,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
       lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, otcNow, dpOtcLeft, dpOtcLeftLabel, dpCheckOtcNow, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, fosAutoGrow, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, fosAutoGrow, campNoteParas, campRemoveNotes, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep,

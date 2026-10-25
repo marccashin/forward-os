@@ -44,6 +44,8 @@ const SOCIAL = { title: 'SOCIAL MEDIA COPY', content: LONG('Social', 2), include
 const CAMP_A = [SOCIAL, { title: 'Seller Prep Guide', content: PREP, included: true }, { title: 'CMA Summary', content: 'ESTIMATED VALUE: $1,825,000 Range: $1,588,200 to $2,292,800 with six closed sales nearby and long enough to keep.', included: false }];
 const CAMP_B = [SOCIAL, { title: 'Seller Prep Guide', content: EDITED_PREP, included: false }];
 const CAMP_C = [SOCIAL, { title: 'CAMPAIGN PLAN', content: LONG('Plan', 24), included: true }];
+const NOTE = 'Note for Charlotte and the Chapmans: Every caption below is fully editable. All pricing references are placeholders only.';
+const CAMP_D = [{ title: 'SOCIAL MEDIA COPY', content: NOTE + '\n\n' + LONG('Post', 2), included: true }, { title: 'FLYER COPY', content: LONG('Flyer', 2), included: false }, { title: 'CAMPAIGN PLAN', content: LONG('Plan', 2), included: true }];
 
 let notes, hist, hid, mode, sent, ai, rs;
 function reset() {
@@ -54,6 +56,7 @@ function reset() {
   add(A, 'campaign_sections', JSON.stringify(CAMP_A)); add(A, 'seller_prep', PREP);
   add(B, 'campaign_sections', JSON.stringify(CAMP_B)); add(B, 'seller_prep', PREP);
   add(C, 'campaign_sections', JSON.stringify(CAMP_C));
+  add(D, 'campaign_sections', JSON.stringify(CAMP_D)); add(D, 'seller_prep', PREP);
   hist = [];
 }
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
@@ -214,6 +217,38 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await page.waitForTimeout(500);
   const g4 = await geo();
   ok(Math.abs(g4.top - g1.top) <= 1 && Math.abs(g4.scroll - g1.scroll) <= 1 && g4.inner <= 2 && g4.taH > g1.taH, 'new lines grow the box without moving the place you are typing', [g1, g4]);
+
+  console.log('No notes to the agent or the seller reach the PDF');
+  await openPanel(D);
+  const warn = await st(() => (document.querySelector('[data-camp="note-warn"]') || {}).innerText || '');
+  ok(/note to the agent or the seller/.test(warn) && /Note for Charlotte and the Chapmans/.test(warn), 'the section names the note it holds', warn.slice(0, 160));
+  await st(() => { try { localStorage.removeItem('fos_campPkg'); sessionStorage.removeItem('fos_campPkg'); } catch (e) {} });
+  const toasts0 = await st(() => document.body.innerText);
+  await st(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.campExportPDF(); });
+  await page.waitForTimeout(500);
+  ok(/The PDF was NOT made: SOCIAL MEDIA COPY has a note/.test(await st(() => document.body.innerText)) && !(await st(() => localStorage.getItem('fos_campPkg'))), 'the PDF step refuses and says which section, and makes nothing');
+  sent.length = 0;
+  await page.click('[data-camp="note-remove"]'); await page.waitForTimeout(1500);
+  const after = await st(() => document.querySelector('#app').__vue_app__._instance.setupState.campParsed[0].content);
+  ok(!after.includes('Note for Charlotte') && after === LONG('Post', 2), 'Remove the note takes out only the note; every other word stays');
+  ok(writes('campaign_sections').length >= 1 && !writes('campaign_sections').some(w => w.p_content.includes('Note for Charlotte')), 'and the campaign is saved without it');
+  ok(!(await st(() => !!document.querySelector('[data-camp="note-warn"]'))), 'the warning goes away');
+
+  console.log('Unticked means not in the PDF');
+  await st(() => { const s2 = document.querySelector('#app').__vue_app__._instance.setupState; s2.campPrepIncluded = false; s2.campLdIncluded = false; window.open = function () { return null; }; });
+  await st(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.campExportPDF(); });
+  await page.waitForTimeout(800);
+  const pkg = JSON.parse((await st(() => localStorage.getItem('fos_campPkg'))) || '{}');
+  ok(pkg.prep && pkg.prep._skip === true, 'an unticked Seller Prep Guide is marked to stay out');
+  ok(pkg.listing && pkg.listing._skip === true, 'an unticked listing description is marked to stay out');
+  ok(pkg.flyer && pkg.flyer._skip === true, 'an unticked Flyer Copy section is marked to stay out (no flyer made up from the MLS facts)');
+  ok(pkg.campaign && pkg.campaign.phases && pkg.campaign.phases.length > 0, 'a ticked section still goes in');
+  const tpl = require('fs').readFileSync(require('path').join(dir, 'campaign-print.html'), 'utf8');
+  ok(/<template v-if="!pkg\.prep\._skip && pkg\.prep\.sections && pkg\.prep\.sections\.length">\s*<FwdDivider index="Section Nine"/.test(tpl), 'the print page draws Seller Preparation only with a guide in it (no blank page)');
+  ok(/<template v-if="!pkg\.flyer\._skip">\s*<FwdDivider index="Section Seven"/.test(tpl) && /<template v-if="!pkg\.listing\._skip">\s*<FwdDivider index="Section Two"/.test(tpl) && /<template v-if="pkg\.campaign && pkg\.campaign\.phases && pkg\.campaign\.phases\.length">\s*<FwdDivider index="Section Four"/.test(tpl), 'and Flyer, The Residence and the 30-Day Campaign the same way');
+  ok(/\.fwd-social-card \{[^}]*break-inside: avoid;[^}]*\}/.test(tpl) && /\.fwd-social-card__head \{ break-after: avoid;/.test(tpl), 'a social card stays on one page when it fits, and its heading never sits alone at the bottom of a page');
+  const camp = await st(() => document.querySelector('#app').__vue_app__._instance.setupState);
+  ok(/Never write a note, comment or instruction to the agent, the seller or anyone else/.test(require('fs').readFileSync(require('path').join(dir, 'index.html'), 'utf8')), 'the campaign writer is told never to write notes');
 
   ok(errors.length === 0, 'no JavaScript errors on the page', errors.slice(0, 3));
   await browser.close(); srv.close();
