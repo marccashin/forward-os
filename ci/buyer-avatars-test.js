@@ -235,6 +235,24 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await click(page, 'cancel');
   ok((await txt(page, 'text')) === SAVED_V2, 'Cancel shows the saved avatars again');
 
+  console.log('Your own ideas: typed words go to the AI exactly, the AI still researches, nothing is saved by typing them');
+  ok(!/OWN IDEAS/.test(ai.calls[0] ? ai.calls[0].prompt : '') , 'with no ideas typed, the request carries no ideas block');
+  await open(page, A, 'Buyer Avatars');
+  ok(await has(page, 'ideas'), 'the ideas box is on screen when the listing has no avatars');
+  await open(page, C, 'Buyer Avatars');
+  ok(await has(page, 'ideas'), 'the ideas box is on screen when avatars are saved (for Rewrite)');
+  const IDEAS = 'A surgeon relocating to Walter Reed who wants a quiet street\nA couple who entertain every weekend';
+  await page.fill('[data-av="ideas"]', IDEAS); await page.waitForTimeout(200);
+  sent.length = 0; ai.calls = []; ai.answers = [FOUR, GOOD];
+  await click(page, 'rewrite'); await page.waitForSelector('[data-av="textarea"]', { timeout: 15000 });
+  ok(ai.calls.length === 2 && ai.calls.every(c => c.prompt.includes(IDEAS) && /THE AGENT'S OWN IDEAS/.test(c.prompt)), 'both tries carry the agent\'s words exactly, so a retry never loses them', ai.calls.map(c => c.prompt.slice(0, 80)));
+  ok(/Build one avatar around EACH idea/.test(ai.calls[0].prompt) && /Fair housing still applies/.test(ai.calls[0].prompt) && /remaining avatars yourself/.test(ai.calls[0].prompt), 'the AI is told to build on each idea, fill the rest itself and keep fair housing');
+  ok(ai.calls[0].prompt.includes('MLS DATA') && ai.calls[0].prompt.includes(DESC), 'the AI still gets the listing\'s own facts to research from');
+  ok(writes('buyer_avatars').length === 0, 'nothing was saved by writing with ideas');
+  await click(page, 'cancel');
+  await open(page, D, 'Buyer Avatars');
+  ok((await page.inputValue('[data-av="ideas"]')) === '', 'ideas typed on one listing do not follow the agent to the next');
+
   console.log('Nothing to write from: said, no AI call');
   await open(page, D, 'Buyer Avatars');
   ai.calls = [];
