@@ -6672,6 +6672,10 @@ body {
                     </div>
                   </template>
                   <template v-else-if="lstNotes.buyer_avatars">
+                    <div data-av="ideas-box" style="margin-bottom:10px;">
+                      <label style="display:block;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;">Your own ideas (optional)</label>
+                      <textarea data-av="ideas" v-model="lstAv.ideas" placeholder="A buyer you already have in mind, for example: a surgeon relocating to Walter Reed who wants a quiet street. One idea per line, up to five. AI writes an avatar for each, then researches the rest." style="width:100%;min-height:70px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.5;padding:8px 10px;border:1px solid var(--cream-dark);border-radius:2px;box-sizing:border-box;"></textarea>
+                    </div>
                     <div data-av="text" style="white-space:pre-wrap;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.6;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:420px;overflow:auto;margin-bottom:8px;">{{ lstNotes.buyer_avatars }}</div>
                     <div data-av="readback" style="font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;margin-bottom:8px;">
                       <div v-if="lstAvReadback(lstNotes.buyer_avatars).warn" data-av="readback-warn" style="color:#b91c1c;">{{ lstAvReadback(lstNotes.buyer_avatars).warn }}</div>
@@ -6700,6 +6704,10 @@ body {
                     </div>
                   </template>
                   <template v-else>
+                    <div data-av="ideas-box" style="margin-bottom:10px;">
+                      <label style="display:block;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--navy);margin-bottom:4px;">Your own ideas (optional)</label>
+                      <textarea data-av="ideas" v-model="lstAv.ideas" placeholder="A buyer you already have in mind, for example: a surgeon relocating to Walter Reed who wants a quiet street. One idea per line, up to five. AI writes an avatar for each, then researches the rest." style="width:100%;min-height:70px;font-family:'Cormorant Garamond',serif;font-size:14px;line-height:1.5;padding:8px 10px;border:1px solid var(--cream-dark);border-radius:2px;box-sizing:border-box;"></textarea>
+                    </div>
                     <div data-av="none" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">No buyer avatars are saved for this listing yet. Have AI write five from this listing's MLS Data and description, or paste the ones you already have.</div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;">
                       <button class="btn-sm" data-av="write" @click="lstAvWrite()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:9px 16px;">Write 5 avatars with AI</button>
@@ -12661,8 +12669,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // it. The cards are read from the text by buildCampPkg(), the same function the campaign
     // prints with, so what this tool says it read is what the page will show. The agent can do
     // this before or after the description, in either order.
-    const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false });
-    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; }
+    const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false, ideas: '' });
+    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; lstAv.ideas = ''; }
     const LST_AV_LAYOUT = '1. First names and last name, ages (for a couple: Margaret and Theodore Hale, 59 and 62)\nOccupation: what they do\nHousehold: how many adults and how they use the home\nNet Worth: an estimated range\nLeaving Behind: what they are moving away from\nMoving Toward: what they want next\nAfraid Of: what worries them about this purchase\nWhy this residence now: why this home, for this buyer, at this time\nHook: one sentence this buyer would stop scrolling for';
     function lstAvCards(text) {
       const t = String(text || '').trim();
@@ -12712,6 +12720,16 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (/\b(?:carried over|new to the set|revised|updated)\b/i.test(t)) out.push('it refers to an earlier set of avatars');
       return out;
     }
+    // The agent's own buyer ideas (Marc, Oct 24, 2026), typed in the box above Write 5 with AI.
+    // They go to the model word for word; the model still does the research and fills the rest.
+    // Fair housing still governs: an idea described by who the buyer is gets rewritten around
+    // the buyer's work, situation and wants, and lstAvIssues() still screens the answer.
+    function _lstAvIdeasBlock(ideas) {
+      const t = String(ideas || '').trim();
+      if (!t) return '';
+      return 'THE AGENT\'S OWN IDEAS. The agent has specific buyers in mind (exact words between the lines):\n-----\n' + t + '\n-----\n'
+        + 'Build one avatar around EACH idea above, in the order given, keeping the agent\'s wording for that buyer\'s work, situation and wants. If the ideas describe more than five buyers, use the first five. Then write the remaining avatars yourself from the facts about the home, so the five still differ from each other. Do not add a fact about the home to make an idea fit; if an idea fits the home only partly, still write it and make Why this residence now honest about what the home does offer. Fair housing still applies: if an idea describes the buyer by race, color, religion, sex, national origin, familial status, disability or age, or mentions children, write that avatar around the buyer\'s work, situation and what they want from a home instead.\n\n';
+    }
     // Write five avatars with AI from what the listing already holds, check them, and put
     // them in the editor. NOTHING is saved here: the agent reads, edits and presses Save.
     // Up to three tries; an answer that breaks a rule is sent back with the reason.
@@ -12727,6 +12745,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const base = 'PROPERTY: ' + (prop.address || '') + '\n\n'
         + (mls ? 'MLS DATA (saved on the listing):\n' + mls.slice(0, 6000) + '\n\n' : '')
         + (desc ? 'LISTING DESCRIPTION (saved on the listing):\n' + desc + '\n\n' : '')
+        + _lstAvIdeasBlock(lstAv.ideas)
         + 'Write the five buyer avatars for this home.';
       let good = '', lastWhy = '', failure = '';
       try {
@@ -24027,7 +24046,7 @@ const CHANGELOG = [
       },
       {
         title: 'Buyer Avatars Is Now Its Own Tool On The Listing',
-        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes.\n\nBest practice: Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
+        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing.\n\nBest practice: Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
       }
     ]
   }
