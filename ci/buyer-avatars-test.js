@@ -39,9 +39,16 @@ const SAVED_V1 = labeled('first'), SAVED_V2 = labeled('second');
 const DESC = 'A description of Alpha Court that is saved on the listing.';
 const CAMP = [{ title: 'BUYER AVATARS', content: 'OLD AVATAR TEXT IN THE CAMPAIGN', included: true }, { title: 'SOCIAL MEDIA COPY', content: 'SOCIAL TEXT STAYS EXACTLY AS IT WAS AND IS LONG ENOUGH TO KEEP', included: true }];
 
-let notes, hist, hid, mode, sent, ai;
+let notes, hist, hid, mode, sent, ai, rs;
+// What the backend's /api/avatar-research answers (made up, same shape as forward-os-backend avatar_research.py).
+const RES_PROMPT = (zip) => 'RESEARCH FOR THESE AVATARS (gathered by FORWARD OS; use these figures exactly as written, never round, widen or invent one):\nCensus, U.S. Census Bureau, American Community Survey 2020-2024 5-year estimates, ZIP Code Tabulation Area ' + zip + ':\n- Median household income: $148,451\n- Pay: Physicians: $239,200 median (2024) [https://www.bls.gov/oes/x]';
+const RES_FOR = (prop, when) => { const zip = (prop.address.match(/(\d{5})(?!.*\d{5})/) || [])[1] || ''; return { address: prop.address, zip, ok: true,
+  census: { year: 2024, zip, source: 'U.S. Census Bureau, American Community Survey 2020-2024 5-year estimates, ZIP Code Tabulation Area ' + zip, source_url: 'https://data.census.gov/profile?g=860XX00US' + zip, note: 'Shares are worked out by FORWARD OS from two Census counts; the counts are the Census\'s.', figures: [{ key: 'median_income', label: 'Median household income', value: 148451, display: '$148,451' }] },
+  jobs: { error: 'Job clusters were NOT pulled: api.census.gov answered 500' },
+  web: { employers: [{ name: 'Inova Alexandria Hospital', what: 'hospital', where: 'Alexandria', source_url: 'https://example.org/inova' }], moving: [], salaries: [{ occupation: 'Physicians', range: '$239,200 median', year: '2024', source_url: 'https://www.bls.gov/oes/x' }], dropped_without_source: 1 },
+  prompt: RES_PROMPT(zip), researched_at: when || new Date().toISOString() }; };
 function reset() {
-  hid = 0; sent = []; mode = { saveFails: false, campFails: false }; ai = { calls: [], answers: [] };
+  hid = 0; sent = []; mode = { saveFails: false, campFails: false }; ai = { calls: [], answers: [] }; rs = { calls: [], fail: false, delay: 0 };
   notes = [
     { id: 'n1', property_id: A, subfolder: 'mls_data', content: MLS(PROPS[0].address), updated_at: '2026-10-01T00:00:00Z' },
     { id: 'n2', property_id: A, subfolder: 'listing_remarks', content: DESC, updated_at: '2026-10-02T00:00:00Z' },
@@ -74,6 +81,13 @@ function api(route) {
   const req = route.request(), u = decodeURIComponent(req.url()), m = req.method(), base = u.split('?')[0];
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
   if (m !== 'GET') sent.push({ m, u: base, body: req.postData() || '' });
+  if (/up\.railway\.app\/api\/avatar-research$/.test(base)) {
+    const b = JSON.parse(req.postData()); rs.calls.push(b);
+    const prop = PROPS.find(p => p.id === b.property_id);
+    const answer = () => rs.fail ? J(route, 502, { detail: 'made-up research outage' }) : J(route, 200, RES_FOR(prop));
+    if (rs.delay) return new Promise(r => setTimeout(r, rs.delay)).then(answer);
+    return answer();
+  }
   if (/api\.anthropic\.com\/v1\/messages/.test(base)) {
     const b = JSON.parse(req.postData());
     ai.calls.push({ system: b.system || '', prompt: b.messages.map(x => x.content).join('\n'), stream: !!b.stream });
@@ -332,6 +346,87 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(await page.evaluate(() => !document.querySelector('[data-avc="card"]')), 'the card never follows the agent to another listing');
   reset();
   reset();
+  reset();
+
+  console.log('Research behind the avatars: started when the tool opens, added to the same request, never instead of it');
+  reset();
+  const st = (pg, f) => pg.evaluate(f);
+  await open(page, A, 'Buyer Avatars'); await page.waitForTimeout(600);
+  ok(rs.calls.length === 1 && rs.calls[0].property_id === A && Object.keys(rs.calls[0]).join() === 'property_id', 'opening Buyer Avatars starts the research at once, sending only the listing id', rs.calls);
+  const rsave = writes('avatar_research');
+  ok(rsave.length === 1 && rsave[0].p_property_id === A && JSON.parse(rsave[0].p_content).prompt === RES_PROMPT('22306'), 'the research is saved on the listing as it came back');
+  ok(/^Researched /.test((await txt(page, 'when')) || '') || await page.evaluate(() => /Researched /.test((document.querySelector('[data-avr="when"]') || {}).innerText || '')), 'the panel says when it was researched');
+  await page.click('[data-avr="toggle"]'); await page.waitForTimeout(300);
+  const body = await page.evaluate(() => { const b = document.querySelector('[data-avr="body"]'); return b ? { text: b.innerText, links: Array.from(b.querySelectorAll('a')).map(x => x.href) } : null; });
+  ok(body && /Median household income: \$148,451/.test(body.text) && /Inova Alexandria Hospital/.test(body.text) && /Physicians: \$239,200 median \(2024\)/.test(body.text), 'the agent sees the figures and findings', body && body.text.slice(0, 300));
+  ok(body && /Job clusters were NOT pulled: api\.census\.gov answered 500/.test(body.text) && /1 finding was left out because no source was given/.test(body.text), 'a part that failed is said in the panel, and dropped findings are counted');
+  ok(body && body.links.includes('https://www.bls.gov/oes/x') && body.links.includes('https://data.census.gov/profile?g=860XX00US22306'), 'every finding links to its source');
+  ai.calls = []; ai.answers = [GOOD]; sent.length = 0;
+  await click(page, 'write'); await page.waitForSelector('[data-av="textarea"]', { timeout: 15000 });
+  const P1 = ai.calls[0].prompt, S1 = ai.calls[0].system;
+  ok(rs.calls.length === 1, 'Write with AI reuses the research already done, no second request');
+  ok(P1.includes(RES_PROMPT('22306')) && /Use the research above IN ADDITION to every rule and instruction/.test(P1) && /Copy any figure from it exactly as written; never round, widen or invent one/.test(P1), 'the request carries the research and the rule to copy its figures exactly');
+  ok(P1.includes('MLS DATA') && P1.includes(DESC), 'and still everything it carried before');
+  ok(!(await has(page, 'no-research')), 'no warning when the research was used');
+  await click(page, 'cancel');
+  // The same request without research: identical apart from the research block.
+  rs.fail = true;
+  await page.evaluate(() => { document.querySelector('#app').__vue_app__._instance.setupState.lstNotes.avatar_research = ''; });
+  ai.calls = []; ai.answers = [GOOD];
+  await click(page, 'write'); await page.waitForSelector('[data-av="textarea"]', { timeout: 15000 });
+  const P2 = ai.calls[0].prompt, S2 = ai.calls[0].system, rule = (P1.match(/Use the research above IN ADDITION[^\n]*/) || [''])[0];
+  ok(rs.calls.length === 2 && P2 === P1.replace(RES_PROMPT('22306') + '\n\n' + rule + '\n\n', '') && S2 === S1, 'without research the request is the same, word for word, minus the research block; the rules are unchanged', [P1.length, P2.length]);
+  ok(/Written WITHOUT research\. The research did NOT run: made-up research outage/.test((await txt(page, 'no-research')) || ''), 'avatars written without research say so, with the reason', await txt(page, 'no-research'));
+  await click(page, 'cancel');
+  ok(/The research did NOT run: made-up research outage/.test((await page.evaluate(() => (document.querySelector('[data-avr="error"]') || {}).innerText || ''))) && await page.evaluate(() => !!document.querySelector('[data-avr="retry"]')), 'the panel says the research did not run and offers to try again');
+  rs.fail = false;
+  await page.click('[data-avr="retry"]'); await page.waitForTimeout(800);
+  ok(rs.calls.length === 3 && await page.evaluate(() => !!document.querySelector('[data-avr="when"]')), 'trying again runs it and shows it');
+
+  console.log('Saved research is reused for 30 days at the same address, then done again');
+  reset();
+  const fresh = JSON.stringify(RES_FOR(PROPS[2], new Date(Date.now() - 5 * 864e5).toISOString()));
+  notes.push({ id: 'nr', property_id: C, subfolder: 'avatar_research', content: fresh, updated_at: '2026-10-20T00:00:00Z' });
+  await open(page, C, 'Buyer Avatars'); await page.waitForTimeout(500);
+  ok(rs.calls.length === 0, 'fresh saved research: no request');
+  notes.find(n => n.id === 'nr').content = JSON.stringify(RES_FOR(PROPS[2], new Date(Date.now() - 40 * 864e5).toISOString()));
+  await open(page, C, 'Buyer Avatars'); await page.waitForTimeout(500);
+  ok(rs.calls.length === 1, 'research older than 30 days is done again');
+  notes.find(n => n.property_id === C && n.subfolder === 'avatar_research').content = JSON.stringify(Object.assign(RES_FOR(PROPS[2]), { address: '1 Old Address Rd, Bethesda MD 20814' }));
+  rs.calls = [];
+  await open(page, C, 'Buyer Avatars'); await page.waitForTimeout(500);
+  ok(rs.calls.length === 1, 'research for an address the listing no longer has is done again');
+
+  console.log('The writer starts the research when it opens, and uses it at step 5 only when no avatars are saved');
+  reset(); rs.calls = [];
+  await open(page, B, null);
+  await page.evaluate(() => { const s2 = document.querySelector('#app').__vue_app__._instance.setupState; s2.ldStartFresh(); s2.ldOpenWriter(); });
+  await page.waitForTimeout(600);
+  ok(rs.calls.length === 1 && rs.calls[0].property_id === B && ai.calls.length === 0, 'opening the writer on a listing with no avatars starts the research before anything is asked');
+  ai.calls = []; ai.answers = ['Understood.'];
+  await page.evaluate(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.ldSend('The property address is: 200 Bravo Ave. Baltimore, MD 21201.'); });
+  await page.waitForTimeout(4000);
+  const wsr = ai.calls.find(c => c.stream);
+  ok(wsr && wsr.system.includes('RESEARCH FOR THE BUYER AVATARS') && wsr.system.includes(RES_PROMPT('21201')) && /IN ADDITION to every instruction above/.test(wsr.system) && /Never quote the research in the listing description/.test(wsr.system), 'the writer gets the research for step 5, in addition to its instructions');
+  ok(wsr && /Have you already developed the 5 buyer personas/.test(wsr.system) && wsr.system.includes('[FWRD_AVATARS_START]'), 'and its own step 5 is unchanged');
+  rs.calls = [];
+  await open(page, C, null);
+  ai.calls = []; ai.answers = ['Understood.'];
+  await page.evaluate(async () => { const s2 = document.querySelector('#app').__vue_app__._instance.setupState; s2.ldStartFresh(); s2.ldOpenWriter(); await new Promise(r => setTimeout(r, 1500)); await s2.ldSend('The property address is: 300 Charlie Ln, Bethesda MD 20814.'); });
+  await page.waitForTimeout(4000);
+  const wsc = ai.calls.find(c => c.stream);
+  ok(rs.calls.length === 0 && wsc && !wsc.system.includes('RESEARCH FOR THE BUYER AVATARS'), 'a listing with saved avatars: no research request and no research block (the avatars already exist)');
+
+  console.log('Research that lands after the agent moved on stays with its own listing');
+  reset(); rs.delay = 2500;
+  await open(page, A, 'Buyer Avatars');
+  await open(page, D, 'Buyer Avatars');
+  await page.waitForTimeout(3500);
+  const dState = await page.evaluate(() => { const s2 = document.querySelector('#app').__vue_app__._instance.setupState; return { note: s2.lstNotes.avatar_research, fresh: !!s2.lstAvResFresh() }; });
+  const aSaved = writes('avatar_research').filter(w => w.p_property_id === A);
+  ok(aSaved.length === 1 && JSON.parse(aSaved[0].p_content).address === PROPS[0].address, 'listing A\'s research is saved on listing A');
+  ok(!dState.note.includes(PROPS[0].address), 'and never appears on listing D', dState);
+  rs.delay = 0;
   reset();
 
   console.log('The campaign uses the saved avatars instead of inventing new ones');
