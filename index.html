@@ -2801,6 +2801,13 @@ body {
                   <div v-else-if="lstAppr.row" data-appr-writer="will-clear" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">The description saved on this listing is approved for marketing ({{ lstAppr.row.approved_by }}, {{ lstApprWhen(lstAppr.row.approved_at) }}). The text here is different: saving it clears that approval.</div>
                 </div>
                 <div v-if="ldStarted && ldResumeNote" style="margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;line-height:1.5;">{{ ldResumeNote }}</div>
+                <div v-if="lstActiveProp && ldAvChat.text && ldAvChat.propId === lstActiveProp.id" data-avc="card" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;background:#f9f6ef;border:1px solid var(--gold);border-radius:2px;padding:8px 10px;">
+                  <div v-if="!ldAvChat.saved" data-avc="pending">The writer created {{ lstAvCards(ldAvChat.text).length }} buyer avatar{{ lstAvCards(ldAvChat.text).length === 1 ? '' : 's' }}: {{ lstAvReadback(ldAvChat.text).names.join('; ') }}. They are not saved to this listing's Buyer Avatars yet.</div>
+                  <div v-else data-avc="saved" style="color:#16a34a;font-weight:600;">Saved to this listing's Buyer Avatars.</div>
+                  <div v-if="!ldAvChat.saved && lstAvReadback(ldAvChat.text).warn" data-avc="warn" style="color:#b91c1c;">{{ lstAvReadback(ldAvChat.text).warn }}</div>
+                  <button v-if="!ldAvChat.saved" class="btn-sm" data-avc="save" :disabled="ldAvChat.saving" @click="ldAvSaveFromChat()" style="margin-top:6px;background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:8px 14px;">{{ ldAvChat.saving ? 'Saving...' : (lstNotes.buyer_avatars ? 'Replace the saved Buyer Avatars with these' : 'Save to Buyer Avatars') }}</button>
+                  <div v-if="ldAvChat.error" data-avc="error" style="color:#b91c1c;margin-top:6px;">{{ ldAvChat.error }}</div>
+                </div>
                 <div v-if="lstActiveProp" data-av="writer-line" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;color:#6b7280;line-height:1.5;">
                   <template v-if="lstNotes.buyer_avatars">Using the {{ lstAvCards(lstNotes.buyer_avatars).length }} buyer avatars saved on this listing. <a @click.prevent="lstAvGoListing()" href="#" style="color:var(--navy);font-weight:600;">Open Buyer Avatars</a></template>
                   <template v-else>No buyer avatars are saved on this listing, so the writer will ask for them. <a @click.prevent="lstAvGoListing()" href="#" style="color:var(--navy);font-weight:600;">Build them in Buyer Avatars</a></template>
@@ -10328,12 +10335,17 @@ function fosTyper(apply) {
 // The writer wraps its final description in markers. Never show them, and
 // never show a partial one while it is still arriving.
 const LD_MARK_START = '[FWRD_DESC_START]', LD_MARK_END = '[FWRD_DESC_END]';
+// Buyer avatars the writer creates at step 5 come between these (Oct 24, 2026), so the app
+// can offer to save them to the listing's Buyer Avatars. Hidden from the chat like the others.
+const LD_AV_START = '[FWRD_AVATARS_START]', LD_AV_END = '[FWRD_AVATARS_END]';
 function ldDisplayText(raw) {
-  let t = raw.split(LD_MARK_START).join('').split(LD_MARK_END).join('');
-  const longest = Math.max(LD_MARK_START.length, LD_MARK_END.length) - 1;
+  const marks = [LD_MARK_START, LD_MARK_END, LD_AV_START, LD_AV_END];
+  let t = raw;
+  marks.forEach(function (m) { t = t.split(m).join(''); });
+  const longest = Math.max.apply(null, marks.map(function (m) { return m.length; })) - 1;
   for (let n = Math.min(t.length, longest); n > 0; n--) {
     const tail = t.slice(t.length - n);
-    if (LD_MARK_START.indexOf(tail) === 0 || LD_MARK_END.indexOf(tail) === 0) {
+    if (marks.some(function (m) { return m.indexOf(tail) === 0; })) {
       return t.slice(0, t.length - n);
     }
   }
@@ -12670,7 +12682,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // prints with, so what this tool says it read is what the page will show. The agent can do
     // this before or after the description, in either order.
     const lstAv = reactive({ editing: false, draft: '', saving: false, busy: false, error: '', fromAi: false, ideas: '' });
-    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; lstAv.ideas = ''; }
+    function _lstAvReset() { lstAv.editing = false; lstAv.draft = ''; lstAv.saving = false; lstAv.busy = false; lstAv.error = ''; lstAv.fromAi = false; lstAv.ideas = ''; if (typeof _ldAvChatReset === 'function') _ldAvChatReset(); }
     const LST_AV_LAYOUT = '1. First names and last name, ages (for a couple: Margaret and Theodore Hale, 59 and 62)\nOccupation: what they do\nHousehold: how many adults and how they use the home\nNet Worth: an estimated range\nLeaving Behind: what they are moving away from\nMoving Toward: what they want next\nAfraid Of: what worries them about this purchase\nWhy this residence now: why this home, for this buyer, at this time\nHook: one sentence this buyer would stop scrolling for';
     function lstAvCards(text) {
       const t = String(text || '').trim();
@@ -12811,10 +12823,50 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     function lstAvGoListing() { view.value = 'listing-detail'; lstToolOpen.value = 'buyeravatars'; window.scrollTo(0, 0); }
     // Added to the Listing Description Writer's prompt only when this listing has saved
     // avatars, the way the resume note is, so every conversation without them is unchanged.
+    // Avatars the writer created in its chat (between LD_AV_START and LD_AV_END), waiting for
+    // the agent to save them to this listing's Buyer Avatars. Never saved without the press.
+    const ldAvChat = reactive({ text: '', propId: '', saving: false, saved: false, error: '' });
+    function _ldAvChatReset() { ldAvChat.text = ''; ldAvChat.propId = ''; ldAvChat.saving = false; ldAvChat.saved = false; ldAvChat.error = ''; }
+    function _ldCaptureAvatars(reply) {
+      const r = String(reply || ''), a = r.lastIndexOf(LD_AV_START), b = r.lastIndexOf(LD_AV_END);
+      const prop = lstActiveProp.value;
+      if (a < 0 || b <= a || !prop || !prop.id || ldConvPropId.value !== prop.id) return false;
+      const text = _lstFlyerClean(r.slice(a + LD_AV_START.length, b).replace(/\*\*/g, ''));
+      if (!text) return false;
+      ldAvChat.text = text; ldAvChat.propId = prop.id; ldAvChat.saving = false; ldAvChat.saved = false; ldAvChat.error = '';
+      return true;
+    }
+    async function ldAvSaveFromChat() {
+      const prop = lstActiveProp.value, text = ldAvChat.text;
+      if (!prop || !prop.id || prop.id !== ldAvChat.propId || !text || ldAvChat.saving) return false;
+      const pid = prop.id;
+      ldAvChat.error = '';
+      // Written by AI, so it gets the same screen as the tool's own AI answers.
+      const problems = lstAvIssues(text);
+      if (problems.length) {
+        ldAvChat.error = 'NOT saved to Buyer Avatars: ' + problems.join('; ') + '. Ask the writer to fix this, or open Buyer Avatars and paste and edit them there.';
+        return false;
+      }
+      ldAvChat.saving = true;
+      try {
+        await supaRest.saveNote(pid, 'buyer_avatars', text);
+      } catch (e) {
+        ldAvChat.saving = false;
+        ldAvChat.error = 'The avatars were NOT saved to Buyer Avatars: ' + fosWhy(e) + '. They are still here; try again.';
+        return false;
+      }
+      if (!lstActiveProp.value || lstActiveProp.value.id !== pid) { ldAvChat.saving = false; return true; }
+      lstNotes.buyer_avatars = text;
+      const camp = await lstAvSyncCampaign(text);
+      ldAvChat.saving = false; ldAvChat.saved = true;
+      if (camp === 'failed') ldAvChat.error = 'The avatars are saved to Buyer Avatars, but the campaign\'s Buyer Avatars page was NOT updated. Open the campaign and save it, or save the avatars again.';
+      else showToast(camp === 'updated' ? 'Saved to Buyer Avatars. The campaign\'s Buyer Avatars page now uses them.' : 'Saved to Buyer Avatars.', 5000);
+      return true;
+    }
     function _ldAvatarNote() {
       const t = (lstNotes.buyer_avatars || '').trim();
       if (!t || !lstActiveProp.value) return '';
-      return '\n\nSAVED BUYER AVATARS: The agent already developed the five buyer avatars for this listing with the Buyer Avatars tool. They are below. Step 5 of the process is already answered: do not ask whether the personas have been developed, do not create new ones and do not ask the agent to paste them. Write the listing description tailored to these avatars: let them decide which features lead and what the description gives the most room. FAIR HOUSING still applies: the avatars are for you alone. Never name, quote or describe an avatar in the description, and never describe the buyer or who should live there.\n\n' + t;
+      return '\n\nSAVED BUYER AVATARS: The agent already developed the five buyer avatars for this listing with the Buyer Avatars tool. They are below. Step 5 of the process is already answered: do not ask whether the personas have been developed, do not create new ones and do not ask the agent to paste them. Write the listing description tailored to these avatars: let them decide which features lead and what the description gives the most room. FAIR HOUSING still applies: the avatars are for you alone. Never name, quote or describe an avatar in the description, and never describe the buyer or who should live there. If the agent asks you to change the avatars, write all five again in the same layout as the saved ones, between ' + LD_AV_START + ' and ' + LD_AV_END + ' with each marker on its own line and nothing else between them, following the same fair housing rule (never mention children or the absence of children; ages only in the header line), so the agent can save them to the listing.\n\n' + t;
     }
 
     // ── Branded PDF of the approved description ─────────────────────────────
@@ -16141,7 +16193,11 @@ CONVERSATION FLOW (follow this exactly):
    - Any other details that define the lifestyle this home offers: parking, outdoor space, views, building amenities, unit floor level, home type (condo, townhouse, single family, etc.)
 5. Once you have the property details from step 4, ask: "Have you already developed the 5 buyer personas for this property?"
    - If YES: ask them to paste the personas, then write the listing description using those personas.
-   - If NO: using the property details provided plus any information you can find online about the property and neighborhood, create 5 detailed buyer personas. Each persona should have: a name, age, occupation, household situation, what they value in a home, why THIS specific property fits them, and what emotional hook will compel them to tour it. Present all 5 personas clearly, then write the listing description tailored to attract all of them.
+   - If NO: using the property details provided plus any information you can find online about the property and neighborhood, create 5 buyer personas (FORWARD calls them buyer avatars). Put the five between [FWRD_AVATARS_START] and [FWRD_AVATARS_END], each marker on its own line, and put nothing else between the markers. Use this exact layout for every avatar, with one blank line between avatars, and no markdown, bold or asterisks:
+
+${LST_AV_LAYOUT}
+
+     The five must differ from each other in profession, life situation and reason for buying. Net Worth is an estimated range, for example $4M to $6M. Use only facts about the home that you were given or found. FAIR HOUSING applies to the avatars too: describe each buyer by profession, how they live and what they want from a home; never use race, color, religion, sex, national origin, familial status, disability or age as the reason someone fits the home; never mention children or the absence of children; ages appear only in the header line. Never write "carried over", "new to the set", "revised" or "updated". After the avatars, ask the agent whether to change any of them. When the agent is happy with them, write the listing description tailored to attract all of them.
 6. Before writing the description, use any information you can find online about the property and neighborhood to fill in details. Do not guess or fabricate specs.
 7. HARD LIMIT: the finished listing description must be 4,000 characters or fewer, including spaces, punctuation and the amenity bullets. This is an MLS field limit and is not negotiable. Count the characters before you return it. If a draft runs long, tighten the prose rather than dropping the amenity paragraph or the bullets. Everything else about how you write stays exactly the same.
 8. When writing the final description, include a last paragraph with local amenities and bullet points. If a VERIFIED DISTANCE DATA section is appended to this prompt, use ONLY those exact distances — do not estimate or fabricate any mileages. If no VERIFIED DISTANCE DATA section is present, name the amenities using general proximity language only (e.g., "steps from", "minutes away", "within easy reach") — never invent specific distances.
@@ -24046,7 +24102,7 @@ const CHANGELOG = [
       },
       {
         title: 'Buyer Avatars Is Now Its Own Tool On The Listing',
-        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing.\n\nBest practice: Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
+        detail: 'Buyer Avatars now has its own step on each listing, just above the Listing Description. Have AI write five avatars from the listing\'s MLS Data and description, or paste the ones you already have, then press Save. The Listing Description Writer reads them, so it no longer asks whether the personas are done, and the campaign prints exactly the avatars you saved instead of making new ones. When you save, the campaign\'s Buyer Avatars section is updated for you, so redoing the avatars after the description changes no longer means pasting them into the campaign by hand.\n\nHow to use: Open a listing, choose Buyer Avatars, press Write with AI or Paste or type my own, read them over, and press Save. The line under the box shows how many avatars the campaign will read and their names. Either order works: do the avatars first and the description will be built around them, or redo them after the description changes. If you already have a buyer in mind, type it in Your own ideas (optional) above the Write button, one idea per line, up to five. AI writes an avatar for each of your ideas and researches the rest from the listing. If you skip this step, the Listing Description Writer now creates the five in the same layout and asks whether to change any. When you are happy with them, press Save to Buyer Avatars above the chat, and the campaign uses them too.\n\nBest practice: Describe a buyer by work, situation and what they want from a home; AI rewrites an idea that leans on a protected class or on children. Check the read-back before you save. It should say 5 avatars with the right names. The AI never writes a child, a family status or a protected class into an avatar, and nothing is saved until you press Save. Keep revision notes such as how an avatar changed out of the text, because the page can go in front of the seller.'
       }
     ]
   }
@@ -26192,6 +26248,7 @@ async function dismissUpdates() {
           }
         }
         if (!_ldSentStreamed) ldMessages.value.push({ role:'assistant', content: reply });
+        _ldCaptureAvatars(reply);
       } catch(e) {
         ldMessages.value.push({ role:'assistant', content: '❌ Error: ' + e.message });
         showToast('❌ '+e.message, 6000);
@@ -26718,7 +26775,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
