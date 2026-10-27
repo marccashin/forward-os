@@ -18645,7 +18645,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.setTextColor(...white);
         doc.text('FORWARD', 50, 35);
         doc.setFontSize(9); doc.setTextColor(...gold);
-        doc.text('REAL ESTATE GROUP', 50, 50);
+        doc.text('CORCORAN MCENEARNEY', 50, 50);
       }
       const agentText = agentName.value || '';
       if (agentText) {
@@ -18730,7 +18730,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       y += 60;
       if (y + 40 > H - 40) { doc.addPage(); y = 50; }
       doc.setFont('helvetica', 'italic'); doc.setFontSize(7.5); doc.setTextColor(...gray);
-      const disclaimer = 'This is an estimate only. Actual closing costs may vary based on lender, title company, and final settlement figures. Tax proration calculated using ' + (ctc.jurisdiction === 'dc' ? 'the DC fiscal year (Oct 1 - Sep 30)' : String(ctc.jurisdiction).indexOf('md-') === 0 ? 'the Maryland fiscal year (Jul 1 - Jun 30)' : 'the Virginia calendar year, billed in arrears') + '. Prepared by FORWARD Real Estate Group.';
+      const disclaimer = 'This is an estimate only. Actual closing costs may vary based on lender, title company, and final settlement figures. Tax proration calculated using ' + (ctc.jurisdiction === 'dc' ? 'the DC fiscal year (Oct 1 - Sep 30)' : String(ctc.jurisdiction).indexOf('md-') === 0 ? 'the Maryland fiscal year (Jul 1 - Jun 30)' : 'the Virginia calendar year, billed in arrears') + '. Prepared by FORWARD | Corcoran McEnearney.';
       doc.text(doc.splitTextToSize(disclaimer, W - 100), 50, y);
       return doc;
     }
@@ -18882,7 +18882,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           doc.text('FORWARD', 50, isFirst ? 35 : 28);
           doc.setFontSize(9);
           doc.setTextColor(...gold);
-          doc.text('REAL ESTATE GROUP', isFirst ? 50 : 130, isFirst ? 50 : 28);
+          doc.text('CORCORAN MCENEARNEY', isFirst ? 50 : 130, isFirst ? 50 : 28);
         }
         if (isFirst) {
           doc.setFont('helvetica','normal');
@@ -19040,7 +19040,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         switch(sec.title) {
           case 'Welcome to FORWARD': {
             sectionTitle('', 'Welcome to FORWARD');
-            bodyText('Thank you for choosing FORWARD Real Estate Group as your partner in one of life\'s most important decisions. At FORWARD, we believe buying a home isn\'t just a transaction; it\'s the beginning of a new chapter. Our team combines cutting-edge market intelligence, white-glove service, and relentless advocacy to ensure you find not just a house, but the right home.');
+            bodyText('Thank you for choosing FORWARD as your partner in one of life\'s most important decisions. At FORWARD, we believe buying a home isn\'t just a transaction; it\'s the beginning of a new chapter. Our team combines cutting-edge market intelligence, white-glove service, and relentless advocacy to ensure you find not just a house, but the right home.');
             bodyText('As your dedicated agent, I will be with you every step of the way, from your very first conversation through closing day and beyond. My commitment to you is simple: your goals become my goals, your timeline becomes my priority, and your success is my reputation.');
             if (bck.buyerName) {
               ensureSpace(30);
@@ -19163,7 +19163,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           }
           case 'The FORWARD Difference': {
             sectionTitle('', 'The FORWARD Difference');
-            bodyText('At FORWARD Real Estate Group, luxury isn\'t a price point; it\'s an experience. Every client receives the same elevated level of service, regardless of budget:');
+            bodyText('At FORWARD, luxury isn\'t a price point; it\'s an experience. Every client receives the same elevated level of service, regardless of budget:');
             bullet('Concierge Service: From securing restaurant reservations in your new neighborhood to contractor referrals and moving logistics, we\'re your resource long after closing.');
             bullet('Market Intelligence: Proprietary market analysis, real-time data, and AI-powered tools (like FORWARD OS) give you an information advantage other buyers don\'t have.');
             bullet('Agent Network: Our relationships with agents across the DMV give you access to off-market inventory and smoother negotiations.');
@@ -19812,7 +19812,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           return `Property #${i+1}: ${p.address}${p.price ? ' (' + p.price + ')' : ''}\nScores (1-5):\n${scoreLines.join('\n')}${p.notes ? '\nAgent Notes: ' + p.notes : ''}${p.pros ? '\nPros: ' + p.pros : ''}${p.cons ? '\nCons: ' + p.cons : ''}`;
         }).join('\n\n');
 
-        const prompt = `You are a luxury real estate advisor for FORWARD Real Estate Group in the DC/MD/VA metro area. A buyer's agent has taken their client on a property tour and scored each home.
+        const prompt = `You are a luxury real estate advisor for FORWARD | Corcoran McEnearney in the DC/MD/VA metro area. A buyer's agent has taken their client on a property tour and scored each home.
 
 TOUR: ${tt.activeTour.name}
 BUYER: ${tt.activeTour.buyer || 'Not specified'}
@@ -19871,7 +19871,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
           doc.text('FORWARD', 50, isFirst ? 35 : 28);
           doc.setFontSize(9);
           doc.setTextColor(...gold);
-          doc.text('REAL ESTATE GROUP', isFirst ? 50 : 130, isFirst ? 50 : 28);
+          doc.text('CORCORAN MCENEARNEY', isFirst ? 50 : 130, isFirst ? 50 : 28);
         }
         if (isFirst && agent) {
           doc.setFont('helvetica','normal');
@@ -20075,7 +20075,7 @@ Keep the tone professional but conversational. Be specific and reference actual 
       doc.setFont('helvetica','italic');
       doc.setFontSize(7.5);
       doc.setTextColor(...gray);
-      doc.text('Prepared by ' + agent + ' | FORWARD Real Estate Group | fwrdrealestate.com', 50, y);
+      doc.text('Prepared by ' + agent + ' | FORWARD | Corcoran McEnearney | fwrdrealestate.com', 50, y);
 
       const blob = doc.output('blob');
       openPDFBlob(blob, 'Property-Tour-Summary.pdf');
@@ -20270,7 +20270,7 @@ No markdown. No preamble. Valid JSON only.`;
         doc.setFont('helvetica','bold'); doc.setFontSize(isFirst ? 22 : 16); doc.setTextColor(...white);
         doc.text('FORWARD', 50, isFirst ? 35 : 28);
         doc.setFontSize(9); doc.setTextColor(...gold);
-        doc.text('REAL ESTATE GROUP', isFirst ? 50 : 130, isFirst ? 50 : 28);
+        doc.text('CORCORAN MCENEARNEY', isFirst ? 50 : 130, isFirst ? 50 : 28);
       }
       if (isFirst && agent) {
         doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(...white);
@@ -24432,6 +24432,10 @@ const CHANGELOG = [
       {
         title: 'Meet Your Advisor for Buyers',
         detail: 'Every agent now has a two-page Meet Your Advisor for buyers, in the same style as the seller version. Page 1 is your photo, bio, contact details and testimonial. Page 2 walks the buyer through how we work: the five steps from discovery to closing, our written buyer agreement and how our compensation works, getting ready to buy, and our trusted partners, our financial team and SMART Settlements.\n\nHow to use: Open a buyer in Buyer Package and press the Meet Your Advisor card, next to Consultation Kit. On a computer it downloads your PDF; on a phone it opens inside the OS with a Share button. Send it as soon as the buyer consultation is booked.\n\nBest practice: Walk the buyer through the agreement section at the consultation, and sign the buyer agreement before you tour any homes. The buyer always chooses the title company: recommend SMART Settlements, never require it.'
+      },
+      {
+        title: 'One Name on Every PDF',
+        detail: 'The old name FORWARD Real Estate Group is gone from every document the OS makes. The Consultation Kit now says FORWARD in its welcome and The FORWARD Difference pages, and the Cash to Close and Property Tour Summary PDFs are signed FORWARD | Corcoran McEnearney. Nothing else on those PDFs changed.\n\nHow to use: Nothing to do. Make the PDFs as usual.\n\nBest practice: If you have an older Consultation Kit, Cash to Close or Tour Summary saved to send, make a fresh one so the client sees the current name.'
       }
     ]
   }
