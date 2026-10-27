@@ -4428,6 +4428,7 @@ body {
                   <svg v-else style="flex-shrink:0;opacity:0.35;" width="16" height="16" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="5 2 10 7 5 12"/></svg>
                 </div>
                 <div class="lp-card" @click="go('cash-to-close')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div class="lp-label">Cash to Close</div><div class="lp-sub">Closing cost estimate</div></div>
+                <div class="lp-card" data-myab="1" @click="buyerGuideClick"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4" fill="#0d1f35"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="#0d1f35"/></svg><div class="lp-label">Meet Your Advisor</div><div class="lp-sub">Two-page intro and bio to send before the consultation</div></div>
                 <div class="lp-card" @click="go('buyer-consult')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg><div class="lp-label">Consultation Kit</div><div class="lp-sub">Branded buyer guide PDF</div></div>
                 <div class="lp-card" @click="go('tour-tracker')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="1,14 8,6 15,14 13,14 13,20 3,20 3,14" fill="#0d1f35"/><polygon points="9,12 16,4 23,12 21,12 21,20 17,20 17,16 15,16 15,20 11,20 11,12" fill="#0d1f35" opacity="0.65"/></svg><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div>
                 <div class="lp-card" @click="go('offer-strategy')"><div class="lp-icon">⚖️</div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div>
@@ -4437,6 +4438,7 @@ body {
               <div v-else style="background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);overflow:hidden;margin-bottom:18px;">
                 <div class="lp-card-mobile" @click="go('buyer-needs')" style="padding:16px;"><svg viewBox="0 0 24 24" style="width:22px;height:22px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="none" stroke="#0d1f35" stroke-width="2"/><circle cx="12" cy="12" r="6" fill="none" stroke="#0d1f35" stroke-width="2"/><circle cx="12" cy="12" r="2.5" fill="#0d1f35"/></svg><div><div class="lp-label">Buyer Needs Analysis <span v-if="bnaResult"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div><div class="lp-sub">Start here — capture requirements & auto-fill all tools</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('cash-to-close')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div><div class="lp-label">Cash to Close</div><div class="lp-sub">Closing cost estimate</div></div><span class="lp-arrow">›</span></div>
+                <div class="lp-card-mobile" data-myab="1" @click="buyerGuideClick"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="8" r="4" fill="#0d1f35"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z" fill="#0d1f35"/></svg><div><div class="lp-label">Meet Your Advisor</div><div class="lp-sub">Two-page intro and bio to send before the consultation</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('buyer-consult')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg><div><div class="lp-label">Consultation Kit</div><div class="lp-sub">Branded buyer guide PDF</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('tour-tracker')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="1,14 8,6 15,14 13,14 13,20 3,20 3,14" fill="#0d1f35"/><polygon points="9,12 16,4 23,12 21,12 21,20 17,20 17,16 15,16 15,20 11,20 11,12" fill="#0d1f35" opacity="0.65"/></svg><div><div class="lp-label">Tour Tracker</div><div class="lp-sub">Score & compare homes</div></div><span class="lp-arrow">›</span></div>
                 <div class="lp-card-mobile" @click="go('offer-strategy')"><span class="lp-icon">⚖️</span><div><div class="lp-label">Offer Strategy</div><div class="lp-sub">Max value · Market value · Winning offer</div></div><span class="lp-arrow">›</span></div>
@@ -9313,6 +9315,17 @@ const SELLER_GUIDES = {
   'Niki Lang':      '/seller-guides/Niki_Lang_Seller_Guide.pdf',
   'Cesar Rivera':   '/seller-guides/Cesar_Rivera_Seller_Guide.pdf',
   'Charlotte Lee':  '/seller-guides/Charlotte_Lee_Seller_Guide.pdf',
+};
+// Meet Your Advisor for BUYERS (Marc, Oct 27, 2026): the same two-page format, sent
+// before a buyer consultation, opened from the Meet Your Advisor card on a buyer.
+// Same rule as SELLER_GUIDES: by exact login name, an agent only ever gets their own;
+// a login with no entry gets a plain message. Built by seller-guides/_source/build_buyer.py.
+const BUYER_GUIDES = {
+  'Marc Cashin':    '/buyer-guides/Marc_Cashin_Buyer_Guide.pdf',
+  'Ashling McGowan':'/buyer-guides/Ashling_McGowan_Buyer_Guide.pdf',
+  'Niki Lang':      '/buyer-guides/Niki_Lang_Buyer_Guide.pdf',
+  'Cesar Rivera':   '/buyer-guides/Cesar_Rivera_Buyer_Guide.pdf',
+  'Charlotte Lee':  '/buyer-guides/Charlotte_Lee_Buyer_Guide.pdf',
 };
 const ACCESS_CODE = 'forward2026';
 
@@ -23305,6 +23318,18 @@ No markdown. Valid JSON only.`;
       ev.preventDefault();
       pdfViewOpen('/guides/FORWARD_If_This_Then_That.pdf', 'How it works: If This, Then That', 'FORWARD_If_This_Then_That.pdf');
     }
+    // Meet Your Advisor for buyers. A card, not a link, so the click decides: no guide
+    // for this login = a plain message; phone = the in-app viewer (a PDF link would
+    // replace the home-screen app); computer = a named download of the agent's own file.
+    const buyerGuideUrl = computed(() => BUYER_GUIDES[agentName.value] || '');
+    const buyerGuideFileName = computed(() => (agentName.value || 'Agent').replace(/[^A-Za-z0-9]+/g, '_') + '_Meet_Your_Advisor_Buyers.pdf');
+    function buyerGuideClick() {
+      if (!buyerGuideUrl.value) { showToast('Meet Your Advisor is made for each agent. This login does not have one. Sign in as the agent to download theirs.', 5000); return; }
+      if (fosIsPhone()) { pdfViewOpen(buyerGuideUrl.value, 'Meet Your Advisor: ' + agentName.value, buyerGuideFileName.value); return; }
+      const a = document.createElement('a');
+      a.href = buyerGuideUrl.value; a.download = buyerGuideFileName.value; a.rel = 'noopener';
+      document.body.appendChild(a); a.click(); a.remove();
+    }
     function sellerGuideClick(ev) {
       if (!sellerGuideUrl.value || !fosIsPhone()) return;   // computer: the link downloads the file
       ev.preventDefault();
@@ -24403,6 +24428,10 @@ const CHANGELOG = [
       {
         title: 'Marc\'s Meet Your Advisor Bio Updated',
         detail: 'Marc\'s bio now says he served as Chief Operating Officer of Search Real Estate Group, in the past tense. Nothing else changed, and no other agent\'s guide is affected.\n\nHow to use: Nothing to do. Download Meet Your Advisor as usual.\n\nBest practice: If anything in your own bio is out of date, tell Marc so your guide can be rebuilt.'
+      },
+      {
+        title: 'Meet Your Advisor for Buyers',
+        detail: 'Every agent now has a two-page Meet Your Advisor for buyers, in the same style as the seller version. Page 1 is your photo, bio, contact details and testimonial. Page 2 walks the buyer through how we work: the five steps from discovery to closing, our written buyer agreement and how our compensation works, getting ready to buy, and our trusted partners, our financial team and SMART Settlements.\n\nHow to use: Open a buyer in Buyer Package and press the Meet Your Advisor card, next to Consultation Kit. On a computer it downloads your PDF; on a phone it opens inside the OS with a Share button. Send it as soon as the buyer consultation is booked.\n\nBest practice: Walk the buyer through the agreement section at the consultation, and sign the buyer agreement before you tour any homes. The buyer always chooses the title company: recommend SMART Settlements, never require it.'
       }
     ]
   }
@@ -26986,7 +27015,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,

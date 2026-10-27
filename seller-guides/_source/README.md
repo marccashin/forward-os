@@ -33,3 +33,15 @@ does not fit on the page rather than clipping it.
 2. Add them to `agents.json`.
 3. Run `build.py <slug>`.
 4. Add one line to `SELLER_GUIDES` in `index.html` with their exact login name.
+
+## Buyer version (Meet Your Advisor for buyers, Oct 27, 2026)
+
+`build_buyer.py` builds the buyer guide from the same `agents.json`, fonts and
+styles, into `buyer-guides/<First>_<Last>_Buyer_Guide.pdf` (`BUYER_GUIDES` in
+`index.html`). Page 1 matches the seller guide apart from the buyer wording;
+page 2 is the buyer process, the buyer agreement, Getting Ready and the
+partners. Rebuild with `python3 build_buyer.py`. A bio change in `agents.json`
+needs BOTH builds run.
+
+The buyer agreement box is compensation wording Marc approved. Do not reword
+it without his approval.
