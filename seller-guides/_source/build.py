@@ -96,6 +96,9 @@ h3{font-family:'Lora',serif;font-weight:400;color:#000033;font-size:11.3pt;line-
 .step p{font-size:8.9pt;line-height:12.2pt;}
 .team{font-size:9.33pt;line-height:13.4pt;margin-top:6.5pt;}
 .team b{font-weight:500;color:#000033;}
+.pt{margin-top:5pt;column-gap:14.5pt;}
+.pt h3{font-size:10.67pt;line-height:14pt;}
+.pt p{font-size:8.9pt;line-height:12.2pt;}
 .cta{font-family:'Lora',serif;color:#000033;font-size:12.67pt;line-height:18.7pt;margin-top:6.5pt;}
 """
 
@@ -129,6 +132,11 @@ STEPS = [
     ("Offers and negotiation", "We review every offer together and negotiate price, contingencies, and timeline until it is ratified."),
     ("Contract to close", "Contingencies, repairs, and financing managed; final walkthrough, closing, and distribution of funds."),
 ]
+
+# Shared partner copy, page 2 (Marc, Oct 27, 2026). Sized to three lines each: a fourth
+# line overflows the pages whose closing line wraps (Ashling, Cesar, Charlotte).
+PARTNER_FIN = "Our financial team solves buyers' financing issues before they write and shows how your home fits their wealth plan. Confident buyers make stronger offers."
+PARTNER_TITLE = "The buyer chooses the title company. We ask their agent to use SMART Settlements, our preferred partner, proven to exceed our standards in execution and service."
 
 
 def page_html(a):
@@ -169,11 +177,13 @@ def page_html(a):
         '<div class="av"><div><div class="hd">Every buyer avatar is built from</div><ul>' + avatar + '</ul></div>'
         '<div class="box"><div class="lab">Nothing is guessed</div><p>Gaps are filled only when data is verifiable. These avatars are not fictional. They mirror the real categories of buyers most likely to make an offer on your home, so every photo, word, and ad is aimed at them.</p></div></div>'
         '<div class="g2 st4">' + four + '</div>'
-        '<p class="who"><b>Who is buying today:</b> Baby Boomers are now the largest share of buyers, 26% of buyers paid all cash (a record high), and most buyers decide after seeing just 7 to 8 homes. <i>Source: NAR</i></p>'
         '<hr class="rule2">'
         '<h2>The Process, Step by Step</h2><div class="g2 steps">' + steps + '</div>'
         '<hr class="rule2">'
-        '<p class="team"><b>A full team behind you:</b> transaction management, client concierge, financial strategy, market intelligence, trusted attorneys, and in-house photography. &nbsp;<b>$280M+</b> team sales &nbsp;|&nbsp; <b>300+</b> transactions &nbsp;|&nbsp; <b>97%</b> contract-to-close</p>'
+        '<p class="team"><b>A full team behind you:</b> transaction management, client concierge, market intelligence, and in-house photography. &nbsp;<b>$300M+</b> team sales &nbsp;|&nbsp; <b>300+</b> transactions &nbsp;|&nbsp; <b>97%</b> contract-to-close</p>'
+        # Trusted partners (Marc, Oct 27, 2026). The title line must stay a REQUEST: the buyer chooses the title company.
+        '<div class="g2 pt"><div><h3>Financial Strategy</h3><p>' + e(PARTNER_FIN) + '</p></div>'
+        '<div><h3>Title and Settlement: SMART Settlements</h3><p>' + e(PARTNER_TITLE) + '</p></div></div>'
         '<p class="cta">The first step is simply a conversation. Contact ' + e(a['first']) + ' to arrange a visit that works for you.</p>'
         '</div>'
         '<div class="ftr"><img src="assets/logo-white.png" alt=""><div class="x">' + e(a['name']) + '  |  ' + e(a['phone']) + '  |  ' + e(a['email']) + '</div></div>'
