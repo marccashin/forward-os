@@ -15,6 +15,9 @@
  *   - only Marc sees Refresh from Canva, inside the listing, and it reports the result;
  *   - Meet Your Advisor (was Seller Guide): each agent's own file, named to match;
  *     on a phone it opens inside the OS with Back and Share and never replaces the app.
+ *   - Meet Your Advisor for BUYERS (Oct 27, 2026): the card on a buyer, real clicks.
+ *     A computer downloads the agent's own buyer PDF under a Meet Your Advisor name;
+ *     a phone opens it inside the OS; a login with no guide gets a message, no file.
  *
  * Why (Marc, Oct 12, 2026): agents were sent to each deck's Canva edit link
  * and Canva refused anyone not signed in to the team account. The backend
@@ -282,6 +285,66 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     await openAdvisor(w.page);
     const t = await w.page.locator('.subfolder-body').first().innerText();
     ok(/Meet Your Advisor is made for each agent/.test(t) && await w.page.locator('.subfolder-body a', { hasText: 'Download PDF' }).count() === 0, 'Operations: a plain message, no file');
+    await w.ctx.close();
+  }
+
+  // ── Meet Your Advisor for BUYERS (Marc, Oct 27, 2026) ──
+  // A card on the buyer, next to Consultation Kit. The card is the only way in, so
+  // every case below clicks it; nothing is reached by setting state.
+  const BUYER = { id: 'b1111111-1111-4111-8111-111111111111', buyer_name: 'Test Buyer', agent_name: 'Marc Cashin', status: 'active' };
+  const buyerFile = login => '/buyer-guides/' + login.replace(/ /g, '_') + '_Buyer_Guide.pdf';
+  const buyerName = login => login.replace(/ /g, '_') + '_Meet_Your_Advisor_Buyers.pdf';
+  async function openBuyerCard(page) {
+    await page.evaluate((b) => (async function(){ const s = document.querySelector('#app').__vue_app__._instance.setupState; s.go('buyer-package'); await new Promise(r => setTimeout(r, 300)); await s.byrOpenBuyer(b); })(), BUYER);
+    await page.waitForTimeout(500);
+    const card = page.locator('[data-myab]:visible');
+    ok(await card.count() === 1, 'buyer: exactly one Meet Your Advisor card is on screen', await card.count());
+    return card;
+  }
+  {
+    const html3 = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+    ok((html3.match(/data-myab="1"/g) || []).length === 2, 'buyer: the card is in both the computer and the phone grid');
+    for (const login of HAS) {
+      const f = path.join(dir, buyerFile(login));
+      const head = fs.existsSync(f) ? fs.readFileSync(f).slice(0, 5).toString('latin1') : '';
+      ok(head === '%PDF-', login + ': their buyer guide exists in the site and is a PDF', f);
+    }
+  }
+  for (const login of HAS) {   // computer: a named download of the agent's own buyer file, no viewer
+    const w = await open(login);
+    const card = await openBuyerCard(w.page);
+    const [dl] = await Promise.all([w.page.waitForEvent('download', { timeout: 5000 }).catch(() => null), card.click()]);
+    ok(!!dl && new URL(dl.url()).pathname === buyerFile(login), login + ': the buyer card downloads their own file', dl && dl.url());
+    ok(!!dl && dl.suggestedFilename() === buyerName(login), login + ': named Meet Your Advisor (Buyers)', dl && dl.suggestedFilename());
+    ok(await w.page.locator('.pdf-view').count() === 0, login + ': a computer does not open the in-app viewer');
+    ok(w.errors.length === 0, login + ' buyer card: no page errors', w.errors);
+    await w.ctx.close();
+  }
+  {   // phone: stays in the OS, both pages, Back returns to the buyer, Share sends the right file
+    const login = 'Niki Lang';
+    const w = await open(login, null, 'reader');
+    const card = await openBuyerCard(w.page);
+    const before = w.page.url();
+    await card.click(); await w.page.waitForTimeout(1200);
+    ok(w.page.url() === before, 'buyer phone: the app is not replaced by the PDF', w.page.url());
+    ok(await w.page.locator('.pdf-view').isVisible(), 'buyer phone: the PDF opens inside the OS');
+    ok(await w.page.locator('.pdf-view-page').count() === 2, 'buyer phone: both pages are shown');
+    await w.page.locator('.pdf-view-btn', { hasText: 'Share' }).click(); await w.page.waitForTimeout(300);
+    const shared = await w.page.evaluate(() => window.__shared);
+    const own = fs.statSync(path.join(dir, buyerFile(login))).size;
+    ok(shared.length === 1 && shared[0].name === buyerName(login) && shared[0].head === '%PDF-' && shared[0].size === own, 'buyer phone: Share hands over their own buyer PDF', shared);
+    await w.page.locator('.pdf-view-btn', { hasText: 'Back' }).click(); await w.page.waitForTimeout(300);
+    ok(await w.page.locator('.pdf-view').count() === 0 && await w.page.locator('[data-myab]:visible').count() === 1, 'buyer phone: Back returns to the buyer');
+    ok(w.errors.length === 0, 'buyer phone: no page errors', w.errors);
+    await w.ctx.close();
+  }
+  for (const login of ['Operations', 'Concierge']) {   // no guide: a message, no file, no viewer
+    const w = await open(login);
+    const card = await openBuyerCard(w.page);
+    const [dl] = await Promise.all([w.page.waitForEvent('download', { timeout: 1500 }).catch(() => null), card.click()]);
+    await w.page.waitForTimeout(300);
+    const text = await w.page.locator('body').innerText();
+    ok(!dl && await w.page.locator('.pdf-view').count() === 0 && /Meet Your Advisor is made for each agent/.test(text), login + ': buyer card gives a plain message and no file');
     await w.ctx.close();
   }
 
