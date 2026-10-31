@@ -254,7 +254,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const noteCases = [
     ['a plain note (lstSaveNote)', open + "st.lstNotes.mls_data = 'Beds: 3'; return await st.lstSaveNote('mls_data');", 'mls_data', 'Beds: 3'],
     ['listing description (edit box)', open + "st.lstDescEditVal = 'A description.'; await st.lstDescSave(); return true;", 'listing_remarks', 'A description.'],
-    ['listing description (writer, Save to Property)', open + "st.ldOutput = 'Writer text.'; await st.ldSaveToProperty(); return true;", 'listing_remarks', 'Writer text.'],
+    ['listing description (writer, Save to Property)', open + "st.ldStarted = true; st.ldOpenWriter(); st.ldOutput = 'Writer text.'; await st.ldSaveToProperty(); return true;", 'listing_remarks', 'Writer text.'],
     ['a tool saved to the listing', open + "return await st.saveToPropertyFromTool('Seller Net Sheet', 'Net Sheet', 'Net to seller: 2', null);", 'seller_net_sheet', 'Net to seller: 2'],
   ];
   for (const [name, code, sf, text] of noteCases) {
