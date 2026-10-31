@@ -31,7 +31,7 @@ const PROPS = [
   { id: C, address: '300 Charlie St NW, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-20T00:00:00Z' }
 ];
 // Every listing has MLS Data: the listing's tools stay closed until it does.
-const mls = (addr) => ['=== MLS DATA ===', 'Property Address : ' + addr, 'List Price       : $500,000', 'Property Type    : Condo'].join('\n');
+const mls = (addr) => ['=== MLS DATA ===', 'Property Address : ' + addr, 'List Price       : $500,000', 'Property Type    : Condo', 'Bedrooms         : 2', 'Bathrooms        : 2', 'Square Footage   : 1,100 sq ft'].join('\n');   // all five MLS figures: since Oct 30, 2026 the tools open only then
 const NOTES = [
   { id: 11, property_id: A, subfolder: 'mls_data', content: mls(PROPS[0].address), updated_at: '2026-10-01T00:00:00Z' },
   { id: 12, property_id: B, subfolder: 'mls_data', content: mls(PROPS[1].address), updated_at: '2026-10-01T00:00:00Z' },

@@ -24,7 +24,7 @@ const PROPS = [
   { id: A, address: '100 Alpha Ct, Alexandria VA 22306', seller_name: 'Seller A', agent_name: 'Ashling McGowan', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
   { id: B, address: '200 Bravo Ave. Baltimore, MD 21201', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-09-21T00:00:00Z' }
 ];
-const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None';
+const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None\nBedrooms         : 3\nBathrooms        : 2\nSquare Footage   : 1,800 sq ft\nProperty Type    : Condo';
 let notes, hist, hid, mode, sent;
 function reset() {
   hid = 0; sent = []; mode = { histFails: false, noByFn: false };
