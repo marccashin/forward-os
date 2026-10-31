@@ -104,7 +104,7 @@ concurrency:
 jobs:
   group:
     name: Checks, group ${{ matrix.group }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -184,6 +184,7 @@ jobs:
               t "Mine first test (your own deals on top, every deal still there, group arrows fold)" node head/ci/mine-first-test.js head
               t "Cash to Close test (a cash purchase counts the whole price, 0% down allowed)" node head/ci/cash-to-close-test.js head
               t "MLS Data test (shorthand prices, five figures open the tools, address saves tell the truth)" node head/ci/mls-data-test.js head
+              t "Seller Prep send test (phone share menu, computer download message)" node head/ci/seller-prep-send-test.js head
               ;;
             3)
               t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head
@@ -214,7 +215,7 @@ jobs:
     name: App loads and names line up
     needs: group
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
       - name: Every group passed
