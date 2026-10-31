@@ -133,7 +133,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const read = () => {
       const scope = document.body.innerText;
       const opts = Array.from(document.querySelectorAll('select option')).filter(o => o.value === 'no' && o.parentElement && o.parentElement.offsetParent).map(o => o.textContent.trim());
-      return { hint: (scope.match(/auto-prorated based on closing date and ([^.]+)/) || [])[1] || '', opts, va: /Virginia bills each half/.test(scope), md: /Maryland bills the 1st half/.test(scope) };
+      return { hint: (scope.match(/auto-prorated based on closing date and ([^.]+)/) || [])[1] || '', opts, va: /Virginia bills each half/.test(scope), md: /Maryland bills the 1st half/.test(scope), esc: scope.match(/[^\n]{0,40}\\u[0-9a-fA-F]{4}[^\n]{0,10}/g) || [] };
     };
     // Virginia: closing Jun 10, 1st half still due Jul 28, marked paid by hand -> warning
     Object.assign(st.ns, { address: '1 Test St, Arlington, VA 22201', jurisdiction: 'va-nova', propTaxAnnual: '8000', closingDate: '2026-06-10' }); await w(100);
@@ -141,12 +141,13 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const va = read();
     Object.assign(st.ns, { address: '1 Test St, Rockville, MD 20850', jurisdiction: 'md-montgomery', closingDate: '2026-09-10', nsTaxH1Touched: true, nsTaxH1Paid: 'yes' }); await w(100);
     const md = read();
-    return { va, md, fthb: Object.prototype.hasOwnProperty.call(st.ns, 'firstTimeHomebuyerDC') };
+    return { va, md, escaped: va.esc.concat(md.esc), fthb: Object.prototype.hasOwnProperty.call(st.ns, 'firstTimeHomebuyerDC') };
   });
   ok(/Virginia calendar year \(Jan 1 – Dec 31\)/.test(words.va.hint) && !/Jul 1/.test(words.va.hint), 'Virginia: the hint says the calendar year, not Jul 1 to Jun 30', words.va.hint);
   ok(words.va.opts.length >= 1 && words.va.opts.every(t => /charge the seller.s days/.test(t)), 'Virginia: the unpaid answer says the seller\'s days are charged, not "collect at closing"', words.va.opts);
   ok(words.va.va && !words.va.md, 'Virginia: the warning names Virginia\'s bills, not Maryland\'s', words.va);
   ok(/Maryland fiscal year \(Jul 1 – Jun 30\)/.test(words.md.hint) && words.md.opts.length >= 1 && words.md.opts.every(t => /collect at closing/.test(t)) && words.md.md && !words.md.va, 'Maryland keeps its own hint, answer and warning', words.md);
+  ok(words.escaped.length === 0, 'no escape code like \\u2019 printed on the net sheet (Maryland\'s warning printed "buyer\\u2019s" in production)', words.escaped);
   ok(words.fthb === false && !/firstTimeHomebuyerDC/.test(fs.readFileSync(path.join(dir, 'index.html'), 'utf8')), 'no first-time buyer field is left in the net sheet (the reduced rate is the buyer\'s recordation tax, never the seller\'s)', words.fthb);
 
   ok(errors.length === 0, 'no page errors', errors.slice(0, 3));
