@@ -250,10 +250,10 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const btn = Array.from(document.querySelectorAll('button')).filter(b => b.offsetParent && /^\s*Save to Property\s*$/.test(b.textContent)).pop();
     const o = { picker: st.showSaveToProp, none: !!document.querySelector('[data-save-match-none]'), rows: document.querySelectorAll('[data-save-match-row]').length, disabled: btn.disabled };
     st.saveToPropSelected = A; await st.confirmSaveToPropDrive(); await w(300);
-    o.toast = st.toast.show ? st.toast.msg : ''; st.showSaveToProp = false;
+    o.toast = st.toast.msg; st.showSaveToProp = false;  // the message itself: an earlier toast's timer can hide it within a second (CI, Oct 31, 2026)
     return o;
   }, [FILL, A]);
-  ok(r5.picker && r5.none && r5.rows === 0 && r5.disabled && /Not saved/.test(r5.toast) && !sent.some(x => /save_property_note|listing-files\/[0-9a-f]/.test(x.u)), 'the window says no listing has this address, Save is off, and forcing listing A still saves nothing', [r5, sent.map(x => x.u)]);
+  ok(r5.picker && r5.none && r5.rows === 0 && r5.disabled && /^Not saved\. Pick the listing at this net sheet's address/.test(r5.toast) && !sent.some(x => /save_property_note|listing-files\/[0-9a-f]/.test(x.u)), 'the window says no listing has this address, Save is off, and forcing listing A still saves nothing', [r5, sent.map(x => x.u)]);
 
   console.log('6. Inside a listing, a sheet changed to another address is not saved');
   sent.length = 0;
