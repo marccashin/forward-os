@@ -255,7 +255,7 @@ function check(rec, lines, salePrice, net) {
   console.log('2. Built here: the heaviest sheet, the lightest, a loss, cents, long text');
   const heavy = { jurisdiction: 'md-baltimoreco', salePrice: 2000000, closingDate: '2026-09-22', loan1: 1250000.55, loan2: 180000, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'flat', buyerCompVal: 45000, transactionFee: 495, concessionMode: 'pct', concessionVal: 1.5, hoaFreq: 'quarterly', hoaAmount: 900, hoaPaidCurrent: 'yes', hoaResaleCert: 330, hoaTransferFee: 250, propTaxAnnual: 25146.72, nsTaxH1Paid: 'no', nsTaxH2Paid: 'no', otherCosts: 7500,
     address: '1926 Ruxton Road, Lot 7 Block C of the Ruxton Crossing Subdivision as recorded in Plat Book 14 Folio 2, Towson, Maryland 21204', unit: 'Penthouse 12B' };
-  const light = { jurisdiction: 'va-other', salePrice: 300000, closingDate: '' };
+  const light = { jurisdiction: 'va-other', salePrice: 300000, closingDate: '2026-12-15' };   // a closing date is required since Oct 30, 2026
   const loss = { jurisdiction: 'dc', salePrice: 500000, closingDate: '2026-06-15', loan1: 520000, sellerCompMode: 'pct', sellerCompVal: 2.5, buyerCompMode: 'pct', buyerCompVal: 2.5 };
   const novaLabel = { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '2026-10-31', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, transactionFee: 495, concessionMode: 'flat', concessionVal: 15000, hoaAmount: 629, hoaPaidCurrent: 'yes', hoaResaleCert: 330, propTaxAnnual: 10144, otherCosts: 50, address: '635 Slaters Ln, Alexandria, VA 22314', unit: '405' };
   const prop = { id: 'p-1', address: '635 Slaters Ln, Alexandria, VA 22314', market: 'VA', seller_name: 'Jordan Sample', subfolder_drive_ids: { _co_seller: 'Riley Sample' } };
@@ -274,8 +274,8 @@ function check(rec, lines, salePrice, net) {
   ok(built[0].rec.pages === 2 && strs(0).indexOf('Page 2 of 2  |  Prepared with FORWARD OS') >= 0, 'it runs to a second page, and both pages carry the footer and a page number', built[0].rec.pages);
   ok(strs(0).indexOf('1st Loan Payoff') >= 0 && strs(0).indexOf('2nd Loan Payoff') >= 0 && strs(0).indexOf('($1,430,000.55)') >= 0, 'both loans and their total, to the cent, are beside the sale price', strs(0).filter(s => /Loan|Payoff|\(/.test(s)));
   b = chk(1, light);
-  ok(b.length === 0, 'no loan, no credits, no closing date: Total Payoff is left out, credits says None, the summary shows a $0.00 payoff', b.slice(0, 4));
-  ok(strs(1).indexOf('Not specified') >= 0 && built[1].rec.pages === 1, 'with no closing date the Settlement Date says Not specified', strs(1).slice(0, 14));
+  ok(b.length === 0, 'no loan, no credits, no tax or HOA: Total Payoff is left out, credits says None, the summary shows a $0.00 payoff', b.slice(0, 4));
+  ok(strs(1).indexOf('Not specified') < 0 && strs(1).some(x => /December 15, 2026|12\/15\/2026|Dec(ember)? 15, 2026/.test(x)) && built[1].rec.pages === 1, 'the Settlement Date prints the closing date (a sheet with none cannot be made since Oct 30, 2026)', strs(1).slice(0, 14));
   b = chk(2, loss);
   ok(b.length === 0 && built[2].net < 0 && strs(2).indexOf(money(cents(built[2].net))) >= 0, 'a sale that nets less than zero prints the negative figure in the navy bar (' + money(cents(built[2].net)) + ')', b.slice(0, 4));
   b = chk(3, novaLabel);
@@ -283,24 +283,26 @@ function check(rec, lines, salePrice, net) {
   ok(strs(3).indexOf('10/31/2026') >= 0, 'the settlement date prints month/day/year', strs(3).slice(0, 14));
   ok(built[3].rec.pages === 1, 'an ordinary sheet is one page', built[3].rec.pages);
 
-  // Lines handed straight to the PDF step (with no closing date it draws the sheet
-  // it is given and does not recalculate): a label far too long for its row, and
+  // Lines handed straight to the drawing step (nsGeneratePDFDoc, which draws the
+  // sheet it is given and never calculates): a label far too long for its row, and
   // enough rows for three pages. No real sheet is this long; the page must still hold.
-  // The sheet is the one last CALCULATED. With no closing date the PDF step does
-  // not calculate again, so change the price and a loan after Calculate and
-  // download: the page must still be the calculated sheet, and must add up.
+  // Since Oct 30, 2026 every sheet has a closing date, so the PDF step always
+  // calculates again: change the price and a loan after Calculate and download,
+  // and the page must be the sheet for the NEW figures, and must add up.
   const stale = await page.evaluate(async (a) => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
-    Object.assign(st.ns, a.base, { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, result: null, breakdown: [], _propId: null });
+    Object.assign(st.ns, a.base, { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '2026-12-15', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, result: null, breakdown: [], _propId: null });
     await tick(); __addr(); st.calcNetSheet(); await tick(); await tick(); await tick();
-    const lines = JSON.parse(JSON.stringify(st.ns.breakdown)), net = st.ns.result;
+    const net0 = st.ns.result;
     st.ns.salePrice = '800000'; st.ns.loan1 = '1'; await tick();
     window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
-    return { rec: window.__pdfs[0] || null, lines, net, same: JSON.stringify(st.ns.breakdown) === JSON.stringify(lines) };
+    const lines = JSON.parse(JSON.stringify(st.ns.breakdown)), net = st.ns.result;
+    st.calcNetSheet(); await tick(); await tick(); await tick();
+    return { rec: window.__pdfs[0] || null, lines, net, net0, fresh: st.ns.result };
   }, { base });
-  b = stale.rec ? check(stale.rec, stale.lines, 725000, stale.net) : ['no PDF'];
-  ok(stale.same && b.length === 0 && !stale.rec.texts.some(t => /800,000/.test(t.str)), 'a price and a loan changed after Calculate, then Download with no closing date: the page is the calculated $725,000 sheet and adds up; $800,000 is nowhere on it', [stale.same, b.slice(0, 4)]);
+  b = stale.rec ? check(stale.rec, stale.lines, 800000, stale.net) : ['no PDF'];
+  ok(b.length === 0 && stale.net !== stale.net0 && stale.net === stale.fresh && !stale.rec.texts.some(t => /725,000/.test(t.str)), 'a price and a loan changed after Calculate, then Download: the page is the $800,000 sheet, the same as Calculate gives, and adds up; $725,000 is nowhere on it', [stale.net0, stale.net, stale.fresh, b.slice(0, 4)]);
 
   // Figures typed with a third decimal, and a price typed with a dollar sign and
   // commas. Whatever is typed, the figures printed must add up to the net printed.
@@ -327,7 +329,7 @@ function check(rec, lines, salePrice, net) {
     const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, a.base, { salePrice: 5000000, closingDate: '', jurisdiction: 'dc', _propId: null, breakdown: a.fake, result: a.net });
     await tick(); window.__pdfs.length = 0;
-    __addr(); st.nsDownloadPDF(); await tick();
+    __addr(); st.nsGeneratePDFDoc(); await tick();   // the drawing step itself: a made-up sheet is never calculated
     return { pdfs: window.__pdfs.length, rec: window.__pdfs[0] || null, lines: JSON.parse(JSON.stringify(st.ns.breakdown)) };
   }, { base, fake, net: fakeNet });
   b = inj.pdfs === 1 && JSON.stringify(inj.lines) === JSON.stringify(fake) ? check(inj.rec, fake, 5000000, fakeNet) : ['the PDF step did not draw the lines it was given'];
@@ -344,7 +346,7 @@ function check(rec, lines, salePrice, net) {
       for (let i = 1; i <= k; i++) lines.push({ label: 'Made-up credit number ' + i, amount: -(50 + i + 0.5) });
       const net = Math.round((5000000 - lines.reduce((s, l) => s + l.amount, 0)) * 100) / 100;
       Object.assign(st.ns, a.base, { salePrice: 5000000, closingDate: '', jurisdiction: 'dc', _propId: null, breakdown: lines, result: net });
-      await tick(); window.__pdfs.length = 0; __addr(); st.nsDownloadPDF(); await tick();
+      await tick(); window.__pdfs.length = 0; __addr(); st.nsGeneratePDFDoc(); await tick();
       out.push({ n, k, lines, net, rec: window.__pdfs[0] || null });
     }
     return out;

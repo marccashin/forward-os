@@ -226,7 +226,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   mode.noByFn = true; sent = [];
   const fb = await page.evaluate(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
-    st.ns.salePrice = '470000'; st.calcNetSheet(); await st.nsSaveToProperty(); await new Promise(r => setTimeout(r, 500));
+    st.ns.salePrice = '470000'; st.ns.closingDate = st.ns.closingDate || '2026-11-14'; st.calcNetSheet(); await st.nsSaveToProperty(); await new Promise(r => setTimeout(r, 500));
     return (st.lstNotes.seller_net_sheet || '').length > 0;
   });
   ok(fb && sent.some(x => /\/rpc\/save_property_note$/.test(x.u)), 'the save falls back to the older function and the note is saved', sent.map(x => x.m + ' ' + x.u));
