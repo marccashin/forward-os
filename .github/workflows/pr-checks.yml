@@ -183,6 +183,7 @@ jobs:
               t "Save failure test (never says saved when it did not save)" node head/ci/save-failure-test.js head
               t "Mine first test (your own deals on top, every deal still there, group arrows fold)" node head/ci/mine-first-test.js head
               t "Cash to Close test (a cash purchase counts the whole price, 0% down allowed)" node head/ci/cash-to-close-test.js head
+              t "MLS Data test (shorthand prices, five figures open the tools, address saves tell the truth)" node head/ci/mls-data-test.js head
               ;;
             3)
               t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head

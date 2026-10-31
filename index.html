@@ -6470,14 +6470,14 @@ body {
                         <button @click="mlsEditingAddress=true;mlsEditAddressVal=lstActiveProp.address" style="background:none;border:none;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;white-space:nowrap;padding:0;">Edit ✎</button>
                       </div>
                       <div v-else>
-                        <input v-model="mlsEditAddressVal" @keyup.enter="lstSaveAddress();mlsEditingAddress=false" @keyup.escape="mlsEditingAddress=false" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:9px 12px;border:1px solid var(--gold-muted);border-radius:2px;outline:none;color:var(--navy);background:var(--white);margin-bottom:6px;">
+                        <input v-model="mlsEditAddressVal" @keyup.enter="lstEditAddressVal=mlsEditAddressVal;lstSaveAddress();mlsEditingAddress=false" @keyup.escape="mlsEditingAddress=false" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:9px 12px;border:1px solid var(--gold-muted);border-radius:2px;outline:none;color:var(--navy);background:var(--white);margin-bottom:6px;">
                         <div style="display:flex;gap:8px;">
                           <button class="btn-gold" @click="lstEditAddressVal=mlsEditAddressVal;lstSaveAddress();mlsEditingAddress=false" style="flex:1;padding:7px;font-size:8px;">Save</button>
                           <button @click="mlsEditingAddress=false" style="flex:1;padding:7px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Cancel</button>
                         </div>
                       </div>
                     </div>
-                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" inputmode="numeric"></div>
+                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" @input="mlsPriceProblem=''" inputmode="numeric"><div v-if="mlsPriceProblem" data-mls-price-problem style="margin-top:4px;font-size:11px;font-weight:600;color:#b91c1c;">{{ mlsPriceProblem }}</div></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                       <div class="form-row"><label>Beds</label><input v-model="mlsForm.beds" inputmode="numeric" placeholder="3"></div>
                       <div class="form-row"><label>Baths</label><input v-model="mlsForm.baths" inputmode="decimal" placeholder="2.5"></div>
@@ -8946,7 +8946,7 @@ body {
       <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:380px;padding:28px 24px;text-align:center;">
         <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Action Required</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:12px;">Complete MLS Data First</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Please fill out and save the MLS Data section before accessing other listing tools. We need the address, list price, beds, baths, square footage, and property type to generate accurate results.</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Fill in and save the MLS Data section before using the other listing tools. They need the list price, beds, baths, square footage and property type to give accurate results.<span v-if="mlsGateMissing.length" data-mls-gate-missing style="display:block;margin-top:8px;font-weight:600;opacity:1;color:#b91c1c;">Still missing: {{ mlsGateMissing.join(', ') }}.</span></div>
         <button @click="mlsGate=false" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;">Go to MLS Data</button>
       </div>
     </div>
@@ -13539,8 +13539,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstToolOpen.value = lstToolOpen.value === 'mlsdata' ? null : 'mlsdata';
         return;
       }
-      const hasMlsFile = (lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data')) || !!lstNotes.mls_data;
-      if (!hasMlsFile) {
+      const _mlsFile = lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data');
+      const _mlsMiss = _mlsFile ? [] : mlsMissing(lstNotes.mls_data);
+      if (_mlsMiss.length) {
+        mlsGateMissing.value = _mlsMiss;
         mlsGate.value = true;
         lstToolOpen.value = 'mlsdata'; // redirect to MLS tool
         return;
@@ -13934,6 +13936,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // Reset tool states so previous property data doesn't bleed through
       // Reset mlsForm, then immediately repopulate from saved note if one exists
       Object.assign(mlsForm, { listPrice:'', beds:'', baths:'', sqft:'', yearBuilt:'', hoa:'', propType:'', parking:'', features:['','','','',''] });
+      mlsPriceProblem.value = '';
       if (lstNotes.mls_data) {
         const _mlsGet = (label) => {
           const _m = lstNotes.mls_data.match(new RegExp(label + '\\s*:\\s*(.+)'));
@@ -15359,15 +15362,18 @@ async function lstSubmitToPipeline() {
     async function lstSaveAddress() {
       const newAddr = lstNormalizeAddress(lstEditAddressVal.value);
       if (!newAddr || !lstActiveProp.value) { lstEditingAddress.value = false; return; }
+      // Says "Address updated." only when the backend accepted it (Oct 30, 2026). Until
+      // then the answer was never read and a failure was only logged, so the screen
+      // showed the new address while the database could still hold the old one.
       try {
-        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ address: newAddr }})}).catch(e=>console.warn('Property update:',e));
+        await fosOk(await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ address: newAddr }})}), 'the server');
         lstActiveProp.value = { ...lstActiveProp.value, address: newAddr };
         // Update in list too
         const idx = lstProperties.value.findIndex(p => p.id === lstActiveProp.value.id);
         if (idx >= 0) lstProperties.value[idx].address = newAddr;
         lstEditingAddress.value = false;
         showGoldToast('Address updated.');
-      } catch (e) { showToast('Update failed: ' + e.message, 4000); }
+      } catch (e) { showToast('Address NOT saved (' + fosWhy(e) + '). The listing keeps its old address.', 8000); }
     }
 
     // ── Listings Revision System ──────────────────────────────────────
@@ -16309,12 +16315,49 @@ async function lstSubmitToPipeline() {
       return '$' + n.toLocaleString('en-US');
     }
     // Format helpers for MLS number fields
-    function mlsFormatPrice() {
-      const raw = (mlsForm.listPrice || '').replace(/[^0-9.]/g, '');
-      if (!raw) return;
-      const n = parseFloat(raw);
-      if (!isNaN(n) && n > 0) mlsForm.listPrice = '$' + Math.round(n).toLocaleString('en-US');
+    // A list price in whole dollars, or null (Oct 30, 2026). Reads $1,850,000, 1850000,
+    // 1.85M, 1.85 million and 850k. Until then the box kept only digits and the point
+    // when the agent left it, so '1.2M' became $1 and '850k' became $850. Anything
+    // under $1,000, or that is not a price, is null: never turned into a number.
+    function mlsPriceValue(txt) {
+      const t = String(txt || '').trim().toLowerCase().replace(/[$,\s]/g, '');
+      const m = t.match(/^(\d+(?:\.\d+)?|\.\d+)(k|thousand|m|mm|mil|million)?$/);
+      if (!m) return null;
+      let n = parseFloat(m[1]);
+      const u = m[2] || '';
+      if (u === 'k' || u === 'thousand') n *= 1000; else if (u) n *= 1000000;
+      n = Math.round(n);
+      return n >= 1000 ? n : null;
     }
+    const mlsPriceProblem = ref('');
+    function mlsFormatPrice() {
+      const raw = String(mlsForm.listPrice || '').trim();
+      if (!raw) { mlsPriceProblem.value = ''; return; }
+      const n = mlsPriceValue(raw);
+      if (n === null) { mlsPriceProblem.value = 'This is not a list price. Type the full price, for example 1,250,000 or 1.25M.'; return; }
+      mlsPriceProblem.value = '';
+      mlsForm.listPrice = '$' + n.toLocaleString('en-US');
+    }
+    // What MLS Data still needs before the other listing tools open (Marc, Oct 30,
+    // 2026: "Five figures required"). Until then any saved note opened every tool,
+    // even one saved with every box blank. Read from the note the form writes
+    // ('=== MLS DATA ===', 'Label : value'); a blank is '' or the form's dash. A
+    // note in any other layout is not judged here (none is written by the app now).
+    const MLS_REQUIRED = [['List Price', 'list price'], ['Bedrooms', 'beds'], ['Bathrooms', 'baths'], ['Square Footage', 'square footage'], ['Property Type', 'property type']];
+    function mlsMissing(text) {
+      if (!text) return MLS_REQUIRED.map(function (r) { return r[1]; });
+      if (!/===\s*MLS DATA\s*===/.test(text)) return [];
+      return MLS_REQUIRED.filter(function (r) {
+        const m = String(text).match(new RegExp(r[0] + '\\s*:\\s*(.+)'));
+        let v = m ? m[1].trim() : '';
+        if (r[0] === 'Square Footage') v = v.replace(/\s*sq\s*ft.*/i, '').trim();
+        if (!v || v === '\u2014' || v === '-' || /^tbd$/i.test(v)) return true;
+        if (r[0] === 'List Price') return mlsPriceValue(v) === null;
+        return false;
+      }).map(function (r) { return r[1]; });
+    }
+    function mlsListMissing(list) { return list.length === 1 ? list[0] : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1]; }
+    const mlsGateMissing = ref([]);
     function mlsFormatSqft() {
       const raw = (mlsForm.sqft || '').replace(/[^0-9]/g, '');
       if (!raw) return;
@@ -16326,6 +16369,8 @@ async function lstSubmitToPipeline() {
       if (mlsSaving.value) return;
       const prop = lstActiveProp.value;
       if (!prop) { showToast('Open a property first.', 3000); return; }
+      mlsFormatPrice();
+      if (mlsPriceProblem.value) { showToast('MLS Data NOT saved. ' + mlsPriceProblem.value, 7000); return; }
 
       // Build clean structured text for pipeline to read
       const addr = prop.address;
@@ -16351,7 +16396,9 @@ async function lstSubmitToPipeline() {
         // Save MLS data as a note on the listing, in one database step
         await supaRest.saveNote(prop.id, 'mls_data', text);
         lstNotes.mls_data = text;
-        showGoldToast('MLS Data saved.');
+        const _miss = mlsMissing(text);
+        if (_miss.length) showToast('MLS Data saved. The other listing tools open once the ' + mlsListMissing(_miss) + (_miss.length === 1 ? ' is' : ' are') + ' filled in.', 7000);
+        else showGoldToast('MLS Data saved.');
       } catch (e) {
         showToast('Save failed: ' + e.message, 4000);
       }
@@ -24530,6 +24577,10 @@ const CHANGELOG = [
       {
         title: 'Net Sheet and Cash to Close: Pick the Maryland County',
         detail: 'On a Maryland net sheet or Cash to Close estimate the OS no longer guesses the county. Until today every Maryland address outside Montgomery County started on Other county (blended estimate), and choosing Maryland started on Montgomery, even though transfer and recordation taxes differ by county. Now the County box says Choose the county until you pick one, and the sheet will not calculate until you do. When you pick an address from the suggestions, the county Google names is filled in for you. Other county (blended estimate) is still at the bottom of the list if you need it.\n\nHow to use: On a Maryland net sheet, check the County box and pick the property\'s county, then press Calculate.\n\nBest practice: If you sent a Maryland seller outside Montgomery County a net sheet before today, open it, pick the county, calculate again and check the transfer tax line. Do the same for a Maryland buyer\'s Cash to Close.'
+      },
+      {
+        title: 'MLS Data: Shorthand Prices, Five Figures, Address Saves',
+        detail: 'Three fixes on a listing. A list price typed as 1.2M, 1.2 million or 850k is now saved as the full price; until today 1.2M saved as $1 and 850k as $850. Something that is not a price stays as you typed it and turns red, and MLS Data will not save with it. The other listing tools now open only once MLS Data has the list price, beds, baths, square footage and property type; a listing saved with blanks stays on MLS Data and the popup says what is missing. And editing a listing\'s address now says Address updated only when it was really saved; otherwise it says NOT saved and keeps the old address.\n\nHow to use: Fill in all five figures in MLS Data and press Save. If a tool sends you back to MLS Data, the popup lists what is missing.\n\nBest practice: Check the list price box after you leave it. It should show the full price with commas, like $1,200,000.'
       }
     ]
   }
@@ -27218,7 +27269,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep,
       marketRegions, marketReportLinks, MARKET_REGION_DEFAULTS, mktEditMode, mktEditLinks, mktSaving, mktStartEdit, mktSaveLinks, mktLoadLinks,
       // MLS Data Form
-      mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, openCMABuilder, lstOpenTool, activityLabel,
+      mlsForm, mlsSaving, mlsGate, mlsGateMissing, mlsPriceProblem, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, openCMABuilder, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
       moDisplaySections, moActiveSlots, moSlotCount, moStatus, moChatMessages, moChatInput, moChatLoading, moSendChat, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
