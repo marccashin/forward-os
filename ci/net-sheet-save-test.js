@@ -20,6 +20,7 @@ const { chromium } = require('playwright');
 const dir = process.argv[2];
 const VUE = fs.readFileSync(require.resolve('vue/dist/vue.global.js'), 'utf8');
 const JSPDF = fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js'), 'utf8');
+const H = '88888888-8888-4888-8888-888888888888', I = '99999999-9999-4999-8999-999999999999', K = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const C = '44444444-4444-4444-8444-444444444444', D = '55555555-5555-4555-8555-555555555555', E = '66666666-6666-4666-8666-666666666666', G = '77777777-7777-4777-8777-777777777777';
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222', BUY = '33333333-3333-4333-8333-333333333333';
 const PROPS = [
@@ -28,7 +29,11 @@ const PROPS = [
   { id: C, address: '300 Charlie St NW, Unit 4, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-29T00:00:00Z' },
   { id: D, address: '300 Charlie St NW, Unit #5, Washington, DC 20001', seller_name: 'Seller D', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-28T00:00:00Z' },
   { id: E, address: '2326 Fort Dr, Alexandria, VA, 22303', seller_name: 'Seller E', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-09-27T00:00:00Z' },
-  { id: G, address: '500 Echo St NW, Washington, DC 20001', seller_name: 'Seller G', agent_name: 'Ashling McGowan', market: 'DC', status: 'draft', created_at: '2026-09-26T00:00:00Z' }
+  { id: G, address: '500 Echo St NW, Washington, DC 20001', seller_name: 'Seller G', agent_name: 'Ashling McGowan', market: 'DC', status: 'draft', created_at: '2026-09-26T00:00:00Z' },
+  // Saved without a ZIP, as 11 real listings were (Oct 31, 2026)
+  { id: H, address: '4101 Albemarle Street NW #612', seller_name: 'Seller H', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-20T00:00:00Z' },
+  { id: I, address: '9124 Potomac Ridge Rd', seller_name: 'Seller I', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-09-19T00:00:00Z' },
+  { id: K, address: '1415 Riverside Ave. Baltimore, MD', seller_name: 'Seller K', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-09-18T00:00:00Z' }
 ];
 const MLS = ['=== MLS DATA ===', 'Property Address : x', 'List Price       : $900,000', 'Bedrooms         : 3', 'Bathrooms        : 2', 'Square Footage   : 1,600 sq ft', 'Property Type    : Condo'].join('\n');
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
@@ -70,6 +75,26 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     return api(route);
   });
   await ctx.addInitScript(() => { localStorage.setItem('fos_agent', 'Marc Cashin'); localStorage.setItem('fos_key_Marc_Cashin', 'test-key'); });
+  // A stand-in for Google Places that answers like the real one for three addresses.
+  // Potomac Ridge only has a Court, never the Road: an answer for another street must be refused.
+  await ctx.addInitScript(() => {
+    const comp = (n, t) => ({ long_name: n, short_name: n, types: t });
+    const PRED = {
+      '4101 albemarle': [{ description: '4101 Albemarle St NW, Washington, DC, USA', place_id: 'pH' }],
+      '9124 potomac': [{ description: '9124 Potomac Ridge Ct, Great Falls, VA, USA', place_id: 'pI' }],
+      '1415 riverside': [{ description: '1415 Riverside Ave, Baltimore, MD, USA', place_id: 'pK' }]
+    };
+    const DET = {
+      pH: [comp('4101', ['street_number']), comp('Washington', ['locality']), comp('District of Columbia', ['administrative_area_level_2']), Object.assign(comp('District of Columbia', ['administrative_area_level_1']), { short_name: 'DC' }), comp('20016', ['postal_code'])],
+      pI: [comp('9124', ['street_number']), comp('Great Falls', ['locality']), comp('Fairfax County', ['administrative_area_level_2']), Object.assign(comp('Virginia', ['administrative_area_level_1']), { short_name: 'VA' }), comp('22066', ['postal_code'])],
+      pK: [comp('1415', ['street_number']), comp('Baltimore', ['locality']), comp('Baltimore City', ['administrative_area_level_2']), Object.assign(comp('Maryland', ['administrative_area_level_1']), { short_name: 'MD' }), comp('21230', ['postal_code'])]
+    };
+    window.__gAsked = [];
+    window.google = { maps: { places: {
+      AutocompleteService: function () { this.getPlacePredictions = (q, cb) => { window.__gAsked.push(q.input); const k = Object.keys(PRED).find(k => q.input.toLowerCase().indexOf(k) === 0); setTimeout(() => cb(k ? PRED[k] : [], k ? 'OK' : 'ZERO_RESULTS'), 20); }; },
+      PlacesService: function () { this.getDetails = (r, cb) => setTimeout(() => cb(DET[r.placeId] ? { address_components: DET[r.placeId] } : null, DET[r.placeId] ? 'OK' : 'NOT_FOUND'), 20); }
+    } } };
+  });
   const page = await ctx.newPage();
   page.on('pageerror', e => errors.push(e.message));
   await page.goto(origin + '/index.html', { waitUntil: 'load' }); await page.waitForTimeout(1500);
@@ -189,6 +214,29 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   }, FILL);
   const toC = sent.filter(x => /save_property_note/.test(x.u)).map(x => JSON.parse(x.body));
   ok(r4.offered.length === 1 && r4.picked === C && toC.length === 1 && toC[0].p_property_id === C && sent.some(x => x.u.indexOf('/listing-files/' + C + '/') >= 0), 'a sheet filled by picking Unit 4 offers only Unit 4, and Save files it there', [r4, toC.map(x => x.p_property_id)]);
+
+  console.log('4b. A listing saved without a ZIP gets it from Google, and only for its own street');
+  const pickNoZip = async (typed, label) => {
+    await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; try { st.closePDFViewer(); } catch (e) {} st.showSaveToProp = false; Object.assign(st.ns, { address: '', unit: '', result: null, _pickNote: '' }); });
+    await page.click('#ns-address-input'); await page.fill('#ns-address-input', ''); await page.type('#ns-address-input', typed, { delay: 10 }); await page.waitForTimeout(150);
+    await page.click('[data-ns-listing-sug]:has-text("' + label + '")'); await page.waitForTimeout(400);
+    return run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const n = document.querySelector('[data-ns-pick-note]'); return { address: st.ns.address, unit: st.ns.unit, j: st.ns.jurisdiction, note: n ? n.textContent.trim() : '', problem: st.nsAddrProblem }; });
+  };
+  const h = await pickNoZip('4101', '4101 Albemarle');
+  ok(h.address === '4101 Albemarle Street NW, Washington, DC 20016' && h.unit === '612' && h.j === 'dc' && /ZIP code 20016 added from Google/.test(h.note) && !/address/i.test(h.problem), 'Albemarle (no ZIP saved): the box gets Washington, DC 20016 from Google, Unit 612 kept, the agent is told, and the address check is satisfied', h);
+  sent.length = 0;
+  const rh = await run(async (FILL) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const w = (ms) => new Promise(r => setTimeout(r, ms));
+    Object.assign(st.ns, FILL); st.calcNetSheet(); await w(150); try { st.closePDFViewer(); } catch (e) {} await st.nsSaveToProperty(); await w(300);
+    const o = { picked: st.saveToPropSelected, offered: (st.saveToPropMatches || []).map(p => p.id) }; st.showSaveToProp = false; return o; }, FILL);
+  ok(rh.offered.length === 1 && rh.picked === H, 'and Save offers that listing (ZIP compared only where both have one)', rh);
+  const i9 = await pickNoZip('9124', '9124 Potomac');
+  ok(i9.address === '9124 Potomac Ridge Rd, VA' && /no city or ZIP code\. Type it/.test(i9.note), 'Potomac Ridge Rd: Google only knows Potomac Ridge Ct, so nothing is filled from it and the agent is told to type the city and ZIP', i9);
+  const k = await pickNoZip('1415', '1415 Riverside');
+  ok(k.address === '1415 Riverside Ave., Baltimore, MD 21230' && /^md-/.test(k.j) && k.j !== 'md-other' && /ZIP code 21230/.test(k.note), 'Riverside Ave, Baltimore: the ZIP comes from Google and the Maryland county from Google too (' + k.j + ')', k);
+  const asked = await run(() => window.__gAsked.filter(q => /^(4101|9124|1415) [A-Z]/.test(q)));
+  ok(asked.indexOf('4101 Albemarle Street NW, DC') > -1 && asked.indexOf('9124 Potomac Ridge Rd, VA') > -1 && asked.indexOf('1415 Riverside Ave., Baltimore, MD') > -1, 'Google is asked with the listing\'s own street, city and state', asked);
+  const a1 = await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const w = (ms) => new Promise(r => setTimeout(r, ms)); const n0 = window.__gAsked.length; st.nsPickListing(st.lstProperties.find(p => p.address.startsWith('100 Alpha'))); await w(200); return { asked: window.__gAsked.length - n0, address: st.ns.address, note: st.ns._pickNote }; });
+  ok(a1.asked === 0 && a1.address === '100 Alpha Ct NW, Washington, DC 20001' && a1.note === '', 'a listing saved with its ZIP is filled as saved, with no Google lookup and no note', a1);
 
   console.log('5. No listing at the address: nothing is saved');
   sent.length = 0;
