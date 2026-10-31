@@ -35,7 +35,7 @@ const PROPS = [
   { id: A, address: '100 Alpha Ct, Alexandria VA 22306', seller_name: 'Seller A', agent_name: 'Ashling McGowan', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
   { id: B, address: '200 Bravo Ave. Baltimore, MD', seller_name: 'Seller B', agent_name: 'Charlotte Lee', market: 'MD', status: 'draft', created_at: '2026-09-21T00:00:00Z' }
 ];
-const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None';
+const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None\nBedrooms         : 3\nBathrooms        : 2\nSquare Footage   : 1,800 sq ft\nProperty Type    : Condo';
 const TEXT1 = 'Set on a quiet court, this four bedroom home opens to a kitchen rebuilt in 2024.\n\nSecond paragraph, with "quotes" and an ampersand & a tab\there.';
 const TEXT2 = TEXT1 + ' One more sentence.';
 const WORDS = (n, w) => Array.from({ length: n }, (_, i) => (w || 'word') + (i + 1)).join(' ');
