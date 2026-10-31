@@ -133,9 +133,10 @@ function api(route) {
   }
   if (/api\.anthropic\.com\/v1\/messages/.test(base)) {
     const b = JSON.parse(req.postData());
-    ai.calls.push({ system: b.system || '', prompt: b.messages[0].content, max: b.max_tokens });
+    ai.calls.push({ system: b.system || '', prompt: b.messages[0].content, all: b.messages.map(x => x.content).join('\n'), max: b.max_tokens });
     if (ai.fail) return J(route, ai.fail, { error: { message: 'made-up AI outage' } });
     const text = ai.answers.length ? ai.answers.shift() : 'NO ANSWER QUEUED';
+    if (b.stream) return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: { 'access-control-allow-origin': '*' }, body: 'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text } }) + '\n\ndata: [DONE]\n\n' });
     return J(route, 200, { content: [{ type: 'text', text }], stop_reason: 'end_turn' });
   }
   if (/\/storage\/v1\/object\/public\/listing-description-pdfs\//.test(base)) {
@@ -401,7 +402,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   console.log('\nThe writer');
   const writer = (fn, arg) => page.evaluate(async ([src, arg2]) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const f = new Function('st', 'arg', 'return (' + src + ')(st, arg)'); await f(st, arg2); await new Promise(r2 => setTimeout(r2, 400)); }, [fn.toString(), arg]);
-  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.view = 'listing-desc'; }, TEXT2);
+  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.ldOpenWriter();   /* the listing's own Listing Description button */ }, TEXT2);
   s = await see();
   ok(/^✓ Approved for marketing by Charlotte Lee on /.test(s['w:approved'] || '') && !s['w:approve'], 'with the saved, approved text open, the writer says it is approved', s);
   await writer((st, t) => { st.ldOutput = t; }, 'A NEW DRAFT FROM THE WRITER');
@@ -411,7 +412,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   s = await see();
   ok(approvals.length === 0 && /Description saved\. The text changed, so its approval for marketing was cleared/.test(s.toast), 'saving it from the writer clears the approval and says so', { approvals, toast: s.toast });
   await page.waitForTimeout(900);
-  await writer((st) => { st.view = 'listing-desc'; });
+  await writer((st) => { st.ldOpenWriter(); });
   s = await see();
   ok(/^Saved to the listing\. Not approved for marketing\.$/.test(s['w:not-approved'] || '') && /^Approve for marketing$/i.test(s['w:approve'] || ''), 'after the save the writer offers Approve for marketing', s);
   await click('[data-appr-writer="approve"]', 1200);
@@ -659,7 +660,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
   console.log('\nThe writer, on a listing with no flyer version');
   await freshA();
-  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.view = 'listing-desc'; }, 'A DESCRIPTION');
+  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.ldOpenWriter();   /* the listing's own Listing Description button */ }, 'A DESCRIPTION');
   s = await see();
   ok(/^A flyer version is needed first: go to the listing$/i.test(s['w:to-listing'] || '') && !s['w:approve'], 'the writer offers no Approve button, and points to the listing', s);
   await click('[data-appr-writer="to-listing"]', 500);
@@ -711,7 +712,7 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   ok(rpcSent().length === 0 && oldRpc().length === 0 && approvals.length === 0, 'pressing it sends nothing');
   let dr = await direct(); s = await see();
   ok(dr === false && rpcSent().length === 0 && approvals.length === 0 && /^NOT approved: in the description, "for the first-time buyer" describes who should live there/.test(s.failed || ''), 'the approve step itself refuses, sends nothing, and says why', s.failed);
-  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.view = 'listing-desc'; }, BAD_DESC);
+  await writer((st, t) => { st.ldStarted = true; st.ldOutput = t; st.ldOpenWriter();   /* the listing's own Listing Description button */ }, BAD_DESC);
   s = await see();
   let wi = await all('[data-ld="who-issue"]');
   ok(wi.length === 1 && /^Fair housing: "for the first-time buyer" describes who should live there\..* Ask for a rewrite before you save or paste this\. It cannot be approved for marketing as written\.$/.test(wi[0]), 'the writer shows the same phrase beside the description, before it is saved', wi);
@@ -750,6 +751,81 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   await editSave(FIXED_DESC);
   s = await see();
   ok(approvals.length === 0 && !s.approved && s['not-approved'] === 'Not approved' && s.approveDisabled === false && (await all('[data-appr="approved-issue"]')).length === 0, 'saving the corrected text clears that approval, and the new text can be approved', s);
+
+
+  // ════════ FORWARD'S WORDS AND DASHES BLOCK APPROVAL (Marc, Oct 31, 2026) ════════
+  console.log("\nFORWARD's words and dashes block Approve for marketing");
+  reset();
+  page = await newPage();
+  const setNote = (pid, sf, c) => { notes = notes.filter(n => !(n.property_id === pid && n.subfolder === sf)); notes.push({ id: 'x' + Math.random(), property_id: pid, subfolder: sf, content: c, updated_at: '2026-10-05T00:00:00Z' }); };
+  setNote(B, 'listing_remarks', TEXT1 + ' The kitchen is stunning.');
+  await open(B); s = await see();
+  ok(s.approveDisabled === true && /In the description, it uses "stunning", a word FORWARD does not use/.test(s['desc-issue'] || '') && /Change the words or dashes marked in red first/.test(s['brand-blocked'] || ''), 'a description with "stunning" cannot be approved: Approve is off and the word is quoted in red', s);
+  sent = [];
+  await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; await st.lstApprove(); });
+  s = await see();
+  ok(!sent.some(x => /approve_listing_description/.test(x.u)) && approvals.length === 0, 'and the approve step itself refuses, before any request', sent.map(x => x.u));
+  setNote(B, 'listing_remarks', TEXT1); setNote(B, 'listing_flyer', FLYER1 + ' Quiet — and bright.');
+  await open(B); s = await see();
+  ok(s.approveDisabled === true && /Change before approving: it has a long dash/.test(s['f:issue'] || ''), 'a flyer version with a long dash cannot be approved either', s['f:issue']);
+  setNote(B, 'listing_flyer', FLYER1 + ' Quiet, charmingly bright, and boasting views.');
+  await open(B); s = await see();
+  ok(s.approveDisabled === false && !s['f:issue'] && !s['desc-issue'], 'words that only contain a banned word (charmingly, boasting) are not caught, and clean texts can be approved', s);
+  await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ldStarted = true; st.ldOutput = 'A gorgeous residence.'; st.ldOpenWriter(); await new Promise(r => setTimeout(r, 200)); });
+  const brandW = await page.evaluate(() => Array.from(document.querySelectorAll('[data-ld="brand-issue"]')).map(e => e.innerText.trim()));
+  ok(brandW.length === 1 && /^FORWARD style: it uses "gorgeous", a word FORWARD does not use\. .*cannot be approved for marketing as written\.$/.test(brandW[0]), 'the writer flags a banned word on its draft', brandW);
+  await page.context().close();
+
+  // ════════ THE WRITER WORKS FOR ONE LISTING (Oct 31, 2026) ════════
+  // A voice request opened the writer with another listing still open: Get Started told the AI
+  // it was that listing, and Save to Property put the description on it (and cleared its approval).
+  console.log('\nThe writer, opened by voice with another listing still open');
+  reset();
+  approvals = [{ property_id: B, content: TEXT1, flyer_content: FLYER1, approved_by: 'Charlotte Lee', approved_at: '2026-10-05T12:00:00Z', pdf_url: null }];
+  page = await newPage();
+  await open(B);                                      // Bravo is open, and approved
+  sent = []; ai.answers = ['Tell me about the residence.', 'What makes it special?'];
+  const v1 = await page.evaluate(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ld.address = '100 Alpha Ct, Alexandria VA 22306';
+    localStorage.setItem('voice_ld_context', 'Property: 100 Alpha Ct, Alexandria VA 22306. 3 bed / 2 full bath');
+    st.go('listing-desc');                            // what a voice request does
+    await new Promise(r => setTimeout(r, 300));
+    const o = { bound: st.ldBound, box: !!document.querySelector('[data-appr-writer="box"]') };
+    await st.ldBegin(); await new Promise(r => setTimeout(r, 600));
+    return o;
+  });
+  const told = ai.calls.map(c => c.all).join('\n');
+  ok(v1.bound === false && v1.box === false && !sent.some(x => /listing_description_editing_start/.test(x.u)), 'the writer is not tied to Bravo: Bravo\'s approval box is not shown and Bravo is not marked "editing now"', [v1, sent.map(x => x.u)]);
+  ok(/100 Alpha Ct, Alexandria VA 22306\. 3 bed \/ 2 full bath/.test(told) && !/200 Bravo/.test(told), 'Get Started tells the AI what was said (Alpha), not the open listing\'s address (Bravo)', told.slice(-300));
+  sent = [];
+  const v2 = await page.evaluate(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ldOutput = 'THE ALPHA DESCRIPTION FROM THE VOICE WRITER.';
+    await st.ldSaveToProperty(); await new Promise(r => setTimeout(r, 400));
+    return { open: st.showSaveToProp, rows: Array.from(document.querySelectorAll('[data-save-match-row]')).map(e => e.innerText.trim()), picked: st.saveToPropSelected, lib: !!document.querySelector('[data-save-library]') };
+  });
+  ok(v2.open && v2.rows.length === 1 && /100 Alpha Ct/.test(v2.rows[0]) && v2.picked === A && v2.lib && !sent.some(x => /save_property_note/.test(x.u)), 'Save to Property asks which listing, offers only Alpha (the description\'s address), picked, plus Save to my library; nothing is sent yet', [v2, sent.map(x => x.u)]);
+  await page.evaluate(async () => { const b = Array.from(document.querySelectorAll('button')).filter(x => x.offsetParent && /^\s*Save to Property\s*$/.test(x.textContent)).pop(); b.click(); await new Promise(r => setTimeout(r, 1500)); });
+  const st2 = await page.evaluate(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; return { active: st.lstActiveProp && st.lstActiveProp.id, bound: st.ldBound, desc: st.lstNotes.listing_remarks, open: st.showSaveToProp }; });
+  ok(savedNote(A, 'listing_remarks') === 'THE ALPHA DESCRIPTION FROM THE VOICE WRITER.' && savedNote(B, 'listing_remarks') === TEXT1 && approvals.length === 1 && approvals[0].property_id === B, 'it is saved on Alpha only; Bravo\'s description and its approval are untouched', { a: savedNote(A, 'listing_remarks'), b: savedNote(B, 'listing_remarks'), approvals: approvals.map(x => x.property_id) });
+  ok(st2.active === A && st2.bound === true && st2.desc === 'THE ALPHA DESCRIPTION FROM THE VOICE WRITER.' && !st2.open, 'and Alpha is the listing on screen, with the writer now tied to it', st2);
+  // From the listing's own Listing Description button, Save goes straight to it, as before.
+  await open(B); sent = [];
+  const own = await page.evaluate(async (t) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ldStarted = true; st.ldOpenWriter(); st.ldOutput = t; await st.ldSaveToProperty(); await new Promise(r => setTimeout(r, 600)); return { open: st.showSaveToProp, bound: st.ldBound }; }, TEXT1 + ' Saved from its own tool.');
+  ok(own.bound && !own.open && savedNote(B, 'listing_remarks') === TEXT1 + ' Saved from its own tool.', 'opened from the listing\'s own tool, Save goes straight to that listing without asking', own);
+  // A voice description with no address: pick from the agent's own listings, or the library.
+  const v3 = await page.evaluate(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ld.address = ''; st.go('listing-desc'); st.ldOutput = 'NO ADDRESS GIVEN.'; await st.ldSaveToProperty(); await new Promise(r => setTimeout(r, 300));
+    return { rows: Array.from(document.querySelectorAll('[data-save-match-row]')).map(e => e.innerText.trim()), text: (document.querySelector('[data-save-match]') || {}).innerText || '' };
+  });
+  ok(v3.rows.length === 2 && /has no address\. Pick the listing it is for/.test(v3.text) && !(await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.saveToPropSelected)), 'with no address it lists the agent\'s own listings to pick from (Marc owns none here, so every listing), picks none for him, and says why', v3);
+  sent = [];
+  await page.evaluate(async () => { document.querySelector('[data-save-library]').click(); await new Promise(r => setTimeout(r, 600)); });
+  ok(!sent.some(x => /save_property_note/.test(x.u)), 'Save to my library instead writes no listing note', sent.map(x => x.u));
+  await page.context().close();
+  page = await newPage();
 
   console.log('\nA listing with no saved description');
   notes = notes.filter(n => !(n.property_id === A && n.subfolder === 'listing_remarks')); approvals = [];
