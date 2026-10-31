@@ -3048,6 +3048,7 @@ body {
                     <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
                     <div v-if="ns._suggestions.length" style="padding:4px 14px 6px;font-size:9px;color:#9ca3af;text-align:right;">Powered by Google</div>
                   </div>
+                  <div v-if="ns._pickNote" data-ns-pick-note style="margin-top:6px;font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ ns._pickNote }}</div>
                 </div>
                 <div class="form-row"><label>Unit #</label><input v-model="ns.unit" type="text" placeholder="If Applicable"/></div>
               </div>
@@ -17282,7 +17283,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _propId:null, _voicePrefill:false, nsTaxH1Touched:false, nsTaxH2Touched:false,
       result:null, breakdown:[],
       _showLoans:false, _showComp:false, _showConcession:false, _showHOA:false, _showTax:false, _showOther:false,
-      _suggestions:[], _listingSugs:[],
+      _suggestions:[], _listingSugs:[], _pickNote:'',
       _detectedCounty:'', _detectedState:''
     });
     // HOA fee from the listing's saved MLS Data note (line 'HOA Fee : <value>').
@@ -17469,10 +17470,49 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const st = parts.state || fosMarketCode(p.market);
       ns.address = [parts.streetRaw, parts.city, [st, parts.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
       ns.unit = parts.unitRaw;
-      ns._suggestions = []; ns._listingSugs = [];
+      ns._suggestions = []; ns._listingSugs = []; ns._pickNote = '';
       nsDetectJurisdiction();
+      if (!parts.zip || !parts.city) nsCompletePicked(parts, st);
+    }
+    // 11 of 41 listings were saved without a ZIP (some without a city), so a picked
+    // listing failed the full-address check (Marc, Oct 31, 2026). Ask Google for the
+    // rest, the same lookup the box uses for typed addresses, but only take an answer
+    // whose house number, street, quadrant and state are the listing's; then hand it
+    // to nsSelectSuggestion, which also sets the jurisdiction (and a Maryland county)
+    // from Google. The agent is told the ZIP came from Google. If anything is unsure
+    // the address stays as the listing has it and the agent is told what to type.
+    function nsCompletePicked(parts, st) {
+      const filled = ns.address;
+      const lacks = !parts.zip && !parts.city ? 'city or ZIP code' : (!parts.zip ? 'ZIP code' : 'city');
+      const fail = () => { if (ns.address === filled) ns._pickNote = 'This listing\'s saved address has no ' + lacks + '. Type it in the address box, and add it to the listing too so every tool has it.'; };
+      if (!nsPlacesService || !nsPlacesDetails) { fail(); return; }
+      ns._pickNote = 'This listing\'s saved address has no ' + lacks + '. Looking it up...';
+      nsPlacesService.getPlacePredictions({ input: [parts.streetRaw, parts.city, st].filter(Boolean).join(', '), types: ['address'], componentRestrictions: { country: 'us' } }, (preds, status) => {
+        if (ns.address !== filled) return;
+        const hit = (status === 'OK' && preds ? preds : []).find(pr => {
+          const g = fosAddrParts(pr.description, '');
+          return g.street === parts.street && (!g.quad || !parts.quad || g.quad === parts.quad) && (!st || !g.state || g.state === st);
+        });
+        if (!hit) { fail(); return; }
+        nsPlacesDetails.getDetails({ placeId: hit.place_id, fields: ['address_components'] }, (place, s2) => {
+          if (ns.address !== filled) return;
+          if (s2 !== 'OK' || !place) { fail(); return; }
+          let zip = '', city = '', town = '', state = '';
+          for (const c of (place.address_components || [])) {
+            if (c.types.includes('postal_code')) zip = c.short_name;
+            if (c.types.includes('locality')) city = c.long_name;
+            if (c.types.includes('sublocality') || c.types.includes('neighborhood')) town = town || c.long_name;
+            if (c.types.includes('administrative_area_level_1')) state = c.short_name;
+          }
+          if (!/^\d{5}$/.test(zip) || !state || (st && state !== st)) { fail(); return; }
+          const full = [parts.streetRaw, parts.city || city || town, state + ' ' + zip].filter(Boolean).join(', ');
+          nsSelectSuggestion({ description: full, place_id: hit.place_id });
+          ns._pickNote = (parts.zip ? 'City' : 'ZIP code ' + zip) + ' added from Google, because this listing\'s saved address has none. Check it, and add it to the listing too.';
+        });
+      });
     }
     function nsOnAddressInput() {
+      ns._pickNote = '';
       ns._listingSugs = nsListingSuggestions(ns.address);
       nsDetectJurisdiction(); // regex fallback always runs
       clearTimeout(nsSearchTimer);
@@ -24669,7 +24709,7 @@ const CHANGELOG = [
     updates: [
       {
         title: 'Net Sheet Saves to the Right Listing',
-        detail: 'Save to Property on a net sheet you made from Just Listed (not from inside a listing) now always asks which listing it belongs to. Until today it could file itself on whatever listing or buyer you had opened earlier, without asking. A net sheet saved from inside a listing still saves straight to that listing. Either way, the sheet is now calculated again just before it saves, so a price you changed after pressing Calculate is the price that gets saved.\n\nHow to use: Press Save to Property, pick the listing in the window and press Save. The PDF and the summary go on that listing.\n\nBest practice: When the net sheet is for a listing you already have, open it from the listing\'s own Net Sheet tool. It fills the address, price and HOA fee for you and saves to the right place.'
+        detail: 'Save to Property on a net sheet you started by voice (not from inside a listing) now always asks which listing it belongs to. Until today it could file itself on whatever listing or buyer you had opened earlier, without asking. A net sheet saved from inside a listing still saves straight to that listing. Either way, the sheet is now calculated again just before it saves, so a price you changed after pressing Calculate is the price that gets saved.\n\nHow to use: Press Save to Property, pick the listing in the window and press Save. The PDF and the summary go on that listing.\n\nBest practice: When the net sheet is for a listing you already have, open it from the listing\'s own Net Sheet tool. It fills the address, price and HOA fee for you and saves to the right place.'
       },
       {
         title: 'Virginia Property Tax Wording',
@@ -24681,7 +24721,7 @@ const CHANGELOG = [
       },
       {
         title: 'Net Sheet: Pick Your Listing, Save to the Matching Address',
-        detail: 'In the Net Sheet under Just Listed, click the Property Location box and your listings appear. Start typing and the list narrows. Pick one and the address and unit fill in exactly as they are on the listing. You can still type any address, and Google suggestions still show below.\n\nWhen you press Save to Property, the window now shows only the listing at the sheet\'s address: the same street, the same unit and the same state, and the same ZIP. If one listing matches, it is already picked; press Save. If none matches, the window says so and nothing is saved, so a sheet can no longer land on the wrong property. Inside a listing, a net sheet whose address was changed to another property is not saved either, and you are told why.\n\nOn a phone, the save window now slides up over the page. Before, it opened at the very bottom of the page, out of sight.\n\nHow to use: Net Sheet, click the address box, pick your listing, fill in the figures, Calculate, then Save to Property and Save.\n\nBest practice: If the window says no listing has this address, check the unit first. Then check the listing\'s own address: a listing saved with only the seller\'s name, or without its state and ZIP, cannot be matched until you fix it on the listing.'
+        detail: 'On a net sheet you started by voice, click the Property Location box and your listings appear. Start typing and the list narrows. Pick one and the address and unit fill in exactly as they are on the listing. If the listing was saved without its ZIP code or city, the sheet looks them up on Google and tells you it did; check them. You can still type any address, and Google suggestions still show below.\n\nWhen you press Save to Property, the window now shows only the listing at the sheet\'s address: the same street, the same unit and the same state, and the same ZIP. If one listing matches, it is already picked; press Save. If none matches, the window says so and nothing is saved, so a sheet can no longer land on the wrong property. Inside a listing, a net sheet whose address was changed to another property is not saved either, and you are told why.\n\nOn a phone, the save window now slides up over the page. Before, it opened at the very bottom of the page, out of sight.\n\nHow to use: On the net sheet, click the address box, pick your listing, fill in the figures, Calculate, then Save to Property and Save.\n\nBest practice: If the window says no listing has this address, check the unit first. Then check the listing\'s own address: a listing saved with only the seller\'s name, or without its state and ZIP, cannot be matched until you fix it on the listing. A listing missing its ZIP still matches; add the ZIP on the listing anyway, so every tool has it.'
       }
     ]
   }
@@ -26460,7 +26500,7 @@ async function dismissUpdates() {
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
             _showHOA:false, _showTax:false, _showOther:false,
-            _suggestions:[], _listingSugs:[], _detectedCounty:'', _detectedState:''
+            _suggestions:[], _listingSugs:[], _pickNote:'', _detectedCounty:'', _detectedState:''
           });
           break;
         case 'cash-to-close':
