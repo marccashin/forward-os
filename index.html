@@ -17324,12 +17324,22 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brockville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) return 'md-montgomery';
       return 'md-unset';
     }
-    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || nsCountyCheck().problem || '');
+    // The annual property tax must be entered (Marc, Oct 30, 2026). A blank box gave a
+    // sheet with no tax line at all, so the seller's net came out too high, the same
+    // way a missing closing date did. A typed 0 is allowed: a property that pays none.
+    function nsTaxCheck() {
+      const raw = String(ns.propTaxAnnual == null ? '' : ns.propTaxAnnual).replace(/[$,\s]/g, '');
+      if (raw === '' || !/^\d+(\.\d+)?$/.test(raw)) return { ok: false, problem: 'Enter the annual property tax (type 0 only if the property pays none). Without it the sheet leaves out the tax, so the seller\'s net would come out too high.' };
+      return { ok: true, problem: '' };
+    }
+    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || nsTaxCheck().problem || nsCountyCheck().problem || '');
     function nsAddressOk() {
       const c = nsAddressCheck();
       if (!c.ok) { showToast(c.problem, 7000); return false; }
       const d = nsClosingDateCheck();
       if (!d.ok) { showToast(d.problem, 7000); return false; }
+      const t = nsTaxCheck();
+      if (!t.ok) { showToast(t.problem, 7000); return false; }
       const k = nsCountyCheck();
       if (!k.ok) { showToast(k.problem, 7000); return false; }
       return true;
@@ -24510,8 +24520,8 @@ const CHANGELOG = [
     title: 'Net Sheet Needs a Closing Date',
     updates: [
       {
-        title: 'Net Sheet Needs a Closing Date',
-        detail: 'The Seller Net Sheet now asks for the Closing Date before it calculates. Without a date the sheet left out the property tax and the HOA dues entirely, so the seller saw a net that was too high, sometimes by thousands. Calculate, Download PDF and Save to Property now stop with a red note until a date is entered. Nothing else about the math changed.\n\nHow to use: Enter the expected closing date, even if it is an estimate, along with the annual property tax and the HOA dues. Then press Calculate.\n\nBest practice: If the closing date moves, change it and calculate again before you send the sheet. The tax and HOA lines depend on the date.'
+        title: 'Net Sheet Needs a Closing Date and the Property Tax',
+        detail: 'The Seller Net Sheet now asks for the Closing Date and the Annual Property Tax before it calculates. Without a date the sheet left out the property tax and the HOA dues entirely, so the seller saw a net that was too high, sometimes by thousands. A blank Annual Property Tax box did the same to the tax line. Calculate, Download PDF and Save to Property now stop with a red note until both are entered. Type 0 for the tax only if the property pays none. Nothing else about the math changed.\n\nHow to use: Enter the expected closing date, even if it is an estimate, and the annual property tax from the tax record, plus the HOA dues if there are any. Then press Calculate.\n\nBest practice: If the closing date moves, change it and calculate again before you send the sheet. The tax and HOA lines depend on the date.'
       },
       {
         title: 'Cash to Close: Cash Purchases and Zero Down',
