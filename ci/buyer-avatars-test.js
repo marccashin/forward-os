@@ -47,7 +47,9 @@ const RES_FOR = (prop, when) => { const zip = (prop.address.match(/(\d{5})(?!.*\
   jobs: { error: 'Job clusters were NOT pulled: api.census.gov answered 500' },
   web: { employers: [{ name: 'Inova Alexandria Hospital', what: 'hospital', where: 'Alexandria', source_url: 'https://example.org/inova' }], moving: [], salaries: [{ occupation: 'Physicians', range: '$239,200 median', year: '2024', source_url: 'https://www.bls.gov/oes/x' }], dropped_without_source: 1 },
   prompt: RES_PROMPT(zip), researched_at: when || new Date().toISOString() }; };
+let noteGate = { id: null };
 function reset() {
+  noteGate = { id: null };
   hid = 0; sent = []; mode = { saveFails: false, campFails: false }; ai = { calls: [], answers: [] }; rs = { calls: [], fail: false, delay: 0 };
   notes = [
     { id: 'n1', property_id: A, subfolder: 'mls_data', content: MLS(PROPS[0].address), updated_at: '2026-10-01T00:00:00Z' },
@@ -92,6 +94,7 @@ function api(route) {
     const b = JSON.parse(req.postData());
     ai.calls.push({ system: b.system || '', prompt: b.messages.map(x => x.content).join('\n'), stream: !!b.stream });
     const text = ai.answers.length ? ai.answers.shift() : 'NO ANSWER QUEUED';
+    if (ai.hold) return ai.hold.then(() => J(route, 200, { content: [{ type: 'text', text }], stop_reason: 'end_turn' }));
     if (b.stream) return route.fulfill({ status: 200, contentType: 'text/event-stream', headers: { 'access-control-allow-origin': '*' }, body: 'data: ' + JSON.stringify({ type: 'content_block_delta', delta: { type: 'text_delta', text } }) + '\n\ndata: [DONE]\n\n' });
     return J(route, 200, { content: [{ type: 'text', text }], stop_reason: 'end_turn' });
   }
@@ -99,7 +102,15 @@ function api(route) {
   if (/\/rpc\/save_property_note_by$/.test(base)) { const r = saveNote(JSON.parse(req.postData())); return J(route, r.status, r.body); }
   if (/\/rpc\/save_property_note$/.test(base)) { const r = saveNote(JSON.parse(req.postData())); return J(route, r.status, r.body); }
   if (m === 'GET' && /\/rest\/v1\/properties/.test(u)) return J(route, 200, PROPS);
-  if (m === 'GET' && /\/rest\/v1\/property_notes/.test(u)) return J(route, 200, notes.filter(n => u.includes(n.property_id)).sort((x, y) => (y.updated_at > x.updated_at ? 1 : -1)));
+  if (m === 'GET' && /\/rest\/v1\/property_notes/.test(u)) {
+    const answer = () => J(route, 200, notes.filter(n => u.includes(n.property_id)).sort((x, y) => (y.updated_at > x.updated_at ? 1 : -1)));
+    // A listing's notes can be held back or made to fail, to open another listing meanwhile.
+    if (noteGate.id && u.includes(noteGate.id)) {
+      if (noteGate.fail) return J(route, 500, { message: 'made-up notes outage' });
+      return noteGate.hold.then(answer);
+    }
+    return answer();
+  }
   if (m === 'GET') return J(route, 200, []);
   return J(route, /\/rest\/v1\//.test(u) ? 201 : 200, [{ id: 1 }]);
 }
@@ -477,6 +488,87 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await page.evaluate(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.campSections.buyerAvatars = true; await st.lstGenerateCampaignInApp(); });
   await page.waitForTimeout(1200);
   ok(ai.calls.length === 1 && /SECTION: BUYER AVATARS/.test(ai.calls[0].prompt), 'a listing with no saved avatars still has the AI write them, as before');
+
+
+  // ════════ A CAMPAIGN BELONGS TO ONE LISTING (Oct 31, 2026) ════════
+  // Opening a listing used to leave the LAST listing's campaign in memory until the new
+  // listing's notes loaded, and for good if that load failed. Saving avatars then wrote the
+  // last listing's whole campaign, with the new avatars, onto this one (and campaign_sections
+  // keeps no history).
+  console.log('A campaign belongs to one listing');
+  reset();
+  const CAMP_B = [{ title: 'BUYER AVATARS', content: 'B OLD AVATARS', included: true }, { title: 'SOCIAL MEDIA COPY', content: 'BRAVO SOCIAL TEXT, ONLY EVER ON BRAVO', included: true }];
+  notes.push({ id: 'nB', property_id: B, subfolder: 'campaign_sections', content: JSON.stringify(CAMP_B), updated_at: '2026-10-02T00:00:00Z' });
+  const p9 = await newPage(true);
+  const S = (fn, arg) => p9.evaluate(fn, arg);
+  const noteSaves = () => sent.filter(x => /\/rpc\/save_property_note/.test(x.u)).map(x => { const b = JSON.parse(x.body); return { property_id: b.p_property_id, subfolder: b.p_subfolder, content: b.p_content }; });
+  const campWrites = () => noteSaves().filter(x => x.subfolder === 'campaign_sections');
+  await S(async (A) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; await st.lstFetchProperties(); await st.lstOpenProperty(st.lstProperties.find(p => p.id === A)); }, A);
+  let release; noteGate = { id: B, hold: new Promise(r => { release = r; }) };
+  sent.length = 0;
+  const mid = await S(async (args) => {
+    const [B, GOOD] = args;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.lstOpenProperty(st.lstProperties.find(p => p.id === B));   // not awaited: B's notes are held back
+    await new Promise(r => setTimeout(r, 300));
+    const o = { active: st.lstActiveProp.id, camp: JSON.stringify(st.campParsed), desc: st.lstNotes.listing_remarks, mls: st.lstNotes.mls_data };
+    st.lstAv.draft = GOOD; st.lstAv.editing = true;
+    o.saved = await st.lstAvSave();
+    o.err = st.lstAv.error;
+    return o;
+  }, [B, GOOD]);
+  ok(mid.active === B && mid.camp === '[]' && mid.desc === '' && mid.mls === '', 'while Bravo loads, nothing of Alpha is in memory: no campaign and no notes (Alpha\'s used to stay until the load finished)', mid);
+  ok(mid.saved === true && campWrites().length === 0 && /campaign.s Buyer Avatars page was NOT updated/.test(mid.err) && noteSaves().filter(x => x.subfolder === 'buyer_avatars').every(x => x.property_id === B), 'saving avatars in that moment saves them to Bravo, writes no campaign anywhere, and says the campaign page was NOT updated', [mid.saved, mid.err, campWrites().map(w => w.property_id)]);
+  release(); await p9.waitForTimeout(500);
+  sent.length = 0;
+  const after = await S(async (GOOD) => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.lstAv.draft = GOOD.replace(/good/g, 'BRAVO'); st.lstAv.editing = true; const r = await st.lstAvSave(); return { r, err: st.lstAv.error, toast: st.toast.msg }; }, GOOD);
+  const wB = campWrites();
+  const NEWAV = GOOD.replace(/good/g, 'BRAVO');
+  ok(after.r === true && !after.err && wB.length === 1 && wB[0].property_id === B && JSON.parse(wB[0].content)[0].content.indexOf('Job 0 BRAVO') > -1 && JSON.parse(wB[0].content)[1].content === CAMP_B[1].content && !/OLD AVATAR TEXT|SOCIAL TEXT STAYS/.test(wB[0].content), 'once Bravo\'s campaign has loaded, the avatars go into Bravo\'s own campaign, with Bravo\'s other sections and nothing of Alpha\'s', wB.map(w => [w.property_id, w.content.slice(0, 160)]));
+  // A failed load: nothing to go on, so nothing is written, and the agent is told.
+  noteGate = { id: C, fail: true }; sent.length = 0;
+  const failed = await S(async (args) => {
+    const [C, GOOD] = args;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    await st.lstOpenProperty(st.lstProperties.find(p => p.id === C));
+    const o = { camp: JSON.stringify(st.campParsed), desc: st.lstNotes.listing_remarks };
+    st.lstAv.draft = GOOD; st.lstAv.editing = true;
+    o.saved = await st.lstAvSave();
+    o.err = st.lstAv.error;
+    return o;
+  }, [C, GOOD]);
+  const avC = noteSaves().filter(x => x.subfolder === 'buyer_avatars');
+  ok(failed.camp === '[]' && failed.desc === '' && campWrites().length === 0, 'when Charlie\'s notes fail to load, Bravo\'s campaign is not in memory and no campaign is written for Charlie', [failed, campWrites().map(w => w.property_id)]);
+  ok(failed.saved === true && avC.length === 1 && avC[0].property_id === C && /campaign.s Buyer Avatars page was NOT updated/.test(failed.err), 'the avatars are saved to Charlie and the agent is told the campaign page was NOT updated', [avC.map(a => a.property_id), failed.err]);
+  // A listing whose notes come back after another was opened is left alone.
+  noteGate = { id: A, hold: new Promise(r => { release = r; }) }; sent.length = 0;
+  const late = await S(async (args) => {
+    const [A, B] = args;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.lstOpenProperty(st.lstProperties.find(p => p.id === A));                    // held
+    await new Promise(r => setTimeout(r, 200));
+    await st.lstOpenProperty(st.lstProperties.find(p => p.id === B));              // opened meanwhile
+    return true;
+  }, [A, B]);
+  release(); await p9.waitForTimeout(600);
+  const lateState = await S(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; return { active: st.lstActiveProp.id, camp: JSON.stringify(st.campParsed), mls: st.lstNotes.mls_data }; });
+  ok(late && lateState.active === B && /BRAVO SOCIAL TEXT/.test(lateState.camp) && !/SOCIAL TEXT STAYS/.test(lateState.camp) && /200 Bravo/.test(lateState.mls), 'Alpha\'s notes arriving late do not replace Bravo\'s on screen (campaign and MLS Data stay Bravo\'s)', lateState);
+  // Generating a campaign: it is for the listing it was asked for.
+  noteGate = { id: null }; sent.length = 0; ai.answers = ['---SECTION: SOCIAL MEDIA COPY---\nALPHA GENERATED TEXT'];
+  ai.hold = new Promise(r => { release = r; });
+  const gen = await S(async (args) => {
+    const [A, B] = args;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    await st.lstOpenProperty(st.lstProperties.find(p => p.id === A));
+    const g = st.lstGenerateCampaignInApp();
+    await new Promise(r => setTimeout(r, 300));
+    await st.lstOpenProperty(st.lstProperties.find(p => p.id === B));   // switched while the AI writes
+    return { started: true, g: !!g };
+  }, [A, B]);
+  release(); ai.hold = null; await p9.waitForTimeout(800);
+  const genState = await S(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; return { camp: JSON.stringify(st.campParsed), toast: st.toast.msg }; });
+  ok(gen.started && campWrites().length === 0 && !/ALPHA GENERATED TEXT/.test(genState.camp) && /The campaign for 100 Alpha Ct, Alexandria VA 22306 was NOT saved: another listing was opened/.test(genState.toast), 'a campaign generated for Alpha while Bravo was opened is not filed on Bravo or shown there, and the agent is told to generate it again on Alpha', [campWrites().map(w => w.property_id), genState]);
+  await p9.context().close();
 
   ok(errors.length === 0, 'no JavaScript errors on the page', errors.slice(0, 3));
   await browser.close(); srv.close();
