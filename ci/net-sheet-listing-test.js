@@ -113,7 +113,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(s.jur === 'va-nova' || s.jur === 'va-other', 'A: Virginia', s.jur);
 
   console.log('Agent types figures on A, calculates, and leaves the panel open');
-  await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.salePrice = '431000'; st.ns.loan1 = '300000'; st.ns.closingDate = '2026-10-31'; st.calcNetSheet(); st.pr.listDate = '2026-09-01'; st.pr.price = '431000'; });
+  await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.salePrice = '431000'; st.ns.loan1 = '300000'; st.ns.closingDate = '2026-10-31'; (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); st.pr.listDate = '2026-09-01'; st.pr.price = '431000'; });
   s = await see();
   ok(s.result !== null && s.loan1 === '300000', 'A: sheet calculated with the typed figures', s);
   await clickNetSheet(); await clickNetSheet();
@@ -186,7 +186,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
     st.ns.result = null; st.ns.breakdown = []; st.ns.salePrice = st.ns.salePrice || '410000'; st.ns.closingDate = '2026-11-20';
     let saves = 0; const realSave = st.nsSaveToProperty;
-    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
     const afterCalc = st.ns.result;
     const pdfBefore = st.pdfViewerSrc; st.nsDownloadPDF(); const pdfAfter = st.pdfViewerSrc;
     const box = document.querySelector('[data-ns-addr-problem]');
@@ -198,7 +198,14 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/missing the state and ZIP code/.test(s.shown || ''), 'D: the reason is on screen above Calculate', s.shown);
   await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '211 Delta Vista Ln, Upper Marlboro, MD 20774'; await new Promise(r => setTimeout(r, 50)); });
   s = await tryAll();
-  ok(s.result !== null && s.problem === '' && s.shown === null, 'D: with the full Maryland address typed in, it calculates and the notice is gone', s);
+  // Since Oct 30, 2026 a Maryland county is chosen, never assumed: Upper Marlboro is Prince George's,
+  // and until then this sheet calculated on the blended "Other county" estimate.
+  const cty = await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const sel = Array.from(document.querySelectorAll('select')).find(x => x.offsetParent && Array.from(x.options).some(o => o.value === 'md-unset')); return { jur: st.ns.jurisdiction, shows: sel ? sel.options[sel.selectedIndex].text : null }; });
+  ok(s.result === null && !s.pdfMade && cty.jur === 'md-unset' && cty.shows === 'Choose the county' && /Choose the Maryland county/.test(s.shown || ''), 'D: a Maryland listing with no county in its address makes nothing until the county is picked; County says Choose the county and the reason is on screen', [s, cty]);
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.jurisdiction = 'md-pgcounty'; await new Promise(r => setTimeout(r, 50)); });
+  s = await tryAll();
+  const pgLine = await run(() => (document.querySelector('#app').__vue_app__._instance.setupState.ns.breakdown || []).map(l => l.label).find(l => /Transfer|Recordation/i.test(l)) || '');
+  ok(s.result !== null && s.problem === '' && s.shown === null && !/blended|Seller.s Half$/.test(pgLine), 'D: with Prince George\'s picked, it calculates on that county\'s rates and the notice is gone (' + pgLine + ')', [s, pgLine]);
   await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '1300 Army Navy Dr #518, Arlington, VA 22202'; st.ns.jurisdiction = 'va-nova'; await new Promise(r => setTimeout(r, 50)); });
   s = await tryAll();
   ok(s.result === null && /in Virginia but this listing is marked Maryland/.test(s.shown || ''), 'D: a Virginia address on a listing marked Maryland is refused, and both states are named', s);
@@ -216,16 +223,16 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
     st.view = 'just-listed'; await new Promise(r => setTimeout(r, 200)); st.lpOpen('netsheet'); await new Promise(r => setTimeout(r, 200));
     st.ns.address = '9 Typed Rd, Bethesda, MD'; st.ns.jurisdiction = 'md-montgomery'; st.ns.salePrice = '900000'; st.ns.closingDate = '2026-11-20'; st.ns.result = null;
-    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150)); const r1 = st.ns.result;
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await new Promise(r => setTimeout(r, 150)); const r1 = st.ns.result;
     const box = document.querySelector('[data-ns-addr-problem]'); const shown = box && box.offsetParent ? box.innerText : null;
-    st.ns.address = '9 Typed Rd, Bethesda, MD 20814'; st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    st.ns.address = '9 Typed Rd, Bethesda, MD 20814'; (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
     return { r1, shown, r2: st.ns.result };
   });
   ok(s.r1 === null && /missing the ZIP code/.test(s.shown || '') && s.r2 !== null, 'standalone: no ZIP, no sheet and the reason shown; with the ZIP it calculates', s);
   s = await run(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
     st.ns.address = '4200 Mass. Ave Unit 106 Washington, DC 20016'; st.ns.jurisdiction = 'dc'; st.ns.result = null;
-    st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
     return { r: st.ns.result, problem: st.nsAddrProblem };
   });
   ok(s.r !== null && s.problem === '', 'a unit written before the city with no comma ("4200 Mass. Ave Unit 106 Washington, DC 20016", Marc Oct 16) is a full address and calculates', s);

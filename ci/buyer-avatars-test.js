@@ -27,7 +27,7 @@ const PROPS = [
   { id: C, address: '300 Charlie Ln, Bethesda MD 20814', seller_name: 'Seller C', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-10-02T00:00:00Z' },
   { id: D, address: '400 Delta Dr, Arlington VA 22201', seller_name: 'Seller D', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' }
 ];
-const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $2,000,000\nBeds             : 3\nBaths            : 2.5\nYear Built       : 1800';
+const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $2,000,000\nBeds             : 3\nBaths            : 2.5\nYear Built       : 1800\nBedrooms         : 3\nBathrooms        : 2.5\nSquare Footage   : 3,400 sq ft\nProperty Type    : Townhouse';
 const NAMES = ['Margaret and Theodore Hale', 'Dr. Priya Raghunathan', 'Alexander and Noor Behzadi', 'Daniel Okafor', 'Claire and James Whitmore'];
 const AGES = ['59 and 62', '45', '48 and 46', '52', '41 and 43'];
 // The layout the tool asks the AI for.

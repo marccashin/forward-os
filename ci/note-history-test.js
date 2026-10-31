@@ -24,7 +24,7 @@ const PROPS = [
   { id: A, address: '100 Alpha Ct, Alexandria VA 22306', seller_name: 'Seller A', agent_name: 'Ashling McGowan', market: 'VA', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
   { id: B, address: '200 Bravo Ave. Baltimore, MD 21201', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'MD', status: 'draft', created_at: '2026-09-21T00:00:00Z' }
 ];
-const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None';
+const MLS = (addr) => '=== MLS DATA ===\nProperty Address : ' + addr + '\nList Price       : $500,000\nHOA Fee          : None\nBedrooms         : 3\nBathrooms        : 2\nSquare Footage   : 1,800 sq ft\nProperty Type    : Condo';
 let notes, hist, hid, mode, sent;
 function reset() {
   hid = 0; sent = []; mode = { histFails: false, noByFn: false };
@@ -159,8 +159,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   sent = [];
   const saved = await page.evaluate(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
-    st.ns.salePrice = '480000'; st.ns.closingDate = '2026-11-14'; st.ns.loan1 = '200000';
-    st.calcNetSheet();
+    st.ns.salePrice = '480000'; st.ns.closingDate = '2026-11-14'; st.ns.loan1 = '200000'; if (st.ns.jurisdiction === 'md-unset') st.ns.jurisdiction = 'md-baltimorecity';   // since Oct 30, 2026 the agent picks the Maryland county
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet();
     await st.nsSaveToProperty();
     await new Promise(r => setTimeout(r, 600));
     return { note: st.lstNotes.seller_net_sheet, result: st.ns.result };
@@ -226,7 +226,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   mode.noByFn = true; sent = [];
   const fb = await page.evaluate(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
-    st.ns.salePrice = '470000'; st.calcNetSheet(); await st.nsSaveToProperty(); await new Promise(r => setTimeout(r, 500));
+    st.ns.salePrice = '470000'; st.ns.closingDate = st.ns.closingDate || '2026-11-14'; if (st.ns.jurisdiction === 'md-unset') st.ns.jurisdiction = 'md-baltimorecity'; (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await st.nsSaveToProperty(); await new Promise(r => setTimeout(r, 500));
     return (st.lstNotes.seller_net_sheet || '').length > 0;
   });
   ok(fb && sent.some(x => /\/rpc\/save_property_note$/.test(x.u)), 'the save falls back to the older function and the note is saved', sent.map(x => x.m + ' ' + x.u));

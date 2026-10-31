@@ -86,7 +86,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       await tick(); await tick();
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid, nsTaxH2Paid: c.input.nsTaxH2Paid });
       __addr();   // since Oct 12, 2026 a sheet needs a full address in its own state; the address is not in the math
-      st.calcNetSheet();
+      (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet();
       const atOnce = snap();
       await tick(); await tick(); await tick();
       const afterPdf = snap();
@@ -141,7 +141,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       await tick(); await tick();
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid, nsTaxH2Paid: c.input.nsTaxH2Paid });
       __addr();
-      st.calcNetSheet(); await tick(); await tick(); await tick();
+      (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await tick(); await tick(); await tick();
       out.push(JSON.parse(JSON.stringify({ lines: st.ns.breakdown, net: st.ns.result })));
     }
     return out;
@@ -171,10 +171,22 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const nodate = await page.evaluate(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); }; const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, { salePrice: 800000, closingDate: '', jurisdiction: 'va-nova', loan1: 400000, sellerCompMode: 'flat', sellerCompVal: 20000, buyerCompMode: 'pct', buyerCompVal: 2.5, concessionMode: 'pct', concessionVal: 1, transactionFee: '', hoaAmount: '', propTaxAnnual: '', otherCosts: '', hoaResaleCert: '', hoaTransferFee: '', loan2: '', result: null, breakdown: [] });
-    await tick(); __addr(); st.calcNetSheet(); const a = JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }); await tick(); await tick();
-    return { same: a === JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }), net: st.ns.result };
+    await tick(); __addr(); st.ns.propTaxAnnual = '0'; st.calcNetSheet(); await tick(); await tick(); await tick();
+    // Since Oct 30, 2026 a sheet needs a closing date: nothing is calculated and no PDF is drawn without one.
+    const refused = { net: st.ns.result, lines: st.ns.breakdown.length, problem: st.nsAddrProblem };
+    st.nsDownloadPDF(); await st.nsSaveToProperty(); await tick();
+    refused.after = st.ns.result;
+    st.ns.closingDate = '2026-12-15'; st.ns.propTaxAnnual = ''; await tick();
+    // ... and the annual property tax (a typed 0 is allowed: a property that pays none).
+    st.calcNetSheet(); await tick(); await tick();
+    refused.noTax = { net: st.ns.result, problem: st.nsAddrProblem };
+    st.ns.propTaxAnnual = '0'; await tick();
+    st.calcNetSheet(); const a = JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }); await tick(); await tick();
+    return { refused, same: a === JSON.stringify({ l: st.ns.breakdown, n: st.ns.result }), net: st.ns.result, cleared: st.nsAddrProblem };
   });
-  ok(nodate.same && nodate.net === 800000 - 2400 - 1400 - 400000 - 20000 - 20000 - 8000, 'with no closing date the sheet still calculates, and is right: $348,200', nodate);
+  ok(nodate.refused.net === null && nodate.refused.lines === 0 && nodate.refused.after === null && /Closing Date/.test(nodate.refused.problem) && /too high/.test(nodate.refused.problem), 'with no closing date Calculate, Download PDF and Save make nothing, and the reason (net would be too high) is on screen', nodate.refused);
+  ok(nodate.refused.noTax.net === null && /annual property tax/.test(nodate.refused.noTax.problem) && /too high/.test(nodate.refused.noTax.problem), 'with a closing date but the annual property tax left blank, Calculate makes nothing and says why; a typed 0 is accepted', nodate.refused.noTax);
+  ok(nodate.same && nodate.net === 800000 - 2400 - 1400 - 400000 - 20000 - 20000 - 8000 && nodate.cleared === '', 'with a closing date and no tax or HOA entered the same sheet calculates, and is right: $348,200', nodate);
   const src = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
   const fn = (name) => { const a = src.indexOf('function ' + name + '('); const b = src.indexOf('\n    }\n', a); return a < 0 ? '' : src.slice(a, b); };
   ok((src.match(/function nsCompute\(/g) || []).length === 1, 'the math is defined once (nsCompute)', null);

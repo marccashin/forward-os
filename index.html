@@ -3056,6 +3056,7 @@ body {
               </div>
               <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
                 <select v-model="ns.jurisdiction" >
+                  <option value="md-unset" disabled>Choose the county</option>
                   <option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
@@ -5613,7 +5614,8 @@ body {
             <!-- Purchase Price & Down Payment -->
             <div class="form-row"><label>Purchase Price</label><input :value="ctc.purchasePrice" type="text" inputmode="numeric" placeholder="Enter Purchase Price" @input="ctcCurrencyInput($event,'purchasePrice');ctcSyncDownFromPct()" @blur="ctcCurrencyBlur($event,'purchasePrice')" @focus="ctcCurrencyFocus($event,'purchasePrice')"/></div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+            <div v-if="ctc.loanType==='cash'" data-ctc-cash-note style="font-size:12px;color:#6b7280;margin:-4px 0 10px;">Cash purchase: the whole purchase price is counted as cash to bring, with no loan.</div>
+            <div v-else style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div class="form-row"><label>Down Payment %</label><input v-model="ctc.downPct" type="number" step="0.5" min="0" max="100" placeholder="20" @input="ctcSyncDownFromPct"/></div>
               <div class="form-row"><label>Down Payment $</label><input :value="ctc.downAmt" type="text" inputmode="numeric" placeholder="Calculated" @input="ctcCurrencyInput($event,'downAmt');ctcSyncDownFromAmt()" @blur="ctcCurrencyBlur($event,'downAmt')" @focus="ctcCurrencyFocus($event,'downAmt')"/></div>
             </div>
@@ -5657,8 +5659,10 @@ body {
                   <option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option>
                 </select>
                 <select v-if="ctcStateSel==='md'" v-model="ctc.jurisdiction" style="margin-top:8px;">
+                  <option value="md-unset" disabled>Choose the county</option>
                   <option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
+                <div v-if="ctc.jurisdiction==='md-unset'" data-ctc-county-problem style="margin-top:6px;font-size:12px;font-weight:600;color:#b91c1c;">Choose the Maryland county. Transfer and recordation taxes differ by county, so the estimate will not guess.</div>
               </div>
             </div>
 
@@ -5724,12 +5728,12 @@ body {
                 <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;">Homeowner's insurance, property taxes, prepaid interest. Proration is jurisdiction-aware (DC: Oct-Sep fiscal year; MD/VA: Jul-Jun).</div>
                 <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
                   <div class="form-row"><label>Homeowner's Insurance (annual)</label><input :value="ctc.homeInsurance" type="text" inputmode="numeric" placeholder="Auto-estimate" @input="ctcCurrencyInput($event,'homeInsurance')" @blur="ctcCurrencyBlur($event,'homeInsurance')" @focus="ctcCurrencyFocus($event,'homeInsurance')"/></div>
-                  <div class="form-row"><label>Months to Escrow</label><input v-model="ctc.insEscrowMonths" type="number" min="0" max="14" placeholder="14"/></div>
+                  <div v-if="ctc.loanType!=='cash'" class="form-row"><label>Months to Escrow</label><input v-model="ctc.insEscrowMonths" type="number" min="0" max="14" placeholder="14"/></div><div v-else style="font-size:11px;color:#6b7280;padding-bottom:12px;">First year's premium</div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcInsEscrow()) }}</div>
                 </div>
                 <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ctc.propTax" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="ctcCurrencyInput($event,'propTax')" @blur="ctcCurrencyBlur($event,'propTax')" @focus="ctcCurrencyFocus($event,'propTax')"/></div>
-                  <div class="form-row"><label>Months to Escrow</label><input v-model="ctc.taxEscrowMonths" type="number" min="0" max="12" placeholder="3"/></div>
+                  <div v-if="ctc.loanType!=='cash'" class="form-row"><label>Months to Escrow</label><input v-model="ctc.taxEscrowMonths" type="number" min="0" max="12" placeholder="3"/></div><div v-else style="font-size:11px;color:#6b7280;padding-bottom:12px;">No escrow on a cash purchase</div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcTaxEscrow()) }}</div>
                 </div>
                 <div v-if="ctc.loanType!=='cash'" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
@@ -5737,7 +5741,7 @@ body {
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">@ {{ ctc.interestRate || '6.5' }}%</div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcPrepaidInterest()) }}</div>
                 </div>
-                <div v-if="ctc.loanType==='fha' || (ctc.loanType==='conventional' && Number(ctc.downPct)<20)" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
+                <div v-if="ctc.loanType==='fha' || (ctc.loanType==='conventional' && ctcDownPctNow()<20)" style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:8px;align-items:end;">
                   <div class="form-row"><label>Monthly Mortgage Insurance</label><input :value="ctc.monthlyMI" type="text" inputmode="numeric" placeholder="Auto-estimate" @input="ctcCurrencyInput($event,'monthlyMI')" @blur="ctcCurrencyBlur($event,'monthlyMI')" @focus="ctcCurrencyFocus($event,'monthlyMI')"/></div>
                   <div class="form-row"><label>Months</label><input v-model="ctc.miEscrowMonths" type="number" min="0" max="6" placeholder="2"/></div>
                   <div style="font-size:11px;color:#6b7280;padding-bottom:12px;">= {{ ctcFmt(ctcCalcMIEscrow()) }}</div>
@@ -6466,14 +6470,14 @@ body {
                         <button @click="mlsEditingAddress=true;mlsEditAddressVal=lstActiveProp.address" style="background:none;border:none;font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold-muted);cursor:pointer;white-space:nowrap;padding:0;">Edit ✎</button>
                       </div>
                       <div v-else>
-                        <input v-model="mlsEditAddressVal" @keyup.enter="lstSaveAddress();mlsEditingAddress=false" @keyup.escape="mlsEditingAddress=false" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:9px 12px;border:1px solid var(--gold-muted);border-radius:2px;outline:none;color:var(--navy);background:var(--white);margin-bottom:6px;">
+                        <input v-model="mlsEditAddressVal" @keyup.enter="lstEditAddressVal=mlsEditAddressVal;lstSaveAddress();mlsEditingAddress=false" @keyup.escape="mlsEditingAddress=false" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:14px;padding:9px 12px;border:1px solid var(--gold-muted);border-radius:2px;outline:none;color:var(--navy);background:var(--white);margin-bottom:6px;">
                         <div style="display:flex;gap:8px;">
                           <button class="btn-gold" @click="lstEditAddressVal=mlsEditAddressVal;lstSaveAddress();mlsEditingAddress=false" style="flex:1;padding:7px;font-size:8px;">Save</button>
                           <button @click="mlsEditingAddress=false" style="flex:1;padding:7px;background:none;border:1px solid var(--cream-dark);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Cancel</button>
                         </div>
                       </div>
                     </div>
-                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" inputmode="numeric"></div>
+                    <div class="form-row"><label>List Price</label><input v-model="mlsForm.listPrice" placeholder="$1,850,000" @blur="mlsFormatPrice" @input="mlsPriceProblem=''" inputmode="numeric"><div v-if="mlsPriceProblem" data-mls-price-problem style="margin-top:4px;font-size:11px;font-weight:600;color:#b91c1c;">{{ mlsPriceProblem }}</div></div>
                     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
                       <div class="form-row"><label>Beds</label><input v-model="mlsForm.beds" inputmode="numeric" placeholder="3"></div>
                       <div class="form-row"><label>Baths</label><input v-model="mlsForm.baths" inputmode="decimal" placeholder="2.5"></div>
@@ -7052,7 +7056,7 @@ body {
                     <select v-model="nsStateSel" ><option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option></select>
                   </div>
                   <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
-                    <select v-model="ns.jurisdiction" ><option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option></select>
+                     <select v-model="ns.jurisdiction" ><option value="md-unset" disabled>Choose the county</option><option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option></select>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showLoans=!ns._showLoans">{{ ns._showLoans ? '▼' : '▶' }} Loan Payoffs</div>
                   <div v-if="ns._showLoans" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -8942,7 +8946,7 @@ body {
       <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;width:100%;max-width:380px;padding:28px 24px;text-align:center;">
         <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Action Required</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:12px;">Complete MLS Data First</div>
-        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Please fill out and save the MLS Data section before accessing other listing tools. We need the address, list price, beds, baths, square footage, and property type to generate accurate results.</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Fill in and save the MLS Data section before using the other listing tools. They need the list price, beds, baths, square footage and property type to give accurate results.<span v-if="mlsGateMissing.length" data-mls-gate-missing style="display:block;margin-top:8px;font-weight:600;opacity:1;color:#b91c1c;">Still missing: {{ mlsGateMissing.join(', ') }}.</span></div>
         <button @click="mlsGate=false" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;">Go to MLS Data</button>
       </div>
     </div>
@@ -9084,26 +9088,6 @@ body {
       </div>
     </div>
 
-    <!-- Seller Prep Guide — Send to Seller Modal -->
-    <div v-if="sellerPrepSendModal" class="modal-bg" @click.self="sellerPrepSendModal=false">
-      <div class="modal-box" style="max-width:460px;">
-        <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Prep Guide to Seller</h3>
-        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.55;">The branded PDF will be generated and shared directly. On supported devices (mobile, modern browsers) the file attaches automatically. Otherwise it will download and your email/text app will open — just attach the downloaded PDF.</p>
-        <div class="form-row">
-          <label>Seller Email (optional)</label>
-          <input v-model="sellerPrepRecipientEmail" type="email" placeholder="seller@email.com" style="font-size:13px;"/>
-        </div>
-        <div class="form-row">
-          <label>Seller Phone (optional)</label>
-          <input v-model="sellerPrepRecipientPhone" type="tel" placeholder="(202) 555-0100" style="font-size:13px;"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
-          <button class="btn-gold" @click="sellerPrepGenerateAndSend('email')" :disabled="!sellerPrepRecipientEmail.trim()" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="5" width="20" height="14" rx="1" fill="#0d1f35"/><polygon points="2,5 12,13 22,5" fill="none" stroke="white" stroke-width="1.5"/></svg> Send via Email</button>
-          <button class="btn-navy" @click="sellerPrepGenerateAndSend('sms')" :disabled="!sellerPrepRecipientPhone.trim()" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="3,3 3,17 8,17 12,22 16,17 21,17 21,3" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" rx="0.75" fill="white"/><rect x="7" y="12" width="7" height="1.5" rx="0.75" fill="white"/></svg> Send via Text</button>
-          <button class="btn-outline" @click="sellerPrepGenerateAndSend('view')" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="12" rx="10" ry="6" fill="#0d1f35"/><circle cx="12" cy="12" r="3" fill="white"/></svg> Preview PDF Only</button>
-        </div>
-        <button @click="sellerPrepSendModal=false" style="width:100%;margin-top:10px;background:none;border:none;font-size:13px;color:#9ca3af;cursor:pointer;">Cancel</button>
-      </div>
     </div>
 
   </template>
@@ -13506,7 +13490,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           if (_mkt === 'DC') {
             ns.jurisdiction = 'dc';
           } else if (_mkt === 'MD' && ns.jurisdiction && !ns.jurisdiction.startsWith('md-')) {
-            ns.jurisdiction = 'md-other';
+            ns.jurisdiction = nsMDFromAddress(lstActiveProp.value.address || ns.address);
           } else if (_mkt === 'VA' && ns.jurisdiction && !ns.jurisdiction.startsWith('va-')) {
             ns.jurisdiction = 'va-nova';
           }
@@ -13535,8 +13519,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstToolOpen.value = lstToolOpen.value === 'mlsdata' ? null : 'mlsdata';
         return;
       }
-      const hasMlsFile = (lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data')) || !!lstNotes.mls_data;
-      if (!hasMlsFile) {
+      const _mlsFile = lstActiveFiles.value && lstActiveFiles.value.some(f => f.subfolder === 'mls_data');
+      const _mlsMiss = _mlsFile ? [] : mlsMissing(lstNotes.mls_data);
+      if (_mlsMiss.length) {
+        mlsGateMissing.value = _mlsMiss;
         mlsGate.value = true;
         lstToolOpen.value = 'mlsdata'; // redirect to MLS tool
         return;
@@ -13930,6 +13916,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // Reset tool states so previous property data doesn't bleed through
       // Reset mlsForm, then immediately repopulate from saved note if one exists
       Object.assign(mlsForm, { listPrice:'', beds:'', baths:'', sqft:'', yearBuilt:'', hoa:'', propType:'', parking:'', features:['','','','',''] });
+      mlsPriceProblem.value = '';
       if (lstNotes.mls_data) {
         const _mlsGet = (label) => {
           const _m = lstNotes.mls_data.match(new RegExp(label + '\\s*:\\s*(.+)'));
@@ -15355,15 +15342,18 @@ async function lstSubmitToPipeline() {
     async function lstSaveAddress() {
       const newAddr = lstNormalizeAddress(lstEditAddressVal.value);
       if (!newAddr || !lstActiveProp.value) { lstEditingAddress.value = false; return; }
+      // Says "Address updated." only when the backend accepted it (Oct 30, 2026). Until
+      // then the answer was never read and a failure was only logged, so the screen
+      // showed the new address while the database could still hold the old one.
       try {
-        await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ address: newAddr }})}).catch(e=>console.warn('Property update:',e));
+        await fosOk(await fetch(RAILWAY_URL + '/properties/' + lstActiveProp.value.id, {method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{ address: newAddr }})}), 'the server');
         lstActiveProp.value = { ...lstActiveProp.value, address: newAddr };
         // Update in list too
         const idx = lstProperties.value.findIndex(p => p.id === lstActiveProp.value.id);
         if (idx >= 0) lstProperties.value[idx].address = newAddr;
         lstEditingAddress.value = false;
         showGoldToast('Address updated.');
-      } catch (e) { showToast('Update failed: ' + e.message, 4000); }
+      } catch (e) { showToast('Address NOT saved (' + fosWhy(e) + '). The listing keeps its old address.', 8000); }
     }
 
     // ── Listings Revision System ──────────────────────────────────────
@@ -16305,12 +16295,49 @@ async function lstSubmitToPipeline() {
       return '$' + n.toLocaleString('en-US');
     }
     // Format helpers for MLS number fields
-    function mlsFormatPrice() {
-      const raw = (mlsForm.listPrice || '').replace(/[^0-9.]/g, '');
-      if (!raw) return;
-      const n = parseFloat(raw);
-      if (!isNaN(n) && n > 0) mlsForm.listPrice = '$' + Math.round(n).toLocaleString('en-US');
+    // A list price in whole dollars, or null (Oct 30, 2026). Reads $1,850,000, 1850000,
+    // 1.85M, 1.85 million and 850k. Until then the box kept only digits and the point
+    // when the agent left it, so '1.2M' became $1 and '850k' became $850. Anything
+    // under $1,000, or that is not a price, is null: never turned into a number.
+    function mlsPriceValue(txt) {
+      const t = String(txt || '').trim().toLowerCase().replace(/[$,\s]/g, '');
+      const m = t.match(/^(\d+(?:\.\d+)?|\.\d+)(k|thousand|m|mm|mil|million)?$/);
+      if (!m) return null;
+      let n = parseFloat(m[1]);
+      const u = m[2] || '';
+      if (u === 'k' || u === 'thousand') n *= 1000; else if (u) n *= 1000000;
+      n = Math.round(n);
+      return n >= 1000 ? n : null;
     }
+    const mlsPriceProblem = ref('');
+    function mlsFormatPrice() {
+      const raw = String(mlsForm.listPrice || '').trim();
+      if (!raw) { mlsPriceProblem.value = ''; return; }
+      const n = mlsPriceValue(raw);
+      if (n === null) { mlsPriceProblem.value = 'This is not a list price. Type the full price, for example 1,250,000 or 1.25M.'; return; }
+      mlsPriceProblem.value = '';
+      mlsForm.listPrice = '$' + n.toLocaleString('en-US');
+    }
+    // What MLS Data still needs before the other listing tools open (Marc, Oct 30,
+    // 2026: "Five figures required"). Until then any saved note opened every tool,
+    // even one saved with every box blank. Read from the note the form writes
+    // ('=== MLS DATA ===', 'Label : value'); a blank is '' or the form's dash. A
+    // note in any other layout is not judged here (none is written by the app now).
+    const MLS_REQUIRED = [['List Price', 'list price'], ['Bedrooms', 'beds'], ['Bathrooms', 'baths'], ['Square Footage', 'square footage'], ['Property Type', 'property type']];
+    function mlsMissing(text) {
+      if (!text) return MLS_REQUIRED.map(function (r) { return r[1]; });
+      if (!/===\s*MLS DATA\s*===/.test(text)) return [];
+      return MLS_REQUIRED.filter(function (r) {
+        const m = String(text).match(new RegExp(r[0] + '\\s*:\\s*(.+)'));
+        let v = m ? m[1].trim() : '';
+        if (r[0] === 'Square Footage') v = v.replace(/\s*sq\s*ft.*/i, '').trim();
+        if (!v || v === '\u2014' || v === '-' || /^tbd$/i.test(v)) return true;
+        if (r[0] === 'List Price') return mlsPriceValue(v) === null;
+        return false;
+      }).map(function (r) { return r[1]; });
+    }
+    function mlsListMissing(list) { return list.length === 1 ? list[0] : list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1]; }
+    const mlsGateMissing = ref([]);
     function mlsFormatSqft() {
       const raw = (mlsForm.sqft || '').replace(/[^0-9]/g, '');
       if (!raw) return;
@@ -16322,6 +16349,8 @@ async function lstSubmitToPipeline() {
       if (mlsSaving.value) return;
       const prop = lstActiveProp.value;
       if (!prop) { showToast('Open a property first.', 3000); return; }
+      mlsFormatPrice();
+      if (mlsPriceProblem.value) { showToast('MLS Data NOT saved. ' + mlsPriceProblem.value, 7000); return; }
 
       // Build clean structured text for pipeline to read
       const addr = prop.address;
@@ -16347,7 +16376,9 @@ async function lstSubmitToPipeline() {
         // Save MLS data as a note on the listing, in one database step
         await supaRest.saveNote(prop.id, 'mls_data', text);
         lstNotes.mls_data = text;
-        showGoldToast('MLS Data saved.');
+        const _miss = mlsMissing(text);
+        if (_miss.length) showToast('MLS Data saved. The other listing tools open once the ' + mlsListMissing(_miss) + (_miss.length === 1 ? ' is' : ' are') + ' filled in.', 7000);
+        else showGoldToast('MLS Data saved.');
       } catch (e) {
         showToast('Save failed: ' + e.message, 4000);
       }
@@ -16749,8 +16780,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _sellerPrepResetLists();
       sellerPrepType.value = 'sfh';
       sellerPrepAddingSi.value = null; sellerPrepNewLabel.value = '';
-      sellerPrepSaved.value = false; sellerPrepSendModal.value = false;
-      sellerPrepRecipientEmail.value = ''; sellerPrepRecipientPhone.value = '';
+      sellerPrepSaved.value = false;
       sellerPrepLoadNote.value = '';
       sellerPrepOwner.value = owner;
       if (!savedText || !String(savedText).trim()) return;
@@ -16768,10 +16798,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       });
     }
 
-    // Send to Seller modal state
-    const sellerPrepSendModal    = ref(false);
-    const sellerPrepRecipientEmail = ref('');
-    const sellerPrepRecipientPhone = ref('');
 
     // ── Export Pre-Listing Package PDF ─────────────────────────────────────────
     function lstExportPreListingPDF() {
@@ -16873,11 +16899,28 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       showGoldToast('Pre-Listing Package downloaded!');
     }
 
-        // Open prep guide PDF in new tab for sharing
-    function sellerPrepOpenDeliverable() {
+    // Send to Seller (Marc, Oct 31, 2026: the phone's own share menu, the same way the
+    // showing tour plan sends to a buyer). On a phone the share menu opens with the
+    // PDF attached: the agent taps the seller, and the PDF goes into the text or email.
+    // On a computer, or a phone that cannot share a file, the PDF opens in the viewer
+    // and the message says to download it and attach it. Until then the button only
+    // opened the viewer and said "opened in new tab", which it never was, and an
+    // email/text window that nothing opened sat unused (removed).
+    async function sellerPrepOpenDeliverable() {
       const blob = sellerPrepBuildPDFBlob();
-      openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
-      showGoldToast('ℹ️ PDF opened in new tab — download or print to share via email or text');
+      const fileName = 'Seller-Prep-Guide.pdf';
+      if (fosIsPhone()) {
+        let file = null;
+        try { file = new File([blob], fileName, { type: 'application/pdf' }); } catch (e) { file = null; }
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Your Seller Prep Guide' }); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+      }
+      openPDFBlob(blob, fileName);
+      showGoldToast(fosIsPhone()
+        ? 'This phone could not open its share menu. Tap Download, then send the PDF to the seller.'
+        : 'Download the PDF, then attach it to your email to the seller.', 6000);
     }
 
     // Build plain-text summary of visible checklist items (for campaign integration)
@@ -16927,65 +16970,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       });
     }
 
-    async function sellerPrepGenerateAndSend(action) {
-      const blob = sellerPrepBuildPDFBlob();
-      sellerPrepSendModal.value = false;
-
-      if (action === 'view') {
-        openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
-        return;
-      }
-
-      const fileName = 'Seller-Prep-Guide.pdf';
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-
-      if (action === 'email') {
-        const email = sellerPrepRecipientEmail.value.trim();
-        const subject = 'Your FORWARD Property Preparation Guide';
-        const bodyText = `Hi,\n\nPlease find your personalized property preparation checklist attached.\n\nThis guide was prepared by your FORWARD Real Estate agent to help you get your home ready for market. Please review each item and let us know if you have any questions.\n\nBest,\n${agentName.value}\nFORWARD Real Estate | Corcoran McEnearney`;
-
-        // Try Web Share API first (supports file attachments on mobile & newer desktop browsers)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: subject, text: bodyText });
-            return;
-          } catch(e) { /* User cancelled or share failed — fall through to mailto */ }
-        }
-
-        // Fallback: download PDF then open email client
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-        setTimeout(() => {
-          const encoded = encodeURIComponent(bodyText);
-          window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encoded}`;
-        }, 800);
-        showGoldToast('PDF downloaded — attach it to the email that just opened');
-
-      } else if (action === 'sms') {
-        const phone = sellerPrepRecipientPhone.value.trim();
-
-        // Try Web Share API for file sharing (works on mobile)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'Your Seller Prep Guide', text: `Hi! Your personalized property preparation guide from ${agentName.value} is attached. Let me know if you have any questions!` });
-            return;
-          } catch(e) { /* Fall through */ }
-        }
-
-        // Fallback: download PDF + open SMS
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-        setTimeout(() => {
-          const msg = encodeURIComponent(`Hi! Your FORWARD Property Preparation Guide is ready. I've attached it — let me know if you have any questions! - ${agentName.value}`);
-          window.location.href = `sms:${phone}?body=${msg}`;
-        }, 800);
-        showGoldToast('PDF downloaded — attach it to the text message that just opened');
-      }
-    }
 
     // -- Seller Prep Guide PDF (branded, opens in new tab)
     function sellerPrepBuildPDFBlob() {
@@ -17292,11 +17276,53 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       }
       return { ok: true, state: code, problem: '' };
     }
-    const nsAddrProblem = computed(() => nsAddressCheck().problem || '');
+    // No net sheet without a closing date (Marc, Oct 30, 2026). nsCompute() adds the
+    // property tax and HOA dues lines only when there is a closing date, so a sheet
+    // with none left them out and showed the seller a net too high by months of tax
+    // and dues. Asked after the address, by the same three buttons, in both forms.
+    function nsClosingDateCheck() {
+      const d = nsParseDate(ns.closingDate);
+      if (!d || d.getFullYear() < 2000 || d.getFullYear() > 2100) return { ok: false, problem: 'Enter the Closing Date. Without it the sheet leaves out the property tax and HOA dues, so the seller\'s net would come out too high.' };
+      return { ok: true, problem: '' };
+    }
+    // Maryland: the county is chosen, never assumed (Marc, Oct 30, 2026). Until then
+    // every Maryland address outside Montgomery County opened on "Other county
+    // (blended estimate)", a flat 1.25% to the seller, though the exact rates for
+    // every county are in MD_RATES; in a county that taxes more (Baltimore City) the
+    // seller's costs were understated. Now a Maryland sheet whose county is not known
+    // for sure is 'md-unset' (not a real jurisdiction: nsCompute never sees it) and
+    // the sheet refuses until the agent picks the county. The blended estimate is
+    // still there to pick on purpose.
+    function nsCountyCheck() {
+      if (ns.jurisdiction === 'md-unset') return { ok: false, problem: 'Choose the Maryland county under County. Transfer and recordation taxes differ by county, so the sheet will not guess.' };
+      return { ok: true, problem: '' };
+    }
+    // A Maryland address's county when the address itself settles it, else 'md-unset'.
+    // Only Montgomery County towns, as the address detection already did.
+    function nsMDFromAddress(addr) {
+      const a = String(addr || '').toLowerCase();
+      if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brockville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) return 'md-montgomery';
+      return 'md-unset';
+    }
+    // The annual property tax must be entered (Marc, Oct 30, 2026). A blank box gave a
+    // sheet with no tax line at all, so the seller's net came out too high, the same
+    // way a missing closing date did. A typed 0 is allowed: a property that pays none.
+    function nsTaxCheck() {
+      const raw = String(ns.propTaxAnnual == null ? '' : ns.propTaxAnnual).replace(/[$,\s]/g, '');
+      if (raw === '' || !/^\d+(\.\d+)?$/.test(raw)) return { ok: false, problem: 'Enter the annual property tax (type 0 only if the property pays none). Without it the sheet leaves out the tax, so the seller\'s net would come out too high.' };
+      return { ok: true, problem: '' };
+    }
+    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || nsTaxCheck().problem || nsCountyCheck().problem || '');
     function nsAddressOk() {
       const c = nsAddressCheck();
-      if (!c.ok) showToast(c.problem, 7000);
-      return c.ok;
+      if (!c.ok) { showToast(c.problem, 7000); return false; }
+      const d = nsClosingDateCheck();
+      if (!d.ok) { showToast(d.problem, 7000); return false; }
+      const t = nsTaxCheck();
+      if (!t.ok) { showToast(t.problem, 7000); return false; }
+      const k = nsCountyCheck();
+      if (!k.ok) { showToast(k.problem, 7000); return false; }
+      return true;
     }
     function nsDetectJurisdiction() {
       const a = ns.address.toLowerCase();
@@ -17309,7 +17335,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) {
         ns.jurisdiction = 'md-montgomery';
       } else if (/\bmd\b|maryland/.test(a)) {
-        ns.jurisdiction = 'md-other';
+        ns.jurisdiction = 'md-unset';
       }
     }
     // Google Places — custom dropdown using AutocompleteService (no widget takeover)
@@ -17374,11 +17400,10 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
               ns.jurisdiction = 'va-other';
             }
           } else if (state === 'MD') {
-            if (county.includes('montgomery')) {
-              ns.jurisdiction = 'md-montgomery';
-            } else {
-              ns.jurisdiction = 'md-other';
-            }
+            // The county Google names, matched to the exact county rates; never the
+            // blended estimate unless the agent picks it (Oct 30, 2026).
+            const _mdj = ctcMDFromCounty(county, city);
+            ns.jurisdiction = _mdj === 'md-other' ? 'md-unset' : _mdj;
           }
         });
       } else {
@@ -17420,7 +17445,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const nsStateSel = computed({
       get() { return (ns.jurisdiction && ns.jurisdiction.indexOf('md-') === 0) ? 'md' : ns.jurisdiction; },
       set(v) {
-        if (v === 'md') { if (String(ns.jurisdiction).indexOf('md-') !== 0) ns.jurisdiction = 'md-montgomery'; }
+        if (v === 'md') { if (String(ns.jurisdiction).indexOf('md-') !== 0) ns.jurisdiction = 'md-unset'; }
         else ns.jurisdiction = v;
       }
     });
@@ -18181,24 +18206,40 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     }
     function ctcCalcInsEscrow() {
       const annual = ctcParse('homeInsurance') || Math.round(ctcParse('purchasePrice') * 0.004);
+      if (ctc.loanType === 'cash') return Math.round(annual);   // first year's premium, no escrow
       return Math.round(annual / 12 * (Number(ctc.insEscrowMonths) || 14));
     }
     function ctcCalcTaxEscrow() {
       const annual = ctcParse('propTax') || Math.round(ctcParse('purchasePrice') * 0.01);
+      if (ctc.loanType === 'cash') return 0;   // no lender, no tax escrow
       return Math.round(annual / 12 * (Number(ctc.taxEscrowMonths) || 3));
     }
+    // The down payment and the loan, used by every Cash to Close figure (Oct 30, 2026).
+    // Cash (No Loan): the buyer brings the whole price and there is no loan. Until
+    // then a cash purchase still counted only the 20% down payment, so a $1,000,000
+    // cash buyer was shown about $229,000 to bring. A typed dollar amount wins (as
+    // before); otherwise the percent, where a blank box means 20 and 0 means 0 (a
+    // VA loan with nothing down). Until then 0 turned back into 20.
+    function ctcDownParts(price) {
+      if (ctc.loanType === 'cash') return { down: price, loan: 0, pct: 100 };
+      const amt = ctcParse('downAmt');
+      const raw = String(ctc.downPct == null ? '' : ctc.downPct).trim();
+      const n = Number(raw);
+      const pct = raw === '' || !isFinite(n) ? 20 : Math.min(100, Math.max(0, n));
+      const down = Math.min(price, amt > 0 ? amt : Math.round(price * pct / 100));
+      return { down: down, loan: price - down, pct: amt > 0 && price > 0 ? down / price * 100 : pct };
+    }
+    function ctcDownPctNow() { return ctcDownParts(ctcParse('purchasePrice')).pct; }
     function ctcCalcPrepaidInterest() {
       const price = ctcParse('purchasePrice');
-      const down = ctcParse('downAmt') || Math.round(price * (Number(ctc.downPct) || 20) / 100);
-      const loan = price - down;
+      const loan = ctcDownParts(price).loan;
       const rate = Number(ctc.interestRate) || 6.5;
       const days = Number(ctc.prepaidDays) || 15;
       return Math.round(loan * (rate / 100) / 365 * days);
     }
     function ctcCalcMIEscrow() {
       const price = ctcParse('purchasePrice');
-      const down = ctcParse('downAmt') || Math.round(price * (Number(ctc.downPct) || 20) / 100);
-      const loan = price - down;
+      const loan = ctcDownParts(price).loan;
       const mi = ctcParse('monthlyMI') || Math.round(loan * 0.005 / 12);
       return Math.round(mi * (Number(ctc.miEscrowMonths) || 2));
     }
@@ -18237,7 +18278,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             const novaCities = ['alexandria','falls church','fairfax','manassas','manassas park'];
             ctc.jurisdiction = (novaCounties.some(n => county.includes(n)) || novaCities.some(n => city.includes(n) || county.includes(n))) ? 'va-nova' : 'va-other';
           } else if (state === 'MD') {
-            ctc.jurisdiction = ctcMDFromCounty(county, city);
+            // An unmatched county is left for the agent to pick, never the blended estimate (Oct 30, 2026).
+            const _mdj = ctcMDFromCounty(county, city);
+            ctc.jurisdiction = _mdj === 'md-other' ? 'md-unset' : _mdj;
           }
         });
       } else { ctcDetectJurisdiction(); }
@@ -18249,7 +18292,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       else if (/\bva\b|virginia/.test(a)) ctc.jurisdiction = 'va-other';
       else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b/.test(a)) ctc.jurisdiction = 'md-montgomery';
       else if (/\bprince george\b|\bbowie\b|\bcollege park\b|\bupper marlboro\b/.test(a)) ctc.jurisdiction = 'md-pgcounty';
-      else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-other';
+      else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-unset';
     }
 
     // ── DC buyer-side conventions (Cash to Close) ─────────────────────────
@@ -18305,7 +18348,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const ctcStateSel = computed({
       get() { const jj = ctc.jurisdiction; return (jj && jj.indexOf('md-') === 0) ? 'md' : jj; },
       set(v) {
-        if (v === 'md') { if (String(ctc.jurisdiction).indexOf('md-') !== 0) ctc.jurisdiction = 'md-montgomery'; }
+        if (v === 'md') { if (String(ctc.jurisdiction).indexOf('md-') !== 0) ctc.jurisdiction = 'md-unset'; }
         else ctc.jurisdiction = v;
       }
     });
@@ -18374,17 +18417,22 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function calcCashToClose() {
       const price = ctcParse('purchasePrice');
       if (!price) { showToast('Please enter a purchase price.', 4000); return; }
+      // Maryland: the county is chosen, never assumed (Marc, Oct 30, 2026), as on the
+      // seller net sheet. 'md-unset' is not a jurisdiction and never reaches the math.
+      if (ctc.jurisdiction === 'md-unset') { showToast('Choose the Maryland county first. Transfer and recordation taxes differ by county.', 6000); return; }
       const j = ctc.jurisdiction;
-      const downPayment = ctcParse('downAmt') || Math.round(price * (Number(ctc.downPct) || 20) / 100);
-      const loanAmt = price - downPayment;
+      const dp = ctcDownParts(price);
+      const downPayment = dp.down, downPct = dp.pct;
+      const loanAmt = dp.loan;
       ctc._loanAmt = loanAmt;
       const isCash = ctc.loanType === 'cash';
       const rate = Number(ctc.interestRate) || 6.5;
       const sections = [];
 
       // S1: Down Payment
-      const s1Items = [{ label:'Down Payment (' + (Number(ctc.downPct)||20) + '%)', amount: downPayment }];
-      sections.push({ label:'Down Payment', items:s1Items, subtotal: downPayment });
+      const pctText = String(Math.round(downPct * 10) / 10);
+      const s1Items = [{ label: isCash ? 'Purchase Price (cash, no loan)' : 'Down Payment (' + pctText + '%)', amount: downPayment }];
+      sections.push({ label: isCash ? 'Purchase Price' : 'Down Payment', items:s1Items, subtotal: downPayment });
 
       // S2: Transfer Taxes & Recording
       let transferTax = 0, recordationTax = 0;
@@ -18485,7 +18533,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         if (ctc.loanType === 'fha') {
           s4Items.push({ label:'FHA Upfront MIP (1.75%)', amount: Math.round(loanAmt * 0.0175) });
         } else if (ctc.loanType === 'va') {
-          const fundPct = Number(ctc.downPct) >= 10 ? 0.014 : Number(ctc.downPct) >= 5 ? 0.0165 : 0.023;
+          const fundPct = downPct >= 10 ? 0.014 : downPct >= 5 ? 0.0165 : 0.023;
           s4Items.push({ label:'VA Funding Fee (' + (fundPct*100).toFixed(1) + '%)', amount: Math.round(loanAmt * fundPct) });
         } else if (ctc.loanType === 'usda') {
           s4Items.push({ label:'USDA Guarantee Fee (1.0%)', amount: Math.round(loanAmt * 0.01) });
@@ -18497,11 +18545,17 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // S5: Impounds, Prepaids & Escrows
       const s5Items = [];
       const annualIns = ctcParse('homeInsurance') || Math.round(price * 0.004);
-      const insMonths = Number(ctc.insEscrowMonths) || 14;
-      s5Items.push({ label:"Homeowner's Insurance (" + insMonths + ' months)', amount: Math.round(annualIns / 12 * insMonths) });
       const annualTax = ctcParse('propTax') || Math.round(price * 0.01);
-      const escrowMonths = Number(ctc.taxEscrowMonths) || 3;
-      s5Items.push({ label:'Property Tax Escrow (' + escrowMonths + ' months)', amount: Math.round(annualTax / 12 * escrowMonths) });
+      if (isCash) {
+        // No lender, so no escrow account: the buyer pays the first year of insurance
+        // (counted here, since it is cash the buyer needs by closing) and no tax escrow.
+        s5Items.push({ label:"Homeowner's Insurance (first year's premium)", amount: Math.round(annualIns) });
+      } else {
+        const insMonths = Number(ctc.insEscrowMonths) || 14;
+        s5Items.push({ label:"Homeowner's Insurance (" + insMonths + ' months)', amount: Math.round(annualIns / 12 * insMonths) });
+        const escrowMonths = Number(ctc.taxEscrowMonths) || 3;
+        s5Items.push({ label:'Property Tax Escrow (' + escrowMonths + ' months)', amount: Math.round(annualTax / 12 * escrowMonths) });
+      }
 
       // Tax proration, buyer side: DC (KVS), MD (Universal Title ALTA), VA (arrears).
       ctcTaxProrationItems(j, annualTax, ctcClosingDate()).forEach(function (it) { s5Items.push(it); });
@@ -18536,7 +18590,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           s5Items.push({ label:'Prepaid Interest (' + days + ' days @ ' + rate + '%)', amount: dailyInterest * days });
         }
       }
-      if (!isCash && (ctc.loanType === 'fha' || (ctc.loanType === 'conventional' && Number(ctc.downPct) < 20))) {
+      if (!isCash && (ctc.loanType === 'fha' || (ctc.loanType === 'conventional' && downPct < 20))) {
         const mi = ctcParse('monthlyMI') || Math.round(loanAmt * 0.005 / 12);
         const miMonths = Number(ctc.miEscrowMonths) || 2;
         s5Items.push({ label:'Mortgage Insurance Escrow (' + miMonths + ' months)', amount: Math.round(mi * miMonths) });
@@ -24439,6 +24493,34 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-10-30',
+    date: 'October 30, 2026',
+    title: 'Net Sheet Needs a Closing Date',
+    updates: [
+      {
+        title: 'Net Sheet Needs a Closing Date and the Property Tax',
+        detail: 'The Seller Net Sheet now asks for the Closing Date and the Annual Property Tax before it calculates. Without a date the sheet left out the property tax and the HOA dues entirely, so the seller saw a net that was too high, sometimes by thousands. A blank Annual Property Tax box did the same to the tax line. Calculate, Download PDF and Save to Property now stop with a red note until both are entered. Type 0 for the tax only if the property pays none. Nothing else about the math changed.\n\nHow to use: Enter the expected closing date, even if it is an estimate, and the annual property tax from the tax record, plus the HOA dues if there are any. Then press Calculate.\n\nBest practice: If the closing date moves, change it and calculate again before you send the sheet. The tax and HOA lines depend on the date.'
+      },
+      {
+        title: 'Cash to Close: Cash Purchases and Zero Down',
+        detail: 'Cash to Close now counts the whole purchase price when you choose Cash (No Loan). Until today a cash purchase still counted only a 20% down payment, so a $1,000,000 cash buyer was shown about $229,000 to bring instead of over $1,000,000. Cash purchases also no longer show a property tax escrow, and homeowner\'s insurance shows as the first year\'s premium. You can now enter a 0% down payment (for example a VA loan); before, 0 turned back into 20%. Loans with a down payment are unchanged.\n\nHow to use: Pick Cash (No Loan) under Loan Type and the down payment boxes go away. For a VA loan with nothing down, type 0 in Down Payment %.\n\nBest practice: If you sent a cash buyer a Cash to Close estimate before today, make a new one and send it again.'
+      },
+      {
+        title: 'Net Sheet and Cash to Close: Pick the Maryland County',
+        detail: 'On a Maryland net sheet or Cash to Close estimate the OS no longer guesses the county. Until today every Maryland address outside Montgomery County started on Other county (blended estimate), and choosing Maryland started on Montgomery, even though transfer and recordation taxes differ by county. Now the County box says Choose the county until you pick one, and the sheet will not calculate until you do. When you pick an address from the suggestions, the county Google names is filled in for you. Other county (blended estimate) is still at the bottom of the list if you need it.\n\nHow to use: On a Maryland net sheet, check the County box and pick the property\'s county, then press Calculate.\n\nBest practice: If you sent a Maryland seller outside Montgomery County a net sheet before today, open it, pick the county, calculate again and check the transfer tax line. Do the same for a Maryland buyer\'s Cash to Close.'
+      },
+      {
+        title: 'MLS Data: Shorthand Prices, Five Figures, Address Saves',
+        detail: 'Three fixes on a listing. A list price typed as 1.2M, 1.2 million or 850k is now saved as the full price; until today 1.2M saved as $1 and 850k as $850. Something that is not a price stays as you typed it and turns red, and MLS Data will not save with it. The other listing tools now open only once MLS Data has the list price, beds, baths, square footage and property type; a listing saved with blanks stays on MLS Data and the popup says what is missing. And editing a listing\'s address now says Address updated only when it was really saved; otherwise it says NOT saved and keeps the old address.\n\nHow to use: Fill in all five figures in MLS Data and press Save. If a tool sends you back to MLS Data, the popup lists what is missing.\n\nBest practice: Check the list price box after you leave it. It should show the full price with commas, like $1,200,000.'
+      },
+      {
+        title: 'Seller Prep Guide: Send to Seller Really Sends',
+        detail: 'Send to Seller on the Seller Prep Guide now opens your phone\'s own share menu with the PDF attached. Tap the seller and it goes into your text or email thread, where you can add a message. On a computer it opens the PDF so you can download it and attach it to an email. Until today the button only opened the PDF and said it had opened in a new tab.\n\nHow to use: On a listing, open Seller Prep Guide, set the checklist, and press Send to Seller.\n\nBest practice: Save the guide to the listing first, so the checklist you sent is on file.'
+      }
+    ]
+  }
 
 
 ];
@@ -25451,7 +25533,7 @@ async function voiceApplyFields() {
         ns._voicePrefill = true;
         if (val(f.address))       ns.address        = f.address;
         if (num(f.salePrice))     ns.salePrice      = num(f.salePrice);
-        if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction;
+        if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
         if (val(f.closingDate))   ns.closingDate    = f.closingDate;
         if (num(f.loan1))         { ns.loan1 = num(f.loan1); ns._showLoans = true; }
         if (num(f.loan2))         { ns.loan2 = num(f.loan2); ns._showLoans = true; }
@@ -25470,7 +25552,7 @@ async function voiceApplyFields() {
       nextTick(() => {
         if (val(f.address))       ctc.address       = f.address;
         if (num(f.purchasePrice)) ctc.purchasePrice = num(f.purchasePrice);
-        if (val(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction;
+        if (val(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
         if (val(f.loanType))      ctc.loanType      = f.loanType;
         if (num(f.downPct))       ctc.downPct       = num(f.downPct);
         if (num(f.interestRate))  ctc.interestRate  = num(f.interestRate);
@@ -26818,7 +26900,7 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
             ns._voicePrefill = true;
             if (val2(f.address))      ns.address       = f.address;
             if (num(f.salePrice))     ns.salePrice     = num(f.salePrice);
-            if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction;
+            if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
             if (val2(f.closingDate))  ns.closingDate   = f.closingDate;
             if (num(f.loan1))         { ns.loan1 = num(f.loan1); ns._showLoans = true; }
             if (num(f.loan2))         { ns.loan2 = num(f.loan2); ns._showLoans = true; }
@@ -26837,7 +26919,7 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
           nextTick(() => {
             if (val2(f.address))       ctc.address       = f.address;
             if (num(f.purchasePrice))  ctc.purchasePrice = num(f.purchasePrice);
-            if (val2(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction;
+            if (val2(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
             if (val2(f.loanType))      ctc.loanType      = f.loanType;
             if (num(f.downPct))        ctc.downPct       = num(f.downPct);
             if (num(f.interestRate))   ctc.interestRate  = num(f.interestRate);
@@ -27026,8 +27108,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mktLoadError, mktMeta,
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
-      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, nsAddrProblem, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
+      ns, nsFmt, calcNetSheet, nsAddrProblem, nsGeneratePDFDoc, ctcDownPctNow, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)
@@ -27124,7 +27206,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep,
       marketRegions, marketReportLinks, MARKET_REGION_DEFAULTS, mktEditMode, mktEditLinks, mktSaving, mktStartEdit, mktSaveLinks, mktLoadLinks,
       // MLS Data Form
-      mlsForm, mlsSaving, mlsGate, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, openCMABuilder, lstOpenTool, activityLabel,
+      mlsForm, mlsSaving, mlsGate, mlsGateMissing, mlsPriceProblem, mlsSaveManual, mlsFormatPrice, mlsFormatSqft, openCMABuilder, lstOpenTool, activityLabel,
       // Multiple Offer Presentation
       MO_FIELDS, moOffers, moLoading, moTableLoading, moSaving, moEditCell, moEditVal, moAnalysis, moAnalysisLoading, moFileNames,
       moDisplaySections, moActiveSlots, moSlotCount, moStatus, moChatMessages, moChatInput, moChatLoading, moSendChat, moAddSlot, moLoadOffers, moClearAll, moUploadPDF, moSaveOffer, moStartEdit, moCommitEdit, moCancelEdit, moClearOffer, moGenerateAnalysis,
