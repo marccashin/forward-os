@@ -9088,26 +9088,6 @@ body {
       </div>
     </div>
 
-    <!-- Seller Prep Guide — Send to Seller Modal -->
-    <div v-if="sellerPrepSendModal" class="modal-bg" @click.self="sellerPrepSendModal=false">
-      <div class="modal-box" style="max-width:460px;">
-        <h3 style="margin:0 0 6px;font-size:18px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;">Send Prep Guide to Seller</h3>
-        <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 20px;line-height:1.55;">The branded PDF will be generated and shared directly. On supported devices (mobile, modern browsers) the file attaches automatically. Otherwise it will download and your email/text app will open — just attach the downloaded PDF.</p>
-        <div class="form-row">
-          <label>Seller Email (optional)</label>
-          <input v-model="sellerPrepRecipientEmail" type="email" placeholder="seller@email.com" style="font-size:13px;"/>
-        </div>
-        <div class="form-row">
-          <label>Seller Phone (optional)</label>
-          <input v-model="sellerPrepRecipientPhone" type="tel" placeholder="(202) 555-0100" style="font-size:13px;"/>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;">
-          <button class="btn-gold" @click="sellerPrepGenerateAndSend('email')" :disabled="!sellerPrepRecipientEmail.trim()" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="5" width="20" height="14" rx="1" fill="#0d1f35"/><polygon points="2,5 12,13 22,5" fill="none" stroke="white" stroke-width="1.5"/></svg> Send via Email</button>
-          <button class="btn-navy" @click="sellerPrepGenerateAndSend('sms')" :disabled="!sellerPrepRecipientPhone.trim()" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="3,3 3,17 8,17 12,22 16,17 21,17 21,3" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" rx="0.75" fill="white"/><rect x="7" y="12" width="7" height="1.5" rx="0.75" fill="white"/></svg> Send via Text</button>
-          <button class="btn-outline" @click="sellerPrepGenerateAndSend('view')" style="width:100%;padding:12px;font-size:14px;"><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><ellipse cx="12" cy="12" rx="10" ry="6" fill="#0d1f35"/><circle cx="12" cy="12" r="3" fill="white"/></svg> Preview PDF Only</button>
-        </div>
-        <button @click="sellerPrepSendModal=false" style="width:100%;margin-top:10px;background:none;border:none;font-size:13px;color:#9ca3af;cursor:pointer;">Cancel</button>
-      </div>
     </div>
 
   </template>
@@ -16800,8 +16780,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _sellerPrepResetLists();
       sellerPrepType.value = 'sfh';
       sellerPrepAddingSi.value = null; sellerPrepNewLabel.value = '';
-      sellerPrepSaved.value = false; sellerPrepSendModal.value = false;
-      sellerPrepRecipientEmail.value = ''; sellerPrepRecipientPhone.value = '';
+      sellerPrepSaved.value = false;
       sellerPrepLoadNote.value = '';
       sellerPrepOwner.value = owner;
       if (!savedText || !String(savedText).trim()) return;
@@ -16819,10 +16798,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       });
     }
 
-    // Send to Seller modal state
-    const sellerPrepSendModal    = ref(false);
-    const sellerPrepRecipientEmail = ref('');
-    const sellerPrepRecipientPhone = ref('');
 
     // ── Export Pre-Listing Package PDF ─────────────────────────────────────────
     function lstExportPreListingPDF() {
@@ -16924,11 +16899,28 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       showGoldToast('Pre-Listing Package downloaded!');
     }
 
-        // Open prep guide PDF in new tab for sharing
-    function sellerPrepOpenDeliverable() {
+    // Send to Seller (Marc, Oct 31, 2026: the phone's own share menu, the same way the
+    // showing tour plan sends to a buyer). On a phone the share menu opens with the
+    // PDF attached: the agent taps the seller, and the PDF goes into the text or email.
+    // On a computer, or a phone that cannot share a file, the PDF opens in the viewer
+    // and the message says to download it and attach it. Until then the button only
+    // opened the viewer and said "opened in new tab", which it never was, and an
+    // email/text window that nothing opened sat unused (removed).
+    async function sellerPrepOpenDeliverable() {
       const blob = sellerPrepBuildPDFBlob();
-      openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
-      showGoldToast('ℹ️ PDF opened in new tab — download or print to share via email or text');
+      const fileName = 'Seller-Prep-Guide.pdf';
+      if (fosIsPhone()) {
+        let file = null;
+        try { file = new File([blob], fileName, { type: 'application/pdf' }); } catch (e) { file = null; }
+        if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file], title: 'Your Seller Prep Guide' }); return; }
+          catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+      }
+      openPDFBlob(blob, fileName);
+      showGoldToast(fosIsPhone()
+        ? 'This phone could not open its share menu. Tap Download, then send the PDF to the seller.'
+        : 'Download the PDF, then attach it to your email to the seller.', 6000);
     }
 
     // Build plain-text summary of visible checklist items (for campaign integration)
@@ -16978,65 +16970,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       });
     }
 
-    async function sellerPrepGenerateAndSend(action) {
-      const blob = sellerPrepBuildPDFBlob();
-      sellerPrepSendModal.value = false;
-
-      if (action === 'view') {
-        openPDFBlob(blob, 'Seller-Prep-Guide.pdf');
-        return;
-      }
-
-      const fileName = 'Seller-Prep-Guide.pdf';
-      const file = new File([blob], fileName, { type: 'application/pdf' });
-
-      if (action === 'email') {
-        const email = sellerPrepRecipientEmail.value.trim();
-        const subject = 'Your FORWARD Property Preparation Guide';
-        const bodyText = `Hi,\n\nPlease find your personalized property preparation checklist attached.\n\nThis guide was prepared by your FORWARD Real Estate agent to help you get your home ready for market. Please review each item and let us know if you have any questions.\n\nBest,\n${agentName.value}\nFORWARD Real Estate | Corcoran McEnearney`;
-
-        // Try Web Share API first (supports file attachments on mobile & newer desktop browsers)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: subject, text: bodyText });
-            return;
-          } catch(e) { /* User cancelled or share failed — fall through to mailto */ }
-        }
-
-        // Fallback: download PDF then open email client
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-        setTimeout(() => {
-          const encoded = encodeURIComponent(bodyText);
-          window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encoded}`;
-        }, 800);
-        showGoldToast('PDF downloaded — attach it to the email that just opened');
-
-      } else if (action === 'sms') {
-        const phone = sellerPrepRecipientPhone.value.trim();
-
-        // Try Web Share API for file sharing (works on mobile)
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({ files: [file], title: 'Your Seller Prep Guide', text: `Hi! Your personalized property preparation guide from ${agentName.value} is attached. Let me know if you have any questions!` });
-            return;
-          } catch(e) { /* Fall through */ }
-        }
-
-        // Fallback: download PDF + open SMS
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = fileName;
-        link.click();
-        setTimeout(() => {
-          const msg = encodeURIComponent(`Hi! Your FORWARD Property Preparation Guide is ready. I've attached it — let me know if you have any questions! - ${agentName.value}`);
-          window.location.href = `sms:${phone}?body=${msg}`;
-        }, 800);
-        showGoldToast('PDF downloaded — attach it to the text message that just opened');
-      }
-    }
 
     // -- Seller Prep Guide PDF (branded, opens in new tab)
     function sellerPrepBuildPDFBlob() {
@@ -24581,6 +24514,10 @@ const CHANGELOG = [
       {
         title: 'MLS Data: Shorthand Prices, Five Figures, Address Saves',
         detail: 'Three fixes on a listing. A list price typed as 1.2M, 1.2 million or 850k is now saved as the full price; until today 1.2M saved as $1 and 850k as $850. Something that is not a price stays as you typed it and turns red, and MLS Data will not save with it. The other listing tools now open only once MLS Data has the list price, beds, baths, square footage and property type; a listing saved with blanks stays on MLS Data and the popup says what is missing. And editing a listing\'s address now says Address updated only when it was really saved; otherwise it says NOT saved and keeps the old address.\n\nHow to use: Fill in all five figures in MLS Data and press Save. If a tool sends you back to MLS Data, the popup lists what is missing.\n\nBest practice: Check the list price box after you leave it. It should show the full price with commas, like $1,200,000.'
+      },
+      {
+        title: 'Seller Prep Guide: Send to Seller Really Sends',
+        detail: 'Send to Seller on the Seller Prep Guide now opens your phone\'s own share menu with the PDF attached. Tap the seller and it goes into your text or email thread, where you can add a message. On a computer it opens the PDF so you can download it and attach it to an email. Until today the button only opened the PDF and said it had opened in a new tab.\n\nHow to use: On a listing, open Seller Prep Guide, set the checklist, and press Send to Seller.\n\nBest practice: Save the guide to the listing first, so the checklist you sent is on file.'
       }
     ]
   }
@@ -27171,7 +27108,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       mktLoadError, mktMeta,
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
-      sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
+      sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
       ns, nsFmt, calcNetSheet, nsAddrProblem, nsGeneratePDFDoc, ctcDownPctNow, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
