@@ -3138,10 +3138,10 @@ body {
                   {{ ns._showTax ? '▼' : '▶' }} Property Taxes
                 </div>
                 <div v-if="ns._showTax">
-                  <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;"><span v-if="ns.jurisdiction === 'dc' && ns.propTaxAnnual && !nsTaxHalfApplies.h1 && !nsTaxHalfApplies.h2" style="display:block;color:#b45309;margin-bottom:6px;">This installment is not due yet, so the buyer pays the full bill at its due date. Only the seller's share through closing is prorated - nothing is collected at settlement.</span>Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : 'fiscal year (Jul 1 – Jun 30)' }}.</div>
+                  <div style="font-size:10px;color:#9ca3af;margin-bottom:10px;"><span v-if="ns.jurisdiction === 'dc' && ns.propTaxAnnual && !nsTaxHalfApplies.h1 && !nsTaxHalfApplies.h2" style="display:block;color:#b45309;margin-bottom:6px;">This installment is not due yet, so the buyer pays the full bill at its due date. Only the seller's share through closing is prorated - nothing is collected at settlement.</span>Enter the annual property tax. It will be auto-prorated based on closing date and {{ ns.jurisdiction === 'dc' ? 'DC fiscal year (Oct 1 – Sep 30)' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Virginia calendar year (Jan 1 – Dec 31), billed in two halves' : 'Maryland fiscal year (Jul 1 – Jun 30)') }}.</div>
                   <div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Enter annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div>
-                  <div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;">Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid \u2014 confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jan–Jun' : 'Jul–Dec') }})</label><select v-model="ns.nsTaxH1Paid" @change="ns.nsTaxH1Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
-                  <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jul–Dec' : 'Jan–Jun') }})</label><select v-model="ns.nsTaxH2Paid" @change="ns.nsTaxH2Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div>
+                  <div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;"><template v-if="String(ns.jurisdiction).indexOf('va') === 0">Virginia bills each half after it ends (in Northern Virginia, by Jul 28 for Jan to Jun and Dec 7 for Jul to Dec). This closing lands before that due date, so the bill is often still unpaid. Confirm against the tax bill before leaving it marked paid. Marked unpaid, the seller is charged for their own days instead of being credited the buyer\u2019s.</template><template v-else>Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid. Confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</template></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jan–Jun' : 'Jul–Dec') }})</label><select v-model="ns.nsTaxH1Paid" @change="ns.nsTaxH1Touched = true"><option value="yes">Yes — paid</option><option value="no">{{ String(ns.jurisdiction).indexOf('va') === 0 ? 'No — charge the seller\'s days' : 'No — collect at closing' }}</option></select></div>
+                  <div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jul–Dec' : 'Jan–Jun') }})</label><select v-model="ns.nsTaxH2Paid" @change="ns.nsTaxH2Touched = true"><option value="yes">Yes — paid</option><option value="no">{{ String(ns.jurisdiction).indexOf('va') === 0 ? 'No — charge the seller\'s days' : 'No — collect at closing' }}</option></select></div>
                 </div>
               </div>
 
@@ -7086,7 +7086,7 @@ body {
                     </div>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showTax=!ns._showTax">{{ ns._showTax ? '▼' : '▶' }} Property Taxes</div>
-                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;">Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid \u2014 confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jan–Jun' : 'Jul–Dec') }})</label><select v-model="ns.nsTaxH1Paid" @change="ns.nsTaxH1Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jul–Dec' : 'Jan–Jun') }})</label><select v-model="ns.nsTaxH2Paid" @change="ns.nsTaxH2Touched = true"><option value="yes">Yes — paid</option><option value="no">No — collect at closing</option></select></div></div>
+                  <div v-if="ns._showTax" style="margin-top:8px;"><div class="form-row"><label>Annual Property Tax</label><input :value="ns.propTaxAnnual" type="text" inputmode="numeric" placeholder="Annual amount" @input="nsCurrencyInput($event,'propTaxAnnual')" @blur="nsCurrencyBlur($event,'propTaxAnnual')" @focus="nsCurrencyFocus($event,'propTaxAnnual')"/></div><div v-if="nsMDUnpaidLikely" style="font-size:10px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:7px 9px;margin-bottom:8px;"><template v-if="String(ns.jurisdiction).indexOf('va') === 0">Virginia bills each half after it ends (in Northern Virginia, by Jul 28 for Jan to Jun and Dec 7 for Jul to Dec). This closing lands before that due date, so the bill is often still unpaid. Confirm against the tax bill before leaving it marked paid. Marked unpaid, the seller is charged for their own days instead of being credited the buyer\u2019s.</template><template v-else>Maryland bills the 1st half by Sep 30 and the 2nd half by Dec 31. This closing lands before that due date, so the bill is often still unpaid. Confirm against the tax bill before leaving it marked paid. Marking it unpaid collects the full half and credits the buyer\u2019s share back.</template></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h1" class="form-row"><label>Has seller paid 1st half? ({{ ns.jurisdiction === 'dc' ? 'Oct–Mar' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jan–Jun' : 'Jul–Dec') }})</label><select v-model="ns.nsTaxH1Paid" @change="ns.nsTaxH1Touched = true"><option value="yes">Yes — paid</option><option value="no">{{ String(ns.jurisdiction).indexOf('va') === 0 ? 'No — charge the seller\'s days' : 'No — collect at closing' }}</option></select></div><div v-if="ns.propTaxAnnual && nsTaxHalfApplies.h2" class="form-row"><label>Has seller paid 2nd half? ({{ ns.jurisdiction === 'dc' ? 'Apr–Sep' : (String(ns.jurisdiction).indexOf('va') === 0 ? 'Jul–Dec' : 'Jan–Jun') }})</label><select v-model="ns.nsTaxH2Paid" @change="ns.nsTaxH2Touched = true"><option value="yes">Yes — paid</option><option value="no">{{ String(ns.jurisdiction).indexOf('va') === 0 ? 'No — charge the seller\'s days' : 'No — collect at closing' }}</option></select></div></div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showOther=!ns._showOther">{{ ns._showOther ? '▼' : '▶' }} Other Expenses</div>
                   <div v-if="ns._showOther" style="margin-top:8px;"><div class="form-row"><label>Other Costs</label><input :value="ns.otherCosts" type="text" inputmode="numeric" placeholder="$0.00" @input="nsCurrencyInput($event,'otherCosts')" @blur="nsCurrencyBlur($event,'otherCosts')" @focus="nsCurrencyFocus($event,'otherCosts')"/></div></div>
                   <div v-if="nsAddrProblem" data-ns-addr-problem style="margin-top:14px;padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">{{ nsAddrProblem }}</div>
@@ -11584,6 +11584,17 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const toolName = data.toolName || '';
       const subfolder = TOOL_SUBFOLDER_MAP[toolName] || saveToPropManualSubfolder.value || '';
       if (!subfolder) { showToast('Please select a file type.', 3000); return; }
+      // A save that asked which listing (the net sheet, Oct 31, 2026) files to the
+      // chosen listing the same way a save from inside a listing does: the note, its
+      // history and the PDF on the listing. Not the Drive-only route below.
+      if (data.direct) {
+        saveToPropUploading.value = true;
+        try {
+          const ok = await _doSaveToPropertyDrive(targetProp, subfolder, toolName, data.label, data.data, data.pdfData);
+          if (ok) { showSaveToProp.value = false; saveToPropData.value = null; saveToPropManualSubfolder.value = ''; }
+        } finally { saveToPropUploading.value = false; }
+        return;
+      }
 
       const subfolderDriveIds = targetProp.subfolder_drive_ids || {};
       const driveFolderId = subfolderDriveIds[subfolder];
@@ -15557,7 +15568,8 @@ async function lstSubmitToPipeline() {
           _noteTried = true;
           try {
             await supaRest.saveNote(prop.id, subfolder, data);
-            if (lstNotes.hasOwnProperty(subfolder)) lstNotes[subfolder] = data;
+            // Only the listing on screen shows the new note; a save to another listing must not.
+            if (lstNotes.hasOwnProperty(subfolder) && lstActiveProp.value && lstActiveProp.value.id === prop.id) lstNotes[subfolder] = data;
           } catch(e) { _noteErr = fosWhy(e); console.error('property_notes save failed (' + subfolder + '):', e.message); }
         }
         const _noteSaved = _noteTried && !_noteErr;
@@ -15800,8 +15812,10 @@ async function lstSubmitToPipeline() {
       if (onSuccess) onSuccess();
       return true;
     }
-    function openSaveToPropModal(type, label, data, pdfData, toolName) {
-      if (pdfData) {
+    // askAlways: never file to the client file of whatever was opened earlier; always
+    // show the picker (the net sheet's own save, Oct 31, 2026).
+    function openSaveToPropModal(type, label, data, pdfData, toolName, askAlways) {
+      if (pdfData && !askAlways) {
         const clientFile = findActiveClientFile();
         if (clientFile) {
           addResourceToProp(clientFile.id, { type: type || 'PDF', label, pdfData });
@@ -15810,7 +15824,7 @@ async function lstSubmitToPipeline() {
           return;
         }
       }
-      saveToPropData.value = { type, label, data, pdfData: pdfData || null, toolName: toolName || null };
+      saveToPropData.value = { type, label, data, pdfData: pdfData || null, toolName: toolName || null, direct: !!askAlways };
       saveToPropSelected.value = null;
       saveToPropNewAddr.value = '';
       saveToPropManualSubfolder.value = '';
@@ -17176,7 +17190,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     ];
     const ns = reactive({
       address:'', unit:'', salePrice:'', jurisdiction:'dc', closingDate:'',
-      firstTimeHomebuyerDC:'no',
       loan1:'', loan2:'',
       sellerCompMode:'pct', sellerCompVal:'', buyerCompMode:'pct', buyerCompVal:'', transactionFee:'',
       concessionMode:'pct', concessionVal:'',
@@ -17469,11 +17482,6 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         const vp = nsVATaxPeriods(cd);
         return { h1: vp[0].start <= cd, h2: vp[1].start <= cd };
       }
-      // VA prorates on the calendar year and never collects an installment,
-      // so there is no paid/unpaid question to ask.
-      if (ns.jurisdiction === 'va-nova' || ns.jurisdiction === 'va-other') {
-        return { h1:false, h2:false };
-      }
       // Maryland: offer the paid/unpaid question for any half the seller owned part of.
       const mdP = nsMDTaxPeriods(sellerThrough);
       return { h1: mdP[0].start <= sellerThrough, h2: mdP[1].start <= sellerThrough };
@@ -17734,10 +17742,12 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // Transfer tax
       let transferTax = 0, transferLabel = '';
       if (j === 'dc') {
-        const ftb = ns.firstTimeHomebuyerDC === 'yes';
-        let rate = (ftb && price < 400000) ? 0.00725 : (price < 400000 ? 0.011 : 0.0145);
+        // The seller's DC transfer tax. The first-time buyer rate (0.725%) is a cut in
+        // the BUYER's recordation tax only, so it never applies here (Oct 31, 2026: a
+        // dead first-time buyer branch, which no form could reach, removed).
+        const rate = price < 400000 ? 0.011 : 0.0145;
         transferTax = Math.round(price * rate);
-        transferLabel = ftb && price < 400000 ? 'DC Transfer Tax — First-Time Buyer (0.725%)' : `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
+        transferLabel = `DC Transfer Tax (${price < 400000 ? '1.1' : '1.45'}%)`;
       } else if (j === 'va-nova') { transferTax = Math.round(price * 0.003); transferLabel = 'VA Grantor Tax + NoVA Regional Fees (0.3%)'; }
       else if (j === 'va-other') { transferTax = Math.round(price * 0.001); transferLabel = 'VA Grantor Tax (0.1%)'; }
       else if (j === 'md-montgomery') {
@@ -18124,6 +18134,20 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     async function nsSaveToProperty() {
       if (!nsAddressOk()) return;
       if (ns.result === null) { showToast('Calculate the net sheet first.', 3000); return; }
+      // Save what is on screen (Oct 31, 2026): a price or loan changed after Calculate
+      // was saved at the OLD figures. Download already calculated again; Save now does.
+      nsRecalcSilent();
+      // A sheet opened from this listing saves to it. Any other sheet (started from the
+      // voice assistant or the standalone panel) always asks which listing (Oct 31,
+      // 2026): it used to be filed to whichever listing, or BUYER, was opened earlier
+      // in the session, with only a toast naming it.
+      const lp = lstActiveProp.value;
+      const ownListing = !!(ns._propId && lp && lp.id === ns._propId && view.value === 'listing-detail');
+      if (!ownListing) {
+        const textSummaryP = ns.breakdown.map(b => b.label + ': ' + (b.amount < 0 ? '+' + nsFmt(-b.amount) + ' (credit)' : '-' + nsFmt(b.amount))).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
+        openSaveToPropModal('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummaryP, nsGetPDFBase64(), 'Seller Net Sheet', true);
+        return;
+      }
       nsSaving.value = true;
       try {
         const textSummary = ns.breakdown.map(b => b.label + ': ' + (b.amount < 0 ? '+' + nsFmt(-b.amount) + ' (credit)' : '-' + nsFmt(b.amount))).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
@@ -24521,6 +24545,22 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-10-31',
+    date: 'October 31, 2026',
+    title: 'Net Sheet Saves to the Right Listing',
+    updates: [
+      {
+        title: 'Net Sheet Saves to the Right Listing',
+        detail: 'Save to Property on a net sheet you made from Just Listed (not from inside a listing) now always asks which listing it belongs to. Until today it could file itself on whatever listing or buyer you had opened earlier, without asking. A net sheet saved from inside a listing still saves straight to that listing. Either way, the sheet is now calculated again just before it saves, so a price you changed after pressing Calculate is the price that gets saved.\n\nHow to use: Press Save to Property, pick the listing in the window and press Save. The PDF and the summary go on that listing.\n\nBest practice: When the net sheet is for a listing you already have, open it from the listing\'s own Net Sheet tool. It fills the address, price and HOA fee for you and saves to the right place.'
+      },
+      {
+        title: 'Virginia Property Tax Wording',
+        detail: 'On a Virginia net sheet the property tax section now describes Virginia\'s own bills: the calendar year (January to December), billed in two halves, with Northern Virginia due dates of July 28 and December 7. The answer for an unpaid half now says the seller\'s days are charged. Until today it used Maryland\'s wording (a July to June year, "collect at closing"). The numbers were already right and have not changed. Maryland and DC are unchanged.\n\nHow to use: Nothing to do. Answer "Has the seller paid" as before.\n\nBest practice: Check the county\'s tax record for whether the current half is paid before you send the sheet.'
+      }
+    ]
+  }
 
 
 ];
@@ -26286,7 +26326,7 @@ async function dismissUpdates() {
           break;
         case 'net-sheet':
           Object.assign(ns, {
-            address:'', unit:'', salePrice:'', closingDate:'', firstTimeHomebuyerDC:'no',
+            address:'', unit:'', salePrice:'', closingDate:'',
             loan1:'', loan2:'', sellerCompVal:'', buyerCompVal:'', transactionFee:'',
             concessionVal:'', hoaFreq:'monthly', hoaAmount:'', hoaPaidCurrent:'no',
             hoaResaleCert:'', hoaTransferFee:'', propTaxAnnual:'', otherCosts:'',
