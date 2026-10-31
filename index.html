@@ -2748,30 +2748,19 @@ body {
             </button>
           </div>
           <div class="card" style="max-width:640px;">
-            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens as a full-screen tool with its own 5-step wizard, appraiser-grade adjustment methodology, and luxury print-ready PDF output.</p>
-            <button class='btn-gold' @click="openCMABuilder()" style='display:inline-block;margin-bottom:24px;'><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,10 10,18 2,10" fill="#0d1f35"/><rect x="16" y="15" width="8" height="3" rx="1.5" transform="rotate(45,16,15)" fill="#0d1f35"/></svg> Open CMA Builder</button>
+            <p style="font-family:'Cormorant Garamond',serif;color:#6b7280;font-size:14px;margin:0 0 20px;line-height:1.6;">The CMA Builder opens in its own full-screen page. You enter the listing, then up to 10 closed sales, 10 pending and 10 active from your MLS file or by hand; every adjustment and each sale&rsquo;s Indicated Value are calculated as you go, and the PDF for your seller is one press away.</p>
+            <p v-if="!lstActiveProp" data-cma-need-listing style="font-size:12px;color:#b91c1c;font-weight:600;margin:0 0 12px;">Open the listing first (Seller Package, then the listing), then open its CMA. The builder fills in the listing from its MLS Data.</p>
+            <button class='btn-gold' @click="openCMABuilder()" :disabled="!lstActiveProp" style='display:inline-block;margin-bottom:24px;'><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,10 10,18 2,10" fill="#0d1f35"/><rect x="16" y="15" width="8" height="3" rx="1.5" transform="rotate(45,16,15)" fill="#0d1f35"/></svg> Open CMA Builder</button>
             <div style="border-top:1.5px solid #f0f0f0;padding-top:20px;">
               <h3 style="margin:0 0 12px;font-size:14px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">What's inside</h3>
               <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#4b5563;line-height:2.1;">
-                • Subject property data entry with property-type-specific fields<br>
-                • Up to 5 comparable sales with all major adjustment fields<br>
-                • Auto-calculated adjustments: GLA, condition, parking, baths, HOA, concessions<br>
-                • Fannie Mae UAD condition ratings (A+ through D)<br>
-                • Pricing recommendation with ±3% range<br>
-                • 4-page luxury branded PDF report
+                • Your listing&rsquo;s details, filled in from its MLS Data<br>
+                • Up to 10 closed sales, 10 pending and 10 active, read from your Bright MLS file or typed in; you choose which go in<br>
+                • Adjustments calculated for size, below-grade area, bedrooms, baths, parking, condition, HOA fees and concessions<br>
+                • Condition graded A+ to D on the appraisers&rsquo; C1 to C6 scale<br>
+                • A recommended price range of 3% either side of the median Indicated Value, or of your own price<br>
+                • A branded PDF for your seller, saved on the listing with Save to Listing
               </div>
-            </div>
-          </div>
-          <!-- Save CMA to Property File -->
-          <div class="card" style="max-width:640px;margin-top:16px;">
-            <h3 style="margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;">Log CMA to Property File</h3>
-            <p style="font-size:12px;color:#9ca3af;margin:0 0 12px;">After completing a CMA, save a record to the property file for your reference.</p>
-            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <input v-model="cmaLogAddress" placeholder="Property address (e.g. 123 Main St. Unit 7E)" style="flex:1;min-width:180px;">
-              <button class="btn-navy" @click="saveCMAToProperty" :disabled="!cmaLogAddress.trim()||cmaSaving" style="white-space:nowrap;min-width:130px;">
-                <span v-if="cmaSaving" class="spinner spinner-dark"></span><span v-if="cmaSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
-              </button>
-              <span v-if="cmaSaved" style="font-size:12px;color:#16a34a;font-weight:700;white-space:nowrap;">✓ Saved!</span>
             </div>
           </div>
         </template>
@@ -2940,7 +2929,7 @@ body {
               <div class="lp-card" @click="lpOpen('presentation')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div>
               <div class="lp-card" @click="lpOpen('netsheet')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div>
               <div class="lp-card" @click="go('listing-desc')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div>
-              <div class="lp-card" @click="go('cma')" :class="{'lp-card-done': lstCmaSaved}"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="5" height="10" fill="#0d1f35"/><rect x="9.5" y="6" width="5" height="16" fill="#0d1f35"/><rect x="17" y="2" width="5" height="20" fill="#0d1f35"/></svg><div class="lp-label">CMA Snapshot</div><div class="lp-sub" v-if="lstCmaSaved" style="color:#16a34a;font-weight:700;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Saved to Drive</div><div class="lp-sub" v-else>Pull comps for this listing</div></div>
+              <div class="lp-card" @click="go('cma')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="5" height="10" fill="#0d1f35"/><rect x="9.5" y="6" width="5" height="16" fill="#0d1f35"/><rect x="17" y="2" width="5" height="20" fill="#0d1f35"/></svg><div class="lp-label">CMA Snapshot</div><div class="lp-sub">Pull comps for this listing</div></div>
               <div class="lp-card" @click="lpOpen('marketreport')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polyline points="2,18 8,10 13,14 22,4" fill="none" stroke="#0d1f35" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polygon points="17,2 24,2 24,9" fill="#0d1f35"/></svg><div class="lp-label">Market Report</div><div class="lp-sub">Latest stats by region</div></div>
               <div class="lp-card" @click="lpOpen('pricereduction')"><div class="lp-icon"><span style="position:relative;"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polyline points="2,6 8,14 13,10 22,20" fill="none" stroke="#0d1f35" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polygon points="17,22 24,22 24,15" fill="#0d1f35"/></svg><span v-if="prDom>0" class="lp-badge">{{ prDom }}d</span></span></div><div class="lp-label">Price Reduction Planner</div><div class="lp-sub">DOM tracker with milestones</div></div>
               <div class="lp-card" @click="lpOpen('sellerprep')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,13 12,2 22,13 20,13 20,22 14,22 14,16 10,16 10,22 4,22 4,13" fill="#0d1f35"/></svg><div class="lp-label">Seller Prep Guide</div><div class="lp-sub">Property preparation checklist for sellers</div></div>
@@ -2951,7 +2940,7 @@ body {
               <div class="lp-card-mobile" @click="lpOpen('presentation')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="5" y="2" width="14" height="20" rx="1" fill="#0d1f35"/><rect x="8" y="7" width="8" height="1.5" fill="white"/><rect x="8" y="11" width="8" height="1.5" fill="white"/><rect x="8" y="15" width="5" height="1.5" fill="white"/></svg><div><div class="lp-label">Listing Presentation</div><div class="lp-sub">Download your branded deck</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('netsheet')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg><div><div class="lp-label">Seller Net Sheet</div><div class="lp-sub">Estimate seller proceeds</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="go('listing-desc')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polygon points="15,2 22,9 8,23 1,23 1,16" fill="#0d1f35"/><polygon points="19,4 20,5 13,12 12,11" fill="white"/></svg><div><div class="lp-label">Listing Description</div><div class="lp-sub">AI-powered MLS copy</div></div><span class="lp-arrow">›</span></div>
-              <div class="lp-card-mobile" @click="go('cma')" :class="{'lp-card-done': lstCmaSaved}"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="5" height="10" fill="#0d1f35"/><rect x="9.5" y="6" width="5" height="16" fill="#0d1f35"/><rect x="17" y="2" width="5" height="20" fill="#0d1f35"/></svg><div><div class="lp-label">CMA Snapshot</div><div class="lp-sub" v-if="lstCmaSaved" style="color:#16a34a;font-weight:600;"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#16a34a"/><polyline points="7,12 10,15 17,8" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Saved</div><div class="lp-sub" v-else>Pull comps for this listing</div></div><span class="lp-arrow">›</span></div>
+              <div class="lp-card-mobile" @click="go('cma')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="12" width="5" height="10" fill="#0d1f35"/><rect x="9.5" y="6" width="5" height="16" fill="#0d1f35"/><rect x="17" y="2" width="5" height="20" fill="#0d1f35"/></svg><div><div class="lp-label">CMA Snapshot</div><div class="lp-sub">Pull comps for this listing</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('marketreport')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polyline points="2,18 8,10 13,14 22,4" fill="none" stroke="#0d1f35" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polygon points="17,2 24,2 24,9" fill="#0d1f35"/></svg><div><div class="lp-label">Market Report</div><div class="lp-sub">Latest stats by region</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('pricereduction')"><svg viewBox="0 0 24 24" style="width:24px;height:24px;display:block;" xmlns="http://www.w3.org/2000/svg"><polyline points="2,6 8,14 13,10 22,20" fill="none" stroke="#0d1f35" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/><polygon points="17,22 24,22 24,15" fill="#0d1f35"/></svg><div><div class="lp-label">Price Reduction Planner</div><div class="lp-sub">DOM tracker with milestones</div></div><span class="lp-arrow">›</span></div>
               <div class="lp-card-mobile" @click="lpOpen('sellerprep')"><span class="lp-icon"><svg viewBox="0 0 24 24" style="width:14px;height:14px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,13 12,2 22,13 20,13 20,22 14,22 14,16 10,16 10,22 4,22 4,13" fill="#0d1f35"/></svg></span><div><div class="lp-label">Seller Prep Guide</div><div class="lp-sub">Pre-listing checklist</div></div><span class="lp-arrow">›</span></div>
@@ -6653,18 +6642,8 @@ body {
                       </div>
                     </div>
                   </div>
-                  <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens as a full-screen tool with a 5-step wizard, appraiser-grade adjustments, and luxury PDF output.</p>
-                  <button class='btn-gold' @click="go('cma')" style='display:inline-block;margin-bottom:12px;font-size:13px;'><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,10 10,18 2,10" fill="#0d1f35"/><rect x="16" y="15" width="8" height="3" rx="1.5" transform="rotate(45,16,15)" fill="#0d1f35"/></svg> Open CMA Builder</button>
-                  <div style="border-top:1px solid #f0f0f0;padding-top:12px;">
-                    <div style="font-size:12px;font-weight:700;color:var(--navy);margin-bottom:6px;">Log CMA to This Property</div>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                      <input v-model="cmaLogAddress" :placeholder="lstActiveProp.address || 'Property address'" style="flex:1;font-size:13px;min-width:120px;">
-                      <button class="btn-navy" @click="saveCMAToProperty" :disabled="!cmaLogAddress.trim()||cmaSaving" style="white-space:nowrap;font-size:12px;min-width:90px;">
-                        <span v-if="cmaSaving" class="spinner spinner-dark"></span><span v-if="cmaSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save</span>
-                      </button>
-                      <span v-if="cmaSaved" style="font-size:12px;color:#16a34a;font-weight:700;white-space:nowrap;">✓ Saved!</span>
-                    </div>
-                  </div>
+                  <p style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;margin:0 0 12px;">The CMA Builder opens in its own full-screen page. You enter the listing, then up to 10 closed sales, 10 pending and 10 active from your MLS file or by hand; every adjustment and each sale&rsquo;s Indicated Value are calculated as you go, and the PDF for your seller is one press away.</p>
+                  <button class='btn-gold' data-cma-open @click="openCMABuilder()" style='display:inline-block;margin-bottom:12px;font-size:13px;'><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="10,2 18,10 10,18 2,10" fill="#0d1f35"/><rect x="16" y="15" width="8" height="3" rx="1.5" transform="rotate(45,16,15)" fill="#0d1f35"/></svg> Open CMA Builder</button>
                 </div>
               </div>
 
@@ -16031,40 +16010,9 @@ async function lstSubmitToPipeline() {
     }
 
     // CMA log
-    const cmaLogAddress = ref('');
-    const cmaSaved = ref(false);
-    const lstCmaSaved = Vue.computed(() => {
-      const propId = lstActiveProp.value?.id;
-      if (!propId) return false;
-      return !!localStorage.getItem('cma_saved_' + propId);
-    });
-    const cmaSaving = ref(false);
-    async function saveCMAToProperty() {
-      const addr = cmaLogAddress.value.trim();
-      if (!addr) return;
-      // Determine target property
-      const targetProp = lstActiveProp.value || null;
-      if (!targetProp) {
-        // Not in listing-detail — prompt user to open a property first
-        if (lstProperties.value.length === 0) await lstFetchProperties();
-        openSaveToPropModal('CMA Report', 'CMA — ' + addr, 'Comparative Market Analysis completed on ' + new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) + ' for ' + addr, null, 'CMA Report');
-        return;
-      }
-      cmaSaving.value = true;
-      try {
-        const content = 'CMA completed on ' + new Date().toLocaleDateString('en-US', {month:'long',day:'numeric',year:'numeric'}) + ' for ' + addr;
-        // Write only to property_notes (no Drive file — stays out of files dashboard).
-        // One database step (supaRest.saveNote): the old note is replaced, never lost.
-        await supaRest.saveNote(targetProp.id, 'cma', content);
-        // Update local notes cache so it shows immediately in the panel
-        lstNotes.cma = content;  // set immediately so header badge appears
-        cmaSaved.value = true;
-        _doSaveToPropertyDrive(targetProp, 'cma', 'CMA Builder', 'CMA Report', content, null).catch(()=>{});
-        setTimeout(() => { cmaSaved.value = false; }, 8000);
-        cmaLogAddress.value = '';
-      } catch(e) { showToast('Save failed: ' + (e.message || 'Unknown error'), 4000); }
-      finally { cmaSaving.value = false; }
-    }
+    // "Log CMA to This Property" (saveCMAToProperty) was removed on Oct 31, 2026: it replaced the
+    // CMA summary the builder's Save to Listing writes with one line ("CMA completed on DATE for
+    // ADDRESS"), which the campaign then printed as its CMA Summary. The builder saves the CMA.
 
     // Tool: Listing Description (Chat-based)
     const ldMessages = ref([]);
@@ -24722,6 +24670,10 @@ const CHANGELOG = [
       {
         title: 'Net Sheet: Pick Your Listing, Save to the Matching Address',
         detail: 'On a net sheet you started by voice, click the Property Location box and your listings appear. Start typing and the list narrows. Pick one and the address and unit fill in exactly as they are on the listing. If the listing was saved without its ZIP code or city, the sheet looks them up on Google and tells you it did; check them. You can still type any address, and Google suggestions still show below.\n\nWhen you press Save to Property, the window now shows only the listing at the sheet\'s address: the same street, the same unit and the same state, and the same ZIP. If one listing matches, it is already picked; press Save. If none matches, the window says so and nothing is saved, so a sheet can no longer land on the wrong property. Inside a listing, a net sheet whose address was changed to another property is not saved either, and you are told why.\n\nOn a phone, the save window now slides up over the page. Before, it opened at the very bottom of the page, out of sight.\n\nHow to use: On the net sheet, click the address box, pick your listing, fill in the figures, Calculate, then Save to Property and Save.\n\nBest practice: If the window says no listing has this address, check the unit first. Then check the listing\'s own address: a listing saved with only the seller\'s name, or without its state and ZIP, cannot be matched until you fix it on the listing. A listing missing its ZIP still matches; add the ZIP on the listing anyway, so every tool has it.'
+      },
+      {
+        title: 'CMA Builder: Up to 10 Closed Sales, One Press to Open',
+        detail: 'The CMA Builder now holds up to 10 closed sales (it was 6), along with 10 pending and 10 active. The recommended price is still the median of every closed sale\'s Indicated Value, so all of them count. In the PDF, the Adjustment Grid fits up to 6 sales on one page; with 7 to 10 it continues on the next page, with every sale numbered as on the other pages. The Methodology and your Agent Notes now always print. Before today they were left off when the page was full, and a long note could run into the footer. A CMA with 6 sales or fewer prints exactly as before.\n\nOpen CMA Builder on a listing now opens the builder in one press. The extra page with a second button is gone.\n\nLog CMA to This Property is gone. It replaced the full CMA summary on the listing with one line, which the campaign then printed. Save to Listing in the builder saves the summary and the PDF; no saved CMA had been overwritten.\n\nHow to use: On a listing, open the CMA tool and press Open CMA Builder. Add up to 10 closed sales by hand or from your Bright MLS file, then press Save to Listing.\n\nBest practice: More sales are not always better. Choose the closest, most recent and most similar sales. Each one moves the median, and each extra sale adds a column to the grid your seller reads.'
       }
     ]
   }
@@ -27368,7 +27320,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,
       osgEditOpen, osgChatSend, osgChatUndo, osgStartOver,
       // CMA
-      cmaLogAddress, saveCMAToProperty, cmaSaved, cmaSaving, lstCmaSaved,
+
       // Client Files
       isAdmin, lstGroupedByAgent, byrGroupedByAgent, lstDashRows, byrDashRows, fosGroupClosed, fosGroupToggle,
       auditRows, auditLoading, auditFilterAgent, auditFilterAction, auditLimit, auditAgents, auditLoad, auditFmtDate, auditActionStyle, auditDetailStr, propFiles, allAgentFiles, activePropFile, adminViewAgent, newPropAddress, newPropSellerName,

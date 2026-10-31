@@ -256,7 +256,6 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     ['listing description (edit box)', open + "st.lstDescEditVal = 'A description.'; await st.lstDescSave(); return true;", 'listing_remarks', 'A description.'],
     ['listing description (writer, Save to Property)', open + "st.ldOutput = 'Writer text.'; await st.ldSaveToProperty(); return true;", 'listing_remarks', 'Writer text.'],
     ['a tool saved to the listing', open + "return await st.saveToPropertyFromTool('Seller Net Sheet', 'Net Sheet', 'Net to seller: 2', null);", 'seller_net_sheet', 'Net to seller: 2'],
-    ['CMA logged to a listing', "st.supaProperties = [{ id: arg.P1, address: '1 Test St', subfolder_drive_ids: {} }]; st.lstProperties = st.supaProperties; st.cmaLogAddress = '1 Test St'; await st.saveCMAToProperty(); return true;", 'cma', null],
   ];
   for (const [name, code, sf, text] of noteCases) {
     const g = await run({}, code, { P1 });
