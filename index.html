@@ -17292,11 +17292,22 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       }
       return { ok: true, state: code, problem: '' };
     }
-    const nsAddrProblem = computed(() => nsAddressCheck().problem || '');
+    // No net sheet without a closing date (Marc, Oct 30, 2026). nsCompute() adds the
+    // property tax and HOA dues lines only when there is a closing date, so a sheet
+    // with none left them out and showed the seller a net too high by months of tax
+    // and dues. Asked after the address, by the same three buttons, in both forms.
+    function nsClosingDateCheck() {
+      const d = nsParseDate(ns.closingDate);
+      if (!d || d.getFullYear() < 2000 || d.getFullYear() > 2100) return { ok: false, problem: 'Enter the Closing Date. Without it the sheet leaves out the property tax and HOA dues, so the seller\'s net would come out too high.' };
+      return { ok: true, problem: '' };
+    }
+    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || '');
     function nsAddressOk() {
       const c = nsAddressCheck();
-      if (!c.ok) showToast(c.problem, 7000);
-      return c.ok;
+      if (!c.ok) { showToast(c.problem, 7000); return false; }
+      const d = nsClosingDateCheck();
+      if (!d.ok) { showToast(d.problem, 7000); return false; }
+      return true;
     }
     function nsDetectJurisdiction() {
       const a = ns.address.toLowerCase();
@@ -24439,6 +24450,18 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-10-30',
+    date: 'October 30, 2026',
+    title: 'Net Sheet Needs a Closing Date',
+    updates: [
+      {
+        title: 'Net Sheet Needs a Closing Date',
+        detail: 'The Seller Net Sheet now asks for the Closing Date before it calculates. Without a date the sheet left out the property tax and the HOA dues entirely, so the seller saw a net that was too high, sometimes by thousands. Calculate, Download PDF and Save to Property now stop with a red note until a date is entered. Nothing else about the math changed.\n\nHow to use: Enter the expected closing date, even if it is an estimate, along with the annual property tax and the HOA dues. Then press Calculate.\n\nBest practice: If the closing date moves, change it and calculate again before you send the sheet. The tax and HOA lines depend on the date.'
+      }
+    ]
+  }
 
 
 ];
@@ -27027,7 +27050,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
       sellerPrepSendModal, sellerPrepRecipientEmail, sellerPrepRecipientPhone, sellerPrepGenerateAndSend, sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, nsAddrProblem, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      ns, nsFmt, calcNetSheet, nsAddrProblem, nsGeneratePDFDoc, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)
