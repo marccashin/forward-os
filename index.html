@@ -614,6 +614,12 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Asset dots */
 .asset-tracker { display: flex; align-items: center; gap: 4px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--cream-mid); }
 .asset-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--cream-dark); flex-shrink: 0; transition: background 0.2s; }
+/* Save to Property on a phone (Oct 31, 2026): these three classes were used by the
+   window but defined nowhere, so on a phone it drew at the bottom of the page, below
+   everything, instead of over it. A bottom sheet over a dimmed page. */
+.save-prop-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
+.save-prop-sheet-box { background: #fff; width: 100%; max-height: 88vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.save-prop-sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: #d1d5db; margin: 0 auto 12px; }
 .asset-dot.filled { background: var(--gold); }
 
 /* Agent group header */
@@ -3033,10 +3039,14 @@ body {
               <div style="display:grid;grid-template-columns:1fr 120px;gap:12px;">
                 <div class="form-row" style="position:relative;">
                   <label>Property Location</label>
-                  <input id="ns-address-input" v-model="ns.address" type="text" placeholder="Start typing an address..." @input="nsOnAddressInput" autocomplete="off"/>
-                  <div v-if="ns._suggestions.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:220px;overflow-y:auto;">
+                  <input id="ns-address-input" v-model="ns.address" type="text" placeholder="Start typing an address or pick your listing..." @input="nsOnAddressInput" @focus="nsOnAddressFocus" @blur="nsOnAddressBlur" autocomplete="off"/>
+                  <div v-if="ns._suggestions.length || ns._listingSugs.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:300px;overflow-y:auto;">
+                    <template v-if="ns._listingSugs.length">
+                      <div style="padding:8px 14px 4px;font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#9ca3af;">Your listings</div>
+                      <div v-for="p in ns._listingSugs" :key="'l' + p.id" data-ns-listing-sug @mousedown.prevent="nsPickListing(p)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:var(--navy);font-weight:600;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ p.address }}</div>
+                    </template>
                     <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
-                    <div style="padding:4px 14px 6px;font-size:9px;color:#9ca3af;text-align:right;">Powered by Google</div>
+                    <div v-if="ns._suggestions.length" style="padding:4px 14px 6px;font-size:9px;color:#9ca3af;text-align:right;">Powered by Google</div>
                   </div>
                 </div>
                 <div class="form-row"><label>Unit #</label><input v-model="ns.unit" type="text" placeholder="If Applicable"/></div>
@@ -8808,9 +8818,9 @@ body {
       @click.self="cancelSaveToProp">
       <div :class="isMobile ? 'save-prop-sheet-box' : 'card'" :style="isMobile ? '' : 'width:460px;max-width:92vw;'">
         <div v-if="isMobile" class="save-prop-sheet-handle"></div>
-        <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">Save to Property File</h3>
+        <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">{{ saveToPropData && saveToPropData.match ? 'Save Net Sheet to Its Listing' : 'Save to Property File' }}</h3>
         <p style="font-size:12px;color:#9ca3af;margin:0 0 14px;">
-          {{ saveToPropData && saveToPropData.toolName ? saveToPropData.toolName + ' output will route to the correct subfolder automatically.' : 'Select a property to save this resource.' }}
+          {{ saveToPropData && saveToPropData.match ? 'A net sheet is saved only on the listing at its own address.' : (saveToPropData && saveToPropData.toolName ? saveToPropData.toolName + ' output will route to the correct subfolder automatically.' : 'Select a property to save this resource.') }}
         </p>
 
         <!-- Manual upload: subfolder picker (only when no toolName / manual uploads) -->
@@ -8826,8 +8836,23 @@ body {
           </select>
         </div>
 
+        <!-- A net sheet goes only to the listing at its own address (Oct 31, 2026) -->
+        <div v-if="saveToPropData && saveToPropData.match" data-save-match style="margin-bottom:14px;">
+          <div style="font-size:12px;color:#374151;margin-bottom:10px;">Sheet address: <strong>{{ saveToPropData.match.address }}<span v-if="saveToPropData.match.unit">, Unit {{ saveToPropData.match.unit }}</span></strong></div>
+          <div v-if="saveToPropMatches.length" style="max-height:220px;overflow-y:auto;">
+            <div v-for="sp in saveToPropMatches" :key="sp.id" data-save-match-row
+              @click="saveToPropSelected = sp.id"
+              :style="{padding:'12px 14px', borderRadius:'10px', cursor:'pointer', border: saveToPropSelected === sp.id ? '2px solid var(--navy)' : '1.5px solid #e5e7eb', background: saveToPropSelected === sp.id ? '#f0f4ff' : '#fff', marginBottom:'8px'}">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:14px;font-weight:600;color:var(--navy);">{{ sp.address }}</div>
+              <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ sp.agent_name || '' }}</div>
+            </div>
+          </div>
+          <div v-else-if="lstLoading" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;">Loading your listings...</div>
+          <div v-else data-save-match-none style="padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">No listing in FORWARD OS has this address, so the net sheet was not saved. Check the street, unit and ZIP on the sheet (pick the listing from the address box to fill them exactly). If the listing's own address is wrong, fix it on the listing first.</div>
+        </div>
+
         <!-- Supabase property list (primary) -->
-        <div v-if="supaProperties.length > 0" style="margin-bottom:14px;max-height:220px;overflow-y:auto;">
+        <div v-if="supaProperties.length > 0 && !(saveToPropData && saveToPropData.match)" style="margin-bottom:14px;max-height:220px;overflow-y:auto;">
           <div v-for="sp in supaProperties" :key="sp.id"
             @click="saveToPropSelected = sp.id; saveToPropNewAddr = '';"
             :style="{padding:'12px 14px', borderRadius:'10px', cursor:'pointer', border: saveToPropSelected === sp.id ? '2px solid var(--navy)' : '1.5px solid #e5e7eb', background: saveToPropSelected === sp.id ? '#f0f4ff' : '#fff', marginBottom:'8px', transition:'all .15s'}">
@@ -8842,10 +8867,10 @@ body {
             </div>
           </div>
         </div>
-        <div v-else-if="supaPropsLoading" style="font-family:'Cormorant Garamond',serif;text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Loading properties...</div>
+        <div v-else-if="supaPropsLoading && !(saveToPropData && saveToPropData.match)" style="font-family:'Cormorant Garamond',serif;text-align:center;padding:20px;color:#9ca3af;font-size:13px;">Loading properties...</div>
 
         <!-- Fallback: local property files when no Supabase results -->
-        <div v-if="propFiles.length > 0 && supaProperties.length === 0 && !supaPropsLoading" style="margin-bottom:14px;max-height:220px;overflow-y:auto;">
+        <div v-if="propFiles.length > 0 && supaProperties.length === 0 && !supaPropsLoading && !(saveToPropData && saveToPropData.match)" style="margin-bottom:14px;max-height:220px;overflow-y:auto;">
           <div style="font-size:10px;color:#9ca3af;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px;">Local property files</div>
           <div v-for="pf in propFiles" :key="pf.id"
             @click="saveToPropSelected = pf.id; saveToPropNewAddr = '';"
@@ -8855,15 +8880,15 @@ body {
           </div>
         </div>
 
-        <!-- Or create new -->
-        <div style="border-top:1px solid #e5e7eb;padding-top:14px;">
+        <!-- Or create new (not for a net sheet: that file lived only on this device) -->
+        <div v-if="!(saveToPropData && saveToPropData.match)" style="border-top:1px solid #e5e7eb;padding-top:14px;">
           <label style="font-size:12px;font-weight:600;margin-bottom:6px;display:block;">Or create a new property file</label>
           <input v-model="saveToPropNewAddr" placeholder="e.g. 456 Oak Ave. Unit 3B" @focus="saveToPropSelected = null" style="width:100%;">
         </div>
         <div style="display:flex;gap:10px;margin-top:16px;">
           <button class="btn-outline" @click="cancelSaveToProp" style="flex:1;">Cancel</button>
           <button class="btn-navy" @click="confirmSaveToPropDrive"
-            :disabled="saveToPropUploading || (!saveToPropSelected && !saveToPropNewAddr.trim()) || (saveToPropData && !saveToPropData.toolName && !saveToPropManualSubfolder)"
+            :disabled="saveToPropUploading || (!saveToPropSelected && !saveToPropNewAddr.trim()) || (saveToPropData && !saveToPropData.toolName && !saveToPropManualSubfolder) || (saveToPropData && saveToPropData.match && !saveToPropMatches.some(p => p.id === saveToPropSelected))"
             style="flex:2;">
             <span class="spinner" v-if="saveToPropUploading"></span>
             {{ saveToPropUploading ? 'Uploading...' : 'Save to Property' }}
@@ -9516,6 +9541,45 @@ function dpSameAddress(a, b) {
   const [short, long] = x.length <= y.length ? [x, y] : [y, x];
   if (short.length < 3 || !/\d/.test(short[0])) return false;
   return short.every((tok, i) => long[i] === tok);
+}
+// A net sheet is saved only on the listing at its own address (Marc, Oct 31, 2026:
+// "The addresses should match."). Unlike dpSameAddress (a prefix rule for matching the
+// Command Center), this is strict: the same house number and street, the same unit
+// (none = none), the same state, and the same ZIP when both have one. A DC quadrant
+// may be missing on one side (listings often drop it) but never different.
+// fosAddrParts reads an address the way fosSplitListingAddress splits it; a unit written
+// in the street part (Unit 610, Apt 4, #610) is taken out of the street.
+const FOS_QUADS = ['nw', 'ne', 'sw', 'se'];
+function fosAddrParts(addr, unit) {
+  const raw = String(addr || '').replace(/\s+/g, ' ').trim().replace(/,?\s*(usa|united states(?: of america)?)\.?$/i, '').trim();
+  const sp = fosSplitListingAddress(raw);
+  let streetRaw = String(sp.street || '').trim();
+  let unitRaw = String(unit || '').trim();
+  const um = streetRaw.match(/[\s,]+(?:(?:unit|apt|apartment|suite|ste)\.?\s*#?\s*|#\s*)([a-z0-9][a-z0-9-]*)\s*$/i);
+  if (um) { if (!unitRaw) unitRaw = um[1]; streetRaw = streetRaw.slice(0, um.index).replace(/[\s,]+$/, ''); }
+  unitRaw = unitRaw.replace(/^(?:unit|apt|apartment|suite|ste)\.?\s*/i, '').replace(/^#\s*/, '').trim();
+  const toks = dpAddrTokens(streetRaw);
+  let quad = '';
+  if (toks.length > 2 && FOS_QUADS.indexOf(toks[toks.length - 1]) > -1) quad = toks.pop();
+  return {
+    streetRaw: streetRaw, unitRaw: unitRaw, unit: unitRaw.toLowerCase(),
+    num: toks[0] || '', street: toks.join(' '), quad: quad,
+    city: String(sp.city || '').trim(), state: String(sp.state || '').toUpperCase(), zip: String(sp.zip || '').slice(0, 5)
+  };
+}
+function fosSheetListingMatch(sheetAddr, sheetUnit, sheetState, listing) {
+  const a = fosAddrParts(sheetAddr, sheetUnit);
+  const b = fosAddrParts(listing && listing.address, '');
+  const st = String(sheetState || a.state || '').toUpperCase();
+  const lst = b.state || fosMarketCode(listing && listing.market);
+  if (!/^\d/.test(b.num)) return { ok: false, why: 'This listing has no street address in FORWARD OS.' };
+  if (!lst && !b.zip) return { ok: false, why: 'This listing has no state or ZIP in FORWARD OS. Add them to its address first.' };
+  if (st && lst && st !== lst) return { ok: false, why: 'This listing is in ' + lst + ' and the sheet is in ' + st + '.' };
+  if (a.street !== b.street) return { ok: false, why: 'The street address is different.' };
+  if (a.quad && b.quad && a.quad !== b.quad) return { ok: false, why: 'The quadrant is different (' + a.quad.toUpperCase() + ' on the sheet, ' + b.quad.toUpperCase() + ' on the listing).' };
+  if (a.unit !== b.unit) return { ok: false, why: 'The unit is different (' + (a.unit ? '#' + a.unitRaw : 'none') + ' on the sheet, ' + (b.unit ? '#' + b.unitRaw : 'none') + ' on the listing).' };
+  if (a.zip && b.zip && a.zip !== b.zip) return { ok: false, why: 'The ZIP code is different (' + a.zip + ' on the sheet, ' + b.zip + ' on the listing).' };
+  return { ok: true, why: '' };
 }
 // Open To Close may hold one address more than once (138 U St NE had three files, Oct 2026).
 // The newest file (highest id) is the live one (Marc, Oct 17, 2026).
@@ -11574,7 +11638,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!data) return;
       // Determine target property
       let targetProp = null;
-      if (saveToPropSelected.value) {
+      if (data.match) {
+        targetProp = saveToPropMatches.value.find(p => p.id === saveToPropSelected.value) || null;
+        if (!targetProp) { showToast('Not saved. Pick the listing at this net sheet\'s address.', 6000); return; }
+      } else if (saveToPropSelected.value) {
         targetProp = supaProperties.value.find(p => p.id === saveToPropSelected.value);
         if (!targetProp) { confirmSaveToProp(); return; } // Fallback to local
       } else if (saveToPropNewAddr.value.trim()) {
@@ -15824,13 +15891,29 @@ async function lstSubmitToPipeline() {
           return;
         }
       }
-      saveToPropData.value = { type, label, data, pdfData: pdfData || null, toolName: toolName || null, direct: !!askAlways };
+      const match = askAlways && typeof askAlways === 'object' ? askAlways : null;
+      saveToPropData.value = { type, label, data, pdfData: pdfData || null, toolName: toolName || null, direct: !!askAlways, match };
       saveToPropSelected.value = null;
       saveToPropNewAddr.value = '';
       saveToPropManualSubfolder.value = '';
       showSaveToProp.value = true;
+      if (match) {
+        // Only the listing at the sheet's address is offered; when there is exactly one
+        // it is picked for the agent (they still press Save).
+        const openNo = ++saveToPropOpenNo;
+        saveToPropData.value.openNo = openNo;
+        const pick = () => { const m = saveToPropMatches.value; if (m.length === 1 && showSaveToProp.value && saveToPropData.value && saveToPropData.value.openNo === openNo && !saveToPropSelected.value) saveToPropSelected.value = m[0].id; };
+        if (!lstProperties.value.length) Promise.resolve(lstFetchProperties()).then(pick, () => {}); else pick();
+        return;
+      }
       fetchSupaProperties();
     }
+    let saveToPropOpenNo = 0;
+    const saveToPropMatches = computed(() => {
+      const d = saveToPropData.value;
+      if (!d || !d.match) return [];
+      return fosMineFirst(lstProperties.value).filter(p => fosSheetListingMatch(d.match.address, d.match.unit, d.match.state, p).ok);
+    });
     // Mirror a saved resource to the admin's namespace so Marc sees all agents' work
     function mirrorResourceToAdmin(agentPropFileId, agentNameStr, resourceData) {
       if (agentNameStr === ADMIN_AGENT) return; // Admin saves to their own namespace already
@@ -17199,7 +17282,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _propId:null, _voicePrefill:false, nsTaxH1Touched:false, nsTaxH2Touched:false,
       result:null, breakdown:[],
       _showLoans:false, _showComp:false, _showConcession:false, _showHOA:false, _showTax:false, _showOther:false,
-      _suggestions:[],
+      _suggestions:[], _listingSugs:[],
       _detectedCounty:'', _detectedState:''
     });
     // HOA fee from the listing's saved MLS Data note (line 'HOA Fee : <value>').
@@ -17366,7 +17449,31 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         }
       } catch(e) { console.warn('Google Places init skipped:', e); }
     }
+    // The standalone net sheet suggests the agent's own listings as they type (Marc,
+    // Oct 31, 2026: "Make this easy"), so the address matches the listing it will be
+    // saved on. lstProperties is already the agent's own and co-listed listings (all of
+    // them for Marc and Operations), the agent's own first. An empty box shows only the
+    // agent's own. Never on a sheet opened from a listing: its address is that listing's.
+    function nsListingSuggestions(q) {
+      if (ns._propId) return [];
+      if (!lstProperties.value.length && !lstLoading.value) lstFetchProperties();
+      const all = fosMineFirst(lstProperties.value).filter(p => /^\s*\d/.test(String(p.address || '')));
+      const words = String(q || '').toLowerCase().replace(/[.,#]/g, ' ').split(/\s+/).filter(Boolean);
+      if (!words.length) { const mine = all.filter(fosIsMine); return (mine.length ? mine : all).slice(0, 8); }
+      return all.filter(p => { const a = ' ' + String(p.address || '').toLowerCase().replace(/[.,#]/g, ' ') + ' '; return words.every(w => a.indexOf(w) > -1); }).slice(0, 6);
+    }
+    function nsOnAddressFocus() { ns._listingSugs = nsListingSuggestions(ns.address); }
+    function nsOnAddressBlur() { setTimeout(() => { ns._listingSugs = []; }, 150); }
+    function nsPickListing(p) {
+      const parts = fosAddrParts(p.address, '');
+      const st = parts.state || fosMarketCode(p.market);
+      ns.address = [parts.streetRaw, parts.city, [st, parts.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+      ns.unit = parts.unitRaw;
+      ns._suggestions = []; ns._listingSugs = [];
+      nsDetectJurisdiction();
+    }
     function nsOnAddressInput() {
+      ns._listingSugs = nsListingSuggestions(ns.address);
       nsDetectJurisdiction(); // regex fallback always runs
       clearTimeout(nsSearchTimer);
       const q = ns.address.trim();
@@ -18143,9 +18250,18 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       // in the session, with only a toast naming it.
       const lp = lstActiveProp.value;
       const ownListing = !!(ns._propId && lp && lp.id === ns._propId && view.value === 'listing-detail');
+      // The sheet's address must be the listing's (Marc, Oct 31, 2026: "The addresses
+      // should match."). The window lists only listings at this address.
+      const sheetState = ns.jurisdiction === 'dc' ? 'DC' : String(ns.jurisdiction).indexOf('md-') === 0 ? 'MD' : String(ns.jurisdiction).indexOf('va-') === 0 ? 'VA' : '';
       if (!ownListing) {
         const textSummaryP = ns.breakdown.map(b => b.label + ': ' + (b.amount < 0 ? '+' + nsFmt(-b.amount) + ' (credit)' : '-' + nsFmt(b.amount))).join('\n') + '\n\nNet Proceeds: ' + nsFmt(ns.result);
-        openSaveToPropModal('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummaryP, nsGetPDFBase64(), 'Seller Net Sheet', true);
+        openSaveToPropModal('Seller Net Sheet', (ns.address || 'Net Sheet') + ' — ' + nsFmt(ns.result), textSummaryP, nsGetPDFBase64(), 'Seller Net Sheet', { address: ns.address, unit: ns.unit, state: sheetState });
+        return;
+      }
+      const own = fosSheetListingMatch(ns.address, ns.unit, sheetState, lp);
+      if (!own.ok) {
+        nsSaved.value = false;
+        showToast('Not saved. This net sheet\'s address is not this listing\'s address. ' + own.why + ' Correct the address on the sheet, or fix the listing\'s address first.', 9000);
         return;
       }
       nsSaving.value = true;
@@ -24562,6 +24678,10 @@ const CHANGELOG = [
       {
         title: 'Two Typos Fixed',
         detail: 'The property tax warning on Maryland and Virginia net sheets printed a stray code, "buyer\\u2019s", where it meant "buyer\'s". The Listing Description Writer did the same in its over-the-limit note. Both now read normally. Nothing else changed.\n\nHow to use: Nothing to do.\n\nBest practice: If you ever see a code like that on a screen or a PDF, send a screenshot to Marc.'
+      },
+      {
+        title: 'Net Sheet: Pick Your Listing, Save to the Matching Address',
+        detail: 'In the Net Sheet under Just Listed, click the Property Location box and your listings appear. Start typing and the list narrows. Pick one and the address and unit fill in exactly as they are on the listing. You can still type any address, and Google suggestions still show below.\n\nWhen you press Save to Property, the window now shows only the listing at the sheet\'s address: the same street, the same unit and the same state, and the same ZIP. If one listing matches, it is already picked; press Save. If none matches, the window says so and nothing is saved, so a sheet can no longer land on the wrong property. Inside a listing, a net sheet whose address was changed to another property is not saved either, and you are told why.\n\nOn a phone, the save window now slides up over the page. Before, it opened at the very bottom of the page, out of sight.\n\nHow to use: Net Sheet, click the address box, pick your listing, fill in the figures, Calculate, then Save to Property and Save.\n\nBest practice: If the window says no listing has this address, check the unit first. Then check the listing\'s own address: a listing saved with only the seller\'s name, or without its state and ZIP, cannot be matched until you fix it on the listing.'
       }
     ]
   }
@@ -26340,7 +26460,7 @@ async function dismissUpdates() {
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
             _showHOA:false, _showTax:false, _showOther:false,
-            _suggestions:[], _detectedCounty:'', _detectedState:''
+            _suggestions:[], _listingSugs:[], _detectedCounty:'', _detectedState:''
           });
           break;
         case 'cash-to-close':
@@ -27153,7 +27273,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osvVideos, osvLoading, osvLoadError, osvEditing, osvEditIdx, osvDraft, osvDraftError, osvSaving, osvOpenId,
       osvEmbedUrl, osvLoad, osvStartAdd, osvStartEdit, osvCancel, osvSaveDraft, osvDelete, osvMove, sellerPrepPDF,
       sellerPrepSaveToProperty, sellerPrepSaved, sellerPrepSaving, sellerPrepOpenDeliverable, lstExportPreListingPDF,
-      ns, nsFmt, calcNetSheet, nsAddrProblem, nsGeneratePDFDoc, ctcDownPctNow, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
+      ns, nsFmt, calcNetSheet, nsAddrProblem, nsGeneratePDFDoc, ctcDownPctNow, NS_JURISDICTIONS, NS_STATES, MD_COUNTY_OPTIONS, nsStateSel, nsMDUnpaidLikely, nsDetectJurisdiction, nsTaxPeriods, nsTaxHalfApplies, nsOnAddressInput, nsOnAddressFocus, nsOnAddressBlur, nsPickListing, saveToPropMatches, nsSelectSuggestion, nsDownloadPDF, nsSaveToProperty, nsSaved, nsSaving, nsCurrencyBlur, nsCurrencyFocus, nsCurrencyInput,
       marketRegions,
       pr, prDom, prMilestones,
       // Just Listed (legacy)

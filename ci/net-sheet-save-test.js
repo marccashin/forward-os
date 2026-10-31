@@ -20,10 +20,15 @@ const { chromium } = require('playwright');
 const dir = process.argv[2];
 const VUE = fs.readFileSync(require.resolve('vue/dist/vue.global.js'), 'utf8');
 const JSPDF = fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js'), 'utf8');
+const C = '44444444-4444-4444-8444-444444444444', D = '55555555-5555-4555-8555-555555555555', E = '66666666-6666-4666-8666-666666666666', G = '77777777-7777-4777-8777-777777777777';
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222', BUY = '33333333-3333-4333-8333-333333333333';
 const PROPS = [
   { id: A, address: '100 Alpha Ct NW, Washington, DC 20001', seller_name: 'Seller A', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-10-01T00:00:00Z' },
-  { id: B, address: '200 Bravo St NW, Washington, DC 20001', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-30T00:00:00Z' }
+  { id: B, address: '200 Bravo St NW, Washington, DC 20001', seller_name: 'Seller B', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-30T00:00:00Z' },
+  { id: C, address: '300 Charlie St NW, Unit 4, Washington, DC 20001', seller_name: 'Seller C', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-29T00:00:00Z' },
+  { id: D, address: '300 Charlie St NW, Unit #5, Washington, DC 20001', seller_name: 'Seller D', agent_name: 'Marc Cashin', market: 'DC', status: 'draft', created_at: '2026-09-28T00:00:00Z' },
+  { id: E, address: '2326 Fort Dr, Alexandria, VA, 22303', seller_name: 'Seller E', agent_name: 'Marc Cashin', market: 'VA', status: 'draft', created_at: '2026-09-27T00:00:00Z' },
+  { id: G, address: '500 Echo St NW, Washington, DC 20001', seller_name: 'Seller G', agent_name: 'Ashling McGowan', market: 'DC', status: 'draft', created_at: '2026-09-26T00:00:00Z' }
 ];
 const MLS = ['=== MLS DATA ===', 'Property Address : x', 'List Price       : $900,000', 'Bedrooms         : 3', 'Bathrooms        : 2', 'Square Footage   : 1,600 sq ft', 'Property Type    : Condo'].join('\n');
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
@@ -106,16 +111,16 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     st.calcNetSheet(); await w(150);
     const noteA = st.lstNotes.seller_net_sheet || '';
     await st.nsSaveToProperty(); await w(300);
-    const after = { picker: st.showSaveToProp, direct: !!(st.saveToPropData && st.saveToPropData.direct), sentNow: 0 };
+    const after = { picker: st.showSaveToProp, direct: !!(st.saveToPropData && st.saveToPropData.direct), picked: st.saveToPropSelected, offered: (st.saveToPropMatches || []).map(p => p.id), rows: Array.from(document.querySelectorAll('[data-save-match-row]')).map(e => e.textContent.trim()), createBox: /Or create a new property file/i.test(document.body.innerText) };
     return { after, noteA, activeProp: st.lstActiveProp && st.lstActiveProp.id, buyer: !!buyer, pfCount: pf.length };
   }, FILL);
   ok(r2.after.picker === true && r2.after.direct === true && !sent.some(x => /save_property_note|listing-files|upload-file/.test(x.u)), 'with listing A (and a buyer) opened earlier, Save opens the which-listing window and sends nothing', [r2, sent.map(x => x.u)]);
+  ok(r2.after.offered.length === 1 && r2.after.offered[0] === B && r2.after.picked === B && r2.after.rows.length === 1 && /200 Bravo/.test(r2.after.rows[0]) && !r2.after.createBox, 'the window offers only the listing at the sheet\'s address (B), already picked, and no "create a new property file" box', r2.after);
   const r3 = await run(async (B) => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
     const w = (ms) => new Promise(r => setTimeout(r, ms));
-    if (!(st.supaProperties || []).some(p => p.id === B)) st.supaProperties = st.lstProperties.slice();
-    st.saveToPropSelected = B; await w(50);
-    await st.confirmSaveToPropDrive(); await w(400);
+    const btn = Array.from(document.querySelectorAll('button')).filter(b => b.offsetParent && /^\s*Save to Property\s*$/.test(b.textContent)).pop();
+    btn.click(); await w(500);
     return { picker: st.showSaveToProp, noteOnScreen: st.lstNotes.seller_net_sheet || '', gold: st.goldToast.show ? st.goldToast.msg : '', toast: st.toast.show ? st.toast.msg : '' };
   }, B);
   const toB = sent.filter(x => /save_property_note/.test(x.u)).map(x => JSON.parse(x.body));
@@ -123,6 +128,99 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(toB.length === 1 && toB[0].p_property_id === B && toB[0].p_subfolder === 'seller_net_sheet' && /Marc Cashin/.test(JSON.stringify(toB[0])), 'picking B saves the net sheet note to B with the agent\'s name', toB);
   ok(pdfB.length === 1 && pdfB[0].u.indexOf('/listing-files/' + B + '/') >= 0 && !sent.some(x => /upload-file|googleapis/.test(x.u)), 'and files the PDF in B\'s own folder, not through the old Drive route', sent.map(x => x.m + ' ' + x.u));
   ok(r3.noteOnScreen === r2.noteA && r3.picker === false, 'listing A\'s note on screen is untouched and the window closes', r3);
+
+  console.log('2b. Which listings match a sheet (hand-written answers)');
+  const CASES = [
+    ['200 Bravo St NW, Washington, DC 20001', '', 'DC', '200 Bravo St NW, Washington, DC 20001', 'DC', true, 'same address'],
+    ['200 Bravo Street Northwest, Washington, DC 20001', '', 'DC', '200 Bravo St NW, Washington, DC 20001', 'DC', true, 'Street/Northwest written out'],
+    ['200 Bravo St NW, Washington, DC 20002', '', 'DC', '200 Bravo St NW, Washington, DC 20001', 'DC', false, 'different ZIP'],
+    ['201 Bravo St NW, Washington, DC 20001', '', 'DC', '200 Bravo St NW, Washington, DC 20001', 'DC', false, 'different house number'],
+    ['300 Charlie St NW, Washington, DC 20001', '4', 'DC', '300 Charlie St NW, Unit 4, Washington, DC 20001', 'DC', true, 'unit in the Unit box'],
+    ['300 Charlie St NW, Washington, DC 20001', '4', 'DC', '300 Charlie St NW, Unit #5, Washington, DC 20001', 'DC', false, 'unit 4 is not unit 5'],
+    ['300 Charlie St NW Apt 4, Washington, DC 20001', '', 'DC', '300 Charlie St NW, Unit 4, Washington, DC 20001', 'DC', true, 'Apt 4 in the street = Unit 4'],
+    ['300 Charlie St NW #5, Washington, DC 20001', '', 'DC', '300 Charlie St NW, Unit #5, Washington, DC 20001', 'DC', true, '#5 = Unit #5'],
+    ['300 Charlie St NW, Washington, DC 20001', '', 'DC', '300 Charlie St NW, Unit 4, Washington, DC 20001', 'DC', false, 'no unit on the sheet, unit 4 on the listing'],
+    ['2326 Fort Dr, Washington, DC 20001', '', 'DC', '2326 Fort Dr, Alexandria, VA, 22303', 'VA', false, 'a DC sheet on a Virginia listing (the staging test)'],
+    ['2326 Fort Dr, Alexandria, VA 22303', '', 'VA', '2326 Fort Dr, Alexandria, VA, 22303', 'VA', true, 'Virginia, commas differ'],
+    ['400 Delta St NE, Washington, DC 20002', '', 'DC', '400 Delta St, Washington, DC 20002', 'DC', true, 'quadrant missing on the listing'],
+    ['400 Delta St SE, Washington, DC 20002', '', 'DC', '400 Delta St NE, Washington, DC 20002', 'DC', false, 'SE is not NE'],
+    ['400 Delta St NE, Washington, DC 20002', '', 'DC', 'Joseph Abbatiello', 'DC', false, 'a listing named for its seller'],
+    ['123 Main St, Bethesda, MD 20814', '', 'MD', '123 Main St', '', false, 'a listing with no state or ZIP'],
+    ['123 Main St, Bethesda, MD 20814', '', 'MD', '123 Main St', 'Maryland', true, 'state from the listing\'s market'],
+    ['123 Main St, Bethesda, MD 20814', '', 'MD', '123 Main St', 'Virginia', false, 'market in another state']
+  ];
+  const got = await run((cases) => cases.map(c => (window.fosSheetListingMatch ? window.fosSheetListingMatch(c[0], c[1], c[2], { address: c[3], market: c[4] }) : { ok: null })), CASES);
+  CASES.forEach((c, i) => ok(got[i].ok === c[5], (c[5] ? 'matches: ' : 'refuses: ') + c[6], got[i]));
+
+  console.log('4. Typing in the address box suggests the agent\'s own listings');
+  sent.length = 0;
+  await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const w = (ms) => new Promise(r => setTimeout(r, ms));
+    try { st.closePDFViewer(); } catch (e) {} try { st.pdfViewClose(); } catch (e) {}
+    st.showSaveToProp = false; st.view = 'just-listed'; await w(150); st.lpOpen('netsheet'); await w(150);
+    Object.assign(st.ns, { address: '', unit: '', result: null }); await w(100);
+  });
+  await page.click('#ns-address-input'); await page.waitForTimeout(200);
+  const onFocus = await page.$$eval('[data-ns-listing-sug]', els => els.map(e => e.textContent.trim()));
+  ok(onFocus.some(t => /100 Alpha/.test(t)) && onFocus.some(t => /2326 Fort/.test(t)) && !onFocus.some(t => /500 Echo/.test(t)), 'clicking the empty box lists Marc\'s own listings and not another agent\'s', onFocus);
+  await page.type('#ns-address-input', '300 char', { delay: 20 }); await page.waitForTimeout(200);
+  const typed = await page.$$eval('[data-ns-listing-sug]', els => els.map(e => e.textContent.trim()));
+  ok(typed.length === 2 && typed.every(t => /300 Charlie/.test(t)), 'typing "300 char" narrows it to the two Charlie St units', typed);
+  await page.click('[data-ns-listing-sug]:has-text("Unit 4")'); await page.waitForTimeout(200);
+  const picked = await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; return { address: st.ns.address, unit: st.ns.unit, j: st.ns.jurisdiction, open: document.querySelectorAll('[data-ns-listing-sug]').length }; });
+  ok(picked.address === '300 Charlie St NW, Washington, DC 20001' && picked.unit === '4' && picked.j === 'dc' && picked.open === 0, 'picking it fills the address and Unit 4 exactly and closes the list', picked);
+  await page.fill('#ns-address-input', ''); await page.type('#ns-address-input', 'echo', { delay: 20 }); await page.waitForTimeout(200);
+  const typedEcho = await page.$$eval('[data-ns-listing-sug]', els => els.map(e => e.textContent.trim()));
+  ok(typedEcho.length === 1 && /500 Echo/.test(typedEcho[0]), 'Marc can still find a teammate\'s listing by typing it', typedEcho);
+  await page.click('[data-ns-listing-sug]'); await page.waitForTimeout(100);
+  await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns._listingSugs = []; });
+  await page.click('#ns-address-input'); await page.fill('#ns-address-input', ''); await page.type('#ns-address-input', '300 char', { delay: 10 }); await page.waitForTimeout(150);
+  await page.click('[data-ns-listing-sug]:has-text("Unit 4")'); await page.waitForTimeout(150);
+  const r4 = await run(async (FILL) => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const w = (ms) => new Promise(r => setTimeout(r, ms));
+    Object.assign(st.ns, FILL); await w(50); st.calcNetSheet(); await w(150);
+    await st.nsSaveToProperty(); await w(300);
+    const o = { picked: st.saveToPropSelected, offered: (st.saveToPropMatches || []).map(p => p.id) };
+    const btn = Array.from(document.querySelectorAll('button')).filter(b => b.offsetParent && /^\s*Save to Property\s*$/.test(b.textContent)).pop();
+    btn.click(); await w(500);
+    return o;
+  }, FILL);
+  const toC = sent.filter(x => /save_property_note/.test(x.u)).map(x => JSON.parse(x.body));
+  ok(r4.offered.length === 1 && r4.picked === C && toC.length === 1 && toC[0].p_property_id === C && sent.some(x => x.u.indexOf('/listing-files/' + C + '/') >= 0), 'a sheet filled by picking Unit 4 offers only Unit 4, and Save files it there', [r4, toC.map(x => x.p_property_id)]);
+
+  console.log('5. No listing at the address: nothing is saved');
+  sent.length = 0;
+  const r5 = await run(async (args) => {
+    const [FILL, A] = args;
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const w = (ms) => new Promise(r => setTimeout(r, ms));
+    Object.assign(st.ns, FILL, { address: '999 Nowhere St NW, Washington, DC 20001', unit: '', jurisdiction: 'dc' }); await w(50);
+    st.calcNetSheet(); await w(150);
+    await st.nsSaveToProperty(); await w(300);
+    const btn = Array.from(document.querySelectorAll('button')).filter(b => b.offsetParent && /^\s*Save to Property\s*$/.test(b.textContent)).pop();
+    const o = { picker: st.showSaveToProp, none: !!document.querySelector('[data-save-match-none]'), rows: document.querySelectorAll('[data-save-match-row]').length, disabled: btn.disabled };
+    st.saveToPropSelected = A; await st.confirmSaveToPropDrive(); await w(300);
+    o.toast = st.toast.show ? st.toast.msg : ''; st.showSaveToProp = false;
+    return o;
+  }, [FILL, A]);
+  ok(r5.picker && r5.none && r5.rows === 0 && r5.disabled && /Not saved/.test(r5.toast) && !sent.some(x => /save_property_note|listing-files\/[0-9a-f]/.test(x.u)), 'the window says no listing has this address, Save is off, and forcing listing A still saves nothing', [r5, sent.map(x => x.u)]);
+
+  console.log('6. Inside a listing, a sheet changed to another address is not saved');
+  sent.length = 0;
+  const r6 = await run(async (FILL) => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const w = (ms) => new Promise(r => setTimeout(r, ms));
+    st.view = 'listing-detail'; await st.lstOpenProperty(st.lstProperties.find(p => p.address.startsWith('100'))); await w(200);
+    st.lstOpenTool('netsheet'); await w(200);
+    Object.assign(st.ns, FILL); st.calcNetSheet(); await w(100);
+    const okBefore = st.ns._propId === st.lstActiveProp.id;
+    st.ns.address = '200 Bravo St NW, Washington, DC 20001'; await w(50);
+    await st.nsSaveToProperty(); await w(300);
+    return { okBefore, toast: st.toast.show ? st.toast.msg : '', lastMsg: st.toast.msg, picker: st.showSaveToProp, view: st.view, addr: st.ns.address, res: st.ns.result, saved: st.nsSaved };
+  }, FILL);
+  ok(r6.okBefore && /^Not saved\. This net sheet's address is not this listing's address\. The street address is different/.test(r6.lastMsg) && r6.saved === false && !r6.picker && !sent.some(x => /save_property_note|listing-files\/[0-9a-f]/.test(x.u)), 'listing A\'s sheet typed over with B\'s address saves nothing and says why', [r6, sent.map(x => x.u)]);
 
   console.log('3. Tax wording');
   const words = await run(async () => {
