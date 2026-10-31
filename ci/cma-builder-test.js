@@ -725,6 +725,25 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(o.url === '/', 'and the address bar is cleaned up', o.url);
   await page.context().close();
 
+  // One press (Marc, Oct 31, 2026): the listing's own CMA button opens the builder. It used to
+  // go to an in-between page with a second Open CMA Builder button.
+  page = await os('Charlotte Lee', '/?listing=' + PROP_ID);
+  await page.evaluate(() => { window.__opened = []; window.open = (u, t) => { window.__opened.push([u, t]); return null; }; const st = document.querySelector('#app').__vue_app__._instance.setupState; st.lstToolOpen = 'cma'; });
+  await page.waitForTimeout(300);
+  const cmaPanel = await page.evaluate(() => { const b = document.querySelector('[data-cma-open]'); const panel = b ? b.closest('.subfolder-panel') || b.parentElement : null; return { btn: !!b, text: panel ? panel.innerText : '' }; });
+  await page.click('[data-cma-open]'); await page.waitForTimeout(300);
+  o = await osState(page);
+  const opened = await page.evaluate(() => window.__opened);
+  ok(cmaPanel.btn && opened.length === 1 && opened[0][0] === '/cma-tool.html' && o.view === 'listing-detail', 'one press of Open CMA Builder on the listing opens the builder (no in-between page)', [opened, o.view]);
+  ok(/up to 10 closed sales, 10 pending and 10 active/.test(cmaPanel.text) && !/5-step|wizard|Log CMA|Up to 5/i.test(o.text), 'the listing says what the builder holds (10 closed, 10 pending, 10 active); no 5-step wizard and no Log CMA box anywhere', cmaPanel.text.slice(0, 300));
+  await page.context().close();
+  page = await os('Charlotte Lee', '/');
+  await page.evaluate(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.view = 'cma'; });
+  await page.waitForTimeout(300);
+  const cmaPage = await page.evaluate(() => ({ note: (document.querySelector('[data-cma-need-listing]') || {}).textContent || '', off: Array.prototype.some.call(document.querySelectorAll('button'), (b) => /Open CMA Builder/.test(b.textContent) && b.disabled), text: document.body.innerText }));
+  ok(/Open the listing first/.test(cmaPage.note) && cmaPage.off && /Up to 10 closed sales/.test(cmaPage.text) && !/Up to 5|5-step|4-page|Log CMA/.test(cmaPage.text), 'the CMA page with no listing open says to open the listing first and its button is off (it used to do nothing); it lists what the builder really holds', cmaPage.note);
+  await page.context().close();
+
   page = await os('Charlotte Lee', '/');
   o = await osState(page);
   ok(o.view === 'dashboard', 'FORWARD OS opened normally still starts on the dashboard', o.view);
@@ -1180,10 +1199,11 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   console.log('More properties than the builder holds: the agent chooses');
   // Marc, Oct 6, 2026: 16 properties in one file; the first six closed sales went in and six
   // others were "Skipped (section is full)". "What if the ones left off were better comps?"
+  // The builder holds 10 closed sales since Oct 31, 2026, so this file has 13.
   table = []; writes = []; snaps = [];
   proxAnswer = (addr) => { const m = /^(\d+) Closed/.exec(addr); return m ? (m[1] / 10).toFixed(1) + ' mi' : ''; }; proxCalls = [];
   parseResults = [];
-  for (let n = 1; n <= 9; n++) parseResults.push(sheet(n + ' Closed Ct', 'closed', { salePrice: String(500000 + n * 1000), soldDate: '2026-08-0' + n, gla: String(800 + n), hoaMonthly: '0' }));
+  for (let n = 1; n <= 13; n++) parseResults.push(sheet(n + ' Closed Ct', 'closed', { salePrice: String(500000 + n * 1000), soldDate: '2026-08-' + String(n).padStart(2, '0'), gla: String(800 + n), hoaMonthly: '0' }));
   parseResults.push(sheet('1 Active Ave', 'active', { listPrice: '525000', listDate: '2026-09-15' }), sheet('2 Active Ave', 'active', { listPrice: '530000' }));
   page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { city: 'Fairfax', state: 'VA', zip: '22030' }));
   const openImport = async () => {
@@ -1202,30 +1222,30 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   }));
   await openImport();
   let im = await imp();
-  ok(im.heads.length === 2 && /^Closed sales: 9 ticked, room for 6 \(the CMA holds 6\)$/.test(im.heads[0][0]) && im.heads[0][1] === true && /^Active listings: 2 ticked, room for 10/.test(im.heads[1][0]) && im.heads[1][1] === false, 'the review window groups the properties by section and says how many each has room for', im.heads);
-  ok(/Choose your comps/.test(im.over) && /Closed sales: 9 ticked, room for 6\. Untick 3\./.test(im.over) && /closest, most recent, nearest in size/.test(im.over), 'with nine closed sales it says to untick three, and what to keep', im.over);
+  ok(im.heads.length === 2 && /^Closed sales: 13 ticked, room for 10 \(the CMA holds 10\)$/.test(im.heads[0][0]) && im.heads[0][1] === true && /^Active listings: 2 ticked, room for 10/.test(im.heads[1][0]) && im.heads[1][1] === false, 'the review window groups the properties by section and says how many each has room for', im.heads);
+  ok(/Choose your comps/.test(im.over) && /Closed sales: 13 ticked, room for 10\. Untick 3\./.test(im.over) && /closest, most recent, nearest in size/.test(im.over), 'with thirteen closed sales it says to untick three, and what to keep', im.over);
   ok(im.addOff === true, 'Add to CMA is switched off until the section fits');
   ok(/^Sold Aug 1, 2026 · \$501,000 · 801 sq ft · 1 bd \/ 1 fb · 0\.1 mi away$/.test(im.facts[0]) && /0\.9 mi away$/.test(im.facts[8]), 'each closed sale shows its sold date, price, size, beds and baths, and its distance from the listing', [im.facts[0], im.facts[8]]);
-  ok(/^List \$525,000 · Listed Sep 15, 2026 · 861 sq ft/.test(im.facts[9]), 'an active listing shows its list price and list date', im.facts[9]);
+  ok(/^List \$525,000 · Listed Sep 15, 2026 · 861 sq ft/.test(im.facts[13]), 'an active listing shows its list price and list date', im.facts[13]);
   await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(300);
   im = await imp();
-  ok(im.n === 0 && im.open === true && (await page.evaluate(() => activeComps.length)) === 0, 'pressing Add anyway adds nothing: the builder never picks the six for the agent', [im.n, im.open]);
-  // The agent keeps the closest ones... and they are not the first six in the file.
+  ok(im.n === 0 && im.open === true && (await page.evaluate(() => activeComps.length)) === 0, 'pressing Add anyway adds nothing: the builder never picks the ten for the agent', [im.n, im.open]);
+  // The agent keeps the closest ones... and they are not the first ten in the file.
   for (const n of [1, 5, 9]) await page.evaluate((nn) => { const rows = document.querySelectorAll('#impList .imp-row'); for (const r of rows) if (r.querySelector('div > div').textContent.startsWith(nn + ' Closed Ct')) r.querySelector('input[type=checkbox]').click(); }, n);
   im = await imp();
-  ok(im.over === '' && im.addOff === false && /^Closed sales: 6 ticked, room for 6/.test(im.heads[0][0]) && im.heads[0][1] === false, 'after unticking three the notice clears and Add is switched on', [im.over, im.heads[0]]);
+  ok(im.over === '' && im.addOff === false && /^Closed sales: 10 ticked, room for 10/.test(im.heads[0][0]) && im.heads[0][1] === false, 'after unticking three the notice clears and Add is switched on', [im.over, im.heads[0]]);
   proxCalls = [];
   await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(500);
   const got = await page.evaluate(() => ({ closed: comps.map((c) => c.address), active: activeComps.map((c) => c.address), prox: comps.map((c) => c.proximity), status: document.getElementById('pdfStatus').textContent }));
-  ok(got.closed.join('|') === '2 Closed Ct|3 Closed Ct|4 Closed Ct|6 Closed Ct|7 Closed Ct|8 Closed Ct' && got.active.length === 2, 'exactly the six the agent kept go in, including the 7th and 8th in the file (they used to be dropped)', got.closed);
-  ok(!/Skipped/.test(got.status) && /Added 8 properties/.test(got.status), 'nothing is reported as skipped', got.status);
-  ok(got.prox.join('|') === '0.2 mi|0.3 mi|0.4 mi|0.6 mi|0.7 mi|0.8 mi' && proxCalls.join() === '2', 'each comp carries the distance the agent chose by; only the two listings whose distance was not found are looked up again', [got.prox, proxCalls]);
+  ok(got.closed.join('|') === '2 Closed Ct|3 Closed Ct|4 Closed Ct|6 Closed Ct|7 Closed Ct|8 Closed Ct|10 Closed Ct|11 Closed Ct|12 Closed Ct|13 Closed Ct' && got.active.length === 2, 'exactly the ten the agent kept go in, including the 11th to 13th in the file (past the cap, they used to be dropped)', got.closed);
+  ok(!/Skipped/.test(got.status) && /Added 12 properties/.test(got.status), 'nothing is reported as skipped', got.status);
+  ok(got.prox.join('|') === '0.2 mi|0.3 mi|0.4 mi|0.6 mi|0.7 mi|0.8 mi|1.0 mi|1.1 mi|1.2 mi|1.3 mi' && proxCalls.join() === '2', 'each comp carries the distance the agent chose by; only the two listings whose distance was not found are looked up again', [got.prox, proxCalls]);
 
   // A CMA that already has comps: room is what is left, and a property already in it does not use any.
-  parseResults = [sheet('2 Closed Ct', 'closed', { salePrice: '502000' }), sheet('10 Closed Ct', 'closed', { salePrice: '510000' })];
+  parseResults = [sheet('2 Closed Ct', 'closed', { salePrice: '502000' }), sheet('14 Closed Ct', 'closed', { salePrice: '514000' })];
   await openImport();
   im = await imp();
-  ok(/^Closed sales: 1 ticked, room for 0 \(the CMA already has 6 of 6\)$/.test(im.heads[0][0]) && im.addOff === true && /Untick 1/.test(im.over), 'with six closed sales already in the CMA there is no room for a new one, and it says so', [im.heads[0], im.over]);
+  ok(/^Closed sales: 1 ticked, room for 0 \(the CMA already has 10 of 10\)$/.test(im.heads[0][0]) && im.addOff === true && /Untick 1/.test(im.over), 'with ten closed sales already in the CMA there is no room for a new one, and it says so', [im.heads[0], im.over]);
   await page.evaluate(() => cmaImpSet('closed', false));
   im = await imp();
   ok(/^Closed sales: 0 ticked/.test(im.heads[0][0]) && im.addOff === false, 'Untick all clears the section', im.heads[0]);
@@ -1233,7 +1253,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   im = await imp();
   ok(/^Closed sales: 0 ticked, room for 0/.test(im.heads[0][0]) && im.addOff === false, 'a property already in the CMA can be ticked to refresh it: it takes no room', im.heads[0]);
   await page.evaluate(() => cmaApplyImport()); await page.waitForTimeout(400);
-  ok((await page.evaluate(() => comps.length + '|' + comps[0].salePrice)) === '6|502000', 'and it is updated in place');
+  ok((await page.evaluate(() => comps.length + '|' + comps[0].salePrice)) === '10|502000', 'and it is updated in place');
   await page.context().close();
   proxAnswer = null; parseResults = [];
 
@@ -1289,6 +1309,69 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { address: '1415 Riverside Ave.', city: 'Baltimore', state: 'MD', addressUnsure: true }));
   const af = await page.evaluate(() => ['s_address', 's_city', 's_state'].map((id) => document.getElementById(id).closest('.field').className));
   ok(/f-check/.test(af[0]) && /f-check/.test(af[1]) && !/f-check/.test(af[2]), 'on a new CMA the Address and City boxes are marked CHECK THIS when the split was a reading', af);
+  await page.context().close();
+
+  // ════════════════ TEN CLOSED SALES ════════════════
+  // Marc, Oct 31, 2026: "Add 10 closed sales". The builder held 6, what one PDF grid page fits.
+  // The grid now runs to a second page; the Pricing page's method and the agent's notes, which
+  // were left off when the page was full, always print. Measured with the real jsPDF.
+  console.log('Ten closed sales');
+  table = []; writes = [];
+  page = await builder('Charlotte Lee', PREFILL('Charlotte Lee', { city: 'Washington', state: 'DC', zip: '20009' }));
+  const NOTE = Array.from({ length: 70 }, (_, i) => 'Note line ' + (i + 1) + ': the seller replaced the roof and the windows, and the agent wants that weighed.').join(' ');
+  await page.evaluate((note) => {
+    comps.length = 0; buildCompsTable();
+    for (let i = 1; i <= 11; i++) addComp();   // the 11th must do nothing
+    comps.forEach((c, i) => Object.assign(c, { address: (i + 1) + ' Ten St', salePrice: 700000 + i * 13000, soldDate: '2026-0' + (1 + (i % 9)) + '-15', gla: 1800 + i * 40, beds: 3, fullBaths: 2, halfBaths: i % 2, garageSpaces: i % 3, drivewaySpaces: 0, condition: ['A', 'B', 'C', 'B', 'A+'][i % 5], hoaMonthly: 0 }));
+    buildCompsTable(); recalcAll();
+    document.getElementById('agentNotes').value = note;
+  }, NOTE);
+  await page.waitForTimeout(200);
+  const ten = await page.evaluate(() => ({ n: comps.length, badge: document.getElementById('compCountBadge').textContent, addShown: document.getElementById('addCompBtn').style.display !== 'none',
+    iv: comps.map((_, i) => parseInt((document.getElementById('c' + i + '_adjPrice') || {}).textContent.replace(/[^0-9-]/g, ''), 10)),
+    rec: parseInt(document.getElementById('vRecommended').textContent.replace(/[^0-9]/g, ''), 10), used: document.getElementById('vCompsUsed').textContent }));
+  ok(ten.n === 10 && ten.badge === '10 of 10' && !ten.addShown, 'the builder takes 10 closed sales, says 10 of 10, hides Add at 10, and an 11th is not added', ten);
+  const ivs = ten.iv.slice().sort((a, b) => a - b), med = (ivs[4] + ivs[5]) / 2;
+  ok(ten.iv.every((v) => v > 0) && ten.used === '10' && ten.rec === Math.round(med / 1000) * 1000, 'all 10 count: the recommended price is the median of the 10 Indicated Values (worked out here, ' + Math.round(med / 1000) * 1000 + ')', [ten.rec, ten.iv]);
+  const pdfOps = () => page.evaluate(() => {
+    const doc = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'pt', format: 'letter' });
+    const ops = []; const orig = doc.text.bind(doc);
+    doc.text = function (t, x, y, o) {
+      const pg = doc.internal.getCurrentPageInfo().pageNumber, lh = doc.getFontSize() * doc.getLineHeightFactor();
+      [].concat(t).forEach((line, i) => { const w = doc.getTextWidth(String(line)); const al = o && o.align; const l = al === 'right' ? x - w : al === 'center' ? x - w / 2 : x; ops.push({ pg, t: String(line), x: l, r: l + w, y: y + i * lh }); });
+      return orig(t, x, y, o);
+    };
+    _fillPDFDoc(doc);
+    return { ops, pages: doc.getNumberOfPages(), W: doc.internal.pageSize.getWidth() };
+  });
+  const P = await pdfOps();
+  const onPage = (re) => [...new Set(P.ops.filter((o) => re.test(o.t)).map((o) => o.pg))];
+  const gridPages = onPage(/^ADJUSTMENT GRID( \(CONT\.\))?$/);
+  const gridOps = P.ops.filter((o) => gridPages.indexOf(o.pg) > -1);
+  const compHeads = gridOps.filter((o) => /^COMP \d+$/.test(o.t)).map((o) => [o.t, o.pg]);
+  ok(compHeads.length === 10 && Array.from({ length: 10 }, (_, i) => 'COMP ' + (i + 1)).every((h) => compHeads.filter((c) => c[0] === h).length === 1), 'the Adjustment Grid has COMP 1 to COMP 10, each once', compHeads);
+  const firstGrid = compHeads.filter((c) => c[1] === compHeads[0][1]).length;
+  ok(gridPages.length >= 2 && firstGrid === 5 && compHeads.slice(5).every((c) => c[1] > compHeads[0][1]) && P.ops.some((o) => o.t === 'ADJUSTMENT GRID (CONT.)' && o.pg === compHeads[5][1]), 'it runs to a second page: sales 1 to 5 on the first, 6 to 10 on the next, under Adjustment Grid (cont.)', compHeads);
+  const fmt = (v) => '$' + Math.round(v).toLocaleString('en-US');
+  ok(ten.iv.every((v) => gridOps.some((o) => o.t === fmt(v))), 'every sale\'s Indicated Value is printed on the grid', ten.iv.map(fmt));
+  ok(Array.from({ length: 10 }, (_, i) => (i + 1) + ' Ten St').every((a) => P.ops.filter((o) => o.t === a).length === 2), 'every sale is listed once in the overview on the subject page and once in What Each Sale Says (and on no page twice)', null);
+  ok(gridOps.filter((o) => /TEN ST/.test(o.t)).length === 10, 'and each address heads its own grid column', gridOps.filter((o) => /TEN ST/.test(o.t)).map((o) => o.t));
+  const all = P.ops.map((o) => o.t).join(' ').replace(/\s+/g, ' ');
+  ok(/The comparable sales were selected by the agent as the recent sales most relevant to this property/.test(all) && /seller objectives\./.test(all) && /^METHODOLOGY$/.test((P.ops.find((o) => o.t === 'METHODOLOGY') || {}).t || ''), 'the Methodology prints in full (it was left off when the page was full)', null);
+  // The note's own lines: below each page's header (y 95 on) and above its footer.
+  const afterNotes = P.ops.slice(P.ops.findIndex((o) => o.t === 'AGENT NOTES') + 1).filter((o) => o.y >= 90 && o.y < 742 && !/This CMA is an estimate|BRIGHT/.test(o.t)).map((o) => o.t).join(' ').replace(/\s+/g, ' ');
+  ok(afterNotes.indexOf(NOTE) === 0, 'every word of a long agent note prints, in order, continuing on the next page (it was left off or ran into the footer)', afterNotes.slice(0, 120));
+  // Nothing runs into a footer or out of the margins, on any page.
+  const lastPg = P.pages, lastFootY = (P.ops.find((o) => /This CMA is an estimate of value and is not an appraisal/.test(o.t)) || {}).y;
+  const bad = P.ops.filter((o) => {
+    if (o.x < 49 || o.r > P.W - 49) return true;
+    if (o.pg === lastPg) return o.y < lastFootY && o.y > lastFootY - 13;
+    return o.y < 748 && o.y > 742;
+  }).map((o) => [o.pg, Math.round(o.x), Math.round(o.r), Math.round(o.y), o.t.slice(0, 40)]);
+  const intoLastFoot = P.ops.filter((o) => o.pg === lastPg && o.y >= lastFootY - 13 && o.y < lastFootY).length;
+  ok(lastFootY > 0 && bad.length === 0 && intoLastFoot === 0, 'no text runs past the margins or into a page footer, on any of the ' + P.pages + ' pages (real jsPDF widths)', bad.slice(0, 6));
+  const over = P.ops.filter((o) => o.pg !== lastPg && o.y > 742 && o.y < 748);
+  ok(over.length === 0, 'and above every other page\'s footer line', over.slice(0, 4));
   await page.context().close();
 
   ok(errors.length === 0, 'no page errors in any case', errors.slice(0, 5));
