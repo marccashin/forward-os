@@ -2778,16 +2778,17 @@ body {
                 </div>
                 <div v-if="ldOutput" :style="{fontSize:'11px',fontFamily:'Montserrat,sans-serif',fontWeight:600,letterSpacing:'.04em',marginBottom:'8px',padding:'6px 10px',borderRadius:'6px',background: ldCharCount > 4000 ? '#fef2f2' : '#f0fdf4',border: ldCharCount > 4000 ? '1px solid #fecaca' : '1px solid #bbf7d0',color: ldCharCount > 4000 ? '#b91c1c' : '#166534'}">{{ ldCharCount.toLocaleString() }} / 4,000 characters<span v-if="ldCharCount > 4000">: over the MLS limit by {{ (ldCharCount - 4000).toLocaleString() }}. Ask for a shorter version before pasting.</span></div>
                 <div v-for="(iss, ii) in lstWhoIssues(ldOutput)" :key="'lwho' + ii" data-ld="who-issue" style="font-size:11px;font-family:Montserrat,sans-serif;font-weight:600;line-height:1.5;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;">Fair housing: {{ iss }}. Ask for a rewrite before you save or paste this. It cannot be approved for marketing as written.</div>
+                <div v-for="(iss, ii) in lstBrandIssues(ldOutput)" :key="'lbr' + ii" data-ld="brand-issue" style="font-size:11px;font-family:Montserrat,sans-serif;font-weight:600;line-height:1.5;margin-bottom:8px;padding:6px 10px;border-radius:6px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;">FORWARD style: {{ iss }}. Ask for a rewrite before you save or paste this. It cannot be approved for marketing as written.</div>
                 <button v-if="ldOutput" class="btn-gold" @click="ldSaveToProperty" :disabled="ldSaving" style="width:100%;padding:11px 20px;min-width:160px;">
                   <span class="spinner" v-if="ldSaving"></span><span v-if="ldSaving"></span><span v-else><svg viewBox="0 0 24 24" style="width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;" xmlns="http://www.w3.org/2000/svg"><polygon points="2,6 2,20 22,20 22,9 11,9 8,6" fill="#0d1f35"/></svg> Save to Property</span>
                 </button>
                 <!-- Approve for marketing: only for a listing, and only once this text is the saved text -->
-                <div v-if="lstActiveProp && ldOutput && lstNotes.listing_remarks && lstAppr.state==='ready'" data-appr-writer="box" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;">
+                <div v-if="ldBound && ldOutput && lstNotes.listing_remarks && lstAppr.state==='ready'" data-appr-writer="box" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;">
                   <template v-if="ldOutput === lstNotes.listing_remarks">
                     <div v-if="lstApprIsOn()" data-appr-writer="approved" style="color:#166534;font-weight:600;">✓ Approved for marketing by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
                     <div v-else style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
                       <span data-appr-writer="not-approved" style="color:#6b7280;font-weight:600;">Saved to the listing. Not approved for marketing.</span>
-                      <button v-if="!lstFlyerReady() || lstApprWhoBlocked()" class="btn-sm" data-appr-writer="to-listing" @click="lstApprGoListing()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstFlyerReady() ? 'Wording to change before approving: go to the listing' : 'A flyer version is needed first: go to the listing' }}</button>
+                      <button v-if="!lstFlyerReady() || lstApprWhoBlocked() || lstApprBrandBlocked()" class="btn-sm" data-appr-writer="to-listing" @click="lstApprGoListing()" style="background:var(--white);border:1px solid var(--cream-dark);color:var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstFlyerReady() ? 'Wording to change before approving: go to the listing' : 'A flyer version is needed first: go to the listing' }}</button>
                       <button v-else class="btn-sm" data-appr-writer="approve" :disabled="lstAppr.busy" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
                     </div>
                     <div v-if="lstAppr.failed" data-appr-writer="failed" style="color:#b91c1c;margin-top:4px;">NOT approved: {{ lstAppr.failed }}.</div>
@@ -2796,7 +2797,7 @@ body {
                   <div v-else-if="lstAppr.row" data-appr-writer="will-clear" style="color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 10px;">The description saved on this listing is approved for marketing ({{ lstAppr.row.approved_by }}, {{ lstApprWhen(lstAppr.row.approved_at) }}). The text here is different: saving it clears that approval.</div>
                 </div>
                 <div v-if="ldStarted && ldResumeNote" style="margin-top:8px;font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;line-height:1.5;">{{ ldResumeNote }}</div>
-                <div v-if="lstActiveProp && ldAvChat.text && ldAvChat.propId === lstActiveProp.id" data-avc="card" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;background:#f9f6ef;border:1px solid var(--gold);border-radius:2px;padding:8px 10px;">
+                <div v-if="ldBound && ldAvChat.text && ldAvChat.propId === lstActiveProp.id" data-avc="card" style="margin-top:8px;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;background:#f9f6ef;border:1px solid var(--gold);border-radius:2px;padding:8px 10px;">
                   <div v-if="!ldAvChat.saved" data-avc="pending">The writer created {{ lstAvCards(ldAvChat.text).length }} buyer avatar{{ lstAvCards(ldAvChat.text).length === 1 ? '' : 's' }}: {{ lstAvReadback(ldAvChat.text).names.join('; ') }}. They are not saved to this listing's Buyer Avatars yet.</div>
                   <div v-else data-avc="saved" style="color:#16a34a;font-weight:600;">Saved to this listing's Buyer Avatars.</div>
                   <div v-if="!ldAvChat.saved && lstAvReadback(ldAvChat.text).warn" data-avc="warn" style="color:#b91c1c;">{{ lstAvReadback(ldAvChat.text).warn }}</div>
@@ -6828,7 +6829,7 @@ body {
                           <template v-else-if="lstFlyer.text">
                             <div data-flyer="text" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);background:var(--cream);border:1px solid var(--cream-mid);border-radius:2px;padding:12px;max-height:220px;overflow-y:auto;white-space:pre-wrap;line-height:1.65;margin-bottom:6px;">{{ lstFlyer.text }}</div>
                             <div data-flyer="count" :style="{fontFamily:'Montserrat,sans-serif',fontSize:'11px',fontWeight:600,marginBottom:'8px',color: fosWordCount(lstFlyer.text) > LST_FLYER_MAX ? '#b91c1c' : '#166534'}">{{ fosWordCount(lstFlyer.text) }} / {{ LST_FLYER_MAX }} words<span v-if="fosWordCount(lstFlyer.text) > LST_FLYER_MAX">: over the limit by {{ fosWordCount(lstFlyer.text) - LST_FLYER_MAX }}. Shorten it before approving.</span></div>
-                            <div v-for="(iss, ii) in lstFlyerIssues(lstFlyer.text)" :key="ii" data-flyer="issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;margin-bottom:6px;">Check before approving: {{ iss }}.</div>
+                            <div v-for="(iss, ii) in lstFlyerIssues(lstFlyer.text)" :key="ii" data-flyer="issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;line-height:1.5;margin-bottom:6px;">Change before approving: {{ iss }}.</div>
                             <div v-if="lstFlyer.stale && !lstApprIsOn()" data-flyer="stale" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">The description was saved after this flyer version was written. Read the flyer version again, or rewrite it, before approving.</div>
                             <div style="display:flex;gap:8px;flex-wrap:wrap;">
                               <button class="btn-sm btn-navy" data-flyer="copy" @click="copy(lstFlyer.text)">Copy</button>
@@ -6846,7 +6847,7 @@ body {
                           <div v-if="lstFlyer.error" data-flyer="error" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">{{ lstFlyer.error }}</div>
                         </div>
                         <div v-if="lstApprIsOn()" data-appr="approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#166534;line-height:1.5;">✓ Approved by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }}</div>
-                        <template v-if="lstApprIsOn()"><div v-for="(iss, ii) in lstWhoIssues(lstNotes.listing_remarks).concat(lstWhoIssues(lstFlyer.text))" :key="'awho' + ii" data-appr="approved-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-top:8px;line-height:1.5;">This approved text needs a change: {{ iss }}. Edit the text and save it. Saving clears this approval, and the new text can then be approved.</div></template>
+                        <template v-if="lstApprIsOn()"><div v-for="(iss, ii) in lstFlyerIssues(lstNotes.listing_remarks).concat(lstFlyerIssues(lstFlyer.text))" :key="'awho' + ii" data-appr="approved-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-top:8px;line-height:1.5;">This approved text needs a change: {{ iss }}. Edit the text and save it. Saving clears this approval, and the new text can then be approved.</div></template>
                         <div v-if="lstApprIsOn() && lstAppr.row.flyer_content == null" data-appr="old-approval" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:4px;line-height:1.5;">This approval was given before flyer versions existed. It covers the description only and has no PDF.</div>
                         <template v-if="lstApprIsOn() && lstAppr.row.flyer_content != null">
                           <div v-if="lstAppr.pdf==='making'" data-appr="pdf-making" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-top:6px;">Making the branded PDF...</div>
@@ -6856,12 +6857,12 @@ body {
                         <template v-if="!lstApprIsOn()">
                           <div v-if="lstAppr.cleared" data-appr="cleared" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This description was approved by {{ lstAppr.cleared.by }} on {{ lstApprWhen(lstAppr.cleared.at) }}. The text has changed since, so that approval was cleared. Approve it again when this text is final.</div>
                           <div v-else-if="lstAppr.row" data-appr="mismatch" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">An approval by {{ lstAppr.row.approved_by }} on {{ lstApprWhen(lstAppr.row.approved_at) }} is on file, but for different text than the text shown above. It does not cover this text.</div>
-                          <div v-for="(iss, ii) in lstWhoIssues(lstNotes.listing_remarks)" :key="'dwho' + ii" data-appr="desc-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This cannot be approved yet. In the description, {{ iss }}. Press Edit above, change the wording and save.</div>
+                          <div v-for="(iss, ii) in lstFlyerIssues(lstNotes.listing_remarks)" :key="'dwho' + ii" data-appr="desc-issue" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:8px 10px;margin-bottom:8px;line-height:1.5;">This cannot be approved yet. In the description, {{ iss }}. Press Edit above, change the wording and save.</div>
                           <div data-appr="not-approved" style="font-family:'Montserrat',sans-serif;font-size:12px;font-weight:600;color:#6b7280;margin-bottom:4px;">Not approved</div>
                           <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;line-height:1.5;margin-bottom:10px;">Concierge uses these in marketing and in the Preparing to Launch email only after you approve them. Approve them when both texts are final: one approval covers the description and the flyer version.</div>
-                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked()" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked()) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
+                          <button class="btn-sm" data-appr="approve" :disabled="lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked() || lstApprBrandBlocked()" @click="lstApprove()" style="background:var(--navy);color:var(--gold);border:1px solid var(--navy);font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;" :style="{opacity: (lstAppr.busy || lstDescEditing || !lstFlyerReady() || lstApprWhoBlocked() || lstApprBrandBlocked()) ? 0.55 : 1}">{{ lstAppr.busy ? 'Approving...' : 'Approve for marketing' }}</button>
                           <span v-if="!lstFlyerReady() && !lstDescEditing" data-appr="need-flyer" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">{{ lstFlyer.editing ? 'Save or cancel the flyer edit first.' : (lstFlyer.busy ? 'Waiting for the flyer version.' : (lstFlyer.text.trim() ? 'The flyer version is over ' + LST_FLYER_MAX + ' words.' : 'A flyer version is needed first.')) }}</span>
-                          <span v-if="lstFlyerReady() && !lstDescEditing && lstApprWhoBlocked()" data-appr="who-blocked" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#b91c1c;margin-left:8px;">Change the wording about who should live there first.</span>
+                          <span v-if="lstFlyerReady() && !lstDescEditing && lstApprWhoBlocked()" data-appr="who-blocked" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#b91c1c;margin-left:8px;">Change the wording about who should live there first.</span><span v-else-if="lstFlyerReady() && !lstDescEditing && lstApprBrandBlocked()" data-appr="brand-blocked" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#b91c1c;margin-left:8px;">Change the words or dashes marked in red first.</span>
                           <span v-if="lstDescEditing" style="font-family:'Montserrat',sans-serif;font-size:10px;color:#6b7280;margin-left:8px;">Save or cancel your edit first.</span>
                         </template>
                         <div v-if="lstAppr.failed" data-appr="failed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#b91c1c;margin-top:8px;line-height:1.5;">NOT approved: {{ lstAppr.failed }}.</div>
@@ -8798,9 +8799,9 @@ body {
       @click.self="cancelSaveToProp">
       <div :class="isMobile ? 'save-prop-sheet-box' : 'card'" :style="isMobile ? '' : 'width:460px;max-width:92vw;'">
         <div v-if="isMobile" class="save-prop-sheet-handle"></div>
-        <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">{{ saveToPropData && saveToPropData.match ? 'Save Net Sheet to Its Listing' : 'Save to Property File' }}</h3>
+        <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 6px;font-size:15px;font-weight:600;color:var(--navy);">{{ saveToPropData && saveToPropData.match ? (saveToPropData.match.onPick ? 'Save Description to Its Listing' : 'Save Net Sheet to Its Listing') : 'Save to Property File' }}</h3>
         <p style="font-size:12px;color:#9ca3af;margin:0 0 14px;">
-          {{ saveToPropData && saveToPropData.match ? 'A net sheet is saved only on the listing at its own address.' : (saveToPropData && saveToPropData.toolName ? saveToPropData.toolName + ' output will route to the correct subfolder automatically.' : 'Select a property to save this resource.') }}
+          {{ saveToPropData && saveToPropData.match ? (saveToPropData.match.onPick ? 'A description is saved only on its own listing.' : 'A net sheet is saved only on the listing at its own address.') : (saveToPropData && saveToPropData.toolName ? saveToPropData.toolName + ' output will route to the correct subfolder automatically.' : 'Select a property to save this resource.') }}
         </p>
 
         <!-- Manual upload: subfolder picker (only when no toolName / manual uploads) -->
@@ -8818,7 +8819,8 @@ body {
 
         <!-- A net sheet goes only to the listing at its own address (Oct 31, 2026) -->
         <div v-if="saveToPropData && saveToPropData.match" data-save-match style="margin-bottom:14px;">
-          <div style="font-size:12px;color:#374151;margin-bottom:10px;">Sheet address: <strong>{{ saveToPropData.match.address }}<span v-if="saveToPropData.match.unit">, Unit {{ saveToPropData.match.unit }}</span></strong></div>
+          <div v-if="saveToPropData.match.anyListing" style="font-size:12px;color:#374151;margin-bottom:10px;">This description was not started from a listing and has no address. Pick the listing it is for.</div>
+          <div v-else style="font-size:12px;color:#374151;margin-bottom:10px;">{{ saveToPropData.match.onPick ? 'Description for' : 'Sheet address' }}: <strong>{{ saveToPropData.match.address }}<span v-if="saveToPropData.match.unit">, Unit {{ saveToPropData.match.unit }}</span></strong></div>
           <div v-if="saveToPropMatches.length" style="max-height:220px;overflow-y:auto;">
             <div v-for="sp in saveToPropMatches" :key="sp.id" data-save-match-row
               @click="saveToPropSelected = sp.id"
@@ -8828,7 +8830,9 @@ body {
             </div>
           </div>
           <div v-else-if="lstLoading" style="text-align:center;padding:16px;color:#9ca3af;font-size:13px;">Loading your listings...</div>
+          <div v-else-if="saveToPropData.match.onPick" data-save-match-none style="padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">No listing in FORWARD OS has this address, so the description was not saved to a listing. Open the listing and use its own Listing Description, or save this to your library.</div>
           <div v-else data-save-match-none style="padding:10px 12px;border:1.5px solid #fecaca;background:#fef2f2;border-radius:8px;color:#b91c1c;font-size:12px;font-weight:600;line-height:1.45;">No listing in FORWARD OS has this address, so the net sheet was not saved. Check the street, unit and ZIP on the sheet (pick the listing from the address box to fill them exactly). If the listing's own address is wrong, fix it on the listing first.</div>
+          <button v-if="saveToPropData.match.onPick" data-save-library class="btn-outline" @click="saveOut('listing-desc', saveToPropData.match.libraryTitle, saveToPropData.data); showSaveToProp = false; saveToPropData = null;" style="margin-top:10px;font-size:11px;">Save to my library instead (not on a listing, cannot be approved)</button>
         </div>
 
         <!-- Supabase property list (primary) -->
@@ -11620,7 +11624,15 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       let targetProp = null;
       if (data.match) {
         targetProp = saveToPropMatches.value.find(p => p.id === saveToPropSelected.value) || null;
-        if (!targetProp) { showToast('Not saved. Pick the listing at this net sheet\'s address.', 6000); return; }
+        if (!targetProp) { showToast('Not saved. Pick the listing ' + (data.match.anyListing ? 'it belongs to.' : 'at this ' + (data.match.onPick ? 'description' : 'net sheet') + '\'s address.'), 6000); return; }
+        if (data.match.onPick) {
+          saveToPropUploading.value = true;
+          try {
+            const ok = await data.match.onPick(targetProp);
+            if (ok) { showSaveToProp.value = false; saveToPropData.value = null; }
+          } finally { saveToPropUploading.value = false; }
+          return;
+        }
       } else if (saveToPropSelected.value) {
         targetProp = supaProperties.value.find(p => p.id === saveToPropSelected.value);
         if (!targetProp) { confirmSaveToProp(); return; } // Fallback to local
@@ -12374,6 +12386,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // never bleeds into a fresh property session.
     watch(lstActiveProp, (newProp) => {
       const newId = newProp?.id || newProp?.address || null;
+      if (ldListingId.value && ldListingId.value !== (newProp && newProp.id)) ldListingId.value = null;
       if (ldStarted.value && ldConvPropId.value && newId && newId !== ldConvPropId.value) {
         ldMessages.value = []; ldOutput.value = ''; ldStarted.value = false;
         ldInput.value = ''; ld.address = ''; ldDistances.value = null;
@@ -12668,13 +12681,21 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       /\b(?:buyers?|those|anyone|someone|people)\s+(?:who|seeking|looking|wanting)\b/i
     ];
     // What is wrong with a flyer text, in words an agent can act on. [] when nothing is.
-    function lstFlyerIssues(t) {
+    // FORWARD's word and dash rules (Marc, Oct 31, 2026: they block Approve for marketing, on
+    // both texts, like fair housing; until then they were only a "Check before approving" line).
+    function lstBrandIssues(t) {
       const text = String(t || ''), low = text.toLowerCase(), out = [];
       LST_FLYER_BANNED.forEach(function (w) {
         if (new RegExp('(^|[^a-z])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^a-z]|$)').test(low)) out.push('it uses "' + w + '", a word FORWARD does not use');
       });
       if (/[\u2014\u2013]/.test(text)) out.push('it has a long dash; use a comma, a colon or a semicolon');
-      return out.concat(lstWhoIssues(text));
+      return out;
+    }
+    function lstFlyerIssues(t) {
+      return lstBrandIssues(t).concat(lstWhoIssues(t));
+    }
+    function lstApprBrandBlocked() {
+      return lstBrandIssues(lstNotes.listing_remarks).length > 0 || lstBrandIssues(lstFlyer.text).length > 0;
     }
     // Fair housing, on any text that goes to the public: the flyer version AND the full
     // description (Marc, Oct 11, 2026). One line per phrase that says who should live
@@ -13101,7 +13122,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     function _ldAvatarNote() {
       const t = (lstNotes.buyer_avatars || '').trim();
-      if (!lstActiveProp.value) return '';
+      if (!lstActiveProp.value || !ldBound.value) return '';   // another listing's avatars never steer this description
       if (!t) {
         const r = lstAvResFresh();
         return r ? '\n\nRESEARCH FOR THE BUYER AVATARS: FORWARD OS researched this listing\'s area for step 5. When you create the five avatars, use this IN ADDITION to every instruction above. ' + LST_AV_RES_RULE + ' Fair housing applies to the research too. Never quote the research in the listing description.\n\n' + r.prompt : '';
@@ -13324,6 +13345,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // on the button, so no other caller can approve around it.
       const _whoDesc = lstWhoIssues(text), _whoFlyer = lstWhoIssues(flyer);
       if (_whoDesc.length || _whoFlyer.length) { lstAppr.failed = (_whoDesc.length ? 'in the description, ' + _whoDesc[0] : 'in the flyer version, ' + _whoFlyer[0]); return false; }
+      // FORWARD's words and dashes (Oct 31, 2026), checked here too so no caller approves around it.
+      const _brDesc = lstBrandIssues(text), _brFlyer = lstBrandIssues(flyer);
+      if (_brDesc.length || _brFlyer.length) { lstAppr.failed = (_brDesc.length ? 'in the description, ' + _brDesc[0] : 'in the flyer version, ' + _brFlyer[0]); return false; }
       const pid = prop.id;
       lstAppr.busy = true; lstAppr.failed = '';
       let row = null, why = '';
@@ -13409,7 +13433,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     }
     function _ldEditStart() {
       const prop = lstActiveProp.value, who = agentName.value || '';
-      if (view.value !== 'listing-desc' || !prop || !prop.id || !who) return;
+      if (view.value !== 'listing-desc' || !prop || !prop.id || !who || !ldBound.value) return;
       // No saved description yet: there is no earlier text for anyone to be warned about.
       if (!(lstNotes.listing_remarks || '').trim()) return;
       if (_ldEdit && _ldEdit.pid === prop.id && _ldEdit.who === who) return;
@@ -13420,7 +13444,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (_ldEdit && document.visibilityState === 'visible') _ldEditCall('touch', _ldEdit.pid, _ldEdit.who);
       }, LD_EDIT_BEAT_MS);
     }
-    watch(function () { return (view.value === 'listing-desc' && lstActiveProp.value) ? lstActiveProp.value.id : null; },
+    watch(function () { return (view.value === 'listing-desc' && lstActiveProp.value && ldBound.value) ? lstActiveProp.value.id : null; },
       function (id) { if (id) _ldEditStart(); else _ldEditStop(); });
     // Saved: the database now holds the new text, so the warning has done its job.
     window.addEventListener('fos-note-saved', function (ev) {
@@ -15916,6 +15940,8 @@ async function lstSubmitToPipeline() {
     const saveToPropMatches = computed(() => {
       const d = saveToPropData.value;
       if (!d || !d.match) return [];
+      // A description with no address (Oct 31, 2026): the agent's own listings to pick from.
+      if (d.match.anyListing) { const all = fosMineFirst(lstProperties.value); const mine = all.filter(fosIsMine); return mine.length ? mine : all; }
       return fosMineFirst(lstProperties.value).filter(p => fosSheetListingMatch(d.match.address, d.match.unit, d.match.state, p).ok);
     });
     // Mirror a saved resource to the admin's namespace so Marc sees all agents' work
@@ -16048,6 +16074,12 @@ async function lstSubmitToPipeline() {
     const ldCharCount = computed(() => (ldOutput.value || '').length);
     const ldStarted  = ref(false);
     const ldConvPropId = ref(null); // tracks which property owns the active conversation
+    // The listing the writer was opened FROM (its own Listing Description tool, ldOpenWriter).
+    // null when it was opened another way (a voice request): then the listing still open on
+    // screen is not this description's, so nothing of it is sent, offered or saved to it, and
+    // Save asks which listing (Oct 31, 2026; it used to save onto whatever listing was open).
+    const ldListingId = ref(null);
+    const ldBound = computed(() => !!(lstActiveProp.value && lstActiveProp.value.id && ldListingId.value === lstActiveProp.value.id));
     const ldSaving   = ref(false);
     // Resume support. The writer conversation for a listing is kept in property_notes
     // under subfolder listing_remarks_chat (one JSON row per listing), so an agent can
@@ -16116,6 +16148,15 @@ async function lstSubmitToPipeline() {
       try {
         const text = ldOutput.value;
         const prop = lstActiveProp.value;
+        if (!ldBound.value) {
+          // Not opened from a listing: never onto whatever listing is open. Ask, listing only
+          // the listing at this description's address (or, with no address, the agent's own).
+          ldSaving.value = false;
+          openSaveToPropModal('Listing Description', 'Listing Description', text, null, 'Listing Description',
+            { address: ld.address || '', unit: '', state: '', anyListing: !String(ld.address || '').trim(), libraryTitle: ld.address || 'Listing Desc',
+              onPick: async function (target) { return await ldSaveToListing(target, text); } });
+          return;
+        }
         if (prop) {
           // Save the listing description as a note on the listing, in one database step
           await supaRest.saveNote(prop.id, 'listing_remarks', text);
@@ -16137,6 +16178,19 @@ async function lstSubmitToPipeline() {
         }
       } catch (e) { showToast('Save failed: ' + e.message, 4000); }
       ldSaving.value = false;
+    }
+
+    // The listing picked for a description the writer wrote without one: open it (so the
+    // approval and every note shown are its own), then save as from its own tool.
+    async function ldSaveToListing(target, text) {
+      if (!target || !target.id || !text) return false;
+      await lstOpenProperty(target);
+      if (!lstActiveProp.value || lstActiveProp.value.id !== target.id) return false;
+      try { await lstApprLoad(target.id); } catch (e) {}
+      ldListingId.value = target.id;
+      ldOutput.value = text;
+      await ldSaveToProperty();
+      return lstNotes.listing_remarks === text;
     }
 
     // Store the conversation with the listing. Returns true / false, or null when there is
@@ -16256,6 +16310,7 @@ async function lstSubmitToPipeline() {
     // Open Writer from a listing: continue the saved description when there is one.
     function ldOpenWriter() {
       view.value = 'listing-desc';
+      ldListingId.value = (lstActiveProp.value && lstActiveProp.value.id) || null;
       if (lstActiveProp.value && lstActiveProp.value.id && !(lstNotes.buyer_avatars || '').trim()) lstAvResEnsure(false);
       if (!ldStarted.value && ldHasSaved.value) ldResume();
     }
@@ -24702,6 +24757,14 @@ const CHANGELOG = [
       {
         title: 'Campaigns Stay With Their Own Listing',
         detail: 'Moving quickly between listings could put one listing\'s campaign on another. If you saved Buyer Avatars while a listing was still opening, or generated a campaign and opened a different listing before it finished, the campaign could be filed on the wrong listing and replace that listing\'s own campaign. Now each listing opens with nothing of the last one in memory. Buyer Avatars only updates a campaign once that listing\'s own campaign has loaded. A campaign is only filed on the listing you generated it for. If you open another listing while a campaign is being written, it is not saved and you are told to generate it again.\n\nHow to use: Nothing changes in how you work. If you see "the campaign\'s Buyer Avatars page was NOT updated", your avatars are saved: open the campaign and press Save.\n\nBest practice: Stay on the listing until a campaign has finished generating.'
+      },
+      {
+        title: 'Approve for Marketing Checks FORWARD Style',
+        detail: 'Approve for marketing now stays off while the description or the flyer version uses a word FORWARD does not use (stunning, luxurious, impeccable, nestled, boasts, charming, gorgeous, amazing, rare find, won\'t last, turnkey) or a long dash. Before, these were only a warning on the flyer, and the description was not checked at all. The word is quoted in red, the same way the fair housing check works. Approvals already given are not changed; if their text has one of these, a red line says so. The Listing Description Writer flags them on its draft too.\n\nHow to use: If Approve is off, read the red line, press Edit, change the word or replace the dash with a comma, a colon or a semicolon, and save. Then approve.\n\nBest practice: Ask the writer for a rewrite of the sentence rather than deleting the word, so the line still reads well.'
+      },
+      {
+        title: 'A Description Written by Voice Saves to Its Own Listing',
+        detail: 'When you start the Listing Description Writer by voice, it no longer assumes the listing you had open is the one you are writing about. Get Started now sends the AI the address and details you spoke, not the open listing\'s. Save to Property asks which listing the description is for, offering only the listing at that address. If you gave no address, it lists your listings to pick from. Until today it saved the new description onto whatever listing was open, replacing that listing\'s description and clearing its approval. You can also save it to your library instead. The writer opened from a listing\'s own Listing Description button works as before and saves straight to that listing.\n\nHow to use: Say the full address when you ask for a description by voice. When you press Save to Property, check the listing shown and press Save.\n\nBest practice: For a listing already in FORWARD OS, open the listing and use its Listing Description button. Everything about the listing is then filled in for you.'
       }
     ]
   }
@@ -26264,6 +26327,8 @@ async function dismissUpdates() {
       if (v === 'video-upload') { window.location.href = '/video-upload.html'; return; }
       // Redirect old Listing Package view to unified Listings tab
       if (v === 'just-listed') { v = 'listings'; }
+      // The writer opened any way but from a listing's own tool belongs to no listing yet.
+      if (v === 'listing-desc') ldListingId.value = null;
       view.value=v; sidebarOpen.value=false; window.scrollTo(0,0);
       if (v === 'listings') lstFetchProperties();
       if (v === 'buyer-package') byrFetchBuyers();
@@ -26725,8 +26790,15 @@ async function dismissUpdates() {
           _ldStreamed = true;
         }
         if (!_ldStreamed) ldMessages.value.push({ role:'assistant', content: reply });
-        // Auto-send address + any saved MLS data in ONE combined message
-        if (lstActiveProp.value && lstActiveProp.value.address) {
+        // Auto-send address + any saved MLS data in ONE combined message, only for the listing
+        // the writer was opened from. Opened by voice, the open listing is someone else's:
+        // send what was said instead (it was stored and never read until Oct 31, 2026).
+        if (!ldBound.value) {
+          let _vc = '';
+          try { _vc = localStorage.getItem('voice_ld_context') || ''; localStorage.removeItem('voice_ld_context'); } catch (e) {}
+          const _say = _vc ? 'Here is what I have so far. ' + _vc + '.' : (ld.address ? 'The property address is: ' + ld.address + '.' : '');
+          if (_say) { await ldSend(_say); return; }
+        } else if (lstActiveProp.value && lstActiveProp.value.address) {
           await nextTick();
           const _mf = mlsForm;
           const _parts = [];
@@ -27283,7 +27355,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lib, libFilter, libTypes, filteredLib, savedCount, dashToolsCompleted,
       delItem,
       // Listing Desc (Chat)
-      ld, ldMessages, ldInput, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
+      ld, ldMessages, ldInput, ldBound, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
       lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
@@ -27374,7 +27446,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
