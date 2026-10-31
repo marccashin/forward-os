@@ -230,7 +230,7 @@ function check(rec, lines, salePrice, net) {
       Object.assign(st.ns, { nsTaxH1Paid: c.input.nsTaxH1Paid || 'yes', nsTaxH2Paid: c.input.nsTaxH2Paid || 'yes' });
       __addr();   // since Oct 12, 2026 a sheet needs a full address in its own state; the address is not in the math
       window.__pdfs.length = 0;
-      st.calcNetSheet();
+      (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet();
       await tick(); await tick(); await tick();
       out.push({ pdfs: window.__pdfs.length, rec: window.__pdfs[window.__pdfs.length - 1] || null, lines: JSON.parse(JSON.stringify(st.ns.breakdown)), net: st.ns.result });
     }
@@ -293,12 +293,12 @@ function check(rec, lines, salePrice, net) {
     const st = document.querySelector('#app').__vue_app__._instance.setupState; const __full = (j) => j === 'dc' ? '1 Test St NW, Washington, DC 20001' : String(j).indexOf('md-') === 0 ? '1 Test St, Rockville, MD 20850' : '1 Test St, Arlington, VA 22201'; const __addr = () => { if (!/\d{5}\s*$/.test(String(st.ns.address || ''))) st.ns.address = __full(st.ns.jurisdiction); };
     const tick = () => new Promise(r => setTimeout(r, 0));
     Object.assign(st.ns, a.base, { jurisdiction: 'va-nova', salePrice: 725000, closingDate: '2026-12-15', loan1: 511000, sellerCompMode: 'pct', sellerCompVal: 3, buyerCompMode: 'pct', buyerCompVal: 2.5, result: null, breakdown: [], _propId: null });
-    await tick(); __addr(); st.calcNetSheet(); await tick(); await tick(); await tick();
+    await tick(); __addr(); (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await tick(); await tick(); await tick();
     const net0 = st.ns.result;
     st.ns.salePrice = '800000'; st.ns.loan1 = '1'; await tick();
     window.__pdfs.length = 0; st.nsDownloadPDF(); await tick();
     const lines = JSON.parse(JSON.stringify(st.ns.breakdown)), net = st.ns.result;
-    st.calcNetSheet(); await tick(); await tick(); await tick();
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0')), st.calcNetSheet(); await tick(); await tick(); await tick();
     return { rec: window.__pdfs[0] || null, lines, net, net0, fresh: st.ns.result };
   }, { base });
   b = stale.rec ? check(stale.rec, stale.lines, 800000, stale.net) : ['no PDF'];
