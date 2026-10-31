@@ -12389,6 +12389,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     const campSpecialInstructions = ref('');
     const campSections = reactive({ buyerAvatars: true, socialMedia: true, tiktok: true, linkedin: true, flyerCopy: true, campaignPlan: true });
     const campParsed = ref([]);
+    let campLoadedFor = null;   // which listing the campaign in campParsed belongs to; null while unknown (Oct 31, 2026)
     const campSaveState = ref('');
     const campSavedFlash = ref('');
     const campRawResult = ref('');
@@ -13019,6 +13020,10 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Put the saved avatars on the campaign's Buyer Avatars page. 'none' = this listing has no
     // campaign yet (the campaign will take the saved avatars when it is generated).
     async function lstAvSyncCampaign(text) {
+      // Only a campaign known to be this listing's is written (Oct 31, 2026). Until this
+      // listing's notes have loaded, or if they failed to, we cannot tell whether it has one.
+      const _pid = lstActiveProp.value && lstActiveProp.value.id;
+      if (!_pid || campLoadedFor !== _pid) return 'failed';
       const secs = campParsed.value;
       if (!Array.isArray(secs) || !secs.length) return 'none';
       const rx = /buyer.*profile|avatar|persona|target buyer/;
@@ -13898,6 +13903,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       // An approval belongs to one listing: forget the last listing's before the new one loads.
       _lstApprReset();
       _lstAvReset();   // the Buyer Avatars editor belongs to one listing
+      // The last listing's notes and campaign must not be in memory while this one loads, or
+      // if its load fails (Oct 31, 2026): saving Buyer Avatars in that window wrote the LAST
+      // listing's whole campaign, with the new avatars, onto this one. campaign_sections keeps
+      // no history, so that would be lost for good.
+      Object.keys(lstNotes).forEach(k => lstNotes[k] = '');
+      campParsed.value = []; campRawResult.value = ''; campLoadedFor = null;
       lstActiveProp.value = prop;
       view.value = 'listing-detail';
       window.scrollTo(0, 0);
@@ -13917,6 +13928,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         // return and the campaign and writer notes took the first, so a listing with
         // two copies of a note could show either one.
         const notes = await supaRest.select('property_notes', `select=*&property_id=eq.${prop.id}&order=updated_at.desc.nullslast`);
+        // Another listing was opened while this one's notes loaded: leave that one alone.
+        if (!lstActiveProp.value || lstActiveProp.value.id !== prop.id) return;
         const _seenNote = {};
         notes.forEach(n => {
           if (!n.subfolder || _seenNote[n.subfolder]) return;
@@ -13949,7 +13962,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
             campRawResult.value = '';
           }
         }
+        campLoadedFor = prop.id;   // the campaign in memory (or none) is this listing's
       } catch {}
+      if (!lstActiveProp.value || lstActiveProp.value.id !== prop.id) return;
       sellerPrepLoadFor(prop.id, lstNotes.seller_prep);
       lstLoadHistory(prop.id);
       lstLoadPdfs(prop.id);
@@ -14180,6 +14195,12 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
   try {
     const _timeout = new Promise((_,rj)=>setTimeout(()=>rj(new Error('Timed out after 3 minutes — please try again')),180000));
     const raw = await Promise.race([claude(prompt), _timeout]);
+    // Another listing was opened while this was being written (Oct 31, 2026): its notes are now
+    // the ones in memory, so finishing here would mix them in and file it on the wrong listing.
+    if (!lstActiveProp.value || lstActiveProp.value.id !== prop.id) {
+      showToast('The campaign for ' + prop.address + ' was NOT saved: another listing was opened while it was being written. Open ' + prop.address + ' and generate it again.', 10000);
+      return;
+    }
     campRawResult.value = raw;
     let parsed = [];
     let parts = [];
@@ -14213,6 +14234,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       parsed.push({ title: 'CMA Summary', content: lstNotes.cma.trim(), included: true });
     }
     campParsed.value = parsed;
+    campLoadedFor = prop.id;
     _campLastSaved.sections = JSON.stringify(parsed);
     if (lstActiveProp.value && lstActiveProp.value.id) {
       try { localStorage.setItem('fos_campSections_' + lstActiveProp.value.id, _campLastSaved); } catch(e) {}
@@ -14293,6 +14315,8 @@ function campEditorPayload(kind) {
 async function campSaveOne(kind, force) {
   if (!lstActiveProp.value || !lstActiveProp.value.id) return true;
   var pid = lstActiveProp.value.id;
+  // The sections in memory must be this listing's campaign (Oct 31, 2026).
+  if (kind === 'sections' && campLoadedFor !== pid) return false;
   var payload = campEditorPayload(kind);
   if (!payload) return true;
   if (!force && payload === _campLastSaved[kind]) return true;
@@ -24674,6 +24698,10 @@ const CHANGELOG = [
       {
         title: 'CMA Builder: Up to 10 Closed Sales, One Press to Open',
         detail: 'The CMA Builder now holds up to 10 closed sales (it was 6), along with 10 pending and 10 active. The recommended price is still the median of every closed sale\'s Indicated Value, so all of them count. In the PDF, the Adjustment Grid fits up to 6 sales on one page; with 7 to 10 it continues on the next page, with every sale numbered as on the other pages. The Methodology and your Agent Notes now always print. Before today they were left off when the page was full, and a long note could run into the footer. A CMA with 6 sales or fewer prints exactly as before.\n\nOpen CMA Builder on a listing now opens the builder in one press. The extra page with a second button is gone.\n\nLog CMA to This Property is gone. It replaced the full CMA summary on the listing with one line, which the campaign then printed. Save to Listing in the builder saves the summary and the PDF; no saved CMA had been overwritten.\n\nHow to use: On a listing, open the CMA tool and press Open CMA Builder. Add up to 10 closed sales by hand or from your Bright MLS file, then press Save to Listing.\n\nBest practice: More sales are not always better. Choose the closest, most recent and most similar sales. Each one moves the median, and each extra sale adds a column to the grid your seller reads.'
+      },
+      {
+        title: 'Campaigns Stay With Their Own Listing',
+        detail: 'Moving quickly between listings could put one listing\'s campaign on another. If you saved Buyer Avatars while a listing was still opening, or generated a campaign and opened a different listing before it finished, the campaign could be filed on the wrong listing and replace that listing\'s own campaign. Now each listing opens with nothing of the last one in memory. Buyer Avatars only updates a campaign once that listing\'s own campaign has loaded. A campaign is only filed on the listing you generated it for. If you open another listing while a campaign is being written, it is not saved and you are told to generate it again.\n\nHow to use: Nothing changes in how you work. If you see "the campaign\'s Buyer Avatars page was NOT updated", your avatars are saved: open the campaign and press Save.\n\nBest practice: Stay on the listing until a campaign has finished generating.'
       }
     ]
   }
