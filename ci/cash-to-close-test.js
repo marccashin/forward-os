@@ -82,8 +82,29 @@ async function runAll(appDir, browser, cases) {
     const cash = { downBox: !!Array.from(document.querySelectorAll('label')).find(l => l.textContent.trim() === 'Down Payment %'), months: Array.from(document.querySelectorAll('label')).filter(l => /Months to Escrow/.test(l.textContent)).length, note: !!document.querySelector('[data-ctc-cash-note]') };
     return { fin, cash };
   });
+  const county = await page.evaluate(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    const r = {};
+    if (!st.go) return null;
+    st.go('cash-to-close'); await tick();
+    Object.assign(st.ctc, { purchasePrice: '1,000,000', loanType: 'conventional', downPct: '20', jurisdiction: 'dc', result: null, sections: [] }); await tick();
+    st.ctcStateSel = 'md'; await tick(); await tick();
+    r.picker = st.ctc.jurisdiction;
+    const sel = Array.from(document.querySelectorAll('select')).find(x => x.offsetParent && Array.from(x.options).some(o => o.value === 'md-unset'));
+    r.shows = sel ? sel.options[sel.selectedIndex].text : null;
+    r.note = !!document.querySelector('[data-ctc-county-problem]');
+    st.calcCashToClose(); await tick();
+    r.refused = st.ctc.result;
+    st.ctc.jurisdiction = 'md-baltimorecity'; await tick();
+    r.noteAfter = !!document.querySelector('[data-ctc-county-problem]');
+    st.calcCashToClose(); await tick();
+    r.result = st.ctc.result;
+    r.taxLine = (st.ctc.breakdown || []).map(l => l.label).find(l => /MD Transfer/.test(l)) || '';
+    return r;
+  });
   await ctx.close(); srv.close();
-  return { out, form, errors };
+  return { out, form, errors, county };
 }
 
 (async () => {
@@ -134,6 +155,9 @@ async function runAll(appDir, browser, cases) {
   console.log('3. The form');
   ok(head.form && head.form.fin.downBox && !head.form.fin.note && head.form.fin.months === 2, 'a loan shows the down payment boxes and both escrow months', head.form && head.form.fin);
   ok(head.form && !head.form.cash.downBox && head.form.cash.note && head.form.cash.months === 0, 'cash hides the down payment boxes and the escrow months and says the whole price is counted', head.form && head.form.cash);
+  const cy = head.county || {};
+  ok(cy.picker === 'md-unset' && cy.shows === 'Choose the county' && cy.note && cy.refused === null, 'choosing Maryland leaves the county unchosen: County says Choose the county, a red note says why, and Calculate makes nothing', cy);
+  ok(cy.result > 0 && !cy.noteAfter && /Baltimore City/i.test(cy.taxLine), 'with Baltimore City picked it calculates on that county (' + cy.taxLine + ')', cy);
   ok(head.errors.length === 0, 'no page errors', head.errors.slice(0, 3));
 
   if (baseDir) {

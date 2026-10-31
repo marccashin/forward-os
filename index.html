@@ -5659,8 +5659,10 @@ body {
                   <option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option>
                 </select>
                 <select v-if="ctcStateSel==='md'" v-model="ctc.jurisdiction" style="margin-top:8px;">
+                  <option value="md-unset" disabled>Choose the county</option>
                   <option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
+                <div v-if="ctc.jurisdiction==='md-unset'" data-ctc-county-problem style="margin-top:6px;font-size:12px;font-weight:600;color:#b91c1c;">Choose the Maryland county. Transfer and recordation taxes differ by county, so the estimate will not guess.</div>
               </div>
             </div>
 
@@ -18286,7 +18288,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
             const novaCities = ['alexandria','falls church','fairfax','manassas','manassas park'];
             ctc.jurisdiction = (novaCounties.some(n => county.includes(n)) || novaCities.some(n => city.includes(n) || county.includes(n))) ? 'va-nova' : 'va-other';
           } else if (state === 'MD') {
-            ctc.jurisdiction = ctcMDFromCounty(county, city);
+            // An unmatched county is left for the agent to pick, never the blended estimate (Oct 30, 2026).
+            const _mdj = ctcMDFromCounty(county, city);
+            ctc.jurisdiction = _mdj === 'md-other' ? 'md-unset' : _mdj;
           }
         });
       } else { ctcDetectJurisdiction(); }
@@ -18298,7 +18302,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       else if (/\bva\b|virginia/.test(a)) ctc.jurisdiction = 'va-other';
       else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b/.test(a)) ctc.jurisdiction = 'md-montgomery';
       else if (/\bprince george\b|\bbowie\b|\bcollege park\b|\bupper marlboro\b/.test(a)) ctc.jurisdiction = 'md-pgcounty';
-      else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-other';
+      else if (/\bmd\b|maryland/.test(a)) ctc.jurisdiction = 'md-unset';
     }
 
     // ── DC buyer-side conventions (Cash to Close) ─────────────────────────
@@ -18354,7 +18358,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const ctcStateSel = computed({
       get() { const jj = ctc.jurisdiction; return (jj && jj.indexOf('md-') === 0) ? 'md' : jj; },
       set(v) {
-        if (v === 'md') { if (String(ctc.jurisdiction).indexOf('md-') !== 0) ctc.jurisdiction = 'md-montgomery'; }
+        if (v === 'md') { if (String(ctc.jurisdiction).indexOf('md-') !== 0) ctc.jurisdiction = 'md-unset'; }
         else ctc.jurisdiction = v;
       }
     });
@@ -18423,6 +18427,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function calcCashToClose() {
       const price = ctcParse('purchasePrice');
       if (!price) { showToast('Please enter a purchase price.', 4000); return; }
+      // Maryland: the county is chosen, never assumed (Marc, Oct 30, 2026), as on the
+      // seller net sheet. 'md-unset' is not a jurisdiction and never reaches the math.
+      if (ctc.jurisdiction === 'md-unset') { showToast('Choose the Maryland county first. Transfer and recordation taxes differ by county.', 6000); return; }
       const j = ctc.jurisdiction;
       const dp = ctcDownParts(price);
       const downPayment = dp.down, downPct = dp.pct;
@@ -24511,8 +24518,8 @@ const CHANGELOG = [
         detail: 'Cash to Close now counts the whole purchase price when you choose Cash (No Loan). Until today a cash purchase still counted only a 20% down payment, so a $1,000,000 cash buyer was shown about $229,000 to bring instead of over $1,000,000. Cash purchases also no longer show a property tax escrow, and homeowner\'s insurance shows as the first year\'s premium. You can now enter a 0% down payment (for example a VA loan); before, 0 turned back into 20%. Loans with a down payment are unchanged.\n\nHow to use: Pick Cash (No Loan) under Loan Type and the down payment boxes go away. For a VA loan with nothing down, type 0 in Down Payment %.\n\nBest practice: If you sent a cash buyer a Cash to Close estimate before today, make a new one and send it again.'
       },
       {
-        title: 'Net Sheet: Pick the Maryland County',
-        detail: 'On a Maryland net sheet the OS no longer guesses the county. Until today every Maryland address outside Montgomery County started on Other county (blended estimate), and choosing Maryland started on Montgomery, even though transfer and recordation taxes differ by county. Now the County box says Choose the county until you pick one, and the sheet will not calculate until you do. When you pick an address from the suggestions, the county Google names is filled in for you. Other county (blended estimate) is still at the bottom of the list if you need it.\n\nHow to use: On a Maryland net sheet, check the County box and pick the property\'s county, then press Calculate.\n\nBest practice: If you sent a Maryland seller outside Montgomery County a net sheet before today, open it, pick the county, calculate again and check the transfer tax line.'
+        title: 'Net Sheet and Cash to Close: Pick the Maryland County',
+        detail: 'On a Maryland net sheet or Cash to Close estimate the OS no longer guesses the county. Until today every Maryland address outside Montgomery County started on Other county (blended estimate), and choosing Maryland started on Montgomery, even though transfer and recordation taxes differ by county. Now the County box says Choose the county until you pick one, and the sheet will not calculate until you do. When you pick an address from the suggestions, the county Google names is filled in for you. Other county (blended estimate) is still at the bottom of the list if you need it.\n\nHow to use: On a Maryland net sheet, check the County box and pick the property\'s county, then press Calculate.\n\nBest practice: If you sent a Maryland seller outside Montgomery County a net sheet before today, open it, pick the county, calculate again and check the transfer tax line. Do the same for a Maryland buyer\'s Cash to Close.'
       }
     ]
   }
@@ -25547,7 +25554,7 @@ async function voiceApplyFields() {
       nextTick(() => {
         if (val(f.address))       ctc.address       = f.address;
         if (num(f.purchasePrice)) ctc.purchasePrice = num(f.purchasePrice);
-        if (val(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction;
+        if (val(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
         if (val(f.loanType))      ctc.loanType      = f.loanType;
         if (num(f.downPct))       ctc.downPct       = num(f.downPct);
         if (num(f.interestRate))  ctc.interestRate  = num(f.interestRate);
@@ -26914,7 +26921,7 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
           nextTick(() => {
             if (val2(f.address))       ctc.address       = f.address;
             if (num(f.purchasePrice))  ctc.purchasePrice = num(f.purchasePrice);
-            if (val2(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction;
+            if (val2(f.jurisdiction))  ctc.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
             if (val2(f.loanType))      ctc.loanType      = f.loanType;
             if (num(f.downPct))        ctc.downPct       = num(f.downPct);
             if (num(f.interestRate))   ctc.interestRate  = num(f.interestRate);
