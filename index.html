@@ -3056,6 +3056,7 @@ body {
               </div>
               <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
                 <select v-model="ns.jurisdiction" >
+                  <option value="md-unset" disabled>Choose the county</option>
                   <option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option>
                 </select>
               </div>
@@ -7053,7 +7054,7 @@ body {
                     <select v-model="nsStateSel" ><option v-for="st in NS_STATES" :key="st.value" :value="st.value">{{ st.label }}</option></select>
                   </div>
                   <div v-if="nsStateSel === 'md'" class="form-row"><label>County</label>
-                    <select v-model="ns.jurisdiction" ><option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option></select>
+                     <select v-model="ns.jurisdiction" ><option value="md-unset" disabled>Choose the county</option><option v-for="c in MD_COUNTY_OPTIONS" :key="c.value" :value="c.value">{{ c.label }}</option></select>
                   </div>
                   <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:12px;font-weight:700;color:var(--navy);cursor:pointer;" @click="ns._showLoans=!ns._showLoans">{{ ns._showLoans ? '▼' : '▶' }} Loan Payoffs</div>
                   <div v-if="ns._showLoans" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
@@ -13507,7 +13508,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           if (_mkt === 'DC') {
             ns.jurisdiction = 'dc';
           } else if (_mkt === 'MD' && ns.jurisdiction && !ns.jurisdiction.startsWith('md-')) {
-            ns.jurisdiction = 'md-other';
+            ns.jurisdiction = nsMDFromAddress(lstActiveProp.value.address || ns.address);
           } else if (_mkt === 'VA' && ns.jurisdiction && !ns.jurisdiction.startsWith('va-')) {
             ns.jurisdiction = 'va-nova';
           }
@@ -17302,12 +17303,33 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (!d || d.getFullYear() < 2000 || d.getFullYear() > 2100) return { ok: false, problem: 'Enter the Closing Date. Without it the sheet leaves out the property tax and HOA dues, so the seller\'s net would come out too high.' };
       return { ok: true, problem: '' };
     }
-    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || '');
+    // Maryland: the county is chosen, never assumed (Marc, Oct 30, 2026). Until then
+    // every Maryland address outside Montgomery County opened on "Other county
+    // (blended estimate)", a flat 1.25% to the seller, though the exact rates for
+    // every county are in MD_RATES; in a county that taxes more (Baltimore City) the
+    // seller's costs were understated. Now a Maryland sheet whose county is not known
+    // for sure is 'md-unset' (not a real jurisdiction: nsCompute never sees it) and
+    // the sheet refuses until the agent picks the county. The blended estimate is
+    // still there to pick on purpose.
+    function nsCountyCheck() {
+      if (ns.jurisdiction === 'md-unset') return { ok: false, problem: 'Choose the Maryland county under County. Transfer and recordation taxes differ by county, so the sheet will not guess.' };
+      return { ok: true, problem: '' };
+    }
+    // A Maryland address's county when the address itself settles it, else 'md-unset'.
+    // Only Montgomery County towns, as the address detection already did.
+    function nsMDFromAddress(addr) {
+      const a = String(addr || '').toLowerCase();
+      if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brockville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) return 'md-montgomery';
+      return 'md-unset';
+    }
+    const nsAddrProblem = computed(() => nsAddressCheck().problem || nsClosingDateCheck().problem || nsCountyCheck().problem || '');
     function nsAddressOk() {
       const c = nsAddressCheck();
       if (!c.ok) { showToast(c.problem, 7000); return false; }
       const d = nsClosingDateCheck();
       if (!d.ok) { showToast(d.problem, 7000); return false; }
+      const k = nsCountyCheck();
+      if (!k.ok) { showToast(k.problem, 7000); return false; }
       return true;
     }
     function nsDetectJurisdiction() {
@@ -17321,7 +17343,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } else if (/\bmontgomery\b|\bbethesda\b|\bsilver spring\b|\bchevy chase\b|\brookville\b|\bgaithersburg\b|\bgermantown\b/.test(a)) {
         ns.jurisdiction = 'md-montgomery';
       } else if (/\bmd\b|maryland/.test(a)) {
-        ns.jurisdiction = 'md-other';
+        ns.jurisdiction = 'md-unset';
       }
     }
     // Google Places — custom dropdown using AutocompleteService (no widget takeover)
@@ -17386,11 +17408,10 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
               ns.jurisdiction = 'va-other';
             }
           } else if (state === 'MD') {
-            if (county.includes('montgomery')) {
-              ns.jurisdiction = 'md-montgomery';
-            } else {
-              ns.jurisdiction = 'md-other';
-            }
+            // The county Google names, matched to the exact county rates; never the
+            // blended estimate unless the agent picks it (Oct 30, 2026).
+            const _mdj = ctcMDFromCounty(county, city);
+            ns.jurisdiction = _mdj === 'md-other' ? 'md-unset' : _mdj;
           }
         });
       } else {
@@ -17432,7 +17453,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const nsStateSel = computed({
       get() { return (ns.jurisdiction && ns.jurisdiction.indexOf('md-') === 0) ? 'md' : ns.jurisdiction; },
       set(v) {
-        if (v === 'md') { if (String(ns.jurisdiction).indexOf('md-') !== 0) ns.jurisdiction = 'md-montgomery'; }
+        if (v === 'md') { if (String(ns.jurisdiction).indexOf('md-') !== 0) ns.jurisdiction = 'md-unset'; }
         else ns.jurisdiction = v;
       }
     });
@@ -24488,6 +24509,10 @@ const CHANGELOG = [
       {
         title: 'Cash to Close: Cash Purchases and Zero Down',
         detail: 'Cash to Close now counts the whole purchase price when you choose Cash (No Loan). Until today a cash purchase still counted only a 20% down payment, so a $1,000,000 cash buyer was shown about $229,000 to bring instead of over $1,000,000. Cash purchases also no longer show a property tax escrow, and homeowner\'s insurance shows as the first year\'s premium. You can now enter a 0% down payment (for example a VA loan); before, 0 turned back into 20%. Loans with a down payment are unchanged.\n\nHow to use: Pick Cash (No Loan) under Loan Type and the down payment boxes go away. For a VA loan with nothing down, type 0 in Down Payment %.\n\nBest practice: If you sent a cash buyer a Cash to Close estimate before today, make a new one and send it again.'
+      },
+      {
+        title: 'Net Sheet: Pick the Maryland County',
+        detail: 'On a Maryland net sheet the OS no longer guesses the county. Until today every Maryland address outside Montgomery County started on Other county (blended estimate), and choosing Maryland started on Montgomery, even though transfer and recordation taxes differ by county. Now the County box says Choose the county until you pick one, and the sheet will not calculate until you do. When you pick an address from the suggestions, the county Google names is filled in for you. Other county (blended estimate) is still at the bottom of the list if you need it.\n\nHow to use: On a Maryland net sheet, check the County box and pick the property\'s county, then press Calculate.\n\nBest practice: If you sent a Maryland seller outside Montgomery County a net sheet before today, open it, pick the county, calculate again and check the transfer tax line.'
       }
     ]
   }
@@ -25503,7 +25528,7 @@ async function voiceApplyFields() {
         ns._voicePrefill = true;
         if (val(f.address))       ns.address        = f.address;
         if (num(f.salePrice))     ns.salePrice      = num(f.salePrice);
-        if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction;
+        if (val(f.jurisdiction))  ns.jurisdiction   = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
         if (val(f.closingDate))   ns.closingDate    = f.closingDate;
         if (num(f.loan1))         { ns.loan1 = num(f.loan1); ns._showLoans = true; }
         if (num(f.loan2))         { ns.loan2 = num(f.loan2); ns._showLoans = true; }
@@ -26870,7 +26895,7 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
             ns._voicePrefill = true;
             if (val2(f.address))      ns.address       = f.address;
             if (num(f.salePrice))     ns.salePrice     = num(f.salePrice);
-            if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction;
+            if (val2(f.jurisdiction)) ns.jurisdiction  = f.jurisdiction === 'md-other' ? 'md-unset' : f.jurisdiction;   // a spoken "Maryland" is not a county (Oct 30, 2026)
             if (val2(f.closingDate))  ns.closingDate   = f.closingDate;
             if (num(f.loan1))         { ns.loan1 = num(f.loan1); ns._showLoans = true; }
             if (num(f.loan2))         { ns.loan2 = num(f.loan2); ns._showLoans = true; }

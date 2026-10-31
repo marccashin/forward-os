@@ -198,7 +198,14 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/missing the state and ZIP code/.test(s.shown || ''), 'D: the reason is on screen above Calculate', s.shown);
   await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '211 Delta Vista Ln, Upper Marlboro, MD 20774'; await new Promise(r => setTimeout(r, 50)); });
   s = await tryAll();
-  ok(s.result !== null && s.problem === '' && s.shown === null, 'D: with the full Maryland address typed in, it calculates and the notice is gone', s);
+  // Since Oct 30, 2026 a Maryland county is chosen, never assumed: Upper Marlboro is Prince George's,
+  // and until then this sheet calculated on the blended "Other county" estimate.
+  const cty = await run(() => { const st = document.querySelector('#app').__vue_app__._instance.setupState; const sel = Array.from(document.querySelectorAll('select')).find(x => x.offsetParent && Array.from(x.options).some(o => o.value === 'md-unset')); return { jur: st.ns.jurisdiction, shows: sel ? sel.options[sel.selectedIndex].text : null }; });
+  ok(s.result === null && !s.pdfMade && cty.jur === 'md-unset' && cty.shows === 'Choose the county' && /Choose the Maryland county/.test(s.shown || ''), 'D: a Maryland listing with no county in its address makes nothing until the county is picked; County says Choose the county and the reason is on screen', [s, cty]);
+  await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.jurisdiction = 'md-pgcounty'; await new Promise(r => setTimeout(r, 50)); });
+  s = await tryAll();
+  const pgLine = await run(() => (document.querySelector('#app').__vue_app__._instance.setupState.ns.breakdown || []).map(l => l.label).find(l => /Transfer|Recordation/i.test(l)) || '');
+  ok(s.result !== null && s.problem === '' && s.shown === null && !/blended|Seller.s Half$/.test(pgLine), 'D: with Prince George\'s picked, it calculates on that county\'s rates and the notice is gone (' + pgLine + ')', [s, pgLine]);
   await run(async () => { const st = document.querySelector('#app').__vue_app__._instance.setupState; st.ns.address = '1300 Army Navy Dr #518, Arlington, VA 22202'; st.ns.jurisdiction = 'va-nova'; await new Promise(r => setTimeout(r, 50)); });
   s = await tryAll();
   ok(s.result === null && /in Virginia but this listing is marked Maryland/.test(s.shown || ''), 'D: a Virginia address on a listing marked Maryland is refused, and both states are named', s);
