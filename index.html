@@ -5581,19 +5581,19 @@ body {
                         <template v-else>
                           <div style="min-width:0;">
                             <template v-if="h.facts && h.facts.fields && h.facts.fields[f.key]">
-                              <div v-if="!h.facts.fields[f.key].conflict" class="tp-fig-v">{{ h.facts.fields[f.key].display }} <span class="tp-fig-src">from <a v-for="(u,ui) in ttFigOptions(h.facts.fields[f.key])[0].urls" :key="ui" :href="u" target="_blank" rel="noopener">{{ ui ? ', ' : '' }}{{ ttSourceHost(u) }}</a></span></div>
+                              <div v-if="ttFigOptions(h.facts.fields[f.key],f.key).length === 1" class="tp-fig-v">{{ ttFigOptions(h.facts.fields[f.key],f.key)[0].display }} <span class="tp-fig-src">from <a v-for="(u,ui) in ttFigOptions(h.facts.fields[f.key],f.key)[0].urls" :key="ui" :href="u" target="_blank" rel="noopener">{{ ui ? ', ' : '' }}{{ ttSourceHost(u) }}</a></span></div>
                               <div v-else class="tp-pick" data-tp-conflict>Two pages disagree. Pick the one that matches Bright:
                                 <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
-                                  <button v-for="o in ttFigOptions(h.facts.fields[f.key])" :key="o.key" type="button" data-tp-pickone @click="ttConfirmFig(h,f.key,o.display,o.urls[0])">{{ o.display }} &middot; {{ ttSourceHost(o.urls[0]) }}</button>
+                                  <button v-for="o in ttFigOptions(h.facts.fields[f.key],f.key)" :key="o.key" type="button" data-tp-pickone @click="ttConfirmFig(h,f.key,o.display,o.urls[0])">{{ o.display }} &middot; {{ ttSourceHost(o.urls[0]) }}</button>
                                 </div>
-                                <div style="margin-top:3px;"><a v-for="o in ttFigOptions(h.facts.fields[f.key])" :key="'l'+o.key" :href="o.urls[0]" target="_blank" rel="noopener" style="margin-right:8px;">Open {{ ttSourceHost(o.urls[0]) }}</a></div>
+                                <div style="margin-top:3px;"><a v-for="o in ttFigOptions(h.facts.fields[f.key],f.key)" :key="'l'+o.key" :href="o.urls[0]" target="_blank" rel="noopener" style="margin-right:8px;">Open {{ ttSourceHost(o.urls[0]) }}</a></div>
                               </div>
                             </template>
                             <div v-else-if="h.facts" class="tp-fig-v" style="color:#9ca3af;font-weight:500;">Not found, type it</div>
                             <input class="tp-type" :data-tp-type="f.key" placeholder="or type it" @change="ttTypeFig(h,f.key,$event.target.value);$event.target.value=''"/>
                             <div v-if="ttLook.figErr[h.id+f.key]" class="tp-bad" data-tp-figerr style="margin-top:3px;">{{ ttLook.figErr[h.id+f.key] }}</div>
                           </div>
-                          <button v-if="h.facts && h.facts.fields && h.facts.fields[f.key] && !h.facts.fields[f.key].conflict" type="button" class="tp-tick" data-tp-tick @click="ttConfirmFig(h,f.key,h.facts.fields[f.key].display,ttFigOptions(h.facts.fields[f.key])[0].urls[0])" title="Confirm">&#10003;</button>
+                          <button v-if="h.facts && h.facts.fields && h.facts.fields[f.key] && ttFigOptions(h.facts.fields[f.key],f.key).length === 1" type="button" class="tp-tick" data-tp-tick @click="ttConfirmFig(h,f.key,ttFigOptions(h.facts.fields[f.key],f.key)[0].display,ttFigOptions(h.facts.fields[f.key],f.key)[0].urls[0])" title="Confirm">&#10003;</button>
                         </template>
                       </div>
                       <div class="form-row" style="margin:8px 0 0;"><label>Overview (your edits are kept)</label>
@@ -20363,12 +20363,24 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ttSourceHost(u) {
       try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'page'; }
     }
-    function ttFigOptions(field) {
+    // A listing page writes "3 Bed", "980 sqft" or "1 full bath" (seen live, Nov 1, 2026). The figure
+    // is the number; the word after it is the page's label. Kept: exactly the digits the page shows,
+    // never rounded or converted. Anything that is not one plain number with such a label is kept as
+    // the page wrote it, for the agent to see and type over.
+    const TT_FIG_UNIT_RX = /^\s*(\$?\s*\d[\d,]*(?:\.\d+)?)\s*(?:beds?|bedrooms?|br|(?:full |half )?baths?|(?:full |half )?bathrooms?|ba|sq\.?\s*ft\.?|sqft|square\s+f(?:ee|oo)t|sf|days?(?:\s+on\s+(?:the\s+)?market)?)?\s*$/i;
+    function ttFigClean(key, display) {
+      const raw = String(display || '').trim(), m = TT_FIG_UNIT_RX.exec(raw);
+      if (!m) return raw;
+      const r = ttFigParse(key, m[1]);
+      return r.err ? raw : r.value;
+    }
+    function ttFigOptions(field, key) {
       const out = [];
       ((field && field.sources) || []).forEach(function (s) {
-        const key = s.number !== null && s.number !== undefined ? 'n' + s.number : 's' + String(s.display).toLowerCase();
-        let o = out.find(function (x) { return x.key === key; });
-        if (!o) { o = { key: key, display: s.display, urls: [] }; out.push(o); }
+        const clean = ttFigClean(key, s.display);
+        const k = 'c' + clean.replace(/[$,\s]/g, '').toLowerCase();
+        let o = out.find(function (x) { return x.key === k; });
+        if (!o) { o = { key: k, display: clean, urls: [] }; out.push(o); }
         if (o.urls.indexOf(s.source_url) < 0) o.urls.push(s.source_url);
       });
       return out;
@@ -20400,7 +20412,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ttStamp() { return { by: agentName.value || '', at: new Date().toISOString() }; }
     function ttConfirmFig(h, key, display, url) {
       ttEnsureHome(h);
-      h.confirm[key] = Object.assign({ value: String(display), how: 'source', source_url: url || '' }, ttStamp());
+      h.confirm[key] = Object.assign({ value: ttFigClean(key, display), how: 'source', source_url: url || '' }, ttStamp());
       ttLook.figErr[h.id + key] = '';
       ttSaveTours();
     }
@@ -25621,6 +25633,10 @@ const CHANGELOG = [
       {
         title: 'Plan a Showing Tour in Tour Tracker',
         detail: 'Tour Tracker now plans the showing tour itself. Open a tour, add the homes (up to 8), pick the date and the time of the first showing, and choose how long you will spend at each home: 15 minutes, 30 minutes, 45 minutes or 1 hour. Find the best order tries every order and suggests start times using traffic for that day, each rounded up to 5 minutes with 5 minutes between showings. Use those times to request showings. When the listing agents confirm, switch to Times confirmed, type the confirmed times and press Check the times: a red line shows wherever a drive will not fit. Look up the listings finds each home\'s live listing on the web and shows every figure with the page it came from (never Zillow). Nothing goes to your buyer until you have ticked every figure, picked one where two pages disagree, or typed your own. The comparisons are then written only from the figures you confirmed, and state facts only. Your copy (PDF) has the route on a map, the drive times, any timing warnings and your notes. Send to buyer makes the buyer\'s copy: numbered pins with no route, the times, the confirmed figures and how each home compares.\n\nHow to use: Open the buyer, then Tour Tracker, open or create the tour and add the addresses. Plan the route, request the showings, then enter the confirmed times. Press Look up the listings, check each figure against Bright, write the comparisons and press Send to buyer. On a phone, your share menu opens with the PDF so you can text or email it; on a computer it downloads and an email to your buyer opens.\n\nBest practice: Type the full address with the unit number and ZIP. An address the map can only place roughly is refused, so no pin lands in the wrong spot. Type lockbox and parking notes in Notes for your copy; they print on your copy only.'
+      },
+      {
+        title: 'Tour Figures Read Cleanly from Listing Pages',
+        detail: 'Listing pages often write a figure with its label, like 3 Bed, 980 sqft or 1 full bath. Tour Tracker now keeps the number the page shows (3, 980, 1), so your buyer\'s tour sheet reads Beds 3, not Beds 3 Bed. Two pages that say 3 Bed and 3 Beds now count as the same figure, so you tick it once instead of picking between them.\n\nHow to use: Nothing changes. Tick each figure after checking it against Bright.\n\nBest practice: If a figure shows something other than a plain number, type the number yourself in the box below it.'
       }
     ]
   }
