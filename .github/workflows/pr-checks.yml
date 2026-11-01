@@ -175,6 +175,7 @@ jobs:
               t "Meeting briefs test (open, move to the right card, remove, one per person)" node head/ci/meeting-briefs-test.js head
               t "Meeting briefs database test (the repo's SQL in a throwaway Postgres)" node head/ci/meeting-briefs-db-test.js head
               t "AI key test (notice when the key is missing, no demo output anywhere)" node head/ci/ai-key-test.js head
+              t "Showing tour plan test (route, figures the agent confirms, buyer and agent PDFs, sending)" node head/ci/tour-plan-test.js head
               ;;
             2)
               t "Listing presentation test (each agent downloads only their own deck)" node head/ci/listing-presentation-test.js head
