@@ -647,6 +647,19 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 .tp-pick { background: #fbf0dc; color: #8a5300; border-radius: 8px; padding: 6px 8px; font-size: 11.5px; }
 .tp-pick button { background: #fff; border: 1px solid #e2c999; border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; color: #14223a; cursor: pointer; }
 .tp-link { background: none; border: 0; color: var(--navy); font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.tp-sub-k { font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: #8b7355; margin-bottom: 6px; }
+.tp-note { font-size: 12px; color: #6b7280; line-height: 1.5; margin-top: 4px; }
+.tp-picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.tp-picks button { border: 1px solid #d8d1c4; background: #fff; border-radius: 18px; padding: 6px 12px; font-size: 12.5px; color: #14223a; cursor: pointer; }
+.tp-picks button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
+.tp-inside { font-size: 11.5px; color: #2f6b46; font-weight: 600; }
+.tp-text { width: 100% !important; min-height: 96px; box-sizing: border-box; font-size: 13.5px; line-height: 1.5; }
+.tp-working { display: flex; flex-direction: column; gap: 6px; background: #f4f1ea; border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-size: 12px; color: #5b6475; }
+.tp-bar { height: 4px; border-radius: 2px; background: #e5dfd2; overflow: hidden; position: relative; }
+.tp-bar i { position: absolute; top: 0; bottom: 0; width: 35%; background: var(--gold, #c8a96e); border-radius: 2px; animation: tpbar 1.3s ease-in-out infinite; }
+@keyframes tpbar { 0% { left: -35%; } 100% { left: 100%; } }
+@media (prefers-reduced-motion: reduce) { .tp-bar i { animation-duration: 4s; } }
+.tp-confirmall { margin-top: 8px; background: #2f6b46; color: #fff; border: 0; border-radius: 8px; padding: 7px 12px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
 .tt-addprop { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end; }
 @media (max-width: 520px) { .tt-addprop { grid-template-columns: 1fr; } .tp-row2 { grid-template-columns: 1fr; } .tp-fig { grid-template-columns: 78px minmax(0,1fr) auto; } }
 .save-prop-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
@@ -5517,7 +5530,31 @@ body {
                     <div class="form-row" style="margin:0;"><label>Date</label><input type="date" data-tp-date v-model="tt.activeTour.plan.date" @change="ttSaveTours"/></div>
                     <div v-if="tt.activeTour.plan.mode==='plan'" class="form-row" style="margin:0;"><label>First showing at</label><input type="time" data-tp-first v-model="tt.activeTour.plan.firstAt" @change="ttSaveTours"/></div>
                   </div>
-                  <div class="form-row" style="margin:8px 0 0;"><label>Starting from (optional)</label><input data-tp-startaddr v-model="tt.activeTour.plan.startAddress" placeholder="Your office or the buyer's home" @change="ttSaveTours"/></div>
+                  <div class="tp-sub-k" style="margin-top:12px;">Booking</div>
+                  <div class="tp-seg" style="margin-bottom:4px;">
+                    <button type="button" data-tp-booking="standard" :class="{on: tt.activeTour.plan.booking!=='custom'}" @click="tt.activeTour.plan.booking='standard';ttSaveTours()">FORWARD standard</button>
+                    <button type="button" data-tp-booking="custom" :class="{on: tt.activeTour.plan.booking==='custom'}" @click="tt.activeTour.plan.booking='custom';ttSaveTours()">My own times</button>
+                  </div>
+                  <div v-if="tt.activeTour.plan.booking!=='custom'" data-tp-standard-note class="tp-note">Each showing is booked for 1 hour and you spend 45 minutes inside. The next booking starts when you leave the last home, 15 minutes before its booking ends, so the overlap covers the drive. A longer drive starts the next booking later.</div>
+                  <div v-else class="tp-note">Pick the time at each home: 15, 30, 45 minutes or 1 hour, with 5 minutes between showings plus the drive.</div>
+                  <div class="tp-sub-k" style="margin-top:12px;">Starting from</div>
+                  <div class="tp-picks">
+                    <button v-if="TT_OFFICE_ADDRESS" type="button" data-tp-start-pick="office" :class="{on: tt.activeTour.plan.startPick==='office'}" @click="ttPickPlace('start','office')">Office</button>
+                    <button type="button" data-tp-start-pick="home" :class="{on: tt.activeTour.plan.startPick==='home'}" @click="ttPickPlace('start','home')">My home</button>
+                    <button type="button" data-tp-start-pick="buyer" :class="{on: tt.activeTour.plan.startPick==='buyer'}" @click="ttPickPlace('start','buyer')">Buyer's home</button>
+                    <button type="button" data-tp-start-pick="typed" :class="{on: tt.activeTour.plan.startPick==='typed'}" @click="ttPickPlace('start','typed')">Another address</button>
+                  </div>
+                  <input v-if="tt.activeTour.plan.startPick" data-tp-startaddr v-model="tt.activeTour.plan.startAddress" @change="ttPlaceTyped('start')" style="margin-top:6px;width:100%;"
+                    :placeholder="tt.activeTour.plan.startPick==='home' ? 'Your home address (kept on this device only)' : tt.activeTour.plan.startPick==='buyer' ? 'The buyer\'s home address (kept with this buyer\'s tours)' : 'Street, city, state and ZIP'"/>
+                  <div class="tp-sub-k" style="margin-top:12px;">Ending at</div>
+                  <div class="tp-picks">
+                    <button type="button" data-tp-end-pick="none" :class="{on: !tt.activeTour.plan.endPick || tt.activeTour.plan.endPick==='none'}" @click="ttPickPlace('end','none')">No preference</button>
+                    <button type="button" data-tp-end-pick="next" :class="{on: tt.activeTour.plan.endPick==='next'}" @click="ttPickPlace('end','next')">My next appointment</button>
+                    <button type="button" data-tp-end-pick="home" :class="{on: tt.activeTour.plan.endPick==='home'}" @click="ttPickPlace('end','home')">My home</button>
+                    <button v-if="TT_OFFICE_ADDRESS" type="button" data-tp-end-pick="office" :class="{on: tt.activeTour.plan.endPick==='office'}" @click="ttPickPlace('end','office')">Office</button>
+                  </div>
+                  <input v-if="tt.activeTour.plan.endPick && tt.activeTour.plan.endPick!=='none'" data-tp-endaddr v-model="tt.activeTour.plan.endAddress" @change="ttPlaceTyped('end')" style="margin-top:6px;width:100%;"
+                    :placeholder="tt.activeTour.plan.endPick==='home' ? 'Your home address (kept on this device only)' : 'Where you go next: street, city, state and ZIP'"/>
                   <div v-if="!tt.activeTour.properties.length" style="font-size:12px;color:#9ca3af;margin-top:10px;">Add the homes above, then plan the route here.</div>
                   <div v-for="(h,hi) in tt.activeTour.properties" :key="'tp'+h.id" data-tp-home class="tp-home-wrap">
                     <div class="tp-home">
@@ -5525,17 +5562,19 @@ body {
                       <div style="min-width:0;flex:1;">
                         <div class="tp-addr">{{ h.address }}</div>
                         <div v-if="tt.activeTour.plan.mode==='plan'" class="tp-times">
-                          <select data-tp-minutes v-model="h.minutes" @change="ttSaveTours">
+                          <select v-if="tt.activeTour.plan.booking==='custom'" data-tp-minutes v-model="h.minutes" @change="ttSaveTours">
                             <option value="" disabled>Time at this home</option>
                             <option v-for="m in TT_MINUTES" :key="m.v" :value="m.v">{{ m.t }}</option>
                           </select>
                           <span v-if="ttStopOf(tt.activeTour,h)" data-tp-planned class="tp-planned">{{ ttFmtTime(ttStopOf(tt.activeTour,h).start) }} to {{ ttFmtTime(ttStopOf(tt.activeTour,h).end) }}</span>
+                          <span v-if="ttStopOf(tt.activeTour,h) && ttStopOf(tt.activeTour,h).arrive" data-tp-inside class="tp-inside">inside {{ ttFmtTime(ttStopOf(tt.activeTour,h).arrive) }} to {{ ttFmtTime(ttStopOf(tt.activeTour,h).leave) }}</span>
                         </div>
                         <div v-else class="tp-times">
                           <input type="time" data-tp-start v-model="h.start" @change="ttSaveTours" aria-label="Confirmed start"/>
                           <span style="font-size:11px;color:#6b7280;">to</span>
                           <input type="time" data-tp-end v-model="h.end" @change="ttSaveTours" aria-label="Confirmed end"/>
                           <span v-if="h.plannedStart" style="font-size:11px;color:#9ca3af;">planned {{ ttFmtTime(h.plannedStart) }}</span>
+                          <span v-if="ttStopOf(tt.activeTour,h) && ttStopOf(tt.activeTour,h).arrive" data-tp-inside class="tp-inside">inside {{ ttFmtTime(ttStopOf(tt.activeTour,h).arrive) }} to {{ ttFmtTime(ttStopOf(tt.activeTour,h).leave) }}</span>
                         </div>
                       </div>
                     </div>
@@ -5545,10 +5584,13 @@ body {
                     <span v-if="ttRoute.busy" class="spinner"></span>
                     <span v-if="ttRoute.busy"> Working out the route&hellip;</span><span v-else>{{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }}</span>
                   </button>
+                  <div v-if="ttRoute.busy" class="tp-working" data-tp-working="route"><div class="tp-bar"><i></i></div><span>Working out the drives with traffic&hellip; {{ ttSecs(ttRoute.started) }}s. This usually takes 5 to 15 seconds.</span></div>
                   <div v-if="ttRoute.error" data-tp-error class="tp-bad">{{ ttRoute.error }}</div>
                   <div v-else-if="ttPlanStale(tt.activeTour)" data-tp-stale class="tp-warn">The tour changed since the route was worked out. Press {{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }} again.</div>
                   <div v-if="ttRouteFor(tt.activeTour)" style="font-size:11px;color:#6b7280;margin-top:6px;" data-tp-routeinfo>
-                    {{ ttRouteFor(tt.activeTour).mode==='plan' ? 'Suggested times, each rounded up to 5 minutes, with 5 minutes between showings. Use them to request showings.' : 'Your confirmed times, in time order.' }}
+                    {{ ttRouteFor(tt.activeTour).mode==='plan' ? (ttRouteFor(tt.activeTour).booking==='standard' ? 'Suggested bookings on the FORWARD standard, each on the 5 minutes. Use them to request showings.' : 'Suggested times, each rounded up to 5 minutes, with 5 minutes between showings. Use them to request showings.') : 'Your confirmed times, in time order.' }}
+                    <span v-if="ttRouteFor(tt.activeTour).start" data-tp-startinfo> Leave {{ ttRouteFor(tt.activeTour).start.address }} by {{ ttFmtTime(ttRouteFor(tt.activeTour).start.leave_by) }} ({{ ttRouteFor(tt.activeTour).start.drive_min }} min to home 1).</span>
+                    <span v-if="ttRouteFor(tt.activeTour).end" data-tp-endinfo> About {{ ttRouteFor(tt.activeTour).end.drive_min }} min from the last home to {{ ttRouteFor(tt.activeTour).end.address }}, arriving about {{ ttFmtTime(ttRouteFor(tt.activeTour).end.arrive_about) }}.</span>
                     {{ ttRouteFor(tt.activeTour).traffic ? 'Drive times use traffic for the tour date and time.' : 'Drive times are without traffic (the tour time has passed).' }}
                   </div>
                   <img v-if="ttMapFor(tt.activeTour,'agent')" :src="ttMapFor(tt.activeTour,'agent')" data-tp-map alt="Map of the tour route" style="width:100%;border-radius:8px;margin-top:10px;border:1px solid #e5e7eb;"/>
@@ -5560,17 +5602,20 @@ body {
                       <span data-tp-progress style="font-size:12px;color:#6b7280;"><b style="color:var(--navy);">{{ ttFigCount(tt.activeTour).done }} of {{ ttFigCount(tt.activeTour).all }}</b> figures confirmed</span>
                     </div>
                     <p style="font-size:11.5px;color:#6b7280;margin:2px 0 8px;line-height:1.5;">Each figure shows the page it came from. Tick it when it matches Bright, pick one when two pages disagree, or type your own. Zillow, Trulia and HotPads are never searched.</p>
-                    <button class="btn-gold" data-tp-lookall @click="ttLookupAll" :disabled="!tt.activeTour.properties.length || ttAllLooked(tt.activeTour)" style="font-size:12px;padding:8px 16px;">Look up the listings</button>
+                    <button class="btn-gold" data-tp-lookall @click="ttLookupAll" :disabled="!tt.activeTour.properties.length || ttAllLooked(tt.activeTour)" style="font-size:12px;padding:8px 16px;"><span v-if="Object.values(ttLook.busy).some(Boolean)" class="spinner"></span>{{ Object.values(ttLook.busy).some(Boolean) ? ' Searching ' + Object.values(ttLook.busy).filter(Boolean).length + ' listing' + (Object.values(ttLook.busy).filter(Boolean).length===1?'':'s') + '...' : 'Look up the listings' }}</button>
                     <div v-for="(h,hi) in tt.activeTour.properties" :key="'tpf'+h.id" data-tp-figs class="tp-figbox">
                       <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
                         <div style="min-width:0;"><div class="tp-addr">{{ hi+1 }}. {{ h.address }}</div>
                           <div v-if="h.facts && h.facts.found!==false" style="font-size:11px;color:#6b7280;">Found{{ h.facts.status ? ': ' + h.facts.status : '' }}{{ h.facts.matched_address ? ' · ' + h.facts.matched_address : '' }}</div></div>
                         <button type="button" class="tp-link" data-tp-lookone @click="ttLookup(h)" :disabled="ttLook.busy[h.id]"><span v-if="ttLook.busy[h.id]" class="spinner spinner-dark"></span>{{ ttLook.busy[h.id] ? ' Searching' : (h.facts ? 'Search again' : 'Look up') }}</button>
                       </div>
+                      <div v-if="ttLook.busy[h.id]" class="tp-working" data-tp-working="lookup"><div class="tp-bar"><i></i></div><span>Searching listing pages for this home&hellip; {{ ttSecs(ttLook.started[h.id]) }}s. This usually takes 15 to 45 seconds; you can keep working while it runs.</span></div>
                       <div v-if="ttLook.error[h.id]" data-tp-lookerr class="tp-bad">{{ ttLook.error[h.id] }}</div>
+                      <button v-if="ttTickable(h).length > 1" type="button" class="tp-confirmall" data-tp-confirmall @click="ttConfirmAll(h)">Confirm all {{ ttTickable(h).length }} found figures</button>
+                      <div v-if="ttHomeMissing(h).length" data-tp-missing class="tp-warn">{{ ttHomeMissing(h).join('. ') }}.</div>
                       <div v-if="ttHomeProblems(h).length" data-tp-flag class="tp-bad">
                         <div v-for="(p,pi) in ttHomeProblems(h)" :key="pi">{{ p }}.</div>
-                        <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px;font-weight:600;cursor:pointer;"><input type="checkbox" data-tp-flagok v-model="h.flagOk" @change="ttSaveTours" style="margin-top:2px;"/> I checked this home against Bright, and the figures I confirm below are right.</label>
+                        <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px;font-weight:600;cursor:pointer;"><input type="checkbox" data-tp-flagok v-model="h.flagOk" @change="ttSaveTours" style="margin-top:2px;"/> This is about the listing itself, not one figure. I checked it in Bright and this is the right home, for sale.</label>
                       </div>
                       <div v-for="f in TT_FIGS" :key="f.key" class="tp-fig" :data-tp-fig="f.key">
                         <div class="tp-fig-k">{{ f.label }}</div>
@@ -5597,7 +5642,7 @@ body {
                         </template>
                       </div>
                       <div class="form-row" style="margin:8px 0 0;"><label>Overview (your edits are kept)</label>
-                        <textarea data-tp-overview v-model="h.overview" rows="2" @input="ttOnOverviewEdit(h)" placeholder="One or two sentences on the home, in our own words"></textarea></div>
+                        <textarea data-tp-overview v-model="h.overview" rows="4" class="tp-text" @input="ttOnOverviewEdit(h)" placeholder="One or two sentences on the home, in our own words"></textarea></div>
                       <div v-if="ttTextIssues(h.overview).length" data-tp-ovissue class="tp-bad">Fix the overview: {{ ttTextIssues(h.overview).join('; ') }}.</div>
                       <label v-else-if="String(h.overview||'').trim()" style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;margin-top:4px;"><input type="checkbox" data-tp-ovok v-model="h.overviewOk" @change="ttSaveTours"/> The overview is right</label>
                       <div v-if="h.facts && h.facts.overview && h.facts.overview.source_url" style="font-size:10.5px;color:#9ca3af;margin-top:2px;">Written from <a :href="h.facts.overview.source_url" target="_blank" rel="noopener">{{ ttSourceHost(h.facts.overview.source_url) }}</a></div>
@@ -5609,12 +5654,13 @@ body {
                     <h4 class="tp-h4">How each home compares</h4>
                     <p style="font-size:11.5px;color:#6b7280;margin:2px 0 8px;line-height:1.5;">Written only from the figures you confirmed. Facts only: no price, value or negotiating commentary. Edit any line.</p>
                     <button class="btn-gold" data-tp-compare @click="ttCompare" :disabled="ttCmp.busy || !tt.activeTour.properties.length" style="font-size:12px;padding:8px 16px;"><span v-if="ttCmp.busy" class="spinner"></span>{{ ttCmp.busy ? ' Writing' : (tt.activeTour.plan.compareSig ? 'Write the comparisons again' : 'Write the comparisons') }}</button>
+                    <div v-if="ttCmp.busy" class="tp-working" data-tp-working="compare"><div class="tp-bar"><i></i></div><span>Writing how each home compares&hellip; {{ ttSecs(ttCmp.started) }}s. This usually takes 10 to 30 seconds.</span></div>
                     <div v-if="ttCmp.error" data-tp-cmperr class="tp-bad">{{ ttCmp.error }}</div>
                     <div v-if="ttCompareStale(tt.activeTour)" data-tp-cmpstale class="tp-warn">A figure or overview changed since these were written. Write them again before sending.</div>
                     <template v-if="tt.activeTour.plan.compareSig">
                       <div v-for="(h,hi) in tt.activeTour.properties" :key="'tpc'+h.id" class="form-row" style="margin:8px 0 0;">
                         <label>{{ hi+1 }}. {{ h.address }}</label>
-                        <textarea data-tp-cmp v-model="h.comparison" rows="2" @input="ttSaveTours"></textarea>
+                        <textarea data-tp-cmp v-model="h.comparison" rows="4" class="tp-text" @input="ttSaveTours"></textarea>
                         <div v-if="!ttCompareStale(tt.activeTour) && ttCompareIssues(tt.activeTour,h).length" data-tp-cmpissue class="tp-bad">Fix this line: {{ ttCompareIssues(tt.activeTour,h).join('; ') }}.</div>
                       </div>
                     </template>
@@ -5624,6 +5670,10 @@ body {
                   <div class="tp-section">
                     <div class="form-row" style="margin:0;"><label>Notes for your copy</label>
                       <textarea data-tp-notes v-model="tt.activeTour.plan.notes" rows="3" placeholder="Add showing instructions here (lockbox, gate codes, parking)" @input="ttSaveTours"></textarea></div>
+                    <button v-if="ttAgentProblems(tt.activeTour).length" class="btn-navy" data-tp-run2 @click="ttRunRoute" :disabled="ttRoute.busy || !tt.activeTour.properties.length" style="width:100%;margin-top:10px;">
+                      <span v-if="ttRoute.busy" class="spinner"></span><span v-if="ttRoute.busy"> Working out the route&hellip;</span><span v-else>{{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }}</span>
+                    </button>
+                    <div v-if="ttRoute.error && ttAgentProblems(tt.activeTour).length" class="tp-bad">{{ ttRoute.error }}</div>
                     <div class="tp-row2" style="margin-top:10px;">
                       <button class="btn-navy" data-tp-agentpdf @click="ttAgentPdf" :disabled="!!ttPdf.busy"><span v-if="ttPdf.busy==='agent'" class="spinner"></span>{{ ttPdf.busy==='agent' ? ' Making' : 'Your copy (PDF)' }}</button>
                       <button class="btn-gold" data-tp-send @click="ttSendBuyer" :disabled="!!ttPdf.busy || ttBuyerProblems(tt.activeTour).length > 0"><span v-if="ttPdf.busy==='buyer'" class="spinner"></span>{{ ttPdf.busy==='buyer' ? ' Making' : 'Send to buyer' }}</button>
@@ -20100,6 +20150,22 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       } catch(e) { console.warn('Could not load tours from Supabase:', e); }
       return ttLoadTours(); // fallback to localStorage
     }
+    // The agent's home address stays on this device (Marc, Nov 1, 2026): a tour that starts or
+    // ends at My home is saved to the cloud with the pick and without the address.
+    function ttCloudReplacer(key, value) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && (value.startPick === 'home' || value.endPick === 'home') && 'startAddress' in value) {
+        const v = Object.assign({}, value);
+        if (v.startPick === 'home') v.startAddress = '';
+        if (v.endPick === 'home') v.endAddress = '';
+        if (v.result) {
+          v.result = Object.assign({}, v.result);
+          if (v.startPick === 'home' && v.result.start) v.result.start = Object.assign({}, v.result.start, { address: '', google_address: '' });
+          if (v.endPick === 'home' && v.result.end) v.result.end = Object.assign({}, v.result.end, { address: '', google_address: '' });
+        }
+        return v;
+      }
+      return value;
+    }
     let ttSyncFailed = false;
     async function ttSaveTours() {
       const toursJson = JSON.stringify(tt.tours);
@@ -20109,7 +20175,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         await supaRest.upsert('agent_tours', {
           agent_name: agentName.value,
           buyer_id: buyerId,
-          tours_json: toursJson
+          tours_json: JSON.stringify(tt.tours, ttCloudReplacer)
         }, 'agent_name,buyer_id');
         ttSyncFailed = false;
       } catch(e) {
@@ -20214,14 +20280,66 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // sheet states facts only, no price, value or negotiating commentary). Change both together.
     const TT_ADVICE_RX = /\b(?:negotiat\w*|leverage|bargain|good deal|great deal|best deal|(?:best|good|great) value|underpriced|overpriced|priced to sell|motivated|price (?:cut|drop|reduction)|reduced|offers? (?:below|under|over|above)|below asking|over asking|bidding war|compet\w+ offers?|move quickly|act fast|won'?t last|sit(?:s|ting)? on the market|stale|worth (?:it|the)|investment|appreciat\w*|resale|should (?:offer|buy|consider))\b/i;
     const TT_PLACES_RX = /\b(?:schools?|perfect for|ideal for)\b/i;
-    const ttRoute = reactive({ busy: false, error: '', maps: {} });
-    const ttLook = reactive({ busy: {}, error: {}, figErr: {} });
-    const ttCmp = reactive({ busy: false, error: '' });
+    // FORWARD's office, for the Office pick on Starting from and Ending at. Empty = no Office pick.
+    const TT_OFFICE_ADDRESS = '';
+    const ttRoute = reactive({ busy: false, error: '', maps: {}, started: 0 });
+    const ttLook = reactive({ busy: {}, error: {}, figErr: {}, started: {} });
+    const ttCmp = reactive({ busy: false, error: '', started: 0 });
+    // A clock for the "still working" panels: ticks once a second only while something runs.
+    const ttNow = ref(Date.now());
+    let _ttTick = null;
+    function ttTickStart() {
+      if (_ttTick) return;
+      _ttTick = setInterval(function () {
+        ttNow.value = Date.now();
+        if (!ttRoute.busy && !ttCmp.busy && !Object.values(ttLook.busy).some(Boolean)) { clearInterval(_ttTick); _ttTick = null; }
+      }, 1000);
+    }
+    function ttSecs(t0) { return t0 ? Math.max(0, Math.round((ttNow.value - t0) / 1000)) : 0; }
+    // My home is kept on this device only (Marc, Nov 1, 2026): it is never sent to the database.
+    function ttMyHome() { try { return localStorage.getItem(agentKey('fos_tour_home')) || ''; } catch (e) { return ''; } }
+    function ttSetMyHome(v) { try { localStorage.setItem(agentKey('fos_tour_home'), String(v || '').trim()); } catch (e) {} }
+    const ttMyHomeVal = ref(ttMyHome());
+    function ttBuyerHome() {
+      const t = (tt.tours || []).find(function (x) { return x && x.plan && x.plan.buyerHome; });
+      return (t && t.plan.buyerHome) || '';
+    }
+    // Starting from / Ending at quick picks. 'buyer' and 'next' are typed once in the box below.
+    function ttPickPlace(which, pick) {
+      const tour = tt.activeTour; if (!tour) return;
+      ttEnsurePlan(tour);
+      const p = tour.plan, field = which === 'start' ? 'startAddress' : 'endAddress';
+      p[which + 'Pick'] = pick;
+      if (pick === 'office') p[field] = TT_OFFICE_ADDRESS;
+      else if (pick === 'home') p[field] = ttMyHomeVal.value;
+      else if (pick === 'buyer') p[field] = ttBuyerHome();
+      else if (pick === 'none') p[field] = '';
+      else p[field] = '';
+      ttRoute.error = '';
+      ttSaveTours();
+    }
+    function ttPlaceTyped(which) {
+      const tour = tt.activeTour; if (!tour) return;
+      const p = tour.plan, v = String(p[which === 'start' ? 'startAddress' : 'endAddress'] || '').trim();
+      if (p[which + 'Pick'] === 'home') { ttSetMyHome(v); ttMyHomeVal.value = v; }
+      if (p[which + 'Pick'] === 'buyer') p.buyerHome = v;
+      ttSaveTours();
+    }
     const ttPdf = reactive({ busy: '', error: '' });
 
     function ttEnsurePlan(tour) {
       if (!tour) return;
       if (!tour.plan || typeof tour.plan !== 'object') tour.plan = { mode: 'plan', date: '', firstAt: '', startAddress: '', notes: '', result: null, compareSig: '' };
+      const p = tour.plan;
+      if (p.booking !== 'standard' && p.booking !== 'custom') p.booking = 'standard';
+      if (p.startPick === undefined) p.startPick = p.startAddress ? 'typed' : '';
+      if (p.endPick === undefined) p.endPick = '';
+      if (p.endAddress === undefined) p.endAddress = '';
+      if (p.buyerHome === undefined) p.buyerHome = '';
+      if (p.startPick === 'home' && !p.startAddress) p.startAddress = ttMyHome();
+      if (p.endPick === 'home' && !p.endAddress) p.endAddress = ttMyHome();
+      if (p.result && p.startPick === 'home' && p.result.start && !p.result.start.address) p.result.start.address = p.startAddress;
+      if (p.result && p.endPick === 'home' && p.result.end && !p.result.end.address) p.result.end.address = p.endAddress;
       (tour.properties || []).forEach(ttEnsureHome);
     }
     function ttEnsureHome(h) {
@@ -20261,8 +20379,16 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // What the route depends on. A result whose signature is not the tour's is out of date.
     function ttPlanSig(tour) {
       const p = (tour && tour.plan) || {};
-      return JSON.stringify([p.mode, p.date, p.mode === 'plan' ? p.firstAt : '', String(p.startAddress || '').trim(),
-        (tour.properties || []).map(function (h) { return [h.id, String(h.address || '').trim(), p.mode === 'plan' ? String(h.minutes || '') : [h.start || '', h.end || '']]; })]);
+      const custom = p.booking === 'custom';
+      // a home address is in the signature only as a short hash, so the saved copy never holds it
+      const place = function (pick, v) {
+        v = String(v || '').trim();
+        if (pick !== 'home') return v;
+        let h = 5381; for (let i = 0; i < v.length; i++) h = ((h * 33) ^ v.charCodeAt(i)) >>> 0;
+        return 'home#' + h.toString(36);
+      };
+      return JSON.stringify([p.mode, p.booking || 'standard', p.date, p.mode === 'plan' ? p.firstAt : '', place(p.startPick, p.startAddress), place(p.endPick, p.endAddress),
+        (tour.properties || []).map(function (h) { return [h.id, String(h.address || '').trim(), p.mode === 'plan' ? (custom ? String(h.minutes || '') : '') : [h.start || '', h.end || '']]; })]);
     }
     function ttRouteFor(tour) {
       const r = tour && tour.plan && tour.plan.result;
@@ -20289,9 +20415,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (!hs.length) return 'Add the homes on this tour first.';
       if (hs.length > TT_MAX_HOMES) return 'A tour plan holds up to ' + TT_MAX_HOMES + ' homes, and this tour has ' + hs.length + '. Remove ' + (hs.length - TT_MAX_HOMES) + ' first.';
       if (!ttDateObj(p.date)) return 'Pick the date of the tour.';
+      if (!String(p.startAddress || '').trim()) return 'Pick where you start (Starting from) so the order counts your first drive.';
+      if (p.endPick && p.endPick !== 'none' && !String(p.endAddress || '').trim()) return 'Type where you go after the tour (Ending at), or pick No preference.';
       if (p.mode === 'plan') {
         if (ttMinOf(p.firstAt) === null) return 'Pick the time of the first showing.';
-        const no = hs.findIndex(function (h) { return TT_MINUTES.map(function (x) { return x.v; }).indexOf(Number(h.minutes)) < 0; });
+        const no = p.booking !== 'custom' ? -1 : hs.findIndex(function (h) { return TT_MINUTES.map(function (x) { return x.v; }).indexOf(Number(h.minutes)) < 0; });
         if (no >= 0) return 'Pick the time at home ' + (no + 1) + ' (' + hs[no].address + ').';
       } else {
         for (let i = 0; i < hs.length; i++) {
@@ -20323,11 +20451,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const why = ttRouteProblem(tour);
       if (why) { ttRoute.error = why; return false; }
       const p = tour.plan, sent = ttPlanSig(tour);
-      const body = { mode: p.mode, date: p.date, buffer_minutes: 5,
-        stops: tour.properties.map(function (h) { return p.mode === 'plan' ? { address: String(h.address).trim(), minutes: Number(h.minutes) } : { address: String(h.address).trim(), start: h.start, end: h.end }; }) };
+      const custom = p.booking === 'custom';
+      const body = { mode: p.mode, booking: custom ? 'custom' : 'standard', date: p.date, buffer_minutes: 5,
+        stops: tour.properties.map(function (h) { return p.mode === 'plan' ? (custom ? { address: String(h.address).trim(), minutes: Number(h.minutes) } : { address: String(h.address).trim() }) : { address: String(h.address).trim(), start: h.start, end: h.end }; }) };
       if (p.mode === 'plan') body.start_time = p.firstAt;
       if (String(p.startAddress || '').trim()) body.start_address = String(p.startAddress).trim();
-      ttRoute.busy = true; ttRoute.error = '';
+      if (p.endPick && p.endPick !== 'none' && String(p.endAddress || '').trim()) body.end_address = String(p.endAddress).trim();
+      ttRoute.busy = true; ttRoute.error = ''; ttRoute.started = Date.now(); ttTickStart();
       try {
         const j = await ttApiPost('/api/tour/route', body);
         if (tt.activeTour !== tour) return false;
@@ -20351,8 +20481,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       tour.properties.splice(0, tour.properties.length, ...order);
       if (j.mode === 'plan') order.forEach(function (h, k) { h.plannedStart = stops[k].start; h.plannedEnd = stops[k].end; });
       const sig = ttPlanSig(tour);
-      tour.plan.result = { mode: j.mode, date: j.date, sig: sig, at: new Date().toISOString(), traffic: !!j.traffic,
-        stops: stops.map(function (s, k) { return { stop: s.stop, id: order[k].id, start: s.start, end: s.end, minutes: s.minutes, google_address: s.google_address || '' }; }),
+      tour.plan.result = { mode: j.mode, booking: j.booking || 'custom', date: j.date, sig: sig, at: new Date().toISOString(), traffic: !!j.traffic,
+        start: j.start || null, end: j.end || null,
+        stops: stops.map(function (s, k) { return { stop: s.stop, id: order[k].id, start: s.start, end: s.end, minutes: s.minutes, arrive: s.arrive || '', leave: s.leave || '', google_address: s.google_address || '' }; }),
         legs: (j.legs || []).map(function (l) { return { from: l.from, to: l.to, drive_min: l.drive_min, gap_min: l.gap_min, warning: l.warning || '' }; }),
         warnings: (j.warnings || []).slice() };
       ttRoute.maps[tour.id] = { sig: sig, agent: (j.maps && j.maps.agent) || '', client: (j.maps && j.maps.client) || '' };
@@ -20370,9 +20501,29 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const TT_FIG_UNIT_RX = /^\s*(\$?\s*\d[\d,]*(?:\.\d+)?)\s*(?:beds?|bedrooms?|br|(?:full |half )?baths?|(?:full |half )?bathrooms?|ba|sq\.?\s*ft\.?|sqft|square\s+f(?:ee|oo)t|sf|days?(?:\s+on\s+(?:the\s+)?market)?)?\s*$/i;
     function ttFigClean(key, display) {
       const raw = String(display || '').trim(), m = TT_FIG_UNIT_RX.exec(raw);
-      if (!m) return raw;
-      const r = ttFigParse(key, m[1]);
-      return r.err ? raw : r.value;
+      if (m) { const r = ttFigParse(key, m[1]); return r.err ? raw : r.value; }
+      // A count written inside words ("Listed 29 days ago", seen live Nov 1, 2026): when the text
+      // holds exactly one number, that number is the figure. Never for the price.
+      if (key !== 'list_price') {
+        const nums = raw.match(/\d[\d,]*(?:\.\d+)?/g) || [];
+        if (nums.length === 1) { const r = ttFigParse(key, nums[0]); if (!r.err) return r.value; }
+      }
+      return raw;
+    }
+    // The figures of one home that have exactly one value across their pages, not yet confirmed.
+    function ttTickable(h) {
+      if (!h || !h.facts || !h.facts.fields) return [];
+      return TT_FIGS.filter(function (f) {
+        return h.facts.fields[f.key] && !(h.confirm && h.confirm[f.key]) && ttFigOptions(h.facts.fields[f.key], f.key).length === 1;
+      });
+    }
+    // Confirm all (Marc, Nov 1, 2026): ticks every figure with one value, each from its own page.
+    // Two pages that disagree, and figures no page had, still need the agent.
+    function ttConfirmAll(h) {
+      ttTickable(h).forEach(function (f) {
+        const o = ttFigOptions(h.facts.fields[f.key], f.key)[0];
+        ttConfirmFig(h, f.key, o.display, o.urls[0]);
+      });
     }
     function ttFigOptions(field, key) {
       const out = [];
@@ -20389,7 +20540,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const tour = tt.activeTour;
       if (!h || !tour || ttLook.busy[h.id]) return;
       const addr = String(h.address || '').trim();
-      ttLook.busy[h.id] = true; ttLook.error[h.id] = '';
+      ttLook.busy[h.id] = true; ttLook.error[h.id] = ''; ttLook.started[h.id] = Date.now(); ttTickStart();
       try {
         const j = await ttApiPost('/api/tour/lookup', { address: addr });
         if (String(h.address || '').trim() !== addr) return;
@@ -20413,6 +20564,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ttConfirmFig(h, key, display, url) {
       ttEnsureHome(h);
       h.confirm[key] = Object.assign({ value: ttFigClean(key, display), how: 'source', source_url: url || '' }, ttStamp());
+      if (key === 'list_price') h.price = h.confirm[key].value;
       ttLook.figErr[h.id + key] = '';
       ttSaveTours();
     }
@@ -20437,6 +20589,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (r.err) { ttLook.figErr[h.id + key] = r.err; return; }
       ttEnsureHome(h);
       h.confirm[key] = Object.assign({ value: r.value, how: 'typed', source_url: '' }, ttStamp());
+      if (key === 'list_price') h.price = r.value;
       ttLook.figErr[h.id + key] = '';
       ttSaveTours();
     }
@@ -20458,8 +20611,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (s && !out.some(function (x) { return x.indexOf('"' + s[0]) >= 0; })) out.push('"' + s[0] + '" says who the home suits or names schools (fair housing)');
       return out;
     }
+    // A red note is something about the listing itself (another unit, not for sale, no listing
+    // found) and needs the agent's tick. "Not found on any page" only lists figures to type; once
+    // typed, they are confirmed like any other, so it is a hint, not a red note.
+    function ttIsMissingNote(p) { return /^Not found on any page/i.test(String(p || '')); }
     function ttHomeProblems(h) {
-      return (h && h.facts && h.facts.problems) || [];
+      return ((h && h.facts && h.facts.problems) || []).filter(function (p) { return !ttIsMissingNote(p); });
+    }
+    function ttHomeMissing(h) {
+      return ((h && h.facts && h.facts.problems) || []).filter(ttIsMissingNote);
     }
     // What is still to do on one home before it can go to the buyer. [] when nothing is.
     function ttHomeLeft(h) {
@@ -20526,7 +20686,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       if (left >= 0) { ttCmp.error = 'Confirm every figure first. Home ' + (left + 1) + ' still needs: ' + ttHomeLeft(tour.properties[left]).join(', ') + '.'; return; }
       if (tour.properties.length > TT_MAX_HOMES) { ttCmp.error = 'A tour plan holds up to ' + TT_MAX_HOMES + ' homes.'; return; }
       const sig = ttCompareSig(tour);
-      ttCmp.busy = true; ttCmp.error = '';
+      ttCmp.busy = true; ttCmp.error = ''; ttCmp.started = Date.now(); ttTickStart();
       try {
         const j = await ttApiPost('/api/tour/compare', { homes: tour.properties.map(ttCompareHome) });
         if (tt.activeTour !== tour) return;
@@ -20641,6 +20801,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         ? hs.length + (hs.length === 1 ? ' home' : ' homes') + ' \u00b7 ' + ttFmtTime(first.start) + ' to ' + ttFmtTime(last.end)
           + (hs.length > 1 ? ' \u00b7 about ' + drive + ' minutes of driving \u00b7 ' + (r.traffic ? 'drive times use traffic for ' + ttFmtTime(tour.plan.mode === 'plan' ? first.start : first.end) + ' on ' + dateLong : 'drive times without traffic (the tour time had passed when they were worked out)') : '')
           + (tour.plan.mode === 'plan' ? ' \u00b7 PLANNED times, not yet confirmed' : '')
+          + (r.booking === 'standard' ? ' \u00b7 FORWARD standard: each showing booked 1 hour, 45 minutes inside' : '')
         : hs.length + (hs.length === 1 ? ' home' : ' homes') + (hs.length > 1 ? ', in the order we will see them' : '');
       lines(sub, 9, CW).forEach(function (l) { doc.setFontSize(9); doc.text(l, M, y); y += 12; });
       y += 6;
@@ -20664,24 +20825,43 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           let x = M; cols.forEach(function (c) { if (c.t) doc.text(c.t, x + 2, y); x += c.w; });
           y += 4; doc.setDrawColor(...LINE); doc.setLineWidth(0.6); doc.line(M, y, M + CW, y); y += 11;
         }
+        function placeLine(text) {
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+          const ll = doc.splitTextToSize(text, CW - 10);
+          room(ll.length * 9.5 + 6);
+          doc.setTextColor(...MUTED);
+          ll.forEach(function (l, i) { doc.text(l, M + 2, y + i * 9.5); });
+          y += ll.length * 9.5 + 6;
+        }
+        if (r.start && r.start.address) placeLine('Start: ' + r.start.address + ' \u00b7 ' + r.start.drive_min + ' min drive to home 1 \u00b7 leave by ' + ttFmtTime(r.start.leave_by));
         room(30); head();
         hs.forEach(function (h, k) {
           const s = r.stops[k];
           doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
           const al = doc.splitTextToSize(String(h.address || ''), cols[1].w - 6);
-          const rowH = Math.max(1, al.length) * 10.5 + 4;
+          doc.setFont('helvetica', 'normal');
+          const vals = [ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), ttFigShow(h, 'list_price'), ttFigShow(h, 'beds'),
+            ttFigShow(h, 'baths_full') ? ttFigShow(h, 'baths_full') + ' / ' + ttFigShow(h, 'baths_half') : '', ttFigShow(h, 'sqft'), ttFigShow(h, 'days_on_market')];
+          // every cell wraps inside its own column, so nothing runs past the page (Marc, Nov 1, 2026)
+          const vl = vals.map(function (v, i) { return v ? doc.splitTextToSize(String(v), cols[i + 2].w - 4) : []; });
+          const lines = Math.max(1, al.length, ...vl.map(function (x) { return x.length; }));
+          const rowH = lines * 10.5 + 4;
           if (room(rowH + 4)) head();
           doc.setFillColor(...NAVY); doc.circle(M + 7, y - 3, 6.5, 'F');
-          doc.setTextColor(255, 255, 255); doc.setFontSize(7.5); doc.text(String(k + 1), M + 7, y - 0.5, { align: 'center' });
+          doc.setTextColor(255, 255, 255); doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text(String(k + 1), M + 7, y - 0.5, { align: 'center' });
           doc.setTextColor(...INK); doc.setFontSize(8.5);
           let x = M + cols[0].w;
           al.forEach(function (l, i) { doc.text(l, x + 2, y + i * 10.5); });
           x += cols[1].w;
           doc.setFont('helvetica', 'normal');
-          const vals = [ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), ttFigShow(h, 'list_price'), ttFigShow(h, 'beds'),
-            ttFigShow(h, 'baths_full') ? ttFigShow(h, 'baths_full') + ' / ' + ttFigShow(h, 'baths_half') : '', ttFigShow(h, 'sqft'), ttFigShow(h, 'days_on_market')];
-          vals.forEach(function (v, i) { if (v) doc.text(v, x + 2, y); x += cols[i + 2].w; });
+          vl.forEach(function (ls, i) { ls.forEach(function (l, j) { doc.text(l, x + 2, y + j * 10.5); }); x += cols[i + 2].w; });
           y += rowH;
+          if (s.arrive && s.leave) {
+            doc.setFontSize(7.5); doc.setTextColor(...MUTED);
+            room(10);
+            doc.text('Inside ' + ttFmtTime(s.arrive) + ' to ' + ttFmtTime(s.leave), M + cols[0].w + cols[1].w + 2, y - 2);
+            y += 9;
+          }
           const leg = (r.legs || []).find(function (l) { return l.from === k + 1; });
           if (leg) {
             doc.setFontSize(7.5);
@@ -20695,6 +20875,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           doc.setDrawColor(...LINE); doc.setLineWidth(0.4); doc.line(M, y - 6, M + CW, y - 6);
           y += 4;
         });
+        if (r.end && r.end.address) placeLine('End: ' + r.end.address + ' \u00b7 ' + r.end.drive_min + ' min drive from the last home \u00b7 arrive about ' + ttFmtTime(r.end.arrive_about));
         if ((r.warnings || []).length) {
           y += 4;
           doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
@@ -20750,7 +20931,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
           }
           cy += al.length * 11.5;
           doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
-          if (draw) doc.text(ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), x + PAD + 20, cy);
+          if (draw) doc.text(s.arrive && s.leave ? ttFmtTime(s.arrive) + ' to ' + ttFmtTime(s.leave) : ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), x + PAD + 20, cy);
           cy += 15;
           const facts = [['PRICE', ttFigShow(h, 'list_price')], ['BEDS', ttFigShow(h, 'beds')], ['BATHS', ttBathsShow(h)], ['SQ FT', ttFigShow(h, 'sqft')], ['ON MARKET', ttFigShow(h, 'days_on_market') + (ttFigShow(h, 'days_on_market') === '1' ? ' day' : ' days')]];
           let fx = x + PAD, rowStart = cy;
@@ -25637,6 +25818,10 @@ const CHANGELOG = [
       {
         title: 'Tour Figures Read Cleanly from Listing Pages',
         detail: 'Listing pages often write a figure with its label, like 3 Bed, 980 sqft or 1 full bath. Tour Tracker now keeps the number the page shows (3, 980, 1), so your buyer\'s tour sheet reads Beds 3, not Beds 3 Bed. Two pages that say 3 Bed and 3 Beds now count as the same figure, so you tick it once instead of picking between them.\n\nHow to use: Nothing changes. Tick each figure after checking it against Bright.\n\nBest practice: If a figure shows something other than a plain number, type the number yourself in the box below it.'
+      },
+      {
+        title: 'Tour Plan: the FORWARD Booking Standard, Where You Start and End',
+        detail: 'Tour plans now book showings the FORWARD way by default: each showing is booked for 1 hour and you spend 45 minutes inside. The next booking starts when you leave the last home, 15 minutes before its booking ends, so the overlap covers the drive. A longer drive starts the next booking later. Each home shows its booking and the 45 minutes you are inside. Pick My own times to choose 15, 30, 45 minutes or 1 hour per home instead. Under Times confirmed, overlapping bookings are no longer flagged; a warning shows only when you would reach a home more than 15 minutes into its booking. Starting from is now required (My home, Buyer\'s home or another address), and Ending at lets you pick My next appointment or My home, so the best order counts your first and last drives. Your copy shows when to leave, the time inside each home, and when you reach your next stop. Confirm all ticks every figure that has one value in one press, and Find the best order is also beside the PDF buttons. While listings are searched, the route is worked out or the comparisons are written, a moving bar and a seconds count show it is working.\n\nHow to use: Open the tour, keep FORWARD standard, pick the date, the first showing time, where you start and where you go after. Press Find the best order and request the bookings shown.\n\nBest practice: Your home address is kept on your own phone or computer only, never shared with the team. Type it once on each device you use.'
       }
     ]
   }
@@ -28267,6 +28452,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttLegAfter, ttMapFor, ttFmtTime, ttWarnText, ttLookup, ttLookupAll, ttAllLooked, ttConfirmFig, ttUnconfirmFig, ttTypeFig,
       ttFigOptions, ttSourceHost, ttFigCount, ttHomeProblems, ttTextIssues, ttOnOverviewEdit, ttCompare,
       ttCompareStale, ttCompareIssues, ttBuyerProblems, ttAgentPdf, ttSendBuyer,
+      TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
       // Buyer Needs Analysis
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,

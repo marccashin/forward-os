@@ -29,7 +29,17 @@ let pass = 0, fail = 0;
 function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; console.log('  FAIL ' + name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 700) : '')); } }
 
 const S = (url, v) => ({ display: v, source_url: url });
+const D = '400 Long Rd, Bel Air, MD 21014';
 const LOOK = {
+  [D]: { address: D, found: true, matched_address: D, status: 'Active', dropped_without_source: 0, looked_up_at: '2026-11-01T14:00:00Z',
+    problems: ['Not found on any page: Half baths. Fill these in yourself'],
+    fields: {
+      list_price: { display: '$599,000', sources: [{ display: '$599,000', number: 599000, source_url: 'https://www.homes.com/d' }], conflict: false, values: ['$599,000'] },
+      beds: { display: '4', sources: [{ display: '4', number: 4, source_url: 'https://www.homes.com/d' }], conflict: false, values: ['4'] },
+      baths_full: { display: '2 full + 1 three-quarter bath', sources: [{ display: '2 full + 1 three-quarter bath', number: null, source_url: 'https://www.homes.com/d' }], conflict: false, values: ['2 full + 1 three-quarter bath'] },
+      sqft: { display: '2,722 sq. ft.', sources: [{ display: '2,722 sq. ft.', number: null, source_url: 'https://www.homes.com/d' }], conflict: false, values: ['2,722 sq. ft.'] },
+      days_on_market: { display: 'Listed 29 days ago', sources: [{ display: 'Listed 29 days ago', number: null, source_url: 'https://www.homes.com/d' }], conflict: false, values: ['Listed 29 days ago'] } },
+    overview: { text: 'A 1930 farmhouse on 0.83 acres with a wraparound porch.', source_url: 'https://www.homes.com/d', issues: [] } },
   [A]: { address: A, found: true, matched_address: '101 Sample St, Alexandria, VA 22314', status: 'Active', problems: [], dropped_without_source: 0, looked_up_at: '2026-11-01T14:00:00Z',
     fields: {
       list_price: { display: '$1,150,000', sources: [{ display: '$1,150,000', number: 1150000, source_url: 'https://www.realtor.com/a' }, { display: '$1,150,000', number: 1150000, source_url: 'https://www.homes.com/a' }], conflict: false, values: ['$1,150,000'] },
@@ -75,12 +85,23 @@ const LOOK = {
   let toursJson = null;           // what the made-up agent_tours table holds
   let routeShift = 0;             // minutes added to confirmed times by the made-up route (a changed result)
   let compareAnswer = null;
+  let routeDelay = 0;
 
   function routeAnswer(body) {
     if (body.stops.some(s => /Nowhere/.test(s.address))) return [422, { detail: 'Google could only place 9 Nowhere Ln approximately (it matched Virginia, USA). Check the spelling, city and ZIP' }];
     if (body.stops.length > 8) return [422, { detail: 'A tour needs 1 to 8 homes' }];
     let stops;
-    if (body.mode === 'plan') {
+    if (body.mode === 'plan' && body.booking === 'standard') {
+      // FORWARD's standard, as the backend works it out, with every drive 12 minutes
+      const order = body.stops.slice().sort((a, b) => b.address.localeCompare(a.address));
+      let leave = 0;
+      stops = order.map((s, i) => {
+        let st, arr;
+        if (i === 0) { st = arr = mins(body.start_time); } else { st = Math.ceil(leave / 5) * 5; arr = Math.max(st, leave + 12); }
+        leave = arr + 45;
+        return { stop: i + 1, address: s.address, start: hm(st), end: hm(st + 60), minutes: 60, arrive: hm(arr), leave: hm(arr + 45), lat: 38.8, lng: -77.1, google_address: s.address + ', USA' };
+      });
+    } else if (body.mode === 'plan') {
       const order = body.stops.slice().sort((a, b) => b.address.localeCompare(a.address));     // the made-up best order
       let t = 600;
       stops = order.map((s, i) => { const st = t; t = st + s.minutes + 15; return { stop: i + 1, address: s.address, start: hm(st), end: hm(st + s.minutes), minutes: s.minutes, lat: 38.8, lng: -77.1, google_address: s.address + ', USA' }; });
@@ -90,7 +111,11 @@ const LOOK = {
     }
     const legs = stops.slice(1).map((s, i) => ({ from: i + 1, to: i + 2, drive_min: 12, gap_min: mins(s.start) - mins(stops[i].end),
       warning: body.mode === 'confirmed' && mins(s.start) - mins(stops[i].end) < 17 ? 'Leaving stop ' + (i + 1) + ' at ' + stops[i].end + ', the drive is about 12 min, so you reach stop ' + (i + 2) + ' around ' + hm(mins(stops[i].end) + 12) + '; its showing starts at ' + s.start : '' }));
-    return [200, { mode: body.mode, date: body.date, buffer_minutes: 5, stops, legs, warnings: legs.filter(l => l.warning).map(l => l.warning), traffic: true, maps: { agent: PNG, client: PNG } }];
+    const extra = {
+      booking: body.booking || 'custom',
+      start: body.start_address ? { address: body.start_address, google_address: body.start_address, drive_min: 20, leave_by: hm(mins(stops[0].start) - 20) } : null,
+      end: body.end_address ? { address: body.end_address, google_address: body.end_address, drive_min: 25, arrive_about: hm(mins(stops[stops.length - 1].leave || stops[stops.length - 1].end) + 25) } : null };
+    return [200, { ...extra, mode: body.mode, date: body.date, buffer_minutes: 5, stops, legs, warnings: legs.filter(l => l.warning).map(l => l.warning), traffic: true, maps: { agent: PNG, client: PNG } }];
   }
   function hm(m) { return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); }
   function mins(s) { const [h, m] = s.split(':').map(Number); return h * 60 + m; }
@@ -103,8 +128,8 @@ const LOOK = {
       if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
       if (/cdnjs.*\/jspdf\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: JSPDF });
       if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-      if (/\/api\/tour\/route/.test(u)) { const b = JSON.parse(req.postData()); B_.route.push(b); const [st, body] = routeAnswer(b); return J(route, st, body); }
-      if (/\/api\/tour\/lookup/.test(u)) { const b = JSON.parse(req.postData()); B_.lookup.push(b); await new Promise(r => setTimeout(r, 50)); return LOOK[b.address] ? J(route, 200, LOOK[b.address]) : J(route, 502, { detail: 'The listing search did not finish' }); }
+      if (/\/api\/tour\/route/.test(u)) { const b = JSON.parse(req.postData()); B_.route.push(b); if (routeDelay) await new Promise(r => setTimeout(r, routeDelay)); const [st, body] = routeAnswer(b); return J(route, st, body); }
+      if (/\/api\/tour\/lookup/.test(u)) { const b = JSON.parse(req.postData()); B_.lookup.push(b); await new Promise(r => setTimeout(r, /Long Rd/.test(b.address) ? 1800 : 50)); return LOOK[b.address] ? J(route, 200, LOOK[b.address]) : J(route, 502, { detail: 'The listing search did not finish' }); }
       if (/\/api\/tour\/compare/.test(u)) { const b = JSON.parse(req.postData()); B_.compare.push(b); return J(route, 200, compareAnswer ? compareAnswer(b) : { homes: [] }); }
       if (/\/rest\/v1\/agent_tours/.test(u) && m === 'GET') return J(route, 200, toursJson ? [{ tours_json: toursJson }] : []);
       if (/\/rest\/v1\/agent_tours/.test(u)) { const b = JSON.parse(req.postData()); B_.upserts.push(b); toursJson = b.tours_json; return J(route, 201, [b]); }
@@ -165,13 +190,18 @@ const LOOK = {
   await page.click('[data-tp-run]'); await wait(page);
   ok(B_.route.length === 0 && /Pick the date/.test(await page.locator('[data-tp-error]').innerText()), 'with no date, Find the best order sends nothing and says to pick the date');
   await page.fill('[data-tp-date]', '2026-11-07'); await page.fill('[data-tp-first]', '10:00');
+  ok(await page.locator('[data-tp-booking="standard"].on').count() === 1 && await page.locator('[data-tp-minutes]').count() === 0 && /booked for 1 hour and you spend 45 minutes inside/.test(await page.locator('[data-tp-standard-note]').innerText()), 'a new tour is on the FORWARD standard, explained in one line, with no time to pick per home');
+  await page.click('[data-tp-run]'); await wait(page);
+  ok(B_.route.length === 0 && /Pick where you start/.test(await page.locator('[data-tp-error]').innerText()), 'with no starting point, nothing is sent and the agent is asked where they start');
+  await page.click('[data-tp-booking="custom"]');
+  await page.click('[data-tp-start-pick="typed"]'); await page.fill('[data-tp-startaddr]', '1 Office Way, Arlington, VA 22201'); await page.press('[data-tp-startaddr]', 'Tab');
   const sel = page.locator('[data-tp-minutes]');
   await sel.nth(0).selectOption('30'); await sel.nth(1).selectOption('15');
   await page.click('[data-tp-run]'); await wait(page);
   ok(B_.route.length === 0 && /Pick the time at home 3/.test(await page.locator('[data-tp-error]').innerText()), 'a home with no time picked: nothing is sent and the home is named');
   await sel.nth(2).selectOption('45');
   await page.click('[data-tp-run]'); await wait(page, 300);
-  ok(B_.route.length === 1 && JSON.stringify(B_.route[0]) === JSON.stringify({ mode: 'plan', date: '2026-11-07', buffer_minutes: 5, stops: [{ address: A, minutes: 30 }, { address: B, minutes: 15 }, { address: C, minutes: 45 }], start_time: '10:00' }), 'one request with the date, the first time, each home and its own time, the 5 minute buffer', B_.route[0]);
+  ok(B_.route.length === 1 && JSON.stringify(B_.route[0]) === JSON.stringify({ mode: 'plan', booking: 'custom', date: '2026-11-07', buffer_minutes: 5, stops: [{ address: A, minutes: 30 }, { address: B, minutes: 15 }, { address: C, minutes: 45 }], start_time: '10:00', start_address: '1 Office Way, Arlington, VA 22201' }), 'one request with the date, the first time, each home and its own time, the 5 minute buffer', B_.route[0]);
   let addrs = await page.locator('[data-tp-home] .tp-addr').allInnerTexts();
   ok(JSON.stringify(addrs) === JSON.stringify([C, B, A]), 'the homes follow the order the route chose', addrs);
   let planned = await page.locator('[data-tp-planned]').allInnerTexts();
@@ -316,6 +346,60 @@ const LOOK = {
   routeShift = 0;
   await ctx.close();
   toursJson = saved;
+
+  console.log('FORWARD standard, start and end');
+  ({ ctx, page } = await ctxFor('computer'));
+  await st(page, `st.go('tour-tracker'); await new Promise(r => setTimeout(r, 300));
+    st.tt.newTourName = 'Standard'; st.tt.newTourBuyer = 'Pat Doe'; st.ttCreateTour();
+    for (const a of arg) { st.tt.newPropAddr = a; st.ttAddProperty(); }`, [A, D]);
+  await wait(page, 300);
+  ok(await page.locator('[data-tp-run2]').count() === 1, 'Find the best order is also beside the PDF buttons');
+  await page.fill('[data-tp-date]', '2026-11-07'); await page.fill('[data-tp-first]', '13:00');
+  await page.click('[data-tp-start-pick="home"]');
+  ok(/kept on this device only/.test(await page.getAttribute('[data-tp-startaddr]', 'placeholder')), 'My home with nothing saved asks for the address, kept on this device only');
+  await page.fill('[data-tp-startaddr]', '9 Home Ct, Bethesda, MD 20814'); await page.press('[data-tp-startaddr]', 'Tab');
+  await page.click('[data-tp-end-pick="next"]'); await page.fill('[data-tp-endaddr]', '50 Meeting Pl, Towson, MD 21204'); await page.press('[data-tp-endaddr]', 'Tab');
+  let nR = B_.route.length;
+  routeDelay = 1500;
+  await page.click('[data-tp-run2]'); await page.waitForTimeout(1200);
+  ok(await page.locator('[data-tp-working="route"]').count() === 1 && /Working out the drives with traffic.*\ds/.test(await page.locator('[data-tp-working="route"]').innerText()), 'while the route is worked out a moving bar and a seconds count show', await page.locator('[data-tp-working="route"]').count());
+  await wait(page, 300); routeDelay = 0;
+  const sb = B_.route[nR];
+  ok(sb && JSON.stringify(sb) === JSON.stringify({ mode: 'plan', booking: 'standard', date: '2026-11-07', buffer_minutes: 5, stops: [{ address: A }, { address: D }], start_time: '13:00', start_address: '9 Home Ct, Bethesda, MD 20814', end_address: '50 Meeting Pl, Towson, MD 21204' }), 'the standard booking, the start and the end go to the route, with no time per home', sb);
+  const ins = await page.locator('[data-tp-inside]').allInnerTexts(), pl = await page.locator('[data-tp-planned]').allInnerTexts();
+  ok(JSON.stringify(pl) === JSON.stringify(['1:00 pm to 2:00 pm', '1:45 pm to 2:45 pm']) && JSON.stringify(ins) === JSON.stringify(['inside 1:00 pm to 1:45 pm', 'inside 1:57 pm to 2:42 pm']), 'each home shows its 1 hour booking and the 45 minutes inside', { pl, ins });
+  ok(/Leave 9 Home Ct, Bethesda, MD 20814 by 12:40 pm \(20 min to home 1\)/.test(await page.locator('[data-tp-startinfo]').innerText()) && /About 25 min from the last home to 50 Meeting Pl, Towson, MD 21204, arriving about 3:07 pm/.test(await page.locator('[data-tp-endinfo]').innerText()), 'when to leave the start and when you reach the end are shown');
+  ok(await st(page, 'return localStorage.getItem(Object.keys(localStorage).find(k => /fos_tour_home/.test(k)))') === '9 Home Ct, Bethesda, MD 20814', 'My home is kept on this device');
+  ok(!/9 Home Ct/.test(toursJson) && /"startPick":"home"/.test(toursJson) && /50 Meeting Pl/.test(toursJson), 'the home address never goes to the cloud; the pick and the next appointment do', { home: (toursJson.match(/.{60}9 Home Ct.{60}/) || [''])[0], pick: /"startPick":"home"/.test(toursJson), next: /50 Meeting Pl/.test(toursJson) });
+  const back = await st(page, `const t = JSON.parse(arg).find(x => x.name === 'Standard'); st.tt.tours.unshift(t); st.ttOpenTour(st.tt.tours[0]);
+    const p = st.tt.activeTour.plan; return { start: p.startAddress, routeStart: p.result.start.address, current: !!st.ttRouteFor(st.tt.activeTour) };`, toursJson);
+  ok(back.start === '9 Home Ct, Bethesda, MD 20814' && back.routeStart === back.start && back.current, 'reopened from the cloud copy on the same device, My home comes back from the device and the route is still current', back);
+  await st(page, `st.tt.tours.shift(); st.ttOpenTour(st.tt.tours.find(t => t.name === 'Standard'));`);
+  await page.click('[data-tp-start-pick="buyer"]'); await page.fill('[data-tp-startaddr]', '77 Buyer Ln, Rockville, MD 20850'); await page.press('[data-tp-startaddr]', 'Tab'); await wait(page);
+  const bh = await st(page, `const cur = st.tt.activeTour; st.tt.newTourName = 'Second'; st.ttCreateTour(); st.ttPickPlace('start', 'buyer'); const a2 = st.tt.activeTour.plan.startAddress; st.ttOpenTour(cur); st.ttPickPlace('start', 'home'); return a2;`);
+  ok(bh === '77 Buyer Ln, Rockville, MD 20850' && /77 Buyer Ln/.test(toursJson), "Buyer's home typed once is offered on the buyer's next tour, and is kept with the buyer's tours", bh);
+  await wait(page);
+  console.log('Confirm all, words around a figure, working panels');
+  await page.click('[data-tp-lookall]'); await page.waitForTimeout(900);
+  ok(await page.locator('[data-tp-working="lookup"]').count() === 1 && /Searching listing pages for this home.*\ds/.test(await page.locator('[data-tp-working="lookup"]').innerText()) && /searching 1 listing/i.test(await page.locator('[data-tp-lookall]').innerText()), 'a home still searching shows a moving bar and a seconds count, and the button says it is searching');
+  await wait(page, 300);
+  const bA = page.locator('[data-tp-figs]').nth(1), bD = page.locator('[data-tp-figs]').nth(0);
+  ok(/Confirm all 5 found figures/.test(await bA.locator('[data-tp-confirmall]').innerText()), 'Confirm all counts the figures that have one value');
+  await bA.locator('[data-tp-confirmall]').click(); await wait(page);
+  ok(await bA.locator('[data-tp-confirmed]').count() === 5 && await bA.locator('[data-tp-fig="sqft"] [data-tp-conflict]').count() === 1 && await bA.locator('[data-tp-confirmall]').count() === 0, 'Confirm all ticks every figure with one value and leaves the one where two pages disagree');
+  ok(await st(page, 'return st.tt.activeTour.properties.find(h => h.address.startsWith("101")).price') === '$1,150,000', 'the confirmed list price becomes the price on the home\'s card');
+  ok(await bD.locator('[data-tp-flag]').count() === 0 && /Not found on any page: Half baths/.test(await bD.locator('[data-tp-missing]').innerText()), 'figures no page had are a hint to type them, not a red note to tick');
+  await bD.locator('[data-tp-confirmall]').click(); await wait(page);
+  const dvals = await bD.locator('[data-tp-confirmed]').evaluateAll(xs => xs.map(x => x.firstChild.textContent.trim()));
+  ok(JSON.stringify(dvals) === JSON.stringify(['$599,000', '4', '2 full + 1 three-quarter bath', '2,722', '29']), '"Listed 29 days ago" is kept as 29 and "2,722 sq. ft." as 2,722; text with two numbers stays as the page wrote it', dvals);
+  ok(await page.locator('[data-tp-overview]').first().evaluate(e => e.getBoundingClientRect().width > 600 && e.getBoundingClientRect().height >= 90), 'the overview box is wide and tall enough to read');
+  await page.click('[data-tp-agentpdf]'); await wait(page, 500);
+  const rawA = await page.evaluate(async () => (await document.querySelector('#app').__vue_app__._instance.setupState.pdfViewerBlob.text()));
+  t = drawn(rawA);
+  ok(t.includes('Start: 9 Home Ct, Bethesda, MD 20814') && t.includes('leave by 12:40 pm') && t.includes('End: 50 Meeting Pl, Towson, MD 21204') && t.includes('Inside 1:57 pm to 2:42 pm') && t.includes('FORWARD standard: each showing booked 1 hour, 45 minutes inside'), 'your copy has the start, the end, the time inside each home and the standard');
+  ok(t.replace(/\s/g, '').includes('2full+1three-quarterbath') && !/\(2 full \+ 1 three-quarter bath \/ \) Tj/.test(rawA) && !/Listed 29/.test(t), 'a long figure wraps inside its column instead of running off the page');
+  await st(page, 'st.closePDFViewer()');
+  await ctx.close();
 
   console.log('An old tour');
   ({ ctx, page } = await ctxFor('computer'));
