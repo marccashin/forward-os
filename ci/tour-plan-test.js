@@ -33,7 +33,8 @@ const LOOK = {
   [A]: { address: A, found: true, matched_address: '101 Sample St, Alexandria, VA 22314', status: 'Active', problems: [], dropped_without_source: 0, looked_up_at: '2026-11-01T14:00:00Z',
     fields: {
       list_price: { display: '$1,150,000', sources: [{ display: '$1,150,000', number: 1150000, source_url: 'https://www.realtor.com/a' }, { display: '$1,150,000', number: 1150000, source_url: 'https://www.homes.com/a' }], conflict: false, values: ['$1,150,000'] },
-      beds: { display: '4', sources: [{ display: '4', number: 4, source_url: 'https://www.realtor.com/a' }], conflict: false, values: ['4'] },
+      // Pages write labels with the number (seen live Nov 1, 2026): "4 Beds" and "4 Bed" are one figure, 4.
+      beds: { display: '4 Beds', sources: [{ display: '4 Beds', number: null, source_url: 'https://www.realtor.com/a' }, { display: '4 Bed', number: null, source_url: 'https://www.homes.com/a' }], conflict: true, values: ['4 Beds', '4 Bed'] },
       baths_full: { display: '3', sources: [{ display: '3', number: 3, source_url: 'https://www.realtor.com/a' }], conflict: false, values: ['3'] },
       baths_half: { display: '1', sources: [{ display: '1', number: 1, source_url: 'https://www.realtor.com/a' }], conflict: false, values: ['1'] },
       sqft: { display: '1,840', sources: [{ display: '1,840', number: 1840, source_url: 'https://www.realtor.com/a' }, { display: '1,792', number: 1792, source_url: 'https://www.redfin.com/a' }], conflict: true, values: ['1,840', '1,792'] },
@@ -45,15 +46,15 @@ const LOOK = {
       list_price: { display: '$1,095,000', sources: [{ display: '$1,095,000', number: 1095000, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['$1,095,000'] },
       beds: { display: '3', sources: [{ display: '3', number: 3, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['3'] },
       baths_full: { display: '2', sources: [{ display: '2', number: 2, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['2'] },
-      sqft: { display: '2,105', sources: [{ display: '2,105', number: 2105, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['2,105'] },
+      sqft: { display: '2,105 sqft', sources: [{ display: '2,105 sqft', number: null, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['2,105 sqft'] },
       days_on_market: { display: '22', sources: [{ display: '22', number: 22, source_url: 'https://www.homes.com/b' }], conflict: false, values: ['22'] } },
     overview: { text: 'A three-level townhouse with a rooftop deck.', source_url: 'https://www.homes.com/b', issues: [] } },
   [C]: { address: C, found: true, matched_address: '303 Demo Ct, Arlington, VA 22201', status: 'Active', problems: [], dropped_without_source: 0, looked_up_at: '2026-11-01T14:00:00Z',
     fields: {
       list_price: { display: '$985,000', sources: [{ display: '$985,000', number: 985000, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['$985,000'] },
       beds: { display: '3', sources: [{ display: '3', number: 3, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['3'] },
-      baths_full: { display: '2', sources: [{ display: '2', number: 2, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['2'] },
-      baths_half: { display: '1', sources: [{ display: '1', number: 1, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['1'] },
+      baths_full: { display: '2 full baths', sources: [{ display: '2 full baths', number: null, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['2 full baths'] },
+      baths_half: { display: '1 half bath', sources: [{ display: '1 half bath', number: null, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['1 half bath'] },
       sqft: { display: '1,610', sources: [{ display: '1,610', number: 1610, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['1,610'] },
       days_on_market: { display: '14', sources: [{ display: '14', number: 14, source_url: 'https://www.redfin.com/c' }], conflict: false, values: ['14'] } },
     overview: { text: 'A stunning corner home with a balcony.', source_url: 'https://www.redfin.com/c', issues: ['uses "stunning"'] } },
@@ -225,6 +226,7 @@ const LOOK = {
   ok(JSON.stringify(hrefs) === JSON.stringify(['https://www.realtor.com/a', 'https://www.homes.com/a']), 'a figure shows the pages it came from, as links', hrefs);
   ok(await boxA.locator('[data-tp-conflict] [data-tp-pickone]').count() === 2 && await boxA.locator('[data-tp-fig="sqft"] [data-tp-tick]').count() === 0, 'two pages that disagree: both shown, no tick, the agent picks');
   ok(/not unit 4/.test(await boxB.locator('[data-tp-flag]').innerText()), 'a wrong unit is a red note on that home');
+  ok(await boxA.locator('[data-tp-fig="beds"] [data-tp-tick]').count() === 1 && await boxA.locator('[data-tp-fig="beds"] [data-tp-conflict]').count() === 0 && /^4 /.test(await boxA.locator('[data-tp-fig="beds"] .tp-fig-v').innerText()), 'two pages writing "4 Beds" and "4 Bed" are one figure, 4, with both pages as sources');
   for (const k of ['list_price', 'beds', 'baths_full', 'baths_half', 'days_on_market']) await boxA.locator('[data-tp-fig="' + k + '"] [data-tp-tick]').click();
   await boxA.locator('[data-tp-pickone]').nth(1).click(); await wait(page);
   ok(/6 of 18/.test(await page.locator('[data-tp-progress]').innerText()) && /1,792/.test(await boxA.locator('[data-tp-fig="sqft"] [data-tp-confirmed]').innerText()), 'ticks and the pick count, and the picked figure is the one kept');
@@ -233,6 +235,8 @@ const LOOK = {
   for (const k of ['list_price', 'beds', 'baths_full', 'baths_half', 'sqft', 'days_on_market']) await boxC.locator('[data-tp-fig="' + k + '"] [data-tp-tick]').click();
   for (const k of ['list_price', 'beds', 'baths_full', 'sqft', 'days_on_market']) await boxB.locator('[data-tp-fig="' + k + '"] [data-tp-tick]').click();
   await boxB.locator('[data-tp-type="baths_half"]').fill('0'); await boxB.locator('[data-tp-type="baths_half"]').press('Enter'); await wait(page);
+  const shown = await page.evaluate(() => Array.from(document.querySelectorAll('[data-tp-figs]')).map(b => Array.from(b.querySelectorAll('[data-tp-confirmed]')).map(x => x.firstChild.textContent.trim())));
+  ok(JSON.stringify(shown) === JSON.stringify([['$1,150,000', '4', '3', '1', '1,792', '6'], ['$985,000', '3', '2', '1', '1,610', '14'], ['$1,095,000', '3', '2', '0', '2,105', '22']]), 'a figure written with its label (2 full baths, 2,105 sqft) is kept as the number the page shows', shown);
   ok(/typed by Charlotte Lee/.test(await boxB.locator('[data-tp-fig="baths_half"]').innerText()) && /18 of 18/.test(await page.locator('[data-tp-progress]').innerText()), 'a typed figure is confirmed in the agent\'s name; every figure counted');
   ok(/stunning/.test(await boxC.locator('[data-tp-ovissue]').innerText()) && await boxC.locator('[data-tp-ovok]').count() === 0, 'an overview with a word FORWARD does not use is quoted in red and cannot be ticked');
   await page.click('[data-tp-compare]'); await wait(page);
