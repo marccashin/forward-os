@@ -617,6 +617,38 @@ button:disabled { opacity: 0.4; cursor: not-allowed; }
 /* Save to Property on a phone (Oct 31, 2026): these three classes were used by the
    window but defined nowhere, so on a phone it drew at the bottom of the page, below
    everything, instead of over it. A bottom sheet over a dimmed page. */
+/* Tour Tracker: Showing Tour Plan (Nov 1, 2026) */
+.tp-seg { display: grid; grid-template-columns: 1fr 1fr; background: #ece7dc; border-radius: 10px; padding: 3px; margin-bottom: 10px; }
+.tp-seg button { border: 0; background: transparent; padding: 8px 0; font-size: 12.5px; font-weight: 600; border-radius: 8px; color: #5b6475; cursor: pointer; }
+.tp-seg button.on { background: #fff; color: var(--navy); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+.tp-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tp-home-wrap { margin-top: 8px; }
+.tp-home { display: flex; gap: 10px; align-items: flex-start; background: #fff; border: 1px solid #e5e0d5; border-radius: 10px; padding: 9px 10px; }
+.tp-num { width: 22px; height: 22px; flex: 0 0 22px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.tp-addr { font-size: 13px; font-weight: 600; color: var(--navy); overflow-wrap: anywhere; }
+.tp-times { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 5px; }
+.tp-times select, .tp-times input { font-size: 12.5px; padding: 5px 8px; border: 1px solid #d8d1c4; border-radius: 7px; background: #fff; min-width: 0; }
+.tp-planned { font-size: 12px; color: var(--navy); font-weight: 600; font-variant-numeric: tabular-nums; }
+.tp-leg { font-size: 11.5px; color: #6b7280; padding: 4px 0 0 34px; }
+.tp-leg.warn { color: #b91c1c; font-weight: 600; }
+.tp-bad { background: #fdecea; color: #a3271f; border-radius: 8px; padding: 7px 9px; font-size: 12px; margin-top: 6px; line-height: 1.45; }
+.tp-warn { background: #fbf0dc; color: #8a5300; border-radius: 8px; padding: 7px 9px; font-size: 12px; margin-top: 6px; }
+.tp-section { border-top: 1px solid #eee7da; margin-top: 16px; padding-top: 12px; }
+.tp-h4 { font-family: 'Cormorant Garamond', serif; font-size: 14px; font-weight: 600; color: var(--navy); margin: 0; }
+.tp-figbox { border: 1px solid #e9e3d7; border-radius: 10px; padding: 10px; margin-top: 10px; background: #fff; }
+.tp-fig { display: grid; grid-template-columns: 96px minmax(0,1fr) auto; gap: 8px; align-items: start; padding: 7px 0; border-top: 1px solid #f1ece2; }
+.tp-fig-k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; font-weight: 600; padding-top: 2px; }
+.tp-fig-v { font-size: 13px; font-weight: 600; color: #14223a; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.tp-fig-src { font-size: 10.5px; color: #6b7280; font-weight: 500; }
+.tp-fig-src a, .tp-pick a, .tp-figbox a { color: var(--navy); text-decoration: underline; }
+.tp-tick { width: 28px; height: 28px; border-radius: 7px; border: 1.5px solid #b9b0a0; background: #fff; color: #b9b0a0; font-size: 14px; cursor: pointer; }
+.tp-tick.on { background: #2f6b46; border-color: #2f6b46; color: #fff; }
+.tp-type { margin-top: 4px; width: 100%; max-width: 180px; font-size: 12px; padding: 4px 7px; border: 1px solid #ddd6c9; border-radius: 6px; }
+.tp-pick { background: #fbf0dc; color: #8a5300; border-radius: 8px; padding: 6px 8px; font-size: 11.5px; }
+.tp-pick button { background: #fff; border: 1px solid #e2c999; border-radius: 6px; padding: 4px 8px; font-size: 12px; font-weight: 600; color: #14223a; cursor: pointer; }
+.tp-link { background: none; border: 0; color: var(--navy); font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; white-space: nowrap; }
+.tt-addprop { display: grid; grid-template-columns: 2fr 1fr auto; gap: 10px; align-items: end; }
+@media (max-width: 520px) { .tt-addprop { grid-template-columns: 1fr; } .tp-row2 { grid-template-columns: 1fr; } .tp-fig { grid-template-columns: 78px minmax(0,1fr) auto; } }
 .save-prop-sheet-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; display: flex; align-items: flex-end; justify-content: center; }
 .save-prop-sheet-box { background: #fff; width: 100%; max-height: 88vh; overflow-y: auto; border-radius: 16px 16px 0 0; padding: 14px 18px calc(18px + env(safe-area-inset-bottom)); box-sizing: border-box; }
 .save-prop-sheet-handle { width: 40px; height: 4px; border-radius: 2px; background: #d1d5db; margin: 0 auto 12px; }
@@ -5464,7 +5496,7 @@ body {
               <!-- Add property -->
               <div class="card" style="margin-bottom:16px;">
                 <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 10px;font-size:13px;font-weight:600;color:var(--navy);">Add Property</h3>
-                <div style="display:grid;grid-template-columns:2fr 1fr auto;gap:10px;align-items:end;">
+                <div class="tt-addprop">
                   <div class="form-row" style="margin:0;"><label>Address</label><input v-model="tt.newPropAddr" placeholder="e.g. 1234 Q St NW" @keyup.enter="ttAddProperty"/></div>
                   <div class="form-row" style="margin:0;"><label>List Price</label><input v-model="tt.newPropPrice" placeholder="$650,000"/></div>
                   <button class="btn-navy" @click="ttAddProperty" style="padding:10px 16px;white-space:nowrap;">+ Add</button>
@@ -5473,6 +5505,134 @@ body {
 
               <!-- No active property: Property cards grid -->
               <template v-if="!tt.activeProperty">
+                <!-- Showing tour plan (Nov 1, 2026): route, figures checked by the agent, the agent's and the buyer's PDFs -->
+                <div v-if="tt.activeTour.plan" class="card tp-card" data-tp style="margin-bottom:16px;">
+                  <h3 style="font-family:'Cormorant Garamond',serif;margin:0 0 4px;font-size:15px;font-weight:600;color:var(--navy);">Showing Tour Plan</h3>
+                  <p style="font-size:12px;color:#6b7280;margin:0 0 12px;line-height:1.5;">The homes on this tour, up to 8. Plan the route to request showings, then enter the times the listing agents confirmed. Nothing reaches your buyer until you have checked every figure.</p>
+                  <div class="tp-seg">
+                    <button type="button" data-tp-mode="plan" :class="{on: tt.activeTour.plan.mode==='plan'}" @click="ttSetMode('plan')">Plan the route</button>
+                    <button type="button" data-tp-mode="confirmed" :class="{on: tt.activeTour.plan.mode==='confirmed'}" @click="ttSetMode('confirmed')">Times confirmed</button>
+                  </div>
+                  <div class="tp-row2">
+                    <div class="form-row" style="margin:0;"><label>Date</label><input type="date" data-tp-date v-model="tt.activeTour.plan.date" @change="ttSaveTours"/></div>
+                    <div v-if="tt.activeTour.plan.mode==='plan'" class="form-row" style="margin:0;"><label>First showing at</label><input type="time" data-tp-first v-model="tt.activeTour.plan.firstAt" @change="ttSaveTours"/></div>
+                  </div>
+                  <div class="form-row" style="margin:8px 0 0;"><label>Starting from (optional)</label><input data-tp-startaddr v-model="tt.activeTour.plan.startAddress" placeholder="Your office or the buyer's home" @change="ttSaveTours"/></div>
+                  <div v-if="!tt.activeTour.properties.length" style="font-size:12px;color:#9ca3af;margin-top:10px;">Add the homes above, then plan the route here.</div>
+                  <div v-for="(h,hi) in tt.activeTour.properties" :key="'tp'+h.id" data-tp-home class="tp-home-wrap">
+                    <div class="tp-home">
+                      <div class="tp-num">{{ hi+1 }}</div>
+                      <div style="min-width:0;flex:1;">
+                        <div class="tp-addr">{{ h.address }}</div>
+                        <div v-if="tt.activeTour.plan.mode==='plan'" class="tp-times">
+                          <select data-tp-minutes v-model="h.minutes" @change="ttSaveTours">
+                            <option value="" disabled>Time at this home</option>
+                            <option v-for="m in TT_MINUTES" :key="m.v" :value="m.v">{{ m.t }}</option>
+                          </select>
+                          <span v-if="ttStopOf(tt.activeTour,h)" data-tp-planned class="tp-planned">{{ ttFmtTime(ttStopOf(tt.activeTour,h).start) }} to {{ ttFmtTime(ttStopOf(tt.activeTour,h).end) }}</span>
+                        </div>
+                        <div v-else class="tp-times">
+                          <input type="time" data-tp-start v-model="h.start" @change="ttSaveTours" aria-label="Confirmed start"/>
+                          <span style="font-size:11px;color:#6b7280;">to</span>
+                          <input type="time" data-tp-end v-model="h.end" @change="ttSaveTours" aria-label="Confirmed end"/>
+                          <span v-if="h.plannedStart" style="font-size:11px;color:#9ca3af;">planned {{ ttFmtTime(h.plannedStart) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="ttLegAfter(tt.activeTour,hi)" data-tp-leg class="tp-leg" :class="{warn: ttLegAfter(tt.activeTour,hi).warning}">{{ ttLegAfter(tt.activeTour,hi).drive_min }} min drive<span v-if="ttLegAfter(tt.activeTour,hi).warning"> &middot; {{ ttWarnText(ttLegAfter(tt.activeTour,hi).warning) }}</span></div>
+                  </div>
+                  <button class="btn-navy" data-tp-run @click="ttRunRoute" :disabled="ttRoute.busy || !tt.activeTour.properties.length" style="width:100%;margin-top:12px;">
+                    <span v-if="ttRoute.busy" class="spinner"></span>
+                    <span v-if="ttRoute.busy"> Working out the route&hellip;</span><span v-else>{{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }}</span>
+                  </button>
+                  <div v-if="ttRoute.error" data-tp-error class="tp-bad">{{ ttRoute.error }}</div>
+                  <div v-else-if="ttPlanStale(tt.activeTour)" data-tp-stale class="tp-warn">The tour changed since the route was worked out. Press {{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }} again.</div>
+                  <div v-if="ttRouteFor(tt.activeTour)" style="font-size:11px;color:#6b7280;margin-top:6px;" data-tp-routeinfo>
+                    {{ ttRouteFor(tt.activeTour).mode==='plan' ? 'Suggested times, each rounded up to 5 minutes, with 5 minutes between showings. Use them to request showings.' : 'Your confirmed times, in time order.' }}
+                    {{ ttRouteFor(tt.activeTour).traffic ? 'Drive times use traffic for the tour date and time.' : 'Drive times are without traffic (the tour time has passed).' }}
+                  </div>
+                  <img v-if="ttMapFor(tt.activeTour,'agent')" :src="ttMapFor(tt.activeTour,'agent')" data-tp-map alt="Map of the tour route" style="width:100%;border-radius:8px;margin-top:10px;border:1px solid #e5e7eb;"/>
+
+                  <!-- Figures -->
+                  <div class="tp-section">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <h4 class="tp-h4">Check the figures</h4>
+                      <span data-tp-progress style="font-size:12px;color:#6b7280;"><b style="color:var(--navy);">{{ ttFigCount(tt.activeTour).done }} of {{ ttFigCount(tt.activeTour).all }}</b> figures confirmed</span>
+                    </div>
+                    <p style="font-size:11.5px;color:#6b7280;margin:2px 0 8px;line-height:1.5;">Each figure shows the page it came from. Tick it when it matches Bright, pick one when two pages disagree, or type your own. Zillow, Trulia and HotPads are never searched.</p>
+                    <button class="btn-gold" data-tp-lookall @click="ttLookupAll" :disabled="!tt.activeTour.properties.length || ttAllLooked(tt.activeTour)" style="font-size:12px;padding:8px 16px;">Look up the listings</button>
+                    <div v-for="(h,hi) in tt.activeTour.properties" :key="'tpf'+h.id" data-tp-figs class="tp-figbox">
+                      <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
+                        <div style="min-width:0;"><div class="tp-addr">{{ hi+1 }}. {{ h.address }}</div>
+                          <div v-if="h.facts && h.facts.found!==false" style="font-size:11px;color:#6b7280;">Found{{ h.facts.status ? ': ' + h.facts.status : '' }}{{ h.facts.matched_address ? ' · ' + h.facts.matched_address : '' }}</div></div>
+                        <button type="button" class="tp-link" data-tp-lookone @click="ttLookup(h)" :disabled="ttLook.busy[h.id]"><span v-if="ttLook.busy[h.id]" class="spinner spinner-dark"></span>{{ ttLook.busy[h.id] ? ' Searching' : (h.facts ? 'Search again' : 'Look up') }}</button>
+                      </div>
+                      <div v-if="ttLook.error[h.id]" data-tp-lookerr class="tp-bad">{{ ttLook.error[h.id] }}</div>
+                      <div v-if="ttHomeProblems(h).length" data-tp-flag class="tp-bad">
+                        <div v-for="(p,pi) in ttHomeProblems(h)" :key="pi">{{ p }}.</div>
+                        <label style="display:flex;gap:6px;align-items:flex-start;margin-top:6px;font-weight:600;cursor:pointer;"><input type="checkbox" data-tp-flagok v-model="h.flagOk" @change="ttSaveTours" style="margin-top:2px;"/> I checked this home against Bright, and the figures I confirm below are right.</label>
+                      </div>
+                      <div v-for="f in TT_FIGS" :key="f.key" class="tp-fig" :data-tp-fig="f.key">
+                        <div class="tp-fig-k">{{ f.label }}</div>
+                        <template v-if="h.confirm[f.key]">
+                          <div class="tp-fig-v" data-tp-confirmed>{{ h.confirm[f.key].value }} <span class="tp-fig-src">{{ h.confirm[f.key].how==='typed' ? 'typed by ' + h.confirm[f.key].by : 'from ' + ttSourceHost(h.confirm[f.key].source_url) }}</span></div>
+                          <button type="button" class="tp-tick on" data-tp-untick @click="ttUnconfirmFig(h,f.key)" title="Undo">&#10003;</button>
+                        </template>
+                        <template v-else>
+                          <div style="min-width:0;">
+                            <template v-if="h.facts && h.facts.fields && h.facts.fields[f.key]">
+                              <div v-if="!h.facts.fields[f.key].conflict" class="tp-fig-v">{{ h.facts.fields[f.key].display }} <span class="tp-fig-src">from <a v-for="(u,ui) in ttFigOptions(h.facts.fields[f.key])[0].urls" :key="ui" :href="u" target="_blank" rel="noopener">{{ ui ? ', ' : '' }}{{ ttSourceHost(u) }}</a></span></div>
+                              <div v-else class="tp-pick" data-tp-conflict>Two pages disagree. Pick the one that matches Bright:
+                                <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">
+                                  <button v-for="o in ttFigOptions(h.facts.fields[f.key])" :key="o.key" type="button" data-tp-pickone @click="ttConfirmFig(h,f.key,o.display,o.urls[0])">{{ o.display }} &middot; {{ ttSourceHost(o.urls[0]) }}</button>
+                                </div>
+                                <div style="margin-top:3px;"><a v-for="o in ttFigOptions(h.facts.fields[f.key])" :key="'l'+o.key" :href="o.urls[0]" target="_blank" rel="noopener" style="margin-right:8px;">Open {{ ttSourceHost(o.urls[0]) }}</a></div>
+                              </div>
+                            </template>
+                            <div v-else-if="h.facts" class="tp-fig-v" style="color:#9ca3af;font-weight:500;">Not found, type it</div>
+                            <input class="tp-type" :data-tp-type="f.key" placeholder="or type it" @change="ttTypeFig(h,f.key,$event.target.value);$event.target.value=''"/>
+                            <div v-if="ttLook.figErr[h.id+f.key]" class="tp-bad" data-tp-figerr style="margin-top:3px;">{{ ttLook.figErr[h.id+f.key] }}</div>
+                          </div>
+                          <button v-if="h.facts && h.facts.fields && h.facts.fields[f.key] && !h.facts.fields[f.key].conflict" type="button" class="tp-tick" data-tp-tick @click="ttConfirmFig(h,f.key,h.facts.fields[f.key].display,ttFigOptions(h.facts.fields[f.key])[0].urls[0])" title="Confirm">&#10003;</button>
+                        </template>
+                      </div>
+                      <div class="form-row" style="margin:8px 0 0;"><label>Overview (your edits are kept)</label>
+                        <textarea data-tp-overview v-model="h.overview" rows="2" @input="ttOnOverviewEdit(h)" placeholder="One or two sentences on the home, in our own words"></textarea></div>
+                      <div v-if="ttTextIssues(h.overview).length" data-tp-ovissue class="tp-bad">Fix the overview: {{ ttTextIssues(h.overview).join('; ') }}.</div>
+                      <label v-else-if="String(h.overview||'').trim()" style="display:flex;gap:6px;align-items:center;font-size:12px;cursor:pointer;margin-top:4px;"><input type="checkbox" data-tp-ovok v-model="h.overviewOk" @change="ttSaveTours"/> The overview is right</label>
+                      <div v-if="h.facts && h.facts.overview && h.facts.overview.source_url" style="font-size:10.5px;color:#9ca3af;margin-top:2px;">Written from <a :href="h.facts.overview.source_url" target="_blank" rel="noopener">{{ ttSourceHost(h.facts.overview.source_url) }}</a></div>
+                    </div>
+                  </div>
+
+                  <!-- Comparisons -->
+                  <div class="tp-section">
+                    <h4 class="tp-h4">How each home compares</h4>
+                    <p style="font-size:11.5px;color:#6b7280;margin:2px 0 8px;line-height:1.5;">Written only from the figures you confirmed. Facts only: no price, value or negotiating commentary. Edit any line.</p>
+                    <button class="btn-gold" data-tp-compare @click="ttCompare" :disabled="ttCmp.busy || !tt.activeTour.properties.length" style="font-size:12px;padding:8px 16px;"><span v-if="ttCmp.busy" class="spinner"></span>{{ ttCmp.busy ? ' Writing' : (tt.activeTour.plan.compareSig ? 'Write the comparisons again' : 'Write the comparisons') }}</button>
+                    <div v-if="ttCmp.error" data-tp-cmperr class="tp-bad">{{ ttCmp.error }}</div>
+                    <div v-if="ttCompareStale(tt.activeTour)" data-tp-cmpstale class="tp-warn">A figure or overview changed since these were written. Write them again before sending.</div>
+                    <template v-if="tt.activeTour.plan.compareSig">
+                      <div v-for="(h,hi) in tt.activeTour.properties" :key="'tpc'+h.id" class="form-row" style="margin:8px 0 0;">
+                        <label>{{ hi+1 }}. {{ h.address }}</label>
+                        <textarea data-tp-cmp v-model="h.comparison" rows="2" @input="ttSaveTours"></textarea>
+                        <div v-if="!ttCompareStale(tt.activeTour) && ttCompareIssues(tt.activeTour,h).length" data-tp-cmpissue class="tp-bad">Fix this line: {{ ttCompareIssues(tt.activeTour,h).join('; ') }}.</div>
+                      </div>
+                    </template>
+                  </div>
+
+                  <!-- Notes and the two PDFs -->
+                  <div class="tp-section">
+                    <div class="form-row" style="margin:0;"><label>Notes for your copy</label>
+                      <textarea data-tp-notes v-model="tt.activeTour.plan.notes" rows="3" placeholder="Add showing instructions here (lockbox, gate codes, parking)" @input="ttSaveTours"></textarea></div>
+                    <div class="tp-row2" style="margin-top:10px;">
+                      <button class="btn-navy" data-tp-agentpdf @click="ttAgentPdf" :disabled="!!ttPdf.busy"><span v-if="ttPdf.busy==='agent'" class="spinner"></span>{{ ttPdf.busy==='agent' ? ' Making' : 'Your copy (PDF)' }}</button>
+                      <button class="btn-gold" data-tp-send @click="ttSendBuyer" :disabled="!!ttPdf.busy || ttBuyerProblems(tt.activeTour).length > 0"><span v-if="ttPdf.busy==='buyer'" class="spinner"></span>{{ ttPdf.busy==='buyer' ? ' Making' : 'Send to buyer' }}</button>
+                    </div>
+                    <div v-if="ttBuyerProblems(tt.activeTour).length" data-tp-sendwhy style="font-size:11.5px;color:#6b7280;margin-top:6px;">Before sending: {{ ttBuyerProblems(tt.activeTour).join('. ') }}.</div>
+                    <div v-if="ttPdf.error" data-tp-pdferr class="tp-bad">{{ ttPdf.error }}</div>
+                    <div style="font-size:11px;color:#9ca3af;margin-top:6px;">Your copy has the route, drive times, timing warnings and your notes, for you only. The buyer's copy has the homes in order, the times, the figures you confirmed and how each compares. On a phone, Send to buyer opens your share menu with the PDF; on a computer it downloads the PDF and opens an email to your buyer.</div>
+                  </div>
+                </div>
                 <div v-if="tt.activeTour.properties.length === 0" style="font-family:'Cormorant Garamond',serif;color:#9ca3af;font-size:13px;padding:20px 0;text-align:center;">Add properties above to start scoring.</div>
                 <div v-else style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;">
                   <div v-for="(prop,pi) in tt.activeTour.properties" :key="prop.id" class="tool-card" @click="tt.activeProperty=prop" style="padding:18px;position:relative;">
@@ -19911,6 +20071,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const bid = byrActiveBuyer.value ? byrActiveBuyer.value.id : 'global';
       return agentKey('fos_tours') + '_buyer_' + bid;
     }
+    // A loaded list keeps the tour that is open on screen (its edits are the newest on this device);
+    // when the list does not hold it (another buyer's tours), the open tour is closed.
+    function ttRebindActive(list) {
+      if (!tt.activeTour) return list;
+      const i = list.findIndex(function (t) { return t && t.id === tt.activeTour.id; });
+      if (i >= 0) list[i] = tt.activeTour;
+      else { tt.activeTour = null; tt.activeProperty = null; }
+      return list;
+    }
     function ttLoadTours() {
       try { return JSON.parse(localStorage.getItem(ttBuyerKey()) || '[]'); } catch { return []; }
     }
@@ -19960,6 +20129,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         properties: [],
         createdAt: new Date().toISOString()
       };
+      ttEnsurePlan(tour);
       tt.tours.unshift(tour);
       ttSaveTours();
       tt.newTourName = '';
@@ -19972,6 +20142,8 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       ttSaveTours();
     }
     function ttOpenTour(tour) {
+      ttEnsurePlan(tour);
+      ttRoute.error = ''; ttCmp.error = ''; ttPdf.error = '';
       tt.activeTour = tour;
       tt.activeProperty = null;
       tt.recommendation = '';
@@ -19989,6 +20161,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         pros: '',
         cons: ''
       };
+      ttEnsureHome(prop);
       tt.activeTour.properties.push(prop);
       ttSaveTours();
       tt.newPropAddr = '';
@@ -20017,6 +20190,677 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const n = Number(String(price).replace(/[^0-9.]/g, ''));
       if (isNaN(n)) return String(price);
       return '$' + n.toLocaleString('en-US');
+    }
+
+    // -- Showing tour plan (Nov 1, 2026; mockup approved by Marc Oct 30, backend forward-os-backend
+    // tour_plan.py). The homes of a tour are its properties. Plan the route: the backend tries every
+    // order and suggests times. Times confirmed: the agent's own times, with a warning where a drive
+    // does not fit. Each listing's figures are looked up on the web WITH their pages, and nothing
+    // reaches the buyer until the agent has confirmed every figure (ticked, picked when two pages
+    // disagree, or typed). Comparisons are written only from the confirmed figures. Two PDFs: the
+    // agent's (route, drives, warnings, notes) and the buyer's (pins, times, figures, comparisons).
+    // The Google key lives on the server; the maps come back as images and are kept in memory only.
+    const TT_MAX_HOMES = 8;
+    const TT_MINUTES = [{ v: 15, t: '15 min' }, { v: 30, t: '30 min' }, { v: 45, t: '45 min' }, { v: 60, t: '1 hour' }];
+    const TT_FIGS = [
+      { key: 'list_price', label: 'List price' },
+      { key: 'beds', label: 'Bedrooms' },
+      { key: 'baths_full', label: 'Full baths' },
+      { key: 'baths_half', label: 'Half baths' },
+      { key: 'sqft', label: 'Square feet' },
+      { key: 'days_on_market', label: 'Days on market' },
+    ];
+    // The same words as ADVICE_RX in forward-os-backend tour_plan.py (Marc, Oct 30, 2026: the tour
+    // sheet states facts only, no price, value or negotiating commentary). Change both together.
+    const TT_ADVICE_RX = /\b(?:negotiat\w*|leverage|bargain|good deal|great deal|best deal|(?:best|good|great) value|underpriced|overpriced|priced to sell|motivated|price (?:cut|drop|reduction)|reduced|offers? (?:below|under|over|above)|below asking|over asking|bidding war|compet\w+ offers?|move quickly|act fast|won'?t last|sit(?:s|ting)? on the market|stale|worth (?:it|the)|investment|appreciat\w*|resale|should (?:offer|buy|consider))\b/i;
+    const TT_PLACES_RX = /\b(?:schools?|perfect for|ideal for)\b/i;
+    const ttRoute = reactive({ busy: false, error: '', maps: {} });
+    const ttLook = reactive({ busy: {}, error: {}, figErr: {} });
+    const ttCmp = reactive({ busy: false, error: '' });
+    const ttPdf = reactive({ busy: '', error: '' });
+
+    function ttEnsurePlan(tour) {
+      if (!tour) return;
+      if (!tour.plan || typeof tour.plan !== 'object') tour.plan = { mode: 'plan', date: '', firstAt: '', startAddress: '', notes: '', result: null, compareSig: '' };
+      (tour.properties || []).forEach(ttEnsureHome);
+    }
+    function ttEnsureHome(h) {
+      if (!h) return;
+      if (h.minutes === undefined) h.minutes = '';
+      if (h.start === undefined) h.start = '';
+      if (h.end === undefined) h.end = '';
+      if (!h.confirm || typeof h.confirm !== 'object') h.confirm = {};
+      if (h.facts === undefined) h.facts = null;
+      if (h.overview === undefined) h.overview = '';
+      if (h.overviewOk === undefined) h.overviewOk = false;
+      if (h.flagOk === undefined) h.flagOk = false;
+      if (h.comparison === undefined) h.comparison = '';
+    }
+    function ttFmtTime(hm) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm || '').trim());
+      if (!m) return String(hm || '');
+      const h = Number(m[1]);
+      return ((h % 12) || 12) + ':' + m[2] + (h < 12 ? ' am' : ' pm');
+    }
+    // The backend writes times in a warning as 13:20; the agent reads 1:20 pm like everywhere else.
+    function ttWarnText(w) {
+      return String(w || '').replace(/\b(\d{1,2}:\d{2})\b/g, function (m) { return ttFmtTime(m); });
+    }
+    function ttDateObj(d) {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(d || ''));
+      return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : null;
+    }
+    function ttDateLong(d) {
+      const o = ttDateObj(d);
+      return o ? o.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : '';
+    }
+    function ttMinOf(hm) {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(String(hm || '').trim());
+      return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+    }
+    // What the route depends on. A result whose signature is not the tour's is out of date.
+    function ttPlanSig(tour) {
+      const p = (tour && tour.plan) || {};
+      return JSON.stringify([p.mode, p.date, p.mode === 'plan' ? p.firstAt : '', String(p.startAddress || '').trim(),
+        (tour.properties || []).map(function (h) { return [h.id, String(h.address || '').trim(), p.mode === 'plan' ? String(h.minutes || '') : [h.start || '', h.end || '']]; })]);
+    }
+    function ttRouteFor(tour) {
+      const r = tour && tour.plan && tour.plan.result;
+      return r && r.sig === ttPlanSig(tour) ? r : null;
+    }
+    function ttPlanStale(tour) {
+      return !!(tour && tour.plan && tour.plan.result && tour.plan.result.sig !== ttPlanSig(tour));
+    }
+    function ttStopOf(tour, h) {
+      const r = ttRouteFor(tour);
+      return r ? (r.stops || []).find(function (s) { return s.id === h.id; }) || null : null;
+    }
+    // The drive after home `hi` on the current route, with its warning ('' when none).
+    function ttLegAfter(tour, hi) {
+      const r = ttRouteFor(tour);
+      return r ? (r.legs || []).find(function (l) { return l.from === hi + 1; }) || null : null;
+    }
+    function ttMapFor(tour, kind) {
+      const r = ttRouteFor(tour), m = tour && ttRoute.maps[tour.id];
+      return r && m && m.sig === r.sig ? m[kind] : '';
+    }
+    function ttRouteProblem(tour) {
+      const p = tour.plan, hs = tour.properties || [];
+      if (!hs.length) return 'Add the homes on this tour first.';
+      if (hs.length > TT_MAX_HOMES) return 'A tour plan holds up to ' + TT_MAX_HOMES + ' homes, and this tour has ' + hs.length + '. Remove ' + (hs.length - TT_MAX_HOMES) + ' first.';
+      if (!ttDateObj(p.date)) return 'Pick the date of the tour.';
+      if (p.mode === 'plan') {
+        if (ttMinOf(p.firstAt) === null) return 'Pick the time of the first showing.';
+        const no = hs.findIndex(function (h) { return TT_MINUTES.map(function (x) { return x.v; }).indexOf(Number(h.minutes)) < 0; });
+        if (no >= 0) return 'Pick the time at home ' + (no + 1) + ' (' + hs[no].address + ').';
+      } else {
+        for (let i = 0; i < hs.length; i++) {
+          const a = ttMinOf(hs[i].start), b = ttMinOf(hs[i].end);
+          if (a === null || b === null) return 'Type the confirmed start and end time of home ' + (i + 1) + ' (' + hs[i].address + ').';
+          if (b <= a) return 'Home ' + (i + 1) + ' (' + hs[i].address + '): the end time must be after the start time.';
+        }
+      }
+      return '';
+    }
+    function ttSetMode(mode) {
+      const tour = tt.activeTour; if (!tour) return;
+      ttEnsurePlan(tour);
+      if (tour.plan.mode === mode) return;
+      tour.plan.mode = mode; ttRoute.error = '';
+      ttSaveTours();
+    }
+    async function ttApiPost(path, body) {
+      const res = await fetch(RAILWAY_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      let j = null;
+      try { j = await res.clone().json(); } catch (e) { j = null; }
+      if (!res.ok) throw new Error((j && typeof j.detail === 'string' && j.detail) || ('the service answered ' + res.status));
+      if (!j) throw new Error('the service sent no readable answer');
+      return j;
+    }
+    async function ttRunRoute() {
+      const tour = tt.activeTour; if (!tour || ttRoute.busy) return false;
+      ttEnsurePlan(tour);
+      const why = ttRouteProblem(tour);
+      if (why) { ttRoute.error = why; return false; }
+      const p = tour.plan, sent = ttPlanSig(tour);
+      const body = { mode: p.mode, date: p.date, buffer_minutes: 5,
+        stops: tour.properties.map(function (h) { return p.mode === 'plan' ? { address: String(h.address).trim(), minutes: Number(h.minutes) } : { address: String(h.address).trim(), start: h.start, end: h.end }; }) };
+      if (p.mode === 'plan') body.start_time = p.firstAt;
+      if (String(p.startAddress || '').trim()) body.start_address = String(p.startAddress).trim();
+      ttRoute.busy = true; ttRoute.error = '';
+      try {
+        const j = await ttApiPost('/api/tour/route', body);
+        if (tt.activeTour !== tour) return false;
+        if (ttPlanSig(tour) !== sent) { ttRoute.error = 'The tour changed while the route was being worked out. Press the button again.'; return false; }
+        ttApplyRoute(tour, j);
+        return true;
+      } catch (e) {
+        if (tt.activeTour === tour) ttRoute.error = 'The route was NOT worked out: ' + fosWhy(e);
+        return false;
+      } finally { ttRoute.busy = false; }
+    }
+    function ttApplyRoute(tour, j) {
+      const stops = (j && j.stops) || [];
+      if (stops.length !== tour.properties.length) throw new Error('the route came back with ' + stops.length + ' homes, not ' + tour.properties.length);
+      const left = tour.properties.slice(), order = [];
+      for (const s of stops) {
+        const i = left.findIndex(function (h) { return String(h.address).trim() === String(s.address).trim(); });
+        if (i < 0) throw new Error('the route came back with an address that is not on this tour (' + s.address + ')');
+        order.push(left.splice(i, 1)[0]);
+      }
+      tour.properties.splice(0, tour.properties.length, ...order);
+      if (j.mode === 'plan') order.forEach(function (h, k) { h.plannedStart = stops[k].start; h.plannedEnd = stops[k].end; });
+      const sig = ttPlanSig(tour);
+      tour.plan.result = { mode: j.mode, date: j.date, sig: sig, at: new Date().toISOString(), traffic: !!j.traffic,
+        stops: stops.map(function (s, k) { return { stop: s.stop, id: order[k].id, start: s.start, end: s.end, minutes: s.minutes, google_address: s.google_address || '' }; }),
+        legs: (j.legs || []).map(function (l) { return { from: l.from, to: l.to, drive_min: l.drive_min, gap_min: l.gap_min, warning: l.warning || '' }; }),
+        warnings: (j.warnings || []).slice() };
+      ttRoute.maps[tour.id] = { sig: sig, agent: (j.maps && j.maps.agent) || '', client: (j.maps && j.maps.client) || '' };
+      ttSaveTours();
+    }
+
+    // ── Listing figures ──
+    function ttSourceHost(u) {
+      try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return 'page'; }
+    }
+    function ttFigOptions(field) {
+      const out = [];
+      ((field && field.sources) || []).forEach(function (s) {
+        const key = s.number !== null && s.number !== undefined ? 'n' + s.number : 's' + String(s.display).toLowerCase();
+        let o = out.find(function (x) { return x.key === key; });
+        if (!o) { o = { key: key, display: s.display, urls: [] }; out.push(o); }
+        if (o.urls.indexOf(s.source_url) < 0) o.urls.push(s.source_url);
+      });
+      return out;
+    }
+    async function ttLookup(h) {
+      const tour = tt.activeTour;
+      if (!h || !tour || ttLook.busy[h.id]) return;
+      const addr = String(h.address || '').trim();
+      ttLook.busy[h.id] = true; ttLook.error[h.id] = '';
+      try {
+        const j = await ttApiPost('/api/tour/lookup', { address: addr });
+        if (String(h.address || '').trim() !== addr) return;
+        ttEnsureHome(h);
+        h.facts = j; h.confirm = {}; h.flagOk = false;
+        h.overview = (j.overview && j.overview.text) || ''; h.overviewOk = false;
+        h.comparison = '';
+        ttSaveTours();
+      } catch (e) {
+        ttLook.error[h.id] = 'The listing search did NOT run: ' + fosWhy(e) + '. Try again, or type the figures yourself.';
+      } finally { ttLook.busy[h.id] = false; }
+    }
+    async function ttLookupAll() {
+      const tour = tt.activeTour; if (!tour) return;
+      const todo = tour.properties.filter(function (h) { return !h.facts && !ttLook.busy[h.id]; });
+      let next = 0;
+      async function worker() { while (next < todo.length) { const h = todo[next++]; await ttLookup(h); } }
+      await Promise.all([worker(), worker(), worker()]);
+    }
+    function ttStamp() { return { by: agentName.value || '', at: new Date().toISOString() }; }
+    function ttConfirmFig(h, key, display, url) {
+      ttEnsureHome(h);
+      h.confirm[key] = Object.assign({ value: String(display), how: 'source', source_url: url || '' }, ttStamp());
+      ttLook.figErr[h.id + key] = '';
+      ttSaveTours();
+    }
+    function ttUnconfirmFig(h, key) {
+      if (h && h.confirm) { delete h.confirm[key]; ttSaveTours(); }
+    }
+    function ttFigParse(key, raw) {
+      const s = String(raw || '').trim();
+      if (!s) return { err: 'Type the figure' };
+      const d = s.replace(/[$,\s]/g, '');
+      if (key === 'list_price') {
+        if (!/^\d+$/.test(d) || Number(d) < 1000) return { err: 'Type the price in dollars, for example 1,250,000' };
+        return { value: '$' + Number(d).toLocaleString('en-US') };
+      }
+      if (!/^\d+$/.test(d)) return { err: 'Type a whole number' };
+      if (key === 'sqft') return { value: Number(d).toLocaleString('en-US') };
+      return { value: String(Number(d)) };
+    }
+    function ttTypeFig(h, key, raw) {
+      if (!String(raw || '').trim()) return;
+      const r = ttFigParse(key, raw);
+      if (r.err) { ttLook.figErr[h.id + key] = r.err; return; }
+      ttEnsureHome(h);
+      h.confirm[key] = Object.assign({ value: r.value, how: 'typed', source_url: '' }, ttStamp());
+      ttLook.figErr[h.id + key] = '';
+      ttSaveTours();
+    }
+    function ttNumbersIn(text) {
+      const out = new Set();
+      (String(text || '').match(/\d[\d,]*(?:\.\d+)?/g) || []).forEach(function (m) {
+        let s = m.replace(/,/g, '').replace(/\.$/, '');
+        if (s.indexOf('.') >= 0) s = s.replace(/0+$/, '').replace(/\.$/, '');
+        out.add(s);
+      });
+      return out;
+    }
+    // What is wrong with text that goes to the buyer. [] when nothing is.
+    function ttTextIssues(t) {
+      const text = String(t || ''), out = lstFlyerIssues(text).slice();
+      const a = text.match(TT_ADVICE_RX);
+      if (a) out.push('"' + a[0] + '" is commentary on price or negotiating; the tour sheet states facts only');
+      const s = text.match(TT_PLACES_RX);
+      if (s && !out.some(function (x) { return x.indexOf('"' + s[0]) >= 0; })) out.push('"' + s[0] + '" says who the home suits or names schools (fair housing)');
+      return out;
+    }
+    function ttHomeProblems(h) {
+      return (h && h.facts && h.facts.problems) || [];
+    }
+    // What is still to do on one home before it can go to the buyer. [] when nothing is.
+    function ttHomeLeft(h) {
+      const out = [];
+      if (!h) return out;
+      if (!h.facts) out.push('look up the listing or type the figures');
+      TT_FIGS.forEach(function (f) { if (!(h.confirm && h.confirm[f.key] && h.confirm[f.key].value)) out.push(f.label.toLowerCase()); });
+      if (!String(h.overview || '').trim()) out.push('the overview');
+      else if (ttTextIssues(h.overview).length) out.push('fix the overview');
+      else if (!h.overviewOk) out.push('tick the overview');
+      if (ttHomeProblems(h).length && !h.flagOk) out.push('the red note');
+      return out;
+    }
+    function ttFigCount(tour) {
+      let done = 0, all = 0;
+      ((tour && tour.properties) || []).forEach(function (h) {
+        TT_FIGS.forEach(function (f) { all++; if (h.confirm && h.confirm[f.key] && h.confirm[f.key].value) done++; });
+      });
+      return { done: done, all: all };
+    }
+    function ttAllLooked(tour) {
+      return ((tour && tour.properties) || []).every(function (h) { return h.facts || ttLook.busy[h.id]; });
+    }
+    function ttOnOverviewEdit(h) { h.overviewOk = false; ttSaveTours(); }
+
+    // ── Comparisons ──
+    function ttCompareSig(tour) {
+      return JSON.stringify((tour.properties || []).map(function (h) {
+        return [h.id, String(h.address || '').trim(), TT_FIGS.map(function (f) { return (h.confirm && h.confirm[f.key] && h.confirm[f.key].value) || ''; }), String(h.overview || '').trim()];
+      }));
+    }
+    function ttCompareStale(tour) {
+      return !!(tour && tour.plan && tour.plan.compareSig && tour.plan.compareSig !== ttCompareSig(tour));
+    }
+    function ttCompareHome(h, k) {
+      const o = { stop: k + 1, address: String(h.address || '').trim(), overview: String(h.overview || '').trim() };
+      TT_FIGS.forEach(function (f) { o[f.key] = h.confirm[f.key].value; });
+      return o;
+    }
+    function ttCompareAllowed(tour) {
+      const s = new Set();
+      tour.properties.forEach(function (h, k) {
+        const o = ttCompareHome(h, k), ov = o.overview;
+        delete o.overview;
+        ttNumbersIn(JSON.stringify(o)).forEach(function (n) { s.add(n); });
+        ttNumbersIn(ov).forEach(function (n) { s.add(n); });
+      });
+      return s;
+    }
+    function ttCompareIssues(tour, h) {
+      const t = String(h.comparison || '').trim();
+      if (!t) return ['it is empty'];
+      const out = ttTextIssues(t);
+      if (tour.properties.every(function (x) { return ttHomeLeft(x).length === 0; })) {
+        const allowed = ttCompareAllowed(tour);
+        const extra = Array.from(ttNumbersIn(t)).filter(function (n) { return !allowed.has(n); });
+        if (extra.length) out.push('it has a number that is not in the confirmed figures: ' + extra.join(', '));
+      }
+      return out;
+    }
+    async function ttCompare() {
+      const tour = tt.activeTour; if (!tour || ttCmp.busy) return;
+      const left = tour.properties.findIndex(function (h) { return ttHomeLeft(h).length > 0; });
+      if (left >= 0) { ttCmp.error = 'Confirm every figure first. Home ' + (left + 1) + ' still needs: ' + ttHomeLeft(tour.properties[left]).join(', ') + '.'; return; }
+      if (tour.properties.length > TT_MAX_HOMES) { ttCmp.error = 'A tour plan holds up to ' + TT_MAX_HOMES + ' homes.'; return; }
+      const sig = ttCompareSig(tour);
+      ttCmp.busy = true; ttCmp.error = '';
+      try {
+        const j = await ttApiPost('/api/tour/compare', { homes: tour.properties.map(ttCompareHome) });
+        if (tt.activeTour !== tour) return;
+        if (ttCompareSig(tour) !== sig) { ttCmp.error = 'A figure changed while the comparisons were being written. Press the button again.'; return; }
+        tour.properties.forEach(function (h, k) {
+          const r = (j.homes || []).find(function (x) { return Number(x.stop) === k + 1; });
+          h.comparison = r ? String(r.comparison || '') : '';
+        });
+        tour.plan.compareSig = sig;
+        ttSaveTours();
+      } catch (e) {
+        if (tt.activeTour === tour) ttCmp.error = 'The comparisons were NOT written: ' + fosWhy(e);
+      } finally { ttCmp.busy = false; }
+    }
+
+    // ── What stops each PDF ──
+    function ttAgentProblems(tour) {
+      if (!tour || !tour.plan) return ['Open a tour'];
+      if (!tour.plan.result) return [tour.plan.mode === 'plan' ? 'Press Find the best order' : 'Press Check the times'];
+      if (ttPlanStale(tour)) return ['The tour changed since the route was worked out. Press ' + (tour.plan.mode === 'plan' ? 'Find the best order' : 'Check the times') + ' again'];
+      return [];
+    }
+    function ttBuyerProblems(tour) {
+      const out = ttAgentProblems(tour).slice();
+      if (!tour || !tour.plan) return out;
+      if (tour.plan.mode !== 'confirmed' || (tour.plan.result && tour.plan.result.mode !== 'confirmed')) out.push('Enter the confirmed showing times under Times confirmed and press Check the times (planned times are only requests)');
+      const fc = ttFigCount(tour);
+      if (fc.done < fc.all) out.push((fc.all - fc.done) + ' figure' + (fc.all - fc.done === 1 ? '' : 's') + ' left to confirm');
+      const homeLeft = tour.properties.findIndex(function (h) { return ttHomeLeft(h).some(function (x) { return !TT_FIGS.some(function (f) { return f.label.toLowerCase() === x; }); }); });
+      if (homeLeft >= 0) out.push('Home ' + (homeLeft + 1) + ': ' + ttHomeLeft(tour.properties[homeLeft]).filter(function (x) { return !TT_FIGS.some(function (f) { return f.label.toLowerCase() === x; }); }).join(', '));
+      if (!tour.plan.compareSig) out.push('Press Write the comparisons');
+      else if (ttCompareStale(tour)) out.push('A figure or overview changed since the comparisons were written. Press Write the comparisons again');
+      else {
+        const bad = tour.properties.findIndex(function (h) { return ttCompareIssues(tour, h).length > 0; });
+        if (bad >= 0) out.push('Fix the comparison for home ' + (bad + 1) + ': ' + ttCompareIssues(tour, tour.properties[bad]).join('; '));
+      }
+      return out;
+    }
+
+    // ── PDFs ──
+    function ttTourWho(tour) { return String(tour.buyer || tour.name || '').trim(); }
+    function ttFigShow(h, key) { return (h.confirm && h.confirm[key] && h.confirm[key].value) || ''; }
+    function ttBathsShow(h) {
+      const f = ttFigShow(h, 'baths_full'), half = ttFigShow(h, 'baths_half');
+      if (!f) return '';
+      return f + ' full' + (half && Number(half.replace(/[^0-9.]/g, '')) > 0 ? ', ' + half + ' half' : '');
+    }
+    function ttFileStem(tour) {
+      return 'Showing-Tour-' + (String(tour.plan.date || '') + '-' + ttTourWho(tour)).replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    function ttAsOfDate(tour) {
+      let oldest = null;
+      tour.properties.forEach(function (h) {
+        TT_FIGS.forEach(function (f) {
+          const c = h.confirm && h.confirm[f.key];
+          const t = c && (c.how === 'source' && h.facts && h.facts.looked_up_at ? h.facts.looked_up_at : c.at);
+          const d = t ? new Date(t) : null;
+          if (d && !isNaN(d) && (!oldest || d < oldest)) oldest = d;
+        });
+      });
+      return oldest ? oldest.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+    }
+    function ttPdfDoc(tour, kind) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit: 'pt', format: 'letter' });
+      const W = 612, H = 792, M = 40, CW = W - 2 * M, BOTTOM = H - 56;
+      const NAVY = [10, 35, 66], GOLD = [200, 169, 110], MUTED = [91, 100, 117], LINE = [228, 222, 211], INK = [20, 34, 58];
+      const r = tour.plan.result, hs = tour.properties, agent = agentName.value || '';
+      const dateLong = ttDateLong(tour.plan.date), who = ttTourWho(tour);
+      function header(first) {
+        doc.setFillColor(...NAVY); doc.rect(0, 0, W, first ? 64 : 40, 'F');
+        if (typeof FORWARD_LOGO_B64 !== 'undefined' && FORWARD_LOGO_B64) {
+          const lh = first ? 34 : 22; doc.addImage(FORWARD_LOGO_B64, 'PNG', M, first ? 15 : 9, lh * 4.85, lh);
+        } else {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(first ? 16 : 12); doc.setTextColor(255, 255, 255); doc.text('FORWARD', M, first ? 32 : 24);
+          doc.setFontSize(7); doc.setTextColor(...GOLD); doc.text('CORCORAN MCENEARNEY', M, first ? 44 : 33);
+        }
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+        if (first) {
+          doc.setTextColor(255, 255, 255); doc.text((kind === 'agent' ? 'Prepared by ' : '') + agent, W - M, 29, { align: 'right' });
+          doc.setTextColor(...GOLD); doc.text(dateLong, W - M, 42, { align: 'right' });
+        } else {
+          doc.setTextColor(255, 255, 255); doc.text((kind === 'agent' ? 'Tour for ' + who : 'Your tour') + ', ' + dateLong, W - M, 24, { align: 'right' });
+        }
+        doc.setFillColor(...GOLD); doc.rect(0, first ? 64 : 40, W, 2, 'F');
+        return first ? 92 : 62;
+      }
+      let y = header(true);
+      function room(n) { if (y + n > BOTTOM) { doc.addPage(); y = header(false); return true; } return false; }
+      function lines(text, size, width) { doc.setFontSize(size); return doc.splitTextToSize(String(text || ''), width); }
+
+      // Title
+      doc.setFont('times', 'bold'); doc.setFontSize(21); doc.setTextColor(...NAVY);
+      const title = kind === 'agent' ? 'Tour for ' + who : 'Your ' + (ttDateObj(tour.plan.date) ? ttDateObj(tour.plan.date).toLocaleDateString('en-US', { weekday: 'long' }) : '') + ' Tour';
+      const tl = lines(title, 21, CW - (kind === 'agent' ? 80 : 0));
+      doc.setFont('times', 'bold'); doc.setFontSize(21);
+      tl.forEach(function (l, i) { doc.text(l, M, y + i * 23); });
+      if (kind === 'agent') {
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+        const bw = doc.getTextWidth('AGENT COPY') + 10;
+        doc.setFont('times', 'bold'); doc.setFontSize(21);
+        const lastW = doc.getTextWidth(tl[tl.length - 1]);
+        doc.setFillColor(...NAVY); doc.rect(M + lastW + 8, y + (tl.length - 1) * 23 - 11, bw, 13, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7); doc.setTextColor(255, 255, 255);
+        doc.text('AGENT COPY', M + lastW + 13, y + (tl.length - 1) * 23 - 2);
+      }
+      y += (tl.length - 1) * 23 + 16;
+      doc.setFont('helvetica', 'normal'); doc.setTextColor(...MUTED);
+      const drive = (r.legs || []).reduce(function (s, l) { return s + (Number(l.drive_min) || 0); }, 0);
+      const first = r.stops[0], last = r.stops[r.stops.length - 1];
+      const sub = kind === 'agent'
+        ? hs.length + (hs.length === 1 ? ' home' : ' homes') + ' \u00b7 ' + ttFmtTime(first.start) + ' to ' + ttFmtTime(last.end)
+          + (hs.length > 1 ? ' \u00b7 about ' + drive + ' minutes of driving \u00b7 ' + (r.traffic ? 'drive times use traffic for ' + ttFmtTime(tour.plan.mode === 'plan' ? first.start : first.end) + ' on ' + dateLong : 'drive times without traffic (the tour time had passed when they were worked out)') : '')
+          + (tour.plan.mode === 'plan' ? ' \u00b7 PLANNED times, not yet confirmed' : '')
+        : hs.length + (hs.length === 1 ? ' home' : ' homes') + (hs.length > 1 ? ', in the order we will see them' : '');
+      lines(sub, 9, CW).forEach(function (l) { doc.setFontSize(9); doc.text(l, M, y); y += 12; });
+      y += 6;
+
+      // Map
+      const map = ttMapFor(tour, kind === 'agent' ? 'agent' : 'client');
+      if (map) {
+        const maxH = kind === 'agent' ? 290 : 250;
+        let mw = CW, mh = CW * 400 / 640;
+        if (mh > maxH) { mh = maxH; mw = mh * 640 / 400; }
+        doc.addImage(map, 'PNG', M + (CW - mw) / 2, y, mw, mh);
+        doc.setDrawColor(...LINE); doc.setLineWidth(0.6); doc.rect(M + (CW - mw) / 2, y, mw, mh);
+        y += mh + 16;
+      }
+
+      if (kind === 'agent') {
+        const cols = [{ k: 'n', w: 18 }, { k: 'addr', w: 0, t: 'ADDRESS' }, { k: 'time', w: 98, t: 'TIME' }, { k: 'price', w: 60, t: 'PRICE' }, { k: 'bd', w: 26, t: 'BEDS' }, { k: 'ba', w: 50, t: 'BATHS (F / H)' }, { k: 'sf', w: 40, t: 'SQ FT' }, { k: 'dom', w: 28, t: 'DOM' }];
+        cols[1].w = CW - cols.reduce(function (s, c) { return s + c.w; }, 0);
+        function head() {
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...MUTED);
+          let x = M; cols.forEach(function (c) { if (c.t) doc.text(c.t, x + 2, y); x += c.w; });
+          y += 4; doc.setDrawColor(...LINE); doc.setLineWidth(0.6); doc.line(M, y, M + CW, y); y += 11;
+        }
+        room(30); head();
+        hs.forEach(function (h, k) {
+          const s = r.stops[k];
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5);
+          const al = doc.splitTextToSize(String(h.address || ''), cols[1].w - 6);
+          const rowH = Math.max(1, al.length) * 10.5 + 4;
+          if (room(rowH + 4)) head();
+          doc.setFillColor(...NAVY); doc.circle(M + 7, y - 3, 6.5, 'F');
+          doc.setTextColor(255, 255, 255); doc.setFontSize(7.5); doc.text(String(k + 1), M + 7, y - 0.5, { align: 'center' });
+          doc.setTextColor(...INK); doc.setFontSize(8.5);
+          let x = M + cols[0].w;
+          al.forEach(function (l, i) { doc.text(l, x + 2, y + i * 10.5); });
+          x += cols[1].w;
+          doc.setFont('helvetica', 'normal');
+          const vals = [ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), ttFigShow(h, 'list_price'), ttFigShow(h, 'beds'),
+            ttFigShow(h, 'baths_full') ? ttFigShow(h, 'baths_full') + ' / ' + ttFigShow(h, 'baths_half') : '', ttFigShow(h, 'sqft'), ttFigShow(h, 'days_on_market')];
+          vals.forEach(function (v, i) { if (v) doc.text(v, x + 2, y); x += cols[i + 2].w; });
+          y += rowH;
+          const leg = (r.legs || []).find(function (l) { return l.from === k + 1; });
+          if (leg) {
+            doc.setFontSize(7.5);
+            const lt = leg.drive_min + ' min drive' + (leg.warning ? ' \u00b7 ' + ttWarnText(leg.warning) : '');
+            const ll = doc.splitTextToSize(lt, CW - 30);
+            if (room(ll.length * 9.5 + 4)) head();
+            doc.setFont('helvetica', leg.warning ? 'bold' : 'normal'); doc.setTextColor(...(leg.warning ? [154, 91, 6] : MUTED));
+            ll.forEach(function (l, i) { doc.text(l, M + 24, y - 2 + i * 9.5); });
+            y += ll.length * 9.5 + 3;
+          }
+          doc.setDrawColor(...LINE); doc.setLineWidth(0.4); doc.line(M, y - 6, M + CW, y - 6);
+          y += 4;
+        });
+        if ((r.warnings || []).length) {
+          y += 4;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8);
+          const wl = [];
+          r.warnings.forEach(function (w) { doc.splitTextToSize(ttWarnText(w) + '.', CW - 20).forEach(function (l) { wl.push(l); }); });
+          const bh = 18 + wl.length * 10;
+          room(bh + 6);
+          doc.setFillColor(251, 240, 220); doc.rect(M, y, CW, bh, 'F');
+          doc.setFont('helvetica', 'bold'); doc.setTextColor(122, 72, 5); doc.text('Timing', M + 10, y + 12);
+          doc.setFont('helvetica', 'normal');
+          wl.forEach(function (l, i) { doc.text(l, M + 10, y + 23 + i * 10); });
+          y += bh + 12;
+        }
+        // Notes: what the agent typed, then lines to write on (Marc, Oct 30, 2026)
+        const nt = String(tour.plan.notes || '').trim();
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+        const nl = nt ? doc.splitTextToSize(nt, CW - 20) : [];
+        room(Math.min(26 + (nt ? nl.length * 11 : 12) + 3 * 16 + 8, BOTTOM - 70));
+        let boxTop = y;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.5); doc.setTextColor(...MUTED); doc.text('NOTES', M + 10, y + 13);
+        y += 26;
+        doc.setFontSize(8.5);
+        if (nt) {
+          doc.setFont('helvetica', 'normal'); doc.setTextColor(...INK);
+          nl.forEach(function (l) {
+            if (y + 11 > BOTTOM) {
+              doc.setDrawColor(...LINE); doc.setLineWidth(0.5); doc.rect(M, boxTop, CW, y - boxTop);
+              doc.addPage(); y = header(false); boxTop = y; y += 14;
+              doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...INK);
+            }
+            doc.text(l, M + 10, y); y += 11;
+          });
+        } else {
+          doc.setFont('helvetica', 'italic'); doc.setTextColor(...MUTED); doc.text('Add showing instructions here (lockbox, gate codes, parking)', M + 10, y); y += 12;
+        }
+        const ruled = Math.max(0, Math.min(3, Math.floor((BOTTOM - y - 8) / 16)));
+        doc.setDrawColor(...LINE); doc.setLineWidth(0.5);
+        for (let i = 0; i < ruled; i++) { y += 16; doc.line(M + 10, y, M + CW - 10, y); }
+        y += 8;
+        doc.rect(M, boxTop, CW, y - boxTop);
+      } else {
+        const GAP = 12, CARD = (CW - GAP) / 2, PAD = 9;
+        function card(h, k, x, draw) {
+          let cy = y + PAD + 6;
+          const s = r.stops[k];
+          doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+          const al = doc.splitTextToSize(String(h.address || ''), CARD - 2 * PAD - 20);
+          if (draw) {
+            doc.setFillColor(...NAVY); doc.circle(x + PAD + 7, cy - 3, 7, 'F');
+            doc.setTextColor(255, 255, 255); doc.setFontSize(8); doc.text(String(k + 1), x + PAD + 7, cy - 0.3, { align: 'center' });
+            doc.setTextColor(...INK); doc.setFontSize(9.5);
+            al.forEach(function (l, i) { doc.text(l, x + PAD + 20, cy + i * 11.5); });
+          }
+          cy += al.length * 11.5;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(...MUTED);
+          if (draw) doc.text(ttFmtTime(s.start) + ' to ' + ttFmtTime(s.end), x + PAD + 20, cy);
+          cy += 15;
+          const facts = [['PRICE', ttFigShow(h, 'list_price')], ['BEDS', ttFigShow(h, 'beds')], ['BATHS', ttBathsShow(h)], ['SQ FT', ttFigShow(h, 'sqft')], ['ON MARKET', ttFigShow(h, 'days_on_market') + (ttFigShow(h, 'days_on_market') === '1' ? ' day' : ' days')]];
+          let fx = x + PAD, rowStart = cy;
+          facts.forEach(function (f) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5);
+            const vw = doc.getTextWidth(f[1]);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(6.3);
+            const w = Math.max(vw, doc.getTextWidth(f[0])) + 10;
+            if (fx + w > x + CARD - PAD + 10 && fx > x + PAD) { fx = x + PAD; rowStart += 22; }
+            if (draw) {
+              doc.setTextColor(...MUTED); doc.text(f[0], fx, rowStart);
+              doc.setFont('helvetica', 'bold'); doc.setFontSize(9.5); doc.setTextColor(...INK); doc.text(f[1], fx, rowStart + 11);
+            }
+            fx += w;
+          });
+          cy = rowStart + 24;
+          doc.setFont('helvetica', 'normal'); doc.setFontSize(8.6);
+          const pl = doc.splitTextToSize(String(h.comparison || '').trim(), CARD - 2 * PAD);
+          if (draw) { doc.setTextColor(42, 53, 80); pl.forEach(function (l, i) { doc.text(l, x + PAD, cy + i * 12); }); }
+          cy += pl.length * 12;
+          return cy - y + PAD - 4;
+        }
+        for (let k = 0; k < hs.length; k += 2) {
+          const hA = card(hs[k], k, M, false), hB = hs[k + 1] ? card(hs[k + 1], k + 1, M + CARD + GAP, false) : 0;
+          const rh = Math.max(hA, hB);
+          room(rh + GAP);
+          [k, k + 1].forEach(function (i, c) {
+            if (!hs[i]) return;
+            const x = M + c * (CARD + GAP);
+            doc.setDrawColor(...LINE); doc.setLineWidth(0.7); doc.rect(x, y, CARD, rh);
+            card(hs[i], i, x, true);
+          });
+          y += rh + GAP;
+        }
+      }
+
+      // Footer on every page
+      const asOf = ttAsOfDate(tour);
+      const names = [];
+      hs.forEach(function (h) { TT_FIGS.forEach(function (f) { const c = h.confirm && h.confirm[f.key]; if (c && c.by && names.indexOf(c.by) < 0) names.push(c.by); }); });
+      const fc = ttFigCount(tour);
+      const foot = kind === 'agent'
+        ? (fc.done === fc.all ? 'Figures confirmed by ' + (names.join(', ') || agent) + ' in FORWARD OS from the listing pages shown there.' : 'Figures left blank are not confirmed yet in FORWARD OS.') + ' Agent use only.'
+        : 'Listing details from public listing pages as of ' + asOf + ', checked by your agent.';
+      const pages = doc.internal.getNumberOfPages();
+      for (let p = 1; p <= pages; p++) {
+        doc.setPage(p);
+        doc.setDrawColor(...LINE); doc.setLineWidth(0.5); doc.line(M, H - 40, W - M, H - 40);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(...MUTED);
+        doc.splitTextToSize(foot, CW - 170).forEach(function (l, i) { doc.text(l, M, H - 30 + i * 8.5); });
+        doc.text('FORWARD | Corcoran McEnearney' + (pages > 1 ? '   ' + p + ' of ' + pages : ''), W - M, H - 30, { align: 'right' });
+      }
+      return doc;
+    }
+    // The maps are kept in memory only. After a reload the route is worked out again before a PDF;
+    // a result that differs from the one on screen is shown and nothing is made.
+    async function ttEnsureMaps(tour) {
+      if (ttMapFor(tour, 'agent') && ttMapFor(tour, 'client')) return '';
+      const before = JSON.stringify(tour.plan.result && tour.plan.result.stops);
+      ttEnsureMaps.fetched = true;
+      const ok = await ttRunRoute();
+      if (!ok) return ttRoute.error || 'The maps did NOT load.';
+      if (JSON.stringify(tour.plan.result && tour.plan.result.stops) !== before) return 'The route was worked out again for the maps and the order or times changed. Check them on screen, then press again.';
+      if (!ttMapFor(tour, 'agent') || !ttMapFor(tour, 'client')) return 'The maps did NOT load.';
+      return '';
+    }
+    async function ttAgentPdf() {
+      const tour = tt.activeTour; if (!tour || ttPdf.busy) return;
+      const why = ttAgentProblems(tour);
+      if (why.length) { ttPdf.error = why[0] + '.'; return; }
+      ttPdf.busy = 'agent'; ttPdf.error = '';
+      try {
+        const m = await ttEnsureMaps(tour);
+        if (m) { ttPdf.error = m; return; }
+        const blob = ttPdfDoc(tour, 'agent').output('blob');
+        openPDFBlob(blob, ttFileStem(tour) + '-Agent-Copy.pdf');
+      } catch (e) { ttPdf.error = 'The agent copy was NOT made: ' + fosWhy(e); }
+      finally { ttPdf.busy = ''; }
+    }
+    function ttBuyerEmail(tour) {
+      const b = byrActiveBuyer.value || (byrBuyers.value || []).find(function (x) { return x.buyer_name === (tour.buyer || ''); });
+      return (b && b.email) || '';
+    }
+    async function ttSendBuyer() {
+      const tour = tt.activeTour; if (!tour || ttPdf.busy) return;
+      const why = ttBuyerProblems(tour);
+      if (why.length) { ttPdf.error = 'Not sent: ' + why[0] + '.'; return; }
+      ttPdf.busy = 'buyer'; ttPdf.error = '';
+      try {
+        ttEnsureMaps.fetched = false;
+        const m = await ttEnsureMaps(tour);
+        if (m) { ttPdf.error = m; return; }
+        // A phone opens its share menu only straight from a press; after waiting for the maps it
+        // may refuse, so the agent presses once more (the maps are then ready, nothing waits).
+        if (ttEnsureMaps.fetched && fosIsPhone()) { showGoldToast('The maps are ready. Press Send to buyer again.', 6000); return; }
+        const again = ttBuyerProblems(tour);
+        if (again.length) { ttPdf.error = 'Not sent: ' + again[0] + '.'; return; }
+        const blob = ttPdfDoc(tour, 'buyer').output('blob');
+        const fileName = ttFileStem(tour) + '.pdf';
+        if (fosIsPhone()) {
+          let file = null;
+          try { file = new File([blob], fileName, { type: 'application/pdf' }); } catch (e) { file = null; }
+          if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+            try { await navigator.share({ files: [file], title: 'Your showing tour' }); return; }
+            catch (e) { if (e && e.name === 'AbortError') return; }
+          }
+          openPDFBlob(blob, fileName);
+          showGoldToast('This phone could not open its share menu. Tap Download, then send the PDF to your buyer.', 7000);
+          return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = fileName; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        const first = (ttTourWho(tour).split(/[\s&,]+/)[0]) || '';
+        const subject = 'Your showing tour, ' + ttDateLong(tour.plan.date);
+        const body = 'Hi' + (first ? ' ' + first : '') + ',\n\nAttached is the plan for our showing tour on ' + ttDateLong(tour.plan.date) + ': the homes in the order we will see them, the times, and the details of each.\n\n' + (agentName.value || '');
+        const mail = document.createElement('a');
+        mail.href = 'mailto:' + encodeURIComponent(ttBuyerEmail(tour)) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+        document.body.appendChild(mail); mail.click(); mail.remove();
+        showGoldToast('The PDF downloaded as ' + fileName + '. Attach it to the email draft that opened.', 8000);
+      } catch (e) { ttPdf.error = 'The buyer copy was NOT made: ' + fosWhy(e); }
+      finally { ttPdf.busy = ''; }
     }
 
     // AI Recommendation
@@ -24768,6 +25612,18 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-11-01',
+    date: 'November 1, 2026',
+    title: 'Plan a Showing Tour in Tour Tracker',
+    updates: [
+      {
+        title: 'Plan a Showing Tour in Tour Tracker',
+        detail: 'Tour Tracker now plans the showing tour itself. Open a tour, add the homes (up to 8), pick the date and the time of the first showing, and choose how long you will spend at each home: 15 minutes, 30 minutes, 45 minutes or 1 hour. Find the best order tries every order and suggests start times using traffic for that day, each rounded up to 5 minutes with 5 minutes between showings. Use those times to request showings. When the listing agents confirm, switch to Times confirmed, type the confirmed times and press Check the times: a red line shows wherever a drive will not fit. Look up the listings finds each home\'s live listing on the web and shows every figure with the page it came from (never Zillow). Nothing goes to your buyer until you have ticked every figure, picked one where two pages disagree, or typed your own. The comparisons are then written only from the figures you confirmed, and state facts only. Your copy (PDF) has the route on a map, the drive times, any timing warnings and your notes. Send to buyer makes the buyer\'s copy: numbered pins with no route, the times, the confirmed figures and how each home compares.\n\nHow to use: Open the buyer, then Tour Tracker, open or create the tour and add the addresses. Plan the route, request the showings, then enter the confirmed times. Press Look up the listings, check each figure against Bright, write the comparisons and press Send to buyer. On a phone, your share menu opens with the PDF so you can text or email it; on a computer it downloads and an email to your buyer opens.\n\nBest practice: Type the full address with the unit number and ZIP. An address the map can only place roughly is refused, so no pin lands in the wrong spot. Type lockbox and parking notes in Notes for your copy; they print on your copy only.'
+      }
+    ]
+  }
 
 
 ];
@@ -27103,12 +27959,12 @@ Return ONLY a valid JSON array (no markdown) of ${count} objects, each with:
     watch([view, byrActiveBuyer], async ([newView]) => {
       if (newView === 'tour-tracker') {
         // Load from localStorage immediately for instant UI, then upgrade from Supabase
-        tt.tours = ttLoadTours();
+        tt.tours = ttRebindActive(ttLoadTours());
         if (byrActiveBuyer.value && !tt.newTourBuyer) {
           tt.newTourBuyer = byrActiveBuyer.value.buyer_name || '';
         }
         const remote = await ttLoadToursFromSupabase();
-        if (remote.length >= tt.tours.length) tt.tours = remote;
+        if (remote.length >= tt.tours.length) tt.tours = ttRebindActive(remote);
       }
     });
 
@@ -27391,6 +28247,10 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttAddProperty, ttRemoveProperty, ttSetScore, ttPropScore, ttScoredCount,
       ttAnalyze, ttGeneratePDF, ttGenerateAndSavePDF, ttPdfGenerating, ttSaveToFolder, ttSaving, ttSaveTours, ttFmtPrice,
       ttSendModal, ttSendEmail, ttSendPhone, ttOpenSendModal, ttDoSend,
+      ttRoute, ttLook, ttCmp, ttPdf, TT_MINUTES, TT_FIGS, ttSetMode, ttRunRoute, ttPlanStale, ttRouteFor, ttStopOf,
+      ttLegAfter, ttMapFor, ttFmtTime, ttWarnText, ttLookup, ttLookupAll, ttAllLooked, ttConfirmFig, ttUnconfirmFig, ttTypeFig,
+      ttFigOptions, ttSourceHost, ttFigCount, ttHomeProblems, ttTextIssues, ttOnOverviewEdit, ttCompare,
+      ttCompareStale, ttCompareIssues, ttBuyerProblems, ttAgentPdf, ttSendBuyer,
       // Buyer Needs Analysis
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
