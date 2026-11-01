@@ -130,7 +130,15 @@ const LOOK = {
     return { ctx, page };
   }
   const st = (page, fn, arg) => page.evaluate(new Function('arg', 'const st = document.querySelector("#app").__vue_app__._instance.setupState; return (async () => {' + fn + '})();'), arg);
-  const wait = (page, ms) => page.waitForTimeout(ms || 150);
+  // Waits until nothing in the plan is still working (route, look-ups, comparisons, PDFs), then lets
+  // the page draw. A fixed pause alone was too short on the slower CI machine.
+  async function wait(page, ms) {
+    await page.waitForFunction(() => {
+      const st = document.querySelector('#app').__vue_app__._instance.setupState;
+      return !st.ttRoute.busy && !st.ttCmp.busy && !st.ttPdf.busy && !Object.values(st.ttLook.busy).some(Boolean);
+    }, null, { timeout: 20000 });
+    await page.waitForTimeout(ms || 200);
+  }
   // The text jsPDF draws, line by line, joined with spaces (a wrapped sentence reads whole).
   function drawn(raw) {
     const out = [];
