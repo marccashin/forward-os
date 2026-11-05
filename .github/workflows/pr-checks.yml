@@ -73,6 +73,10 @@
 #   ci/meeting-briefs-db-test.js  moving and removing briefs in a real Postgres:
 #                        the repo's SQL, additive only, the app still cannot change
 #                        a brief directly, every refusal changes nothing.
+#   ci/offer-strategy-sheet-test.js  Offer Strategy tells the AI everything the
+#                        MLS sheets said: the subject's water, below-grade and
+#                        assessor square footage and public remarks, and each
+#                        comp's features; a fact not given is said to be not given.
 #
 # Both compare the PR against its base branch. Parity is the signal: problems
 # main already has do not fail a PR, new ones do.
@@ -197,6 +201,7 @@ jobs:
               t "Version history test (every earlier save of a listing item can be opened)" node head/ci/note-history-test.js head
               t "Net sheet numbers test (executed statements to the penny, every jurisdiction)" node head/ci/net-sheet-numbers-test.js head
               t "Net sheet PDF test (charges, credits and summary say what the calculator said)" node head/ci/net-sheet-pdf-test.js head
+              t "Offer Strategy sheet test (every fact on the MLS sheets reaches the strategy and the chat)" node head/ci/offer-strategy-sheet-test.js head
               ;;
             4)
               t "Static checks" node head/ci/static-checks.js head base
