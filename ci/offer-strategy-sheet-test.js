@@ -1,0 +1,181 @@
+#!/usr/bin/env node
+/*
+ * FORWARD OS: Offer Strategy tells the AI everything the MLS sheets said.
+ * Run on every pull request.
+ *
+ * Why (Marc, Nov 4, 2026, 3 Old Sound Rd, Joppa MD): the strategy said the
+ * sheet printed no water access and valued a waterfront home off the two
+ * dry comps on its street. The sheet printed Waterfront: Yes, 30 ft of
+ * frontage, a deeded slip, 500 sf finished below grade and a long public
+ * description; the comp sheet printed Waterfront Yes on the Neptune sales and
+ * No on the Old Sound ones. The backend read none of it, and the page dropped
+ * what the comp reader did return (beds, baths, below-grade space). Backend
+ * #81 reads it; this test holds the page to passing it on.
+ *
+ * Opens the real index.html in headless Chromium. The subject sheet and the
+ * comp sheets go in through the page's own file inputs; the backend's answers
+ * are made up (a waterfront subject, a waterfront comp, a dry comp with a
+ * finished basement) and a comp is typed in by hand. Generate and the chat are
+ * pressed, and the exact prompts sent to the AI are read.
+ *
+ * SAFETY: never touches production. Every request is intercepted.
+ *
+ * Usage: node ci/offer-strategy-sheet-test.js <dir-with-index.html>
+ * Needs: playwright, vue@3.4.21 (resolved through NODE_PATH).
+ */
+'use strict';
+const fs = require('fs'), http = require('http'), path = require('path');
+const { chromium } = require('playwright');
+const dir = process.argv[2];
+const VUE = fs.readFileSync(require.resolve('vue/dist/vue.global.js'), 'utf8');
+
+const REMARKS = 'Welcome to a beautifully updated WATERFRONT home. The pier was replaced in 2025 and has water and electric. Rear yard hardscaping was completed in 2025.';
+const SUBJECT = {
+  success: true, ok: true, file: 'subject.pdf', properties_found: 1,
+  unverified: ['dockType'], dropped_notes: 0, dropped_remark_sentences: 1,
+  subject: {
+    status: 'active', status_raw: 'Active', mlsNumber: 'MDTEST0000001', address: '9 Test Cove Rd', city: 'Joppa', state: 'MD', zip: '21085',
+    propType: 'Single Family', beds: '3', fullBaths: '2', halfBaths: '1', gla: '1836', assessorGla: '1236', belowGradeFin: '500', totalFinSqft: '2336',
+    yearBuilt: '1975', renoYear: '2021', listPrice: '630000', originalListPrice: '660000', dom: '59', cdom: '250',
+    basement: 'Connecting Stairway, Fully Finished, Heated, Walkout Level', waterfront: 'Yes', views: 'Canal, Water',
+    waterfrontFeatures: 'Boat/Launch Ramp - Private', waterAccess: 'Yes; Boat - Powered, Canoe/Kayak', navigableWater: 'Yes', tidalWater: 'Yes',
+    waterFrontage: '30', dockType: '', dockSlip: 'Deeded', riparianRights: 'Yes', publicRemarks: REMARKS, offerNotes: []
+  }
+};
+const COMPS = { success: true, results: [
+  { ok: true, file: 'comps.pdf', status: 'closed', address: '1 Test Water Dr', city: 'Joppa', state: 'MD', zip: '21085', mlsNumber: 'MDTEST0000010',
+    salePrice: '780000', listPrice: '780000', soldDate: '2026-05-26', dom: '4', gla: '2534', assessorGla: '2114', concessions: '0',
+    beds: '3', fullBaths: '2', halfBaths: '1', below: '', totalFin: '2534', basement: 'No', yearBuilt: '1968', renoYear: '2016',
+    lotSize: '16097', garageSpaces: '2', waterfront: 'Yes', waterFrontage: '62', views: 'Trees/Woods, Water', dockSlip: 'Deeded', flags: {} },
+  { ok: true, file: 'comps.pdf', status: 'closed', address: '2 Test Dry Rd', city: 'Joppa', state: 'MD', zip: '21085', mlsNumber: 'MDTEST0000020',
+    salePrice: '415000', listPrice: '415000', soldDate: '2025-12-04', dom: '3', gla: '1824', assessorGla: '1824',
+    beds: '3', fullBaths: '2', halfBaths: '1', below: '', totalFin: '1824', basement: 'Connecting Stairway, Daylight, Full, Fully Finished, Walkout Level',
+    yearBuilt: '1976', renoYear: '', lotSize: '10881', garageSpaces: 0, waterfront: 'No', waterFrontage: '', views: '', dockSlip: '', flags: {} }
+] };
+const STRATEGY = { maxValue: '$600,000', marketValue: '$580,000', winningOffer: '$585,000', appraisalGap: null, appraisalGapNote: null,
+  valuationReasoning: 'Test reasoning.', offerStructure: 'Test structure.', escalationClause: null, talkingPoints: 'Test points.', justinNote: null };
+
+const prompts = [];
+const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
+function api(route) {
+  const req = route.request(), u = decodeURIComponent(req.url()), m = req.method();
+  if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
+  if (/\/api\/osg\/parse-subject/.test(u)) return J(route, 200, SUBJECT);
+  if (/\/api\/osg\/parse-comps/.test(u)) return J(route, 200, COMPS);
+  if (/api\.anthropic\.com/.test(u)) {
+    const body = JSON.parse(req.postData() || '{}');
+    const p = body.messages[0].content;
+    prompts.push(p);
+    const isChat = /AGENT REQUEST:/.test(p);
+    const text = JSON.stringify(isChat ? { reply: 'Unchanged.', strategy: STRATEGY } : STRATEGY);
+    return J(route, 200, { content: [{ type: 'text', text }], stop_reason: 'end_turn' });
+  }
+  if (m === 'GET') return J(route, 200, []);
+  return J(route, /\/rest\/v1\//.test(u) ? 201 : 200, [{ id: 1 }]);
+}
+let pass = 0, fail = 0;
+function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } else { fail++; console.log('  FAIL ' + name + (extra !== undefined ? '  -> ' + JSON.stringify(extra).slice(0, 600) : '')); } }
+const has = (s, t) => String(s || '').includes(t);
+function compLine(prompt, addr) { return (String(prompt).split('\n').find(l => l.includes(addr)) || ''); }
+
+(async () => {
+  const srv = http.createServer((req, res) => {
+    let p = req.url.split('?')[0]; if (p === '/') p = '/index.html';
+    const f = path.join(dir, p);
+    if (!fs.existsSync(f) || fs.statSync(f).isDirectory()) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': p.endsWith('.html') ? 'text/html' : 'text/javascript' }); fs.createReadStream(f).pipe(res);
+  });
+  await new Promise(r => srv.listen(0, '127.0.0.1', r));
+  const origin = 'http://127.0.0.1:' + srv.address().port;
+  const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
+  const errors = [];
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await ctx.route('**/*', (route) => {
+    const u = route.request().url();
+    if (u.startsWith(origin)) return u.includes('/.netlify/') ? J(route, 200, {}) : route.continue();
+    if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
+    const t = route.request().resourceType();
+    if (t === 'script') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+    if (t === 'stylesheet' || t === 'image' || t === 'font' || t === 'media') return route.fulfill({ status: 200, body: '' });
+    return api(route);
+  });
+  await ctx.addInitScript(() => { localStorage.setItem('fos_agent', 'Marc Cashin'); localStorage.setItem('fos_key_Marc_Cashin', 'test-key'); });
+  const page = await ctx.newPage();
+  page.on('pageerror', e => errors.push(e.message));
+  await page.goto(origin + '/index.html', { waitUntil: 'load' }); await page.waitForTimeout(1500);
+  const st = (fn, arg) => page.evaluate(fn, arg);
+  await st(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; if (s.updatesModal && s.updatesModal.show) await s.dismissUpdates(); s.taskModalShow = false; s.go('offer-strategy'); });
+  await page.waitForTimeout(400);
+  const pdf = (name) => ({ name, mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 test') });
+
+  // Step 1: the subject's sheet through the page's own file input.
+  await page.locator('input[type=file][accept="application/pdf"]').first().setInputFiles(pdf('subject.pdf'));
+  await page.waitForTimeout(600);
+  const shot1 = await page.locator('body').innerText();
+  ok(has(shot1, 'Water frontage') && has(shot1, '30 ft') && has(shot1, 'Below-grade finished') && has(shot1, '500 sq ft'),
+    'Step 1 shows the water frontage and the below-grade finished space');
+  ok(has(shot1, '1,836 on the sheet; the assessor has 1,236'), 'Step 1 shows the sheet and assessor square footage side by side');
+  ok(has(shot1, 'Public remarks') && has(shot1, 'pier was replaced in 2025'), 'Step 1 shows the public remarks');
+  const status = await st(() => document.querySelector('#app').__vue_app__._instance.setupState.osgSheetStatus);
+  ok(has(status, 'dock') && has(status, 'Check these by eye'), 'a field the backend could not match is named for the agent', status);
+  ok(has(status, '1 sentence of the public remarks was left out'), 'a dropped remark sentence is said', status);
+
+  // Step 2: comp sheets through the page's own file input, then Add Ticked Comps.
+  await st(() => document.querySelector('#app').__vue_app__._instance.setupState.osgGoToComps());
+  await page.waitForTimeout(300);
+  await page.locator('input[type=file][accept*="pdf"]').first().setInputFiles(pdf('comps.pdf'));
+  await page.waitForTimeout(600);
+  ok(has(await page.locator('body').innerText(), 'waterfront: Yes'), 'the import list shows each comp\'s waterfront');
+  await page.getByText('Add Ticked Comps').click(); await page.waitForTimeout(300);
+  // A comp typed in by hand, the way the Add Comp form pushes it.
+  await st(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState;
+    s.osgComps.push({ address: '3 Test Hand Ln', salePrice: '500000', sqft: '2000', ppsf: '250', dom: '10', soldDate: '2026-01-01', spLp: '', concessions: '', notes: '', status: 'closed', editing: false, _src: 'manual' }); });
+  await page.waitForTimeout(300);
+  const feats = await page.locator('[data-osg-comp-features]').allInnerTexts();
+  ok(feats.length === 2, 'each comp from a sheet shows its features on its card, a hand-typed one shows none', feats);
+  ok(feats.some(t => has(t, 'Waterfront: Yes, 62 ft frontage')) && feats.some(t => has(t, 'Waterfront: No')), 'the cards say which comp is waterfront', feats);
+
+  // Generate: the exact prompt the AI receives.
+  await page.getByText('Generate Offer Strategy').click();
+  for (let i = 0; i < 40 && !prompts.length; i++) await page.waitForTimeout(100);
+  await page.waitForTimeout(300);
+  const a = prompts[0] || '';
+  ok(a.length > 0, 'Generate sent one request to the AI');
+  for (const [t, why] of [
+    ['- Waterfront: Yes', 'subject waterfront'], ['- Water frontage: 30 ft', 'subject frontage'], ['- Dock slip: Deeded', 'subject dock slip'],
+    ['- Navigable / tidal: Yes / Yes', 'subject navigable and tidal'], ['- Riparian rights: Yes', 'subject riparian rights'],
+    ['- Below-grade finished: 500 sq ft', 'subject below-grade finished'], ['- Total finished: 2,336 sq ft', 'subject total finished'],
+    ['- Above-grade square footage: 1,836 on the sheet; the assessor has 1,236', 'subject assessor gap'], ['- Renovated: 2021', 'subject renovation year'],
+    [REMARKS, 'public remarks word for word']]) ok(has(a, t), 'the strategy is told the ' + why, t);
+  const wet = compLine(a, '1 Test Water Dr'), dry = compLine(a, '2 Test Dry Rd'), hand = compLine(a, '3 Test Hand Ln');
+  ok(has(wet, 'Waterfront: Yes, 62 ft frontage, views Trees/Woods, Water, dock slip Deeded'), 'the waterfront comp is described as waterfront', wet);
+  ok(has(wet, 'Assessor above-grade sqft: 2,114 (the sheet says 2,534)'), 'a comp\'s assessor square footage gap is passed on', wet);
+  ok(has(wet, 'Year: built 1968, renovated 2016') && has(wet, 'Garage spaces: 2'), 'the comp\'s year, renovation and garage are passed on', wet);
+  ok(has(dry, 'Waterfront: No') && has(dry, 'Basement: Connecting Stairway, Daylight, Full, Fully Finished, Walkout Level'), 'the dry comp is described as not waterfront with its finished basement', dry);
+  ok(has(dry, 'Beds/baths: 3 bed / 2 full, 1 half bath') && has(dry, 'Below-grade finished sqft: not given') && has(dry, 'Garage spaces: 0'), 'the dry comp\'s beds, baths, unknown below-grade size and garage 0 are passed on', dry);
+  ok(has(hand, 'Waterfront: not given') && has(hand, 'Basement: not given') && has(hand, 'Beds/baths: not given'), 'a hand-typed comp says its features were not given', hand);
+  ok(has(a, 'Never say the MLS sheet or the listing does not mention it'), 'the strategy may not blame the listing for a fact it was not given');
+  ok(has(a, 'valued from waterfront closed sales first') && has(a, 'Never treat a comp as the closest evidence only because it is on the same street'), 'the strategy compares waterfront with waterfront');
+  ok(has(a, 'Finished space below grade is listed separately: value it separately'), 'the strategy values below-grade space separately');
+  ok(has(a, 'say how the value changes on the assessor\'s figure'), 'the strategy addresses the assessor square footage');
+
+  // The chat: the same facts and rules.
+  await st(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.osgChatInput = 'Did you count the water?'; await s.osgChatSend(); });
+  await page.waitForTimeout(300);
+  const c = prompts[1] || '';
+  ok(c.length > 0 && has(c, 'AGENT REQUEST:'), 'the chat sent one request to the AI');
+  ok(has(c, '- Water frontage: 30 ft') && has(c, REMARKS) && has(c, '- Below-grade finished: 500 sq ft'), 'the chat is told the same subject facts');
+  ok(compLine(c, '1 Test Water Dr') === wet && compLine(c, '2 Test Dry Rd') === dry, 'the chat describes each comp exactly as the analysis did');
+  ok(has(c, 'Never say the MLS sheet or the listing does not mention it'), 'the chat carries the same rule');
+
+  // Typing another address takes the sheet away: none of its facts are sent.
+  await st(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.osgAddress = '77 Other St, Joppa, MD 21085'; s.osgChatInput = 'Again?'; await s.osgChatSend(); });
+  await page.waitForTimeout(300);
+  const d = prompts[2] || '';
+  ok(d.length > 0 && !has(d, 'Water frontage') && !has(d, REMARKS), 'with another address the sheet\'s facts are not sent', d.slice(0, 200));
+
+  ok(errors.length === 0, 'no page errors', errors);
+  await browser.close(); srv.close();
+  console.log('\n' + pass + ' passed, ' + fail + ' failed');
+  process.exit(fail ? 1 : 0);
+})().catch(e => { console.error(e); process.exit(1); });

@@ -4882,7 +4882,7 @@ body {
                       <div style="font-size:13px;font-weight:600;color:var(--navy);">{{ osgFullAddr(r) || r.file }}</div>
                       <div style="font-size:11px;color:#9ca3af;margin-top:2px;">{{ osgRouteLabel(r) }} &middot; {{ r.file }}</div>
                       <div v-if="r.ok && r.salePrice" style="font-size:12px;color:#6b7280;margin-top:3px;">
-                        {{ fmtDollar(r.salePrice) }}<span v-if="r.gla"> &middot; {{ fmtComma(r.gla) }} sq ft</span><span v-if="r.soldDate"> &middot; sold {{ r.soldDate }}</span><span v-if="r.concessions"> &middot; seller credit {{ fmtDollar(r.concessions) }}</span>
+                        {{ fmtDollar(r.salePrice) }}<span v-if="r.gla"> &middot; {{ fmtComma(r.gla) }} sq ft</span><span v-if="r.soldDate"> &middot; sold {{ r.soldDate }}</span><span v-if="r.concessions"> &middot; seller credit {{ fmtDollar(r.concessions) }}</span><span v-if="r.waterfront"> &middot; waterfront: {{ r.waterfront }}</span>
                       </div>
                       <div v-if="osgRouteNote(r)" style="font-size:12px;color:#b45309;margin-top:4px;line-height:1.5;">{{ osgRouteNote(r) }}</div>
                     </div>
@@ -4918,6 +4918,7 @@ body {
                   <div v-if="osgCompIsSale(comp)&&osgNetOfCredit(comp)!==null" style="font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 9px;margin-top:8px;">
                     Net of the seller credit this sale is <strong>{{ fmtDollar(osgNetOfCredit(comp)) }}</strong>. The strategy is valued off the net figure.
                   </div>
+                  <div v-if="osgCompFeatures(comp)" data-osg-comp-features style="font-size:12px;color:#4b5563;margin-top:6px;line-height:1.5;">{{ osgCompFeatures(comp) }}</div>
                   <div v-if="comp.notes" style="font-size:11px;color:#9ca3af;margin-top:6px;">{{ comp.notes }}</div>
                   <button class="btn-outline" @click="comp.editing=true" style="font-size:11px;padding:4px 12px;margin-top:8px;">Edit</button>
                 </template>
@@ -21969,6 +21970,16 @@ No markdown. No preamble. Valid JSON only.`;
           soldDate: r.soldDate || '',
           spLp: osgSpLp(closePrice, r.listPrice),
           concessions: (r.concessions === 0 || r.concessions) ? String(r.concessions) : '',
+          // Nov 4, 2026: the reader always returned these and the import dropped
+          // them, so the strategy never knew a comp's basement, beds or water.
+          // Waterfront and the other added fields were matched to that comp's
+          // own part of the sheet by the backend (osg_mls.verify_comp_extras).
+          beds: osgSv(r.beds), fullBaths: osgSv(r.fullBaths), halfBaths: osgSv(r.halfBaths),
+          below: osgSv(r.below), totalFin: osgSv(r.totalFin), assessorGla: osgSv(r.assessorGla),
+          basement: osgSv(r.basement), yearBuilt: osgSv(r.yearBuilt), renoYear: osgSv(r.renoYear),
+          lotSize: osgSv(r.lotSize), garageSpaces: osgSv(r.garageSpaces),
+          waterfront: osgSv(r.waterfront), waterFrontage: osgSv(r.waterFrontage),
+          views: osgSv(r.views), dockSlip: osgSv(r.dockSlip),
           notes: notes.join('. '),
           status: (r.status === 'closed' || r.status === 'pending' || r.status === 'active') ? r.status : 'off',
           editing: false,
@@ -22011,7 +22022,12 @@ No markdown. No preamble. Valid JSON only.`;
       county: 'county', structureType: 'structure type', ownership: 'ownership', lotSizeText: 'lot size',
       listDate: 'list date', saleType: 'sale type', possession: 'possession', garage: 'parking',
       basement: 'basement', waterSource: 'water', sewer: 'sewer', heating: 'heating', cooling: 'cooling',
-      floodZone: 'flood zone', inclusions: 'inclusions', exclusions: 'exclusions'
+      floodZone: 'flood zone', inclusions: 'inclusions', exclusions: 'exclusions',
+      assessorGla: 'assessor square footage', belowGradeFin: 'below-grade finished square footage',
+      totalFinSqft: 'total finished square footage', renoYear: 'renovation year', waterfront: 'waterfront',
+      views: 'views', waterfrontFeatures: 'waterfront features', waterAccess: 'water access',
+      navigableWater: 'navigable water', tidalWater: 'tidal water', waterFrontage: 'water frontage',
+      dockType: 'dock', dockSlip: 'dock slip', riparianRights: 'riparian rights', publicRemarks: 'public remarks'
     };
 
     // One list of facts, used by BOTH the panel on screen and the prompt, so
@@ -22043,6 +22059,22 @@ No markdown. No preamble. Valid JSON only.`;
       add('Ownership', s.ownership);
       add('Possession', s.possession);
       if (s.glaSource && /estimat/i.test(s.glaSource)) add('Square footage', 'labelled Estimated on the sheet', { warn: true });
+      // Added Nov 4, 2026 (3 Old Sound Rd: the water and the lower level never
+      // reached the strategy). The backend matched each to its label.
+      const gla = osgNum(s.gla), ag = osgNum(s.assessorGla);
+      if (gla && ag && gla !== ag) add('Above-grade square footage', fmtComma(gla) + ' on the sheet; the assessor has ' + fmtComma(ag), { warn: true, wide: true });
+      if (s.belowGradeFin) add('Below-grade finished', fmtComma(s.belowGradeFin) + ' sq ft');
+      if (s.totalFinSqft) add('Total finished', fmtComma(s.totalFinSqft) + ' sq ft');
+      add('Renovated', s.renoYear);
+      add('Waterfront', s.waterfront);
+      if (s.waterFrontage) add('Water frontage', s.waterFrontage + ' ft');
+      add('Views', s.views);
+      add('Waterfront features', s.waterfrontFeatures, { wide: true });
+      add('Water access', s.waterAccess, { wide: true });
+      add('Navigable / tidal', [s.navigableWater, s.tidalWater].filter(Boolean).join(' / '));
+      add('Dock', s.dockType);
+      add('Dock slip', s.dockSlip);
+      add('Riparian rights', s.riparianRights);
       add('Lot', s.lotSizeText);
       add('Parking', s.garage);
       add('Basement', s.basement);
@@ -22055,6 +22087,7 @@ No markdown. No preamble. Valid JSON only.`;
       if (s.taxAssessedValue) add('Tax assessed value', fmtDollar(s.taxAssessedValue));
       add('Inclusions', s.inclusions, { wide: true });
       add('Exclusions', s.exclusions, { wide: true });
+      add('Public remarks (the listing agent\'s description)', s.publicRemarks, { wide: true });
       return out;
     }
     const osgSheetFacts = computed(() => osgSheetFactRows(osgSheet.value));
@@ -22089,6 +22122,9 @@ No markdown. No preamble. Valid JSON only.`;
         '- If the sheet prints a well, septic or private sewer, address the matching inspection in offerStructure.\n' +
         '- The tax assessed value is not market value. Do not value the property off it.\n' +
         '- Remarks are the listing agent\'s own words, not verified facts. Treat a condition claim as a claim.\n' +
+        '- The public remarks describe updates, condition and features (a renovated kitchen, a new pier). Weigh them, as claims, and say so when a figure leans on one.\n' +
+        '- The Sq Ft above is above-grade finished area. Finished space below grade is listed separately: value it separately, never fold it into above-grade price per square foot and never ignore it, and say how in valuationReasoning.\n' +
+        '- When the sheet\'s above-grade square footage differs from the assessor\'s, say so in valuationReasoning and say how the value changes on the assessor\'s figure, because an appraiser may use it.\n' +
         '- AGENT-ONLY remarks are confidential between agents. Use them to shape the strategy, but never quote them, describe them as remarks, or name them as a source in valuationReasoning, offerStructure, escalationClause or appraisalGapNote, because those sections can be sent to the buyer. You may refer to them directly in talkingPoints and justinNote.';
     }
 
@@ -22151,6 +22187,7 @@ No markdown. No preamble. Valid JSON only.`;
       if (notOnSheet.length) msg.push('Not on the sheet, left as it was: ' + notOnSheet.join(', ') + '.');
       notes.forEach(function (n) { msg.push(n + '.'); });
       if (left.length) msg.push('Left out because they could not be matched to the sheet: ' + left.join(', ') + '. Check these by eye.');
+      if (data.dropped_remark_sentences) msg.push(data.dropped_remark_sentences + ' sentence' + (data.dropped_remark_sentences === 1 ? ' of the public remarks was' : 's of the public remarks were') + ' left out: not found word for word on the sheet, or holding contact, access or compensation details.');
       if (data.dropped_notes) msg.push(data.dropped_notes + ' remark line' + (data.dropped_notes === 1 ? ' was' : 's were') + ' left out: not found word for word on the sheet, or holding lockbox, contact or compensation details.');
       osgSheetStatus.value = msg.join(' ');
       osgSheetWarn.value = (s.status && s.status !== 'active')
@@ -22169,6 +22206,40 @@ No markdown. No preamble. Valid JSON only.`;
     function osgGoToComps() {
       osgStep.value = 2;
       Vue.nextTick(() => window.scrollTo(0, 0));
+    }
+
+    // A value as text, keeping a real 0 and dropping null and undefined.
+    function osgSv(v) { return (v === 0 || v) ? String(v).trim() : ''; }
+
+    // A comp's features (Nov 4, 2026). One builder for the comp card on screen
+    // and for both prompts, so the agent sees exactly what the strategy is told.
+    // forAi: every feature is named, unknown ones as "not given", so the AI can
+    // never read a missing fact as a missing feature.
+    function osgCompFeatures(c, forAi) {
+      const out = [];
+      const sv = osgSv;
+      const give = function (label, val) {
+        if (val) out.push(label + ': ' + val);
+        else if (forAi) out.push(label + ': not given');
+      };
+      const bb = sv(c.beds) || sv(c.fullBaths)
+        ? [sv(c.beds) ? sv(c.beds) + ' bed' : '', sv(c.fullBaths) ? sv(c.fullBaths) + ' full' + (sv(c.halfBaths) && sv(c.halfBaths) !== '0' ? ', ' + sv(c.halfBaths) + ' half' : '') + ' bath' : ''].filter(Boolean).join(' / ')
+        : '';
+      give('Beds/baths', bb);
+      const gla = osgNum(c.sqft), ag = osgNum(c.assessorGla);
+      if (gla && ag && gla !== ag) out.push('Assessor above-grade sqft: ' + fmtComma(ag) + ' (the sheet says ' + fmtComma(gla) + ')');
+      give('Below-grade finished sqft', sv(c.below) ? fmtComma(c.below) : '');
+      if (sv(c.totalFin)) out.push('Total finished sqft: ' + fmtComma(c.totalFin));
+      give('Basement', sv(c.basement));
+      const yr = [sv(c.yearBuilt) ? 'built ' + sv(c.yearBuilt) : '', sv(c.renoYear) ? 'renovated ' + sv(c.renoYear) : ''].filter(Boolean).join(', ');
+      give('Year', yr);
+      if (sv(c.lotSize)) out.push('Lot: ' + fmtComma(c.lotSize) + ' sqft');
+      if (sv(c.garageSpaces)) out.push('Garage spaces: ' + sv(c.garageSpaces));
+      const wf = sv(c.waterfront)
+        ? [sv(c.waterfront), sv(c.waterFrontage) ? sv(c.waterFrontage) + ' ft frontage' : '', sv(c.views) ? 'views ' + sv(c.views) : '', sv(c.dockSlip) ? 'dock slip ' + sv(c.dockSlip) : ''].filter(Boolean).join(', ')
+        : '';
+      give('Waterfront', wf);
+      return out.join(' | ');
     }
 
     // One builder for the comp lines, used by BOTH the analysis prompt and the
@@ -22192,6 +22263,7 @@ No markdown. No preamble. Valid JSON only.`;
             ' | Sold: ' + (c.soldDate || 'unknown') +
             ' | SP/LP: ' + (c.spLp || 'unknown') +
             ' | Source: ' + src +
+            ' | ' + osgCompFeatures(c, true) +
             ' | Notes: ' + (c.notes || 'none'));
         } else {
           listings.push('Comp ' + (i + 1) + ': ' + c.address +
@@ -22201,6 +22273,7 @@ No markdown. No preamble. Valid JSON only.`;
             ' | $' + (osgShowPpsf(c) || '?') + '/sf asking' +
             ' | DOM: ' + (c.dom || 'unknown') +
             ' | Source: ' + src +
+            ' | ' + osgCompFeatures(c, true) +
             ' | Notes: ' + (c.notes || 'none'));
         }
       });
@@ -22218,7 +22291,10 @@ No markdown. No preamble. Valid JSON only.`;
       '- Read the listings for direction and competition. Actives priced near or below the subject are the buyer\'s alternatives and cap what a buyer should pay. Actives with long days on market show resistance at that price. Listings that went under contract quickly show demand at that level, though their final price is unknown. Expired or withdrawn listings show a price the market rejected.\n' +
       '- The listings can move your figures within the range the closed sales support, and can justify going below it when they show a softening market. They never justify a figure above what the closed sales support.\n' +
       '- In valuationReasoning, cover the closed sales first, then say separately what the listings indicate about market direction and how that moved your figures.\n' +
-      '- If there are no closed sales, say so plainly at the start of valuationReasoning and state that the figures are low-confidence.\n';
+      '- If there are no closed sales, say so plainly at the start of valuationReasoning and state that the figures are low-confidence.\n' +
+      '- Compare like with like. Each comp lists its features (beds and baths, finished space below grade, basement, year built and renovated, lot, garage, waterfront, frontage and dock). For a comp from an MLS sheet the sqft is above-grade finished area. Where the subject and a comp differ on a feature, say which way it moves that comp\'s indication of value and why.\n' +
+      '- A waterfront subject is valued from waterfront closed sales first; a sale that is not waterfront is weaker evidence for it, and the reverse. Never treat a comp as the closest evidence only because it is on the same street.\n' +
+      '- Everything you know about the subject and the comps is in this request. If a fact is not listed, or is listed as not given, say it was not in the information you were given. Never say the MLS sheet or the listing does not mention it.\n';
 
     // Pull the JSON object out of a model reply. A reply with a sentence
     // before or after the object, or wrapped in a code fence, is still usable;
@@ -25825,6 +25901,18 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-11-04',
+    date: 'November 4, 2026',
+    title: 'Offer Strategy Reads the Whole MLS Sheet',
+    updates: [
+      {
+        title: 'Offer Strategy Reads the Whole MLS Sheet',
+        detail: 'Offer Strategy was leaving facts out. It read the MLS sheets, but it never told the strategy about a finished basement, the square footage below grade, waterfront, frontage or a dock, or the description in the public remarks. It then said the listing did not mention them. That is fixed for the home you are writing on and for every comp.\n\nFor the home you are writing on, the strategy now gets: below-grade finished and total finished square footage, the assessor\'s square footage (shown in amber when it differs from the sheet\'s, because an appraiser may use it), the renovation year, the waterfront details (waterfront, frontage, views, water access, navigable and tidal water, dock, dock slip, riparian rights) and the public remarks, treated as the listing agent\'s claims. For each comp from an MLS sheet it now gets beds and baths, below-grade finished space, the basement, year built and renovated, lot, garage, waterfront, frontage, views and dock slip. Each comp card shows these under its figures, so you see exactly what the strategy sees. The strategy compares like with like: a waterfront home is valued from waterfront sales first, and a comp is not the closest evidence just because it is on the same street. When something is not on the sheets it now says it was not given, never that the listing does not mention it.\n\nHow to use: Drop the home\'s MLS sheet on Step 1 and the comp sheets on Step 2, as before. Read the facts box on Step 1 and the line under each comp before you press Generate. Sheets read before today do not have the new facts: drop them again.\n\nBest practice: If the sheet\'s square footage and the assessor\'s disagree, check which one is right before you write the offer. The strategy says how the value changes on the assessor\'s figure. A comp you type in by hand has none of these features, so add what matters in its Notes.'
+      }
+    ]
+  }
 
 
 ];
@@ -28469,7 +28557,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgStep, osgAddress, osgListPrice, osgDOM, osgPropType, osgSqFt, osgBedBath, osgYearBuilt,
       osgSheet, osgSheetBusy, osgSheetError, osgSheetStatus, osgSheetWarn, osgSheetDrag,
       osgSheetFacts, osgSheetMatches, osgSheetAddr, osgUploadSubject, osgSheetClear,
-      osgComps, osgAddingComp, osgNewComp, osgCompIsSale, osgCompKindLabel,
+      osgComps, osgAddingComp, osgNewComp, osgCompIsSale, osgCompKindLabel, osgCompFeatures,
       osgPdfBusy, osgPdfError, osgPdfStatus, osgPdfDrag, osgImportRows, osgImportPick,
       osgUploadMLS, osgApplyImport, osgImportCancel, osgRoute, osgRouteLabel, osgRouteNote,
       osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps, osgNorm,
