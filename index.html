@@ -25953,6 +25953,18 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-11-05',
+    date: 'November 5, 2026',
+    title: 'Fewer AI Errors in Offer Strategy',
+    updates: [
+      {
+        title: 'Fewer AI Errors in Offer Strategy',
+        detail: 'Now and then the AI stops partway through an answer. Offer Strategy used to try only twice and then show "the reply was not valid JSON", most often on Write Client Wording. It now tries up to three times on its own for Generate, the chat and Write Client Wording. If all three are cut short, it says so in plain words and changes nothing. Across the OS, an answer the AI stopped partway is never shown or saved as if it were complete.\n\nHow to use: Nothing changes. If you see "the AI stopped partway through its answer", press the same button again.\n\nBest practice: If it happens three times on the same deal, wait a few minutes and try again, and tell Marc which deal it was.'
+      }
+    ]
+  }
 
 
 ];
