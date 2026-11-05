@@ -56,6 +56,10 @@ const STRATEGY = { maxValue: '$600,000', marketValue: '$580,000', winningOffer: 
   valuationReasoning: 'Test reasoning.', offerStructure: 'Test structure.', escalationClause: null, talkingPoints: 'Test points.', justinNote: null };
 
 const prompts = [];
+// Nov 5, 2026: replies cut off by the AI's safety filter (stop_reason
+// "refusal", text ending mid-answer). Seen live on 1111 23rd St NW #PH1C.
+let refuseNext = 0, aiCalls = 0;
+const CUT = { content: [{ type: 'text', text: '{"reasoning": "We start with closed sales, because only a completed sale tells us what someone act' }], stop_reason: 'refusal' };
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function api(route) {
   const req = route.request(), u = decodeURIComponent(req.url()), m = req.method();
@@ -65,9 +69,13 @@ function api(route) {
   if (/api\.anthropic\.com/.test(u)) {
     const body = JSON.parse(req.postData() || '{}');
     const p = body.messages[0].content;
-    prompts.push(p);
+    prompts.push(p); aiCalls++;
+    if (refuseNext > 0) { refuseNext--; return J(route, 200, CUT); }
     const isChat = /AGENT REQUEST:/.test(p);
-    const text = JSON.stringify(isChat ? { reply: 'Unchanged.', strategy: STRATEGY } : STRATEGY);
+    const client = p.match(/Return ONLY a JSON object with the keys ([a-z, ]+), each a string/);
+    let text;
+    if (client) { const o = {}; client[1].split(', ').forEach(k => { o[k] = 'Client wording for ' + k + '.'; }); text = JSON.stringify(o); }
+    else text = JSON.stringify(isChat ? { reply: 'Unchanged.', strategy: STRATEGY } : STRATEGY);
     return J(route, 200, { content: [{ type: 'text', text }], stop_reason: 'end_turn' });
   }
   if (m === 'GET') return J(route, 200, []);
@@ -173,6 +181,38 @@ function compLine(prompt, addr) { return (String(prompt).split('\n').find(l => l
   await page.waitForTimeout(300);
   const d = prompts[2] || '';
   ok(d.length > 0 && !has(d, 'Water frontage') && !has(d, REMARKS), 'with another address the sheet\'s facts are not sent', d.slice(0, 200));
+
+  // Cut-off replies (Nov 5, 2026). The page must never use part of an answer.
+  {
+    const S = (fn) => page.evaluate(fn);
+    const cs = () => S(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { busy: s.osgClientBusy, err: s.osgClientError, txt: JSON.stringify(s.osgClient) }; });
+    const rd = await S(() => {
+      const t = (d) => { try { return 'ok:' + claudeText(d); } catch (e) { return 'threw:' + e.message; } };
+      return { cut: t({ content: [{ type: 'text', text: 'Half a sent' }], stop_reason: 'refusal' }),
+               full: t({ content: [{ type: 'text', text: 'Whole answer.' }], stop_reason: 'end_turn' }) };
+    });
+    ok(rd.cut === 'threw:the AI stopped partway through its answer, so nothing from it was used' && rd.full === 'ok:Whole answer.',
+      'the shared reader never hands on a cut-off reply, and passes a whole one unchanged', rd);
+    refuseNext = 2; aiCalls = 0;
+    await S(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.osgClientWrite(); });
+    let c = await cs();
+    ok(aiCalls === 3 && c.err === '' && has(c.txt, 'Client wording for reasoning.') && !has(c.txt, 'what someone act'),
+      'client wording: two cut-off replies are retried and the third, complete one is used', { aiCalls, c });
+    const before = c.txt;
+    refuseNext = 3; aiCalls = 0;
+    await S(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.osgClientWrite(); });
+    c = await cs();
+    ok(aiCalls === 3 && has(c.err, 'the AI stopped partway through its answer, so nothing from it was used') && c.txt === before,
+      'client wording: three cut-off replies fail with a clear reason and leave the last wording alone', { aiCalls, c });
+    refuseNext = 1; aiCalls = 0;
+    await S(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.osgChatInput = 'Any change?'; await s.osgChatSend(); });
+    const ch = await S(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { err: s.osgChatError, last: s.osgChatMsgs[s.osgChatMsgs.length - 1] }; });
+    ok(aiCalls === 2 && ch.err === '' && ch.last && ch.last.role === 'bot', 'chat: a cut-off reply is retried and the next one used', { aiCalls, ch });
+    refuseNext = 1; aiCalls = 0;
+    await S(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.osgAnalyze(); });
+    const g = await S(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { err: s.osgAnalyzeError, step: s.osgStep, mv: s.osgResult && s.osgResult.marketValue }; });
+    ok(aiCalls === 2 && g.err === '' && g.step === 3 && g.mv === '$580,000', 'Generate: a cut-off reply is retried and the next one used', { aiCalls, g });
+  }
 
   ok(errors.length === 0, 'no page errors', errors);
 
