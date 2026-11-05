@@ -5096,7 +5096,7 @@ body {
                     <div v-if="m.role==='bot' && m.changed" :style="{fontSize:'11px',marginTop:'3px',color:m.changed.length?'#b45309':'#9ca3af'}">{{ m.changed.length ? 'Changed: ' + m.changed.join(', ') : 'No sections changed.' }}</div>
                   </div>
                   <div v-if="osgChatBusy" style="display:flex;align-items:center;gap:8px;margin:10px 0 4px;padding:10px 14px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;">
-                    <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;">Revising</span>
+                    <span style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;">Revising <span data-osg-chat-wait>({{ osgChatSecs }} seconds; usually about a minute)</span></span>
                     <span class="fwd-thinking" style="color:#9ca3af;"><span></span><span></span><span></span></span>
                   </div>
                 </div>
@@ -10440,15 +10440,23 @@ const FOS_MODEL_FAST  = 'claude-sonnet-5';
 // Join every text block in a Messages API response. The first block is not
 // always text, so reading content[0].text can return undefined and crash the
 // caller (Meeting Prep: "undefined is not an object (evaluating 'raw.match')").
+// Why an answer that stopped early is not used (Nov 5, 2026). "refusal": the
+// AI's safety filter stopped it. "max_tokens": it ran past the length the
+// request allowed. Either way the text is only part of the answer.
+function fosStopProblem(reason) {
+  if (reason === 'refusal') return 'the AI stopped partway through its answer, so nothing from it was used';
+  if (reason === 'max_tokens') return 'the AI\'s answer ran past its length limit and was cut off, so nothing from it was used';
+  return '';
+}
+
 function claudeText(d) {
   // Nov 5, 2026: a reply cut off by the AI's safety filter arrives with
   // stop_reason "refusal" and the text written so far (seen live on Offer
   // Strategy's client wording: half a JSON object, shown as "not valid JSON").
   // Until then that partial text was returned as if it were the whole answer,
   // so a text tool could show a description that simply stops. Never use it.
-  if (d && d.stop_reason === 'refusal') {
-    throw new Error('the AI stopped partway through its answer, so nothing from it was used');
-  }
+  const _stop = fosStopProblem(d && d.stop_reason);
+  if (_stop) throw new Error(_stop);
   const blocks = (d && Array.isArray(d.content)) ? d.content : [];
   const text = blocks.filter(b => b && b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('');
   if (!text) {
@@ -10482,7 +10490,7 @@ async function claudeChat(messages, system = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
-  const body = { model, max_tokens: 4096, messages };
+  const body = { model, max_tokens: 8000, messages };
   if (system) body.system = system;
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method:'POST',
@@ -10519,6 +10527,7 @@ async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens
   const decoder = new TextDecoder();
   let buffer = '';
   let fullText = '';
+  let stopReason = '';
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -10535,9 +10544,12 @@ async function claudeStream(userPrompt, system = null, onChunk = null, maxTokens
           fullText += evt.delta.text;
           if (onChunk) onChunk(evt.delta.text, fullText);
         }
+        if (evt.type === 'message_delta' && evt.delta && evt.delta.stop_reason) stopReason = evt.delta.stop_reason;
       } catch {}
     }
   }
+  const _stop = fosStopProblem(stopReason);
+  if (_stop) throw new Error(_stop.replace('so nothing from it was used', 'so it is not complete: ask again'));
   return fullText;
 }
 
@@ -10548,7 +10560,7 @@ const FOS_TYPE_MS = 15;
 
 // Streaming twin of claudeChat(). Same arguments plus onChunk(chunk, full).
 // Pass model to pin a specific one; omit it to use the agent's setting.
-async function claudeChatStream(messages, system = null, onChunk = null, maxTokens = 4096, model = null) {
+async function claudeChatStream(messages, system = null, onChunk = null, maxTokens = 8000, model = null) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error(FOS_NO_AI_KEY);
   const useModel = model || localStorage.getItem('fos_model') || FOS_MODEL_SMART;
@@ -10566,7 +10578,7 @@ async function claudeChatStream(messages, system = null, onChunk = null, maxToke
   }
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
-  let buffer = '', fullText = '';
+  let buffer = '', fullText = '', stopReason = '';
   while (true) {
     const step = await reader.read();
     if (step.done) break;
@@ -10584,9 +10596,12 @@ async function claudeChatStream(messages, system = null, onChunk = null, maxToke
           fullText += evt.delta.text;
           if (onChunk) onChunk(evt.delta.text, fullText);
         }
+        if (evt.type === 'message_delta' && evt.delta && evt.delta.stop_reason) stopReason = evt.delta.stop_reason;
       } catch (e2) {}
     }
   }
+  const _stop = fosStopProblem(stopReason);
+  if (_stop) throw new Error(_stop.replace('so nothing from it was used', 'so it is not complete: ask again'));
   return fullText;
 }
 
@@ -10659,7 +10674,7 @@ function ldScrollChat() {
 }
 
 // ── Claude Vision API (for business card parsing) ─────────────────────────
-async function claudeVision(imageBase64, mediaType, textPrompt, system = null, maxTokens = 1024) {
+async function claudeVision(imageBase64, mediaType, textPrompt, system = null, maxTokens = 4096) {
   const key = _fosApiKey || localStorage.getItem(agentKey('fos_key'));
   if (!key) throw new Error(FOS_NO_AI_KEY);
   const model = localStorage.getItem('fos_model') || FOS_MODEL_SMART;
@@ -11661,7 +11676,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       const parts = [];
       for (let i = 0; i < mp.liShots.length; i++) {
         const shot = mp.liShots[i];
-        const txt = (await claudeVision(shot.data, shot.type, MP_LI_PROMPT, null, 2048)).trim();
+        const txt = (await claudeVision(shot.data, shot.type, MP_LI_PROMPT, null, 8000)).trim();
         if (txt === 'NOT A LINKEDIN PROFILE') throw new Error('Screenshot ' + (i + 1) + ' does not look like a LinkedIn profile.');
         parts.push(txt);
       }
@@ -12994,7 +13009,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const system = _lstFlyerSystem();
         let prompt = base;
         for (let attempt = 1; attempt <= 3 && !good; attempt++) {
-          let out = await claude(prompt, system, 1500);
+          let out = await claude(prompt, system, 4000);
           out = _lstFlyerClean(String(out || '').replace(/^\s*["\u201c]+|["\u201d]+\s*$/g, '').replace(/\*\*/g, ''));
           const n = fosWordCount(out), problems = [];
           if (n > LST_FLYER_MAX) problems.push('it is ' + n + ' words and the limit is ' + LST_FLYER_MAX);
@@ -13236,7 +13251,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         const system = _lstAvSystem();
         let prompt = base;
         for (let attempt = 1; attempt <= 3 && !good; attempt++) {
-          let out = await claude(prompt, system, 4000);
+          let out = await claude(prompt, system, 12000);
           out = _lstFlyerClean(String(out || '').replace(/\*\*/g, '').replace(/^\s*```[a-z]*\s*|\s*```\s*$/g, ''));
           const problems = lstAvIssues(out);
           if (!problems.length) { good = out; break; }
@@ -21768,6 +21783,7 @@ No markdown. No preamble. Valid JSON only.`;
     // forever. The panel now counts the seconds, and after OSG_ANALYZE_LIMIT_MS
     // the press stops and says so; a reply arriving after that is ignored.
     const osgAnalyzeSecs = ref(0);
+    const osgChatSecs = ref(0);   // the chat's own count, same limit (Nov 5, 2026)
     const OSG_ANALYZE_LIMIT_MS = 180000;
     const osgResult = ref(null);
     const osgSaving = ref(false);
@@ -22535,6 +22551,10 @@ No markdown. Valid JSON only.`;
         .map(m => (m.role === 'agent' ? 'AGENT: ' : 'YOU: ') + m.text).join('\n');
       osgChatMsgs.value.push({ role: 'agent', text: ask });
       osgChatInput.value = '';
+      osgChatSecs.value = 0;
+      const _c0 = Date.now();
+      const _cTick = setInterval(function () { osgChatSecs.value = Math.floor((Date.now() - _c0) / 1000); }, 1000);
+      let _cLimit = null;
       try {
         const prompt =
           'You wrote the offer strategy below. The agent is now asking for a correction, or asking a question about it.\n\n' +
@@ -22564,6 +22584,7 @@ No markdown. Valid JSON only.`;
         // Every check below runs on each attempt. A reply that fails any of
         // them is retried once; only then is the agent shown the error, and
         // nothing is applied either way until a reply passes all of them.
+        const _cWork = (async function () {
         let obj = null, next = null;
         for (let _try = 0; _try < OSG_AI_TRIES && !next; _try++) {
           try {
@@ -22579,6 +22600,16 @@ No markdown. Valid JSON only.`;
             obj = o; next = n;
           } catch (ve) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(ve)) throw ve; }
         }
+        return { obj: obj, next: next };
+        })();
+        _cWork.catch(function () {});   // a late failure after the time limit is not news
+        const _cLate = new Promise(function (_, rej) {
+          _cLimit = setTimeout(function () {
+            rej(new Error('the AI did not finish within ' + Math.round(OSG_ANALYZE_LIMIT_MS / 60000) + ' minutes, so it was stopped'));
+          }, OSG_ANALYZE_LIMIT_MS);
+        });
+        const _cGot = await Promise.race([_cWork, _cLate]);
+        const obj = _cGot.obj, next = _cGot.next;
         const clean = {};
         OSG_KEYS.forEach(k => { clean[k] = next[k]; });
         const changed = OSG_KEYS.filter(k => {
@@ -22598,8 +22629,10 @@ No markdown. Valid JSON only.`;
         osgChatMsgs.value.pop();
         osgChatInput.value = ask;
         osgChatError.value = 'Nothing was changed: ' + e.message + '. Try sending it again.';
+      } finally {
+        clearInterval(_cTick); clearTimeout(_cLimit);
+        osgChatBusy.value = false;
       }
-      osgChatBusy.value = false;
     }
 
     function osgChatUndo() {
@@ -23791,7 +23824,7 @@ No markdown. Valid JSON only.`;
             + '- Para 3: Introduce what is enclosed and invite them to reach out\n'
             + '- Do NOT include any closing line like "Looking forward" — it is added automatically\n'
             + '- Plain text only, no markdown';
-          _letter = await claude(_lPrompt, _sys, 600);
+          _letter = await claude(_lPrompt, _sys, 3000);
         } catch(e) {
           _letter = 'Dear ' + _name + ',\n\n'
             + 'Thank you for trusting FORWARD to guide you through your home search. It is my privilege to represent you, and I am fully committed to finding you the right home at the right price.\n\n'
@@ -23816,7 +23849,7 @@ No markdown. Valid JSON only.`;
             + '- Strategic opportunities (where to find value, off-market options, timing considerations)\n'
             + '- A clear-eyed reality check so they have accurate expectations\n'
             + 'Be specific to the DMV market. No markdown.';
-          _budget = await claude(_bPrompt, _sys, 700);
+          _budget = await claude(_bPrompt, _sys, 3000);
         } catch(e) {
           _budget = 'At ' + (_budgetStr || 'your target budget') + (_markets ? ' in ' + _markets : ' in your target markets') + ', you are competing in an active tier of the DMV market. Properties matching your criteria move quickly — well-priced homes in this range typically receive offers within 5-10 days.\n\nYour pre-approval' + (_preApproval ? ' of ' + _preApproval : '') + ' positions you as a serious buyer. When the right home appears, we will be ready to move decisively.';
         }
@@ -23834,7 +23867,7 @@ No markdown. Valid JSON only.`;
             + '- Current demand level and what the budget buys here\n'
             + '- One specific thing to know or watch for\n'
             + 'Be specific to the actual DMV neighborhoods. Knowledgeable and honest. No markdown headers.';
-          _neighborhoods = await claude(_nPrompt, _sys, 800);
+          _neighborhoods = await claude(_nPrompt, _sys, 6000);
         } catch(e) {
           _neighborhoods = 'Your target markets span some of the most sought-after areas in the DMV. Each has its own character, price dynamics, and buyer profile — and understanding those nuances is what turns a good search into a great outcome.\n\nI will walk you through what each area offers at your budget level as we tour, and will flag any market shifts that affect our strategy along the way.';
         }
@@ -25962,6 +25995,10 @@ const CHANGELOG = [
       {
         title: 'Fewer AI Errors in Offer Strategy',
         detail: 'Now and then the AI stops partway through an answer. Offer Strategy used to try only twice and then show "the reply was not valid JSON", most often on Write Client Wording. It now tries up to three times on its own for Generate, the chat and Write Client Wording. If all three are cut short, it says so in plain words and changes nothing. Across the OS, an answer the AI stopped partway is never shown or saved as if it were complete.\n\nHow to use: Nothing changes. If you see "the AI stopped partway through its answer", press the same button again.\n\nBest practice: If it happens three times on the same deal, wait a few minutes and try again, and tell Marc which deal it was.'
+      },
+      {
+        title: 'Long AI Answers Are Never Cut Short Without Telling You',
+        detail: 'An AI answer can also stop because it ran past the length it was allowed. Until now that half answer was used as if it were complete. Now it is refused everywhere in the OS, with the message "the AI\'s answer ran past its length limit". The tools that were given the least room (the Buyer Package letter, budget and neighborhood sections, the flyer version, buyer avatars, voice answers and LinkedIn screenshots) now have enough room to finish. In the Listing Description Writer and other chats that type as they go, a cut-off answer now ends with a message saying it is not complete. The Offer Strategy chat on Step 3 counts the seconds and stops after 3 minutes, the same as Generate, putting your request back in the box.\n\nHow to use: Nothing changes. If you see one of these messages, press the button or send the message again.\n\nBest practice: In the description writer, never copy an answer that ends with that message; ask again for the full one.'
       }
     ]
   }
@@ -26315,7 +26352,7 @@ async function voiceAskFollowup() {
     const system = 'You are a real estate assistant for FORWARD Real Estate (Corcoran McEnearney). Answer the follow-up question using the training materials provided. Be concise (2-4 sentences). End with a [SOURCE: ...] tag on its own line.';
     await claudeStream(userMsg, system, (chunk, full) => {
       voiceModal.answerText = full;
-    }, 800);
+    }, 4000);
   } catch(e) {
     voiceModal.answerText = '⚠️ Error: ' + e.message;
   }
@@ -26514,7 +26551,7 @@ async function voiceParse() {
                     try {
                       const _full = await claudeStream(_tp + '\n\nListing Details:\n' + _pd,
                         'You are a top real estate marketing expert who writes compelling copy for agents.',
-                        function (chunk, full) { _vTyper.setTarget(full); }, 1200);
+                        function (chunk, full) { _vTyper.setTarget(full); }, 4000);
                       _vTyper.setTarget(_full);
                     } finally {
                       await _vTyper.finish();
@@ -28615,7 +28652,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps, osgNorm,
       lstMarketEditId, lstSetMarket,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
-      osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgResult, osgSaving, osgSaved,
+      osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgChatSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
