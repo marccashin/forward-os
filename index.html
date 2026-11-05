@@ -4994,7 +4994,7 @@ body {
                     </span>
                   </div>
                   <div style="font-family:'Cormorant Garamond',serif;color:var(--gold);font-size:15px;font-weight:700;margin-bottom:6px;">Analyzing Comps &amp; Building Strategy</div>
-                  <div style="color:rgba(255,255,255,0.55);font-size:13px;">Reviewing {{ osgComps.length }} comparable{{ osgComps.length===1?'':'s' }} and market conditions. This takes 15&ndash;30 seconds.</div>
+                  <div style="color:rgba(255,255,255,0.55);font-size:13px;">Reviewing {{ osgComps.length }} comparable{{ osgComps.length===1?'':'s' }} and market conditions. This usually takes about a minute, sometimes two. <span data-osg-wait>{{ osgAnalyzeSecs }} seconds so far.</span></div>
                 </div>
                 <div v-if="osgAnalyzeError" style="font-family:'Cormorant Garamond',serif;background:#fef2f2;border:1.5px solid #fecaca;border-radius:8px;padding:10px 14px;margin-top:12px;font-size:13px;color:#dc2626;">{{ osgAnalyzeError }}</div>
               </div>
@@ -21754,6 +21754,13 @@ No markdown. No preamble. Valid JSON only.`;
     const osgSellerMotivation = ref('');
     const osgAnalyzing = ref(false);
     const osgAnalyzeError = ref('');
+    // Nov 5, 2026 (Marc: "this is taking a very long time"). With every fact on
+    // the sheets in the request (Nov 4) a strategy took about a minute, while
+    // the panel promised 15 to 30 seconds, and a reply that never came spun
+    // forever. The panel now counts the seconds, and after OSG_ANALYZE_LIMIT_MS
+    // the press stops and says so; a reply arriving after that is ignored.
+    const osgAnalyzeSecs = ref(0);
+    const OSG_ANALYZE_LIMIT_MS = 180000;
     const osgResult = ref(null);
     const osgSaving = ref(false);
     const osgSaved = ref(false);
@@ -22313,6 +22320,10 @@ No markdown. No preamble. Valid JSON only.`;
     async function osgAnalyze() {
       const _ownAtStart = byrToolOwner.osg;
       osgAnalyzing.value = true; osgAnalyzeError.value = '';
+      osgAnalyzeSecs.value = 0;
+      const _t0 = Date.now();
+      const _tick = setInterval(function () { osgAnalyzeSecs.value = Math.floor((Date.now() - _t0) / 1000); }, 1000);
+      let _limit = null;
       try {
         const compsStr = osgCompsText();
         const prompt = `Analyze this property and produce an offer strategy.
@@ -22355,15 +22366,25 @@ justinNote (string or null - only if using FORWARD financial team, specific acti
 No markdown. Valid JSON only.`;
         // One automatic retry on an unreadable reply, so an agent is not
         // sent back to press the button again for a formatting slip.
-        let _parsed = null;
-        for (let _try = 0; _try < 2 && !_parsed; _try++) {
-          const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
-          try {
-            const o = osgParseJson(raw);
-            if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not a strategy');
-            _parsed = o;
-          } catch (pe) { if (_try === 1) throw pe; }
-        }
+        const _work = (async function () {
+          let _got = null;
+          for (let _try = 0; _try < 2 && !_got; _try++) {
+            const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
+            try {
+              const o = osgParseJson(raw);
+              if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not a strategy');
+              _got = o;
+            } catch (pe) { if (_try === 1) throw pe; }
+          }
+          return _got;
+        })();
+        _work.catch(function () {});   // a late failure after the time limit is not news
+        const _late = new Promise(function (_, rej) {
+          _limit = setTimeout(function () {
+            rej(new Error('the AI did not finish within ' + Math.round(OSG_ANALYZE_LIMIT_MS / 60000) + ' minutes, so it was stopped. Nothing was changed. Press Generate again; if it happens twice, try again in a few minutes'));
+          }, OSG_ANALYZE_LIMIT_MS);
+        });
+        const _parsed = await Promise.race([_work, _late]);
         if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
         osgResult.value = _parsed;
         // A regenerated strategy is a new document: old chat, undo and comp
@@ -22376,6 +22397,7 @@ No markdown. Valid JSON only.`;
         osgStep.value = 3;
         Vue.nextTick(() => window.scrollTo(0, 0));
       } catch(e) { osgAnalyzeError.value = 'Strategy generation failed: ' + e.message; }
+      finally { clearInterval(_tick); clearTimeout(_limit); }
       osgAnalyzing.value = false;
     }
 
@@ -25910,6 +25932,10 @@ const CHANGELOG = [
       {
         title: 'Offer Strategy Reads the Whole MLS Sheet',
         detail: 'Offer Strategy was leaving facts out. It read the MLS sheets, but it never told the strategy about a finished basement, the square footage below grade, waterfront, frontage or a dock, or the description in the public remarks. It then said the listing did not mention them. That is fixed for the home you are writing on and for every comp.\n\nFor the home you are writing on, the strategy now gets: below-grade finished and total finished square footage, the assessor\'s square footage (shown in amber when it differs from the sheet\'s, because an appraiser may use it), the renovation year, the waterfront details (waterfront, frontage, views, water access, navigable and tidal water, dock, dock slip, riparian rights) and the public remarks, treated as the listing agent\'s claims. For each comp from an MLS sheet it now gets beds and baths, below-grade finished space, the basement, year built and renovated, lot, garage, waterfront, frontage, views and dock slip. Each comp card shows these under its figures, so you see exactly what the strategy sees. The strategy compares like with like: a waterfront home is valued from waterfront sales first, and a comp is not the closest evidence just because it is on the same street. When something is not on the sheets it now says it was not given, never that the listing does not mention it.\n\nHow to use: Drop the home\'s MLS sheet on Step 1 and the comp sheets on Step 2, as before. Read the facts box on Step 1 and the line under each comp before you press Generate. Sheets read before today do not have the new facts: drop them again.\n\nBest practice: If the sheet\'s square footage and the assessor\'s disagree, check which one is right before you write the offer. The strategy says how the value changes on the assessor\'s figure. A comp you type in by hand has none of these features, so add what matters in its Notes.'
+      },
+      {
+        title: 'Offer Strategy Shows How Long It Has Been Working',
+        detail: 'With every fact on the sheets in the request, writing a strategy usually takes about a minute and sometimes two. The waiting panel used to say 15 to 30 seconds. It now says about a minute and counts the seconds. If the AI has not finished after 3 minutes, Offer Strategy stops, says so, and changes nothing.\n\nHow to use: Press Generate and leave the page open while the count runs.\n\nBest practice: If it stops at 3 minutes, press Generate again. If it stops twice, wait a few minutes and try again: the AI service is busy.'
       }
     ]
   }
@@ -28563,7 +28589,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgFullAddr, osgNetOfCredit, osgShowPpsf, osgNum, osgGoToComps, osgNorm,
       lstMarketEditId, lstSetMarket,
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
-      osgAnalyzing, osgAnalyzeError, osgResult, osgSaving, osgSaved,
+      osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,

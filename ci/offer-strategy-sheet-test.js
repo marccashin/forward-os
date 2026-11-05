@@ -175,6 +175,58 @@ function compLine(prompt, addr) { return (String(prompt).split('\n').find(l => l
   ok(d.length > 0 && !has(d, 'Water frontage') && !has(d, REMARKS), 'with another address the sheet\'s facts are not sent', d.slice(0, 200));
 
   ok(errors.length === 0, 'no page errors', errors);
+
+  // Waiting (Nov 5, 2026): the panel counts the seconds, and a reply that
+  // never comes stops the press after 3 minutes; one that comes late is
+  // ignored. The page's clock is driven by the test.
+  {
+    let release = null; const held = [];
+    const ctx2 = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await ctx2.route('**/*', (route) => {
+      const u = route.request().url();
+      if (u.startsWith(origin)) return u.includes('/.netlify/') ? J(route, 200, {}) : route.continue();
+      if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
+      const t = route.request().resourceType();
+      if (t === 'script') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
+      if (t === 'stylesheet' || t === 'image' || t === 'font' || t === 'media') return route.fulfill({ status: 200, body: '' });
+      if (/api\.anthropic\.com/.test(u)) { held.push(route); return; }   // never answered until released
+      return api(route);
+    });
+    await ctx2.addInitScript(() => { localStorage.setItem('fos_agent', 'Marc Cashin'); localStorage.setItem('fos_key_Marc_Cashin', 'test-key'); });
+    const p2 = await ctx2.newPage();
+    const err2 = []; p2.on('pageerror', e => err2.push(e.message));
+    await p2.clock.install();
+    await p2.goto(origin + '/index.html', { waitUntil: 'load' });
+    await p2.clock.runFor(1500);
+    const st2 = (fn) => p2.evaluate(fn);
+    await st2(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; if (s.updatesModal && s.updatesModal.show) await s.dismissUpdates(); s.taskModalShow = false; s.go('offer-strategy'); s.osgGoToComps();
+      s.osgComps.push({ address: '3 Test Hand Ln', salePrice: '500000', sqft: '2000', ppsf: '250', dom: '10', soldDate: '2026-01-01', spLp: '', concessions: '', notes: '', status: 'closed', editing: false, _src: 'manual' }); });
+    await p2.clock.runFor(300);
+    await p2.getByText('Generate Offer Strategy').click();
+    await p2.clock.runFor(65000);
+    const wait = await p2.locator('[data-osg-wait]').innerText().catch(() => '');
+    ok(/^6[45] seconds so far\.$/.test(wait.trim()), 'while it works the panel counts the seconds', wait);
+    ok(has(await p2.locator('body').innerText(), 'This usually takes about a minute, sometimes two.'), 'the panel says it usually takes about a minute');
+    await p2.clock.runFor(116000);   // 181 s in total
+    const s1 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { busy: s.osgAnalyzing, err: s.osgAnalyzeError, step: s.osgStep }; });
+    ok(s1.busy === false && has(s1.err, 'did not finish within 3 minutes') && has(s1.err, 'Nothing was changed') && s1.step === 2, 'after 3 minutes the press stops and says nothing was changed', s1);
+    // The reply arrives late: it must not replace anything.
+    for (const r of held) await J(r, 200, { content: [{ type: 'text', text: JSON.stringify(STRATEGY) }], stop_reason: 'end_turn' });
+    await p2.clock.runFor(2000);
+    const s2 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { step: s.osgStep, result: !!s.osgResult, busy: s.osgAnalyzing }; });
+    ok(s2.step === 2 && s2.result === false && s2.busy === false, 'a reply arriving after the stop is ignored', s2);
+    // A normal press afterwards still works and the count starts again at 0.
+    held.length = 0;
+    await p2.getByText('Generate Offer Strategy').click();
+    await p2.clock.runFor(3000);
+    for (const r of held) await J(r, 200, { content: [{ type: 'text', text: JSON.stringify(STRATEGY) }], stop_reason: 'end_turn' });
+    await p2.clock.runFor(2000);
+    const s3 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { step: s.osgStep, result: !!s.osgResult, err: s.osgAnalyzeError, secs: s.osgAnalyzeSecs }; });
+    ok(s3.step === 3 && s3.result && s3.err === '' && s3.secs < 10, 'the next press works and the count started again', s3);
+    ok(err2.length === 0, 'no page errors while waiting', err2);
+    await ctx2.close();
+  }
+
   await browser.close(); srv.close();
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
