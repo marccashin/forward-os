@@ -10441,6 +10441,14 @@ const FOS_MODEL_FAST  = 'claude-sonnet-5';
 // always text, so reading content[0].text can return undefined and crash the
 // caller (Meeting Prep: "undefined is not an object (evaluating 'raw.match')").
 function claudeText(d) {
+  // Nov 5, 2026: a reply cut off by the AI's safety filter arrives with
+  // stop_reason "refusal" and the text written so far (seen live on Offer
+  // Strategy's client wording: half a JSON object, shown as "not valid JSON").
+  // Until then that partial text was returned as if it were the whole answer,
+  // so a text tool could show a description that simply stops. Never use it.
+  if (d && d.stop_reason === 'refusal') {
+    throw new Error('the AI stopped partway through its answer, so nothing from it was used');
+  }
   const blocks = (d && Array.isArray(d.content)) ? d.content : [];
   const text = blocks.filter(b => b && b.type === 'text' && typeof b.text === 'string').map(b => b.text).join('');
   if (!text) {
@@ -22307,6 +22315,12 @@ No markdown. No preamble. Valid JSON only.`;
     // before or after the object, or wrapped in a code fence, is still usable;
     // anything else throws. The raw text goes to the console so a failure can
     // be diagnosed instead of guessed at.
+    // Offer Strategy's three AI steps (Generate, the chat, client wording) try up
+    // to OSG_AI_TRIES times. A cut-off or unreadable reply or a failed call is a
+    // try; a missing AI key is not retried (it will not change).
+    const OSG_AI_TRIES = 3;
+    function _osgRetryable(e) { return !(e && e.message === FOS_NO_AI_KEY); }
+
     function osgParseJson(raw) {
       let s = String(raw || '').trim();
       if (s.startsWith('```')) s = s.replace(/^```[a-z]*\n?/, '').replace(/\n?```$/, '').trim();
@@ -22368,13 +22382,13 @@ No markdown. Valid JSON only.`;
         // sent back to press the button again for a formatting slip.
         const _work = (async function () {
           let _got = null;
-          for (let _try = 0; _try < 2 && !_got; _try++) {
-            const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
+          for (let _try = 0; _try < OSG_AI_TRIES && !_got; _try++) {
             try {
+              const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney. Produce precise, actionable offer strategy. Valid JSON only, no markdown.');
               const o = osgParseJson(raw);
               if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not a strategy');
               _got = o;
-            } catch (pe) { if (_try === 1) throw pe; }
+            } catch (pe) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(pe)) throw pe; }
           }
           return _got;
         })();
@@ -22551,9 +22565,9 @@ No markdown. Valid JSON only.`;
         // them is retried once; only then is the agent shown the error, and
         // nothing is applied either way until a reply passes all of them.
         let obj = null, next = null;
-        for (let _try = 0; _try < 2 && !next; _try++) {
-          const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney revising your own offer strategy at the agent\'s direction. Valid JSON only, no markdown.');
+        for (let _try = 0; _try < OSG_AI_TRIES && !next; _try++) {
           try {
+            const raw = await claude(prompt, 'You are a senior buyer agent strategist for FORWARD | Corcoran McEnearney revising your own offer strategy at the agent\'s direction. Valid JSON only, no markdown.');
             const o = osgParseJson(raw);
             const n = o && o.strategy;
             if (!n || typeof n !== 'object' || Array.isArray(n)) throw new Error('the reply had no strategy in it');
@@ -22563,7 +22577,7 @@ No markdown. Valid JSON only.`;
             });
             OSG_REQUIRED.forEach(k => { if (_osgEmpty(n[k])) throw new Error('the reply blanked out ' + OSG_LABELS[k]); });
             obj = o; next = n;
-          } catch (ve) { if (_try === 1) throw ve; }
+          } catch (ve) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(ve)) throw ve; }
         }
         const clean = {};
         OSG_KEYS.forEach(k => { clean[k] = next[k]; });
@@ -22647,14 +22661,14 @@ No markdown. Valid JSON only.`;
         '- Keep each section about as long as the source, or shorter.';
       try {
         let out = null;
-        for (let _try = 0; _try < 2 && !out; _try++) {
-          const raw = await claude(prompt, 'You are a senior buyer\'s agent at FORWARD | Corcoran McEnearney writing to your own client. Valid JSON only, no markdown.');
+        for (let _try = 0; _try < OSG_AI_TRIES && !out; _try++) {
           try {
+            const raw = await claude(prompt, 'You are a senior buyer\'s agent at FORWARD | Corcoran McEnearney writing to your own client. Valid JSON only, no markdown.');
             const o = osgParseJson(raw);
             if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not in the expected format');
             keys.forEach(k => { if (typeof o[k] !== 'string' || !o[k].trim()) throw new Error('the reply left out ' + OSG_CLIENT_LABELS[k]); });
             out = o;
-          } catch (ve) { if (_try === 1) throw ve; }
+          } catch (ve) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(ve)) throw ve; }
         }
         if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
         _osgClientClear();
