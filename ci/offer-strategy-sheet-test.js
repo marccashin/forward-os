@@ -193,6 +193,36 @@ function compLine(prompt, addr) { return (String(prompt).split('\n').find(l => l
     });
     ok(rd.cut === 'threw:the AI stopped partway through its answer, so nothing from it was used' && rd.full === 'ok:Whole answer.',
       'the shared reader never hands on a cut-off reply, and passes a whole one unchanged', rd);
+    const rl = await S(() => { try { return 'ok:' + claudeText({ content: [{ type: 'text', text: 'Too lo' }], stop_reason: 'max_tokens' }); } catch (e) { return 'threw:' + e.message; } });
+    ok(rl === "threw:the AI's answer ran past its length limit and was cut off, so nothing from it was used",
+      'the shared reader never hands on a reply cut off for length', rl);
+    // Streaming readers: the same check once the stream ends. fetch is
+    // replaced for this check only with a stream that ends each way.
+    const sr = await S(async () => {
+      const f0 = window.fetch;
+      const sse = (reason) => new Response(
+        'data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Half"}}\n\n' +
+        'data: {"type":"message_delta","delta":{"stop_reason":"' + reason + '"}}\n\n', { status: 200 });
+      const out = {};
+      for (const reason of ['end_turn', 'max_tokens', 'refusal']) {
+        window.fetch = async () => sse(reason);
+        for (const fn of ['claudeStream', 'claudeChatStream']) {
+          let seen = '';
+          try {
+            const arg = fn === 'claudeStream' ? 'q' : [{ role: 'user', content: 'q' }];
+            const r = await window[fn](arg, null, (c, full) => { seen = full; });
+            out[fn + ':' + reason] = 'ok:' + r;
+          } catch (e) { out[fn + ':' + reason] = 'threw:' + e.message + '|seen:' + seen; }
+        }
+      }
+      window.fetch = f0;
+      return out;
+    });
+    ok(sr['claudeStream:end_turn'] === 'ok:Half' && sr['claudeChatStream:end_turn'] === 'ok:Half',
+      'a streamed reply that finished is returned unchanged', sr);
+    ok(['claudeStream', 'claudeChatStream'].every(f => /^threw:the AI's answer ran past its length limit and was cut off, so it is not complete: ask again/.test(sr[f + ':max_tokens'])
+      && /^threw:the AI stopped partway through its answer, so it is not complete: ask again/.test(sr[f + ':refusal'])),
+      'a streamed reply cut off for length or by the filter ends in a clear error', sr);
     refuseNext = 2; aiCalls = 0;
     await S(async () => { await document.querySelector('#app').__vue_app__._instance.setupState.osgClientWrite(); });
     let c = await cs();
@@ -255,6 +285,28 @@ function compLine(prompt, addr) { return (String(prompt).split('\n').find(l => l
     await p2.clock.runFor(2000);
     const s2 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { step: s.osgStep, result: !!s.osgResult, busy: s.osgAnalyzing }; });
     ok(s2.step === 2 && s2.result === false && s2.busy === false, 'a reply arriving after the stop is ignored', s2);
+    // The chat has the same 3-minute stop (Nov 5, 2026). Needs a strategy on
+    // screen: give it one, then send a question whose reply never comes.
+    held.length = 0;
+    await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState;
+      s.osgResult = { maxValue: '$600,000', marketValue: '$580,000', winningOffer: '$585,000', appraisalGap: null, appraisalGapNote: null,
+        valuationReasoning: 'R.', offerStructure: 'O.', escalationClause: null, talkingPoints: 'T.', justinNote: null };
+      s.osgStep = 3; s.osgChatInput = 'Raise it?'; s.osgChatSend(); });
+    await p2.clock.runFor(30000);
+    const cw = await p2.locator('[data-osg-chat-wait]').innerText().catch(() => '');
+    ok(/^\((29|30) seconds; usually about a minute\)$/.test(cw.trim()), 'while the chat works it counts the seconds', cw);
+    await p2.clock.runFor(151000);   // 181 s
+    const c1 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState;
+      return { busy: s.osgChatBusy, err: s.osgChatError, input: s.osgChatInput, mv: s.osgResult.marketValue, msgs: s.osgChatMsgs.length }; });
+    ok(c1.busy === false && c1.err === 'Nothing was changed: the AI did not finish within 3 minutes, so it was stopped. Try sending it again.'
+      && c1.input === 'Raise it?' && c1.mv === '$580,000' && c1.msgs === 0,
+      'after 3 minutes the chat stops, changes nothing and puts the question back in the box', c1);
+    for (const r of held) await J(r, 200, { content: [{ type: 'text', text: JSON.stringify({ reply: 'Raised.', strategy: Object.assign({}, STRATEGY, { marketValue: '$999,000' }) }) }], stop_reason: 'end_turn' });
+    await p2.clock.runFor(2000);
+    const c2 = await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { mv: s.osgResult.marketValue, msgs: s.osgChatMsgs.length }; });
+    ok(c2.mv === '$580,000' && c2.msgs === 0, 'a chat reply arriving after the stop changes nothing', c2);
+    await st2(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.osgResult = null; s.osgStep = 2; });
+
     // A normal press afterwards still works and the count starts again at 0.
     held.length = 0;
     await p2.getByText('Generate Offer Strategy').click();
