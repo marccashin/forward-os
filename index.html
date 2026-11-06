@@ -5515,6 +5515,7 @@ body {
                   <div class="form-row" style="margin:0;"><label>List Price</label><input v-model="tt.newPropPrice" placeholder="$650,000"/></div>
                   <button class="btn-navy" @click="ttAddProperty" style="padding:10px 16px;white-space:nowrap;">+ Add</button>
                 </div>
+                <div v-if="ttAddErr" data-tt-addr-err style="color:#a3271f;font-size:12px;margin-top:6px;">{{ ttAddErr }}</div>
               </div>
 
               <!-- No active property: Property cards grid -->
@@ -5562,6 +5563,8 @@ body {
                       <div class="tp-num">{{ hi+1 }}</div>
                       <div style="min-width:0;flex:1;">
                         <div class="tp-addr">{{ h.address }}</div>
+                        <div v-if="ttAddrProblem(h.address)" data-tp-addrfix class="tp-warn" style="margin-top:4px;">This address is not complete: {{ ttAddrProblem(h.address).toLowerCase() }}.
+                          <button v-if="h.facts && h.facts.matched_address && !ttAddrProblem(h.facts.matched_address)" type="button" class="tp-link" data-tp-usefound @click="ttUseFound(h)">Use {{ h.facts.matched_address }}</button></div>
                         <div v-if="tt.activeTour.plan.mode==='plan'" class="tp-times">
                           <select v-if="tt.activeTour.plan.booking==='custom'" data-tp-minutes v-model="h.minutes" @change="ttSaveTours">
                             <option value="" disabled>Time at this home</option>
@@ -5607,6 +5610,7 @@ body {
                     <div v-for="(h,hi) in tt.activeTour.properties" :key="'tpf'+h.id" data-tp-figs class="tp-figbox">
                       <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;">
                         <div style="min-width:0;"><div class="tp-addr">{{ hi+1 }}. {{ h.address }}</div>
+                          <div v-if="ttAddrProblem(h.address) && h.facts && h.facts.matched_address && !ttAddrProblem(h.facts.matched_address)" class="tp-warn" style="margin-top:4px;">The address on this tour is not complete. Check the listing found is the right home, then <button type="button" class="tp-link" data-tp-usefound2 @click="ttUseFound(h)">use {{ h.facts.matched_address }}</button>.</div>
                           <div v-if="h.facts && h.facts.found!==false" style="font-size:11px;color:#6b7280;">Found{{ h.facts.status ? ': ' + h.facts.status : '' }}{{ h.facts.matched_address ? ' · ' + h.facts.matched_address : '' }}</div></div>
                         <button type="button" class="tp-link" data-tp-lookone @click="ttLookup(h)" :disabled="ttLook.busy[h.id]"><span v-if="ttLook.busy[h.id]" class="spinner spinner-dark"></span>{{ ttLook.busy[h.id] ? ' Searching' : (h.facts ? 'Search again' : 'Look up') }}</button>
                       </div>
@@ -20239,9 +20243,29 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       tt.recommendation = '';
       tt._lastPDF = null;
     }
+    // A tour home needs its full address (Marc, Nov 6, 2026: "14207 Manor" was saved, the web
+    // search still found the listing, and Google could not place it for the route). Complete =
+    // a house number and street, then a 5-digit ZIP or ", City, State".
+    function ttAddrProblem(a) {
+      const v = String(a || '').trim();
+      if (!v) return 'Type the address';
+      if (!/^\d+[A-Za-z-]*\s+\S/.test(v)) return 'Start with the house number and street';
+      if (/\b\d{5}(?:-\d{4})?\s*$/.test(v) || /,\s*[^,]+,\s*(?:DC|MD|VA|D\.C\.|Maryland|Virginia|District of Columbia)\b/i.test(v)) return '';
+      return 'Add the city, state and ZIP (for example 14207 Manor Rd, Phoenix, MD 21131)';
+    }
+    const ttAddErr = ref('');
+    function ttUseFound(h) {
+      if (!h || !h.facts || !h.facts.matched_address) return;
+      h.address = String(h.facts.matched_address).trim();
+      ttRoute.error = '';
+      ttSaveTours();
+    }
     function ttAddProperty() {
       const addr = tt.newPropAddr.trim();
       if (!addr || !tt.activeTour) return;
+      const why = ttAddrProblem(addr);
+      if (why) { ttAddErr.value = 'Not added: ' + why + '.'; return; }
+      ttAddErr.value = '';
       const prop = {
         id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
         address: addr,
@@ -20437,6 +20461,9 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ttRouteProblem(tour) {
       const p = tour.plan, hs = tour.properties || [];
       if (!hs.length) return 'Add the homes on this tour first.';
+      const bad = hs.findIndex(function (h) { return ttAddrProblem(h.address); });
+      if (bad >= 0) return 'Home ' + (bad + 1) + ' (' + hs[bad].address + ') needs its full address: ' + ttAddrProblem(hs[bad].address).toLowerCase() + '.'
+        + (hs[bad].facts && hs[bad].facts.matched_address && !ttAddrProblem(hs[bad].facts.matched_address) ? ' Press Use the address found under it.' : '');
       if (hs.length > TT_MAX_HOMES) return 'A tour plan holds up to ' + TT_MAX_HOMES + ' homes, and this tour has ' + hs.length + '. Remove ' + (hs.length - TT_MAX_HOMES) + ' first.';
       if (!ttDateObj(p.date)) return 'Pick the date of the tour.';
       if (!String(p.startAddress || '').trim()) return 'Pick where you start (Starting from) so the order counts your first drive.';
@@ -26002,6 +26029,18 @@ const CHANGELOG = [
       }
     ]
   }
+  ,
+  {
+    id: 'v2026-11-06',
+    date: 'November 6, 2026',
+    title: 'Tour Homes Need a Full Address',
+    updates: [
+      {
+        title: 'Tour Homes Need a Full Address',
+        detail: 'A home added to a tour now needs its house number, street, city, state and ZIP. An address like 14207 Manor could still be found on listing sites, but the map could not place it, so the route could not be planned. If a home already on a tour has a short address and its listing was found, the tour plan shows the full address of that listing with a Use button: check it is the right home, press Use, then Find the best order.\n\nHow to use: Type the full address when you add a home, for example 14207 Manor Rd, Phoenix, MD 21131.\n\nBest practice: Copy the address from Bright so the unit number and ZIP are exact.'
+      }
+    ]
+  }
 
 
 ];
@@ -28629,7 +28668,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttLegAfter, ttMapFor, ttFmtTime, ttWarnText, ttLookup, ttLookupAll, ttAllLooked, ttConfirmFig, ttUnconfirmFig, ttTypeFig,
       ttFigOptions, ttSourceHost, ttFigCount, ttHomeProblems, ttTextIssues, ttOnOverviewEdit, ttCompare,
       ttCompareStale, ttCompareIssues, ttBuyerProblems, ttAgentPdf, ttSendBuyer,
-      TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
+      ttAddrProblem, ttAddErr, ttUseFound, TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
       // Buyer Needs Analysis
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
