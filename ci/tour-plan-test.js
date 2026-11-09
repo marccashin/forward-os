@@ -220,11 +220,11 @@ const LOOK = {
   ok(await page.locator('[data-tp-send]').isDisabled() && /Times confirmed/.test(await page.locator('[data-tp-sendwhy]').innerText()), 'Send to buyer is off with planned times, and says to enter the confirmed ones');
 
   console.log('A refused address');
-  await st(page, 'st.tt.newPropAddr = "9 Nowhere Ln, VA"; st.ttAddProperty();');
+  await st(page, 'st.tt.newPropAddr = "9 Nowhere Ln, Nowhere, VA 22000"; st.ttAddProperty();');
   await page.locator('[data-tp-minutes]').nth(3).selectOption('15');
   await page.click('[data-tp-run]'); await wait(page, 300);
   addrs = await page.locator('[data-tp-home] .tp-addr').allInnerTexts();
-  ok(/NOT worked out: Google could only place 9 Nowhere Ln approximately/.test(await page.locator('[data-tp-error]').innerText()) && addrs[0] === C && addrs[3] === '9 Nowhere Ln, VA', 'the reason Google gave is shown and nothing moves', addrs);
+  ok(/NOT worked out: Google could only place 9 Nowhere Ln approximately/.test(await page.locator('[data-tp-error]').innerText()) && addrs[0] === C && addrs[3] === '9 Nowhere Ln, Nowhere, VA 22000', 'the reason Google gave is shown and nothing moves', addrs);
   await st(page, 'st.ttRemoveProperty(st.tt.activeTour.properties[3].id)');
   await st(page, 'for (let i = 0; i < 6; i++) { st.tt.newPropAddr = (i + 1) + "00 Extra Rd, Arlington, VA 22201"; st.ttAddProperty(); }');
   const nRoute = B_.route.length;
@@ -399,6 +399,30 @@ const LOOK = {
   ok(t.includes('Start: 9 Home Ct, Bethesda, MD 20814') && t.includes('leave by 12:40 pm') && t.includes('End: 50 Meeting Pl, Towson, MD 21204') && t.includes('Inside 1:57 pm to 2:42 pm') && t.includes('FORWARD standard: each showing booked 1 hour, 45 minutes inside'), 'your copy has the start, the end, the time inside each home and the standard');
   ok(t.replace(/\s/g, '').includes('2full+1three-quarterbath') && !/\(2 full \+ 1 three-quarter bath \/ \) Tj/.test(rawA) && !/Listed 29/.test(t), 'a long figure wraps inside its column instead of running off the page');
   await st(page, 'st.closePDFViewer()');
+  await ctx.close();
+
+  console.log('An address that is not complete');
+  ({ ctx, page } = await ctxFor('computer'));
+  const inc = await st(page, `st.go('tour-tracker'); await new Promise(r => setTimeout(r, 300));
+    st.tt.newTourName = 'Incomplete'; st.ttCreateTour();
+    st.tt.newPropAddr = '14207 Manor'; st.ttAddProperty();
+    const refused = st.tt.activeTour.properties.length === 0 && /Not added: Add the city, state and ZIP/.test(st.ttAddErr);
+    st.tt.newPropAddr = '14207 Manor Rd, Phoenix, MD 21131'; st.ttAddProperty();
+    const ok1 = st.tt.activeTour.properties.length === 1 && !st.ttAddErr;
+    st.tt.newPropAddr = '5 Oak St, Bel Air, Maryland'; st.ttAddProperty();
+    return { refused, ok1, ok2: st.tt.activeTour.properties.length === 2 };`);
+  ok(inc.refused && inc.ok1 && inc.ok2, 'a home with no city, state or ZIP is not added and the agent is told what to add; a full address, or one ending in a city and state, is added', inc);
+  // a tour saved before the check, with "14207 Manor" and the listing found for it
+  await st(page, `const h = st.tt.activeTour.properties[0]; h.address = '14207 Manor';
+    h.facts = { found: true, matched_address: '14207 Manor Rd, Phoenix, MD 21131', status: 'Active', problems: [], fields: {}, overview: null };
+    st.tt.activeTour.plan.date = '2026-11-07'; st.tt.activeTour.plan.firstAt = '10:00'; st.ttPickPlace('start', 'typed'); st.tt.activeTour.plan.startAddress = '1 Office Way, Arlington, VA 22201';`);
+  await wait(page);
+  ok(await page.locator('[data-tp-addrfix]').count() === 1 && /Use 14207 Manor Rd, Phoenix, MD 21131/.test(await page.locator('[data-tp-usefound]').innerText()), 'a saved home with an incomplete address says so and offers the address of the listing found');
+  nR = B_.route.length;
+  await page.click('[data-tp-run]'); await wait(page);
+  ok(B_.route.length === nR && /Home 1 \(14207 Manor\) needs its full address.*Use the address found/.test(await page.locator('[data-tp-error]').innerText()), 'Find the best order sends nothing for it and points to the found address, instead of Google\'s refusal');
+  await page.click('[data-tp-usefound]'); await page.click('[data-tp-run]'); await wait(page, 300);
+  ok(B_.route.length === nR + 1 && B_.route[nR].stops[0].address === '14207 Manor Rd, Phoenix, MD 21131' && await page.locator('[data-tp-addrfix]').count() === 0, 'one press uses the found address and the route goes out with it', B_.route[nR] && B_.route[nR].stops);
   await ctx.close();
 
   console.log('An old tour');
