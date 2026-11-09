@@ -5199,6 +5199,7 @@ body {
                     <div v-for="f in osgClientShown" :key="f.k" style="margin-top:10px;">
                       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.04em;color:#6b7280;margin-bottom:4px;">{{ f.label.toUpperCase() }}</label>
                       <textarea v-model="osgClient[f.k]" rows="5" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:8px 10px;border:1.5px solid #d1d5db;border-radius:8px;resize:vertical;"></textarea>
+                      <div v-for="w in osgClientWordIssues.filter(x => x.k === f.k)" :key="w.k" data-osg-client-issue style="font-size:12px;color:#dc2626;margin-top:4px;line-height:1.5;">Says "{{ w.word }}". Clients read that backwards: say which home is better (this home or the comparable sale). It must be changed before the buyer PDF.</div>
                     </div>
                   </template>
                 </div>
@@ -22413,7 +22414,8 @@ No markdown. No preamble. Valid JSON only.`;
       '- If there are no closed sales, say so plainly at the start of valuationReasoning and state that the figures are low-confidence.\n' +
       '- Compare like with like. Each comp lists its features (beds and baths, finished space below grade, basement, year built and renovated, lot, garage, waterfront, frontage and dock). For a comp from an MLS sheet the sqft is above-grade finished area. Where the subject and a comp differ on a feature, say which way it moves that comp\'s indication of value and why.\n' +
       '- A waterfront subject is valued from waterfront closed sales first; a sale that is not waterfront is weaker evidence for it, and the reverse. Never treat a comp as the closest evidence only because it is on the same street.\n' +
-      '- Everything you know about the subject and the comps is in this request. If a fact is not listed, or is listed as not given, say it was not in the information you were given. Never say the MLS sheet or the listing does not mention it.\n';
+      '- Everything you know about the subject and the comps is in this request. If a fact is not listed, or is listed as not given, say it was not in the information you were given. Never say the MLS sheet or the listing does not mention it.\n' +
+      '- Never call a comp or the subject superior or inferior. Say which home is better on that feature: "the subject is better" (its value indication moves up) or "the comp is better" (it moves down). The client reads superior and inferior backwards.\n';
 
     // Pull the JSON object out of a model reply. A reply with a sentence
     // before or after the object, or wrapped in a code fence, is still usable;
@@ -22781,6 +22783,7 @@ No markdown. Valid JSON only.`;
         '- You may explain the negotiating plan in plain terms, such as leaving room to respond to a counteroffer. Do not speculate about the seller\'s motives, finances or state of mind. Where the notes reason from the seller\'s behavior, state the market fact instead, for example "The home has been listed for 208 days without a price change."\n' +
         '- Never use an em dash. Use a comma, a period or parentheses. Number ranges such as $310 to $312 per square foot are fine.\n' +
         '- Never use these words: stunning, luxurious, impeccable, nestled, boasts, charming.\n' +
+        '- Never use the words superior or inferior. Say which home is better: "this home is better" or "the comparable sale is better", and which way that moves its indication of value. Where the source says a comp is superior, write that the comparable sale is better; where it says inferior, write that this home is better.\n' +
         '- Keep each section about as long as the source, or shorter.';
       try {
         let out = null;
@@ -22790,6 +22793,7 @@ No markdown. Valid JSON only.`;
             const o = osgParseJson(raw);
             if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not in the expected format');
             keys.forEach(k => { if (typeof o[k] !== 'string' || !o[k].trim()) throw new Error('the reply left out ' + OSG_CLIENT_LABELS[k]); });
+            keys.forEach(k => { const w = _osgBetterWord(o[k]); if (w) throw new Error('the wording said "' + w + '" (it must say which home is better)'); });
             out = o;
           } catch (ve) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(ve)) throw ve; }
         }
@@ -22806,6 +22810,17 @@ No markdown. Valid JSON only.`;
 
     // Why the buyer PDF cannot be built yet, or '' when it can. Agent notes
     // are never printed in place of client wording.
+    // Clients read superior and inferior backwards (Marc, Oct 4, 2026, for the
+    // CMA; same rule for Offer Strategy, Nov 9, 2026). The wording says which
+    // home is better. Whole words only, so "superiority" style words in a
+    // street name are not caught by accident.
+    const OSG_BETTER_RX = /\b(superior|inferior)\b/i;
+    function _osgBetterWord(t) { const m = String(t || '').match(OSG_BETTER_RX); return m ? m[1] : ''; }
+    const osgClientWordIssues = computed(() => {
+      if (!osgClientFor.value) return [];
+      return Object.keys(OSG_CLIENT_SRC).filter(k => _osgBetterWord(osgClient[k]))
+        .map(k => ({ k: k, label: OSG_CLIENT_LABELS[k], word: _osgBetterWord(osgClient[k]) }));
+    });
     function osgClientBlock() {
       const r = osgResult.value, inc = osgBuyerInc; if (!r) return '';
       const need = [];
@@ -22818,6 +22833,8 @@ No markdown. Valid JSON only.`;
       if (osgClientStale.value) return 'The strategy changed after the client wording was written. Rewrite the client wording before sending.';
       const blank = need.filter(k => _osgEmpty(osgClient[k]));
       if (blank.length) return OSG_CLIENT_LABELS[blank[0]] + ' is ticked but its client wording is empty. Rewrite it, or untick the section.';
+      const worded = need.filter(k => _osgBetterWord(osgClient[k]));
+      if (worded.length) return OSG_CLIENT_LABELS[worded[0]] + ' says "' + _osgBetterWord(osgClient[worded[0]]) + '". Clients read that backwards: change it to say which home is better, or press Rewrite Client Wording.';
       return '';
     }
 
@@ -26344,6 +26361,10 @@ const CHANGELOG = [
       {
         title: 'Every Offer Strategy Is Kept on the Buyer',
         detail: 'Running several offer strategies for one client used to leave you only Start Over, and the earlier strategy was gone from the OS. Now every strategy you generate from a buyer is saved to that buyer by itself, the moment it finishes, and stays up to date as you edit figures, use the chat, write the client wording or choose what the buyer sees. A line at the top of the strategy says it was saved, or says plainly that it was NOT and offers Try again. Start Over no longer loses anything.\n\nOn the buyer\'s page, Offer Strategies lists every one with its address, date, agent and the market value, winning offer and max value. Open one to read it or download its PDFs again; it stays exactly as it was, and any change you make is saved as a new strategy beside it. Tick two or more to see them side by side. The PDFs you save to the buyer folder now also show under Generated Reports.\n\nHow to use: Open the buyer, then Offer Strategy, and work as usual. To come back to one, open the buyer, press Offer Strategies and pick it.\n\nBest practice: Always start Offer Strategy from the buyer\'s page. A strategy made with no buyer open is not saved, and the screen says so.'
+      },
+      {
+        title: 'Offer Strategy Says Which Home Is Better',
+        detail: 'Offer Strategy used to call a comparable sale superior or inferior, and that wording reached the buyer PDF. Clients read those words backwards. Like the CMA, Offer Strategy now says which home is better: this home or the comparable sale. Client wording that still uses either word is shown in red, and the buyer PDF is not made until it is changed.\n\nHow to use: On a strategy written before today, press Rewrite Client Wording, or change the red words yourself.\n\nBest practice: Read the client wording before you send it. It is written to your buyer.'
       }
     ]
   }
@@ -28999,7 +29020,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgChatSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
-      osgStore, osgStoreSave, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
+      osgStore, osgStoreSave, osgClientWordIssues, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
       osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,

@@ -35,8 +35,8 @@ const BUYERS = [
   { id: BJ, buyer_name: 'Julia Long', agent_name: 'Marc Cashin', created_at: '2026-10-01T00:00:00Z' },
   { id: BP, buyer_name: 'Pat Rivera', agent_name: 'Marc Cashin', created_at: '2026-09-01T00:00:00Z' }
 ];
-let DB, writes, writesFail, aiN;
-function reset() { DB = []; writes = []; writesFail = false; aiN = 0; }
+let DB, writes, writesFail, aiN, prompts, clientReplies;
+function reset() { DB = []; writes = []; writesFail = false; aiN = 0; prompts = []; clientReplies = []; }
 const strategy = (n) => ({ maxValue: '$64' + n + ',000', marketValue: '$61' + n + ',000', winningOffer: '$60' + n + ',000',
   appraisalGap: null, appraisalGapNote: null, valuationReasoning: 'REASONING ' + n, offerStructure: 'STRUCTURE ' + n,
   escalationClause: null, talkingPoints: '- point', justinNote: null });
@@ -44,7 +44,14 @@ const J = (route, status, body) => route.fulfill({ status, contentType: 'applica
 function api(route) {
   const req = route.request(), raw = req.url(), u = decodeURIComponent(raw), m = req.method();
   if (m === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*' } });
-  if (/api\.anthropic\.com/.test(u)) { aiN++; return J(route, 200, { content: [{ type: 'text', text: JSON.stringify(strategy(aiN)) }], stop_reason: 'end_turn' }); }
+  if (/api\.anthropic\.com/.test(u)) {
+    const sent = req.postData() || ''; prompts.push(sent);
+    if (/Rewrite each one so it can be sent/.test(sent)) {
+      const reply = clientReplies.length ? clientReplies.shift() : { reasoning: 'This home is better on size.', structure: 'Offer $600,000.' };
+      return J(route, 200, { content: [{ type: 'text', text: JSON.stringify(reply) }], stop_reason: 'end_turn' });
+    }
+    aiN++; return J(route, 200, { content: [{ type: 'text', text: JSON.stringify(strategy(aiN)) }], stop_reason: 'end_turn' });
+  }
   if (m === 'GET' && /railway\.app\/buyers/.test(u)) return J(route, 200, BUYERS);
   if (m === 'GET' && /\/rest\/v1\/buyer_assets\?/.test(u)) {
     return J(route, 200, /buyer_id=eq\.57145b0e/.test(u) ? [{ id: 9, buyer_id: BJ, subfolder: 'offer_documents', file_name: 'Offer-Strategy-3-Old-Sound-Rd-Buyer.pdf', drive_link: 'https://drive.google.com/file/d/abc/view', created_at: '2026-11-08T00:00:00Z' }] : []);
@@ -260,6 +267,39 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(dialogs.length === 1 && rm.length === 1 && Object.keys(rm[0].body).join() === 'removed_at' && rm[0].u.includes(bay.id), 'one PATCH setting removed_at on that row, after a confirm', { dialogs, rm });
   ok(n1 === n0 - 1 && bay.removed_at && DB.includes(bay), 'gone from the list, kept in the table', { n0, n1 });
   ok(!writes.some(w => w.m === 'DELETE'), 'nothing is ever deleted');
+
+  console.log('\nSuperior and inferior: the wording says which home is better (Nov 9, 2026)');
+  const genPrompt = prompts.find(t => /Analyze this property and produce an offer strategy/.test(t)) || '';
+  ok(/Never call a comp or the subject superior or inferior/.test(genPrompt) && /the comp is better/.test(genPrompt), 'Generate tells the AI to say which home is better', genPrompt.length);
+  await openBuyer(BJ);
+  await st(() => document.querySelector('#app').__vue_app__._instance.setupState.go('offer-strategy')); await wait(200);
+  await generate('12 Mill Ln, Annapolis, MD 21403', '$610,000'); await wait(1500);
+  clientReplies = [
+    { reasoning: 'Comp 3 is superior to this property on lot size.', structure: 'Offer $600,000.' },
+    { reasoning: 'Comp 3 is better than this home on lot size, which moves its indication down.', structure: 'Offer $600,000.' }
+  ];
+  const nBefore = prompts.length;
+  await page.locator('button', { hasText: /Write Client Wording/i }).first().click();
+  await page.waitForFunction(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return !s.osgClientBusy && (s.osgClientFor || s.osgClientError); }, null, { timeout: 15000 });
+  await wait(300);
+  const cw = prompts.slice(nBefore).filter(t => /Rewrite each one so it can be sent/.test(t));
+  let cs = await st(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { r: s.osgClient.reasoning, err: s.osgClientError }; });
+  ok(cw.length === 2 && /Never use the words superior or inferior/.test(cw[0]) && /this home is better/.test(cw[0]), 'the client wording request carries the rule, and a reply saying superior is sent back once', cw.length);
+  ok(/better than this home/.test(cs.r) && !/superior/i.test(cs.r) && !cs.err, 'the wording shown is the reply that says which home is better', cs);
+  await st(() => { document.querySelector('#app').__vue_app__._instance.setupState.osgClient.reasoning = 'This home is inferior to Comp 3 on lot size.'; }); await wait(200);
+  const red = await st(() => Array.from(document.querySelectorAll('[data-osg-client-issue]')).map(x => x.innerText));
+  ok(red.length === 1 && /inferior/.test(red[0]) && /which home is better/.test(red[0]), 'a typed inferior is shown in red under its box', red);
+  const w1 = writes.length;
+  await page.locator('button', { hasText: 'Save Buyer PDF to Buyer Folder' }).click(); await wait(400);
+  const block = await st(() => document.querySelector('#app').__vue_app__._instance.setupState.osgClientError);
+  ok(/says "inferior"/.test(block) && !/saved to the buyer folder/.test(await st(() => document.querySelector('#app').__vue_app__._instance.setupState.osgSaveMsg)), 'Save Buyer PDF refuses while it is there and says why', block);
+  await st(() => { document.querySelector('#app').__vue_app__._instance.setupState.osgClient.reasoning = 'Comp 3 is better on lot size.'; }); await wait(200);
+  ok(await st(() => document.querySelectorAll('[data-osg-client-issue]').length) === 0, 'once changed, the red line goes');
+  clientReplies = [1, 2, 3].map(() => ({ reasoning: 'Comp 2 is inferior.', structure: 'Offer.' }));
+  await page.locator('button', { hasText: /Write Client Wording/i }).first().click();
+  await page.waitForFunction(() => !document.querySelector('#app').__vue_app__._instance.setupState.osgClientBusy, null, { timeout: 15000 }); await wait(200);
+  cs = await st(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; return { r: s.osgClient.reasoning, err: s.osgClientError }; });
+  ok(/Could not write the client wording/.test(cs.err) && /inferior/.test(cs.err) && cs.r === 'Comp 3 is better on lot size.', 'three replies that all say it: nothing replaces the wording on screen, and the reason is said', cs);
 
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();
