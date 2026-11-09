@@ -4134,6 +4134,58 @@ body {
                 </button>
 
               </div>
+              <!-- Offer Strategies saved to this buyer (Nov 9, 2026) -->
+<div class="subfolder-panel" data-osg-saved style="margin-bottom:16px;">
+<div class="subfolder-header" data-osg-saved-toggle @click="osgSavedToggle">
+<div style="display:flex;align-items:center;gap:10px;">
+<span class="subfolder-tool-name">Offer Strategies</span>
+<span class="subfolder-tool-desc">Every strategy run for this buyer</span>
+</div>
+<span style="font-size:12px;color:#9ca3af;">{{ osgSavedOpen ? '&#9660;' : '&#9654;' }}</span>
+</div>
+<div v-if="osgSavedOpen" class="subfolder-body" style="padding:14px 16px;">
+                  <button class="btn-gold" data-osg-new @click="osgNewForBuyer" style="width:100%;min-height:46px;font-size:14px;margin-bottom:8px;">&#10022; New Offer Strategy</button>
+                  <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5;">Every strategy is saved here by itself. Open one to read it or download its PDFs again; changing it saves a new one beside it. Tick two or more to compare them side by side.</div>
+                  <div v-if="osgSavedList(byrActiveBuyer).loading" style="font-size:13px;color:#6b7280;">Loading saved strategies&hellip;</div>
+                  <div v-else-if="osgSavedList(byrActiveBuyer).error" data-osg-saved-error style="font-size:13px;color:#dc2626;">{{ osgSavedList(byrActiveBuyer).error }} <button class="btn-outline" @click="osgSavedLoad(byrActiveBuyer)" style="font-size:11px;padding:3px 10px;">Try again</button></div>
+                  <div v-else-if="!osgSavedList(byrActiveBuyer).rows.length" style="font-size:13px;color:#9ca3af;">No strategies saved yet.</div>
+                  <div v-for="r in osgSavedList(byrActiveBuyer).rows" :key="r.id" class="mb-row" data-osg-saved-row :data-id="r.id">
+                    <label style="display:flex;align-items:flex-start;padding-top:2px;cursor:pointer;" title="Compare"><input type="checkbox" data-osg-cmp v-model="osgCmpPick[r.id]" style="width:18px;height:18px;"></label>
+                    <div class="mb-row-open" data-osg-open @click="osgOpenSaved(r)">
+                      <div style="flex:1;min-width:0;">
+                        <div class="subfolder-tool-name" style="overflow-wrap:anywhere;">{{ r.address || 'No address' }}</div>
+                        <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ osgFmtWhen(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}<span v-if="r.copied_from"> &middot; changed copy of {{ osgSavedWhen(r.copied_from, byrActiveBuyer) }}</span></div>
+                        <div style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">Market {{ osgSavedFig(r,'marketValue') || '-' }} &middot; Winning offer {{ osgSavedFig(r,'winningOffer') || '-' }} &middot; Max {{ osgSavedFig(r,'maxValue') || '-' }}</div>
+                        <span class="mb-open-link">Open strategy &rsaquo;</span>
+                      </div>
+                    </div>
+                    <div class="mb-row-actions">
+                      <button class="mb-act" data-osg-remove @click="osgSavedRemove(r, byrActiveBuyer)">Remove</button>
+                    </div>
+                  </div>
+                  <div v-if="osgCmpList(byrActiveBuyer).length===1" style="font-size:12px;color:#6b7280;margin-top:8px;">Tick one more to compare.</div>
+                  <div v-if="osgCmpList(byrActiveBuyer).length>=2" data-osg-compare style="margin-top:12px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                      <div class="subfolder-tool-name">Side by side</div>
+                      <button class="btn-outline" @click="osgCmpClear" style="font-size:11px;padding:3px 10px;">Clear</button>
+                    </div>
+                    <div style="overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch;">
+                      <table style="border-collapse:collapse;font-size:12px;min-width:100%;">
+                        <thead><tr>
+                          <th style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--gold);"></th>
+                          <th v-for="r in osgCmpList(byrActiveBuyer)" :key="r.id" style="text-align:left;padding:6px 8px;border-bottom:2px solid var(--gold);color:var(--navy);min-width:150px;vertical-align:bottom;">{{ r.address || 'No address' }}</th>
+                        </tr></thead>
+                        <tbody>
+                          <tr v-for="row in OSG_CMP_ROWS" :key="row.label">
+                            <td style="padding:6px 8px;border-bottom:1px solid #e5e7eb;color:#6b7280;font-weight:600;white-space:nowrap;vertical-align:top;">{{ row.label }}</td>
+                            <td v-for="r in osgCmpList(byrActiveBuyer)" :key="r.id" data-osg-cmp-cell :style="{padding:'6px 8px',borderBottom:'1px solid #e5e7eb',verticalAlign:'top',fontWeight:row.big?700:400,fontSize:row.big?'14px':'12px',color:'var(--navy)',whiteSpace:row.text?'pre-wrap':'normal',lineHeight:1.5}">{{ row.get(r) || '-' }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+</div>
+</div>
               <!-- Meeting Prep (briefs saved to this buyer) -->
 <div class="subfolder-panel" style="margin-bottom:16px;">
 <div class="subfolder-header" @click="mbToggleBuyer">
@@ -4523,10 +4575,10 @@ body {
               </div>
             </div>
               <!-- Generated Reports -->
-              <div v-if="byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy'].includes(f.subfolder)).length>0" style="margin-top:14px;border-top:1px solid var(--cream-mid);padding-top:12px;">
+              <div v-if="byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy','offer_documents'].includes(f.subfolder)).length>0" style="margin-top:14px;border-top:1px solid var(--cream-mid);padding-top:12px;">
                 <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:8px;margin-top:4px;">Generated Reports</div>
                 <div style="display:flex;flex-direction:column;gap:4px;">
-                  <div v-for="f in byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy'].includes(f.subfolder))" :key="f.id" style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);">
+                  <div v-for="f in byrActiveFiles.filter(f=>['buyer_kit','cash_to_close','tour_tracker','offer_strategy','offer_documents'].includes(f.subfolder))" :key="f.id" style="display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--white);border-radius:2px;border:1px solid var(--cream-mid);">
                     <span style="font-family:'Cormorant Garamond',serif;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--navy);" :title="f.file_name">{{ f.file_name }}</span>
                     <span style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);background:var(--cream);border-radius:2px;padding:2px 6px;">{{ (f.subfolder||'').split('_').join(' ') }}</span>
                     <a v-if="f.drive_link" :href="f.drive_link" target="_blank" style="color:var(--navy);font-size:12px;text-decoration:none;" title="Open">↗</a>
@@ -5002,6 +5054,15 @@ body {
 
             <!-- STEP 3: Results -->
             <div v-if="osgStep===3 && osgResult">
+              <!-- Kept on the buyer (Nov 9, 2026). Every save says whether it went through. -->
+              <div data-osg-store :data-state="osgStore.state" style="font-family:'Cormorant Garamond',serif;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;line-height:1.5;"
+                   :style="{background: osgStore.state==='error'||osgStore.state==='off' ? '#fef2f2' : (osgStore.state==='viewing' ? '#fffbeb' : '#f0fdf4'), border: '1.5px solid ' + (osgStore.state==='error'||osgStore.state==='off' ? '#fecaca' : (osgStore.state==='viewing' ? '#fde68a' : '#bbf7d0')), color: osgStore.state==='error'||osgStore.state==='off' ? '#991b1b' : (osgStore.state==='viewing' ? '#92400e' : '#166534')}">
+                <template v-if="osgStore.state==='viewing'">Saved strategy from {{ osgStore.fromWhen }}{{ osgStore.fromAgent ? ', by ' + osgStore.fromAgent : '' }}. It stays exactly as it was: any change you make is saved as a new strategy for {{ osgStore.buyerName || 'this buyer' }}.</template>
+                <template v-else-if="osgStore.state==='off'"><strong>This strategy is NOT saved in the OS:</strong> no buyer is open. To keep it, open Offer Strategy from the buyer's page. Download the PDF if you need it now.</template>
+                <template v-else-if="osgStore.state==='error'"><strong>This strategy is NOT saved to {{ osgStore.buyerName || 'the buyer' }}:</strong> {{ osgStore.msg }}. It is still on this screen. <button class="btn-outline" data-osg-store-retry @click="osgStoreSave()" style="font-size:11px;padding:3px 10px;margin-left:4px;">Try again</button></template>
+                <template v-else-if="osgStore.state==='saving'">Saving to {{ osgStore.buyerName || 'the buyer' }}&hellip;<span v-if="osgStore.from"> (a new strategy, copied from the one saved {{ osgStore.fromWhen }})</span></template>
+                <template v-else-if="osgStore.state==='saved'">&#10003; Saved to {{ osgStore.buyerName || 'the buyer' }} at {{ osgStore.when }}<span v-if="osgStore.from"> as a new strategy (copied from {{ osgStore.fromWhen }})</span>. Changes save by themselves. Every strategy is listed on the buyer's page under Offer Strategies.</template>
+              </div>
               <!-- Figures: editable, with a warning that hand edits do not cascade -->
               <div style="display:flex;justify-content:flex-end;margin-bottom:6px;">
                 <button class="btn-outline" style="font-size:11px;padding:3px 10px;" @click="osgEditOpen('values')">{{ osgEditKey==='values' ? 'Done' : 'Edit figures' }}</button>
@@ -22416,6 +22477,7 @@ No markdown. Valid JSON only.`;
         });
         const _parsed = await Promise.race([_work, _late]);
         if (byrToolOwner.osg !== _ownAtStart) return;   // buyer changed while this ran: discard
+        osgStoreFlush();   // the strategy on screen, if any, is saved as it was
         osgResult.value = _parsed;
         // A regenerated strategy is a new document: old chat, undo and comp
         // exclusions refer to the previous one and must not carry over.
@@ -22424,6 +22486,7 @@ No markdown. Valid JSON only.`;
         Object.keys(osgBuyerCompOff).forEach(k => delete osgBuyerCompOff[k]);
         _osgClientClear();
         osgSaveMsg.value = ''; osgSaveError.value = '';
+        osgStoreStart();   // every generated strategy is kept on the buyer (Nov 9, 2026)
         osgStep.value = 3;
         Vue.nextTick(() => window.scrollTo(0, 0));
       } catch(e) { osgAnalyzeError.value = 'Strategy generation failed: ' + e.message; }
@@ -22914,6 +22977,7 @@ No markdown. Valid JSON only.`;
           if (ok) {
             osgSaved.value = true;
             osgSaveMsg.value = what + ' saved to the buyer folder.';
+            loadByrFiles(byrActiveBuyer.value);
             showGoldToast(osgSaveMsg.value);
           } else {
             openPDFBlob(pdfBlob, fileName);
@@ -22932,14 +22996,244 @@ No markdown. Valid JSON only.`;
       osgSaving.value = false;
     }
 
+
+    // ── Offer Strategy reports kept on the buyer (Marc, Nov 9, 2026) ─────
+    // "I can save the report to the client's profile, but then it only gives me
+    // an option to start over ... all previous offer strategy reports [should
+    // be] saved in the OS so that the agent can reference them again."
+    // Until then only the PDF went anywhere (Drive, recorded in buyer_assets as
+    // offer_documents, which the buyer page never listed) and Start Over threw
+    // the strategy away. Now every generated strategy is one row in
+    // offer_strategies (sql/2026-11-09_offer_strategies.sql), saved by itself
+    // the moment Generate finishes and kept up to date as the agent edits,
+    // chats, writes client wording or picks what the buyer sees.
+    //   inputs = what it was generated from, written once.
+    //   work   = the strategy and what the agent did with it, updated.
+    // Reopening a saved strategy never changes it (Marc's choice): the first
+    // change makes a NEW row with copied_from set. A strategy made with no
+    // buyer open is not saved, and the screen says so. Every save says
+    // whether it went through; a failure keeps the work on screen with Try again.
+    const OSG_STORE_WAIT_MS = 1200;
+    const osgStore = reactive({ id: null, from: null, fromWhen: '', fromAgent: '', created: false, tries: 0,
+      buyerId: null, buyerName: '', inputs: null, baseline: '', state: '', msg: '', when: '' });
+    let _osgStoreTimer = null, _osgStoreChain = Promise.resolve();
+    function _osgCopy(v) { return v === undefined ? null : JSON.parse(JSON.stringify(v)); }
+    function _osgInputs() {
+      return _osgCopy({ address: osgAddress.value, listPrice: osgListPrice.value, dom: osgDOM.value,
+        propType: osgPropType.value, sqft: osgSqFt.value, bedBath: osgBedBath.value, yearBuilt: osgYearBuilt.value,
+        comps: osgComps.value, competition: osgCompetition.value, financing: osgFinancing.value,
+        justin: osgJustin.value, preUW: osgPreUW.value, sellerMotivation: osgSellerMotivation.value,
+        sheet: osgSheet.value });
+    }
+    function _osgWork() {
+      return _osgCopy({ result: osgResult.value, chat: osgChatMsgs.value, buyerInc: osgBuyerInc,
+        client: osgClient, clientFor: osgClientFor.value, compOff: osgBuyerCompOff });
+    }
+    function _osgWorkJson() { return osgResult.value ? JSON.stringify(_osgWork()) : ''; }
+    function _osgStoreErr(e) {
+      const m = fosWhy(e) || 'no answer';
+      if (/PGRST205|42P01|offer_strategies|Could not find the table|does not exist/i.test(m)) return 'Saved strategies are not switched on yet: the offer_strategies table is missing in Supabase. Ask Marc to run the one-time setup.';
+      return m;
+    }
+    function _osgStoreClear() {
+      clearTimeout(_osgStoreTimer); _osgStoreTimer = null;
+      Object.assign(osgStore, { id: null, from: null, fromWhen: '', fromAgent: '', created: false, tries: 0,
+        buyerId: null, buyerName: '', inputs: null, baseline: '', state: '', msg: '', when: '' });
+    }
+    // Called by Generate when a new strategy arrives.
+    function osgStoreStart() {
+      _osgStoreClear();
+      const b = byrActiveBuyer.value;
+      if (!b || !b.id) { osgStore.state = 'off'; return; }
+      osgStore.id = byrNewOfferId();
+      osgStore.buyerId = b.id;
+      osgStore.buyerName = b.buyer_name || '';
+      osgStore.inputs = _osgInputs();
+      osgStoreSave();
+    }
+    function _osgStoreSchedule() {
+      clearTimeout(_osgStoreTimer);
+      _osgStoreTimer = setTimeout(function () { _osgStoreTimer = null; osgStoreSave(); }, OSG_STORE_WAIT_MS);
+    }
+    // Every change to the work. A reopened strategy turns into a new one here,
+    // on its first real change.
+    watch(_osgWorkJson, function (json) {
+      if (!json || json === osgStore.baseline) return;
+      if (!osgStore.id && osgStore.from && osgStore.state === 'viewing') {
+        osgStore.id = byrNewOfferId();
+        osgStore.created = false; osgStore.tries = 0;
+      }
+      if (!osgStore.id) return;
+      osgStore.state = 'saving'; osgStore.msg = '';
+      _osgStoreSchedule();
+    });
+    async function _osgStoreRequest(method, query, body, prefer) {
+      const res = await fetch(SUPABASE_URL + '/rest/v1/offer_strategies' + (query ? '?' + query : ''), {
+        method: method, headers: { ...supaRest.headers(), 'Prefer': prefer }, body: JSON.stringify(body)
+      });
+      if (!res.ok) {
+        let detail = 'error ' + res.status;
+        try { const e = await res.json(); detail = (e.code ? e.code + ' ' : '') + (e.message || e.hint || detail); } catch (x) {}
+        throw new Error(detail);
+      }
+      return prefer.indexOf('return=representation') >= 0 ? res.json() : null;
+    }
+    // Saves run one after another. What is sent is captured before the first
+    // wait, so a reset or another strategy cannot change it mid-flight.
+    function osgStoreSave() {
+      clearTimeout(_osgStoreTimer); _osgStoreTimer = null;
+      if (!osgStore.id || !osgResult.value) return _osgStoreChain;
+      const snap = { id: osgStore.id, json: _osgWorkJson(), created: osgStore.created, from: osgStore.from,
+        buyerId: osgStore.buyerId, buyerName: osgStore.buyerName, inputs: osgStore.inputs,
+        address: (osgStore.inputs && osgStore.inputs.address) || '' };
+      osgStore.baseline = snap.json;   // what is sent or being sent; a failure is kept in state
+      osgStore.state = 'saving'; osgStore.msg = '';
+      _osgStoreChain = _osgStoreChain.then(async function () {
+        const mine = function () { return osgStore.id === snap.id; };
+        try {
+          let created = snap.created || (mine() && osgStore.created);
+          if (!created) {
+            if (mine()) osgStore.tries++;
+            const retry = mine() && osgStore.tries > 1;
+            await _osgStoreRequest('POST', 'on_conflict=id', {
+              id: snap.id, buyer_id: String(snap.buyerId), buyer_name: snap.buyerName, agent_name: agentName.value || '',
+              address: snap.address, copied_from: snap.from || null, inputs: snap.inputs, work: JSON.parse(snap.json)
+            }, 'resolution=ignore-duplicates,return=minimal');
+            if (mine()) osgStore.created = true;
+            // A retried insert is ignored if the first one landed with its
+            // answer lost, so the newest work goes again as an update.
+            if (retry) await _osgStorePatch(snap);
+          } else {
+            await _osgStorePatch(snap);
+          }
+          if (!mine()) return;
+          osgStore.when = new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+          if (_osgWorkJson() !== snap.json) { _osgStoreSchedule(); return; }
+          osgStore.state = 'saved';
+          osgSavedReload(snap.buyerId);
+        } catch (e) {
+          if (!mine()) { showToast('An Offer Strategy was NOT saved: ' + _osgStoreErr(e), 8000); return; }
+          osgStore.state = 'error';
+          osgStore.msg = _osgStoreErr(e);
+        }
+      });
+      return _osgStoreChain;
+    }
+    async function _osgStorePatch(snap) {
+      const rows = await _osgStoreRequest('PATCH', 'id=eq.' + encodeURIComponent(snap.id) + '&removed_at=is.null',
+        { work: JSON.parse(snap.json) }, 'return=representation');
+      if (!Array.isArray(rows) || rows.length !== 1) throw new Error('the saved strategy was not found (it may have been removed from the buyer)');
+    }
+    // Before the screen is cleared or replaced: send anything not yet saved.
+    function osgStoreFlush() {
+      if (osgStore.id && osgResult.value && (_osgStoreTimer || osgStore.state === 'error' || _osgWorkJson() !== osgStore.baseline)) osgStoreSave();
+    }
+
+    // ── The list on the buyer's page ────────────────────────────────────
+    const osgSavedStore = reactive({});      // buyer id -> { loading, rows, error, unloaded }
+    const osgSavedOpen = ref(false);
+    const osgCmpPick = reactive({});         // row id -> true when ticked for Compare
+    function osgSavedList(b) {
+      if (!b || !b.id) return { loading: false, rows: [], error: '', unloaded: false };
+      return osgSavedStore[b.id] || { loading: false, rows: [], error: '', unloaded: true };
+    }
+    async function osgSavedLoad(b) {
+      if (!b || !b.id) return;
+      const k = b.id;
+      osgSavedStore[k] = { loading: true, rows: (osgSavedStore[k] && osgSavedStore[k].rows) || [], error: '', unloaded: false };
+      try {
+        const rows = await supaRest.select('offer_strategies', 'select=id,buyer_id,address,agent_name,copied_from,created_at,updated_at,inputs,work&buyer_id=eq.' + encodeURIComponent(String(k)) + '&removed_at=is.null&order=created_at.desc');
+        osgSavedStore[k] = { loading: false, rows: rows || [], error: '', unloaded: false };
+      } catch (e) {
+        osgSavedStore[k] = { loading: false, rows: [], error: 'Could not load saved strategies: ' + _osgStoreErr(e), unloaded: false };
+      }
+    }
+    function osgSavedReload(buyerId) {
+      if (osgSavedStore[buyerId] && !osgSavedStore[buyerId].unloaded) osgSavedLoad({ id: buyerId });
+    }
+    function osgSavedToggle() {
+      osgSavedOpen.value = !osgSavedOpen.value;
+      if (osgSavedOpen.value) osgSavedLoad(byrActiveBuyer.value);
+    }
+    function osgFmtWhen(iso) {
+      try { return new Date(iso).toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' }); } catch (e) { return iso || ''; }
+    }
+    function osgSavedWhen(id, b) {
+      const r = osgSavedList(b).rows.find(function (x) { return x.id === id; });
+      return r ? osgFmtWhen(r.created_at) : 'an earlier one';
+    }
+    function osgSavedFig(r, k) { return (r && r.work && r.work.result && r.work.result[k]) || ''; }
+    function osgSavedIn(r, k) { return (r && r.inputs && r.inputs[k]) || ''; }
+    const OSG_CMP_ROWS = [
+      { label: 'Saved', get: function (r) { return osgFmtWhen(r.created_at) + (r.agent_name ? ' · ' + r.agent_name : ''); } },
+      { label: 'List price', get: function (r) { return osgSavedIn(r, 'listPrice'); } },
+      { label: 'Competition', get: function (r) { return osgSavedIn(r, 'competition'); } },
+      { label: 'Financing', get: function (r) { return osgSavedIn(r, 'financing'); } },
+      { label: 'Comps', get: function (r) { const c = osgSavedIn(r, 'comps'); return Array.isArray(c) ? String(c.length) : ''; } },
+      { label: 'Market value', get: function (r) { return osgSavedFig(r, 'marketValue'); }, big: true },
+      { label: 'Winning offer', get: function (r) { return osgSavedFig(r, 'winningOffer'); }, big: true },
+      { label: 'Max value', get: function (r) { return osgSavedFig(r, 'maxValue'); }, big: true },
+      { label: 'Appraisal gap', get: function (r) { return osgSavedFig(r, 'appraisalGap'); } },
+      { label: 'Offer structure', get: function (r) { return osgSavedFig(r, 'offerStructure'); }, text: true },
+      { label: 'Escalation', get: function (r) { return osgSavedFig(r, 'escalationClause'); }, text: true }
+    ];
+    function osgCmpList(b) { return osgSavedList(b).rows.filter(function (r) { return osgCmpPick[r.id]; }); }
+    function osgCmpClear() { Object.keys(osgCmpPick).forEach(function (k) { delete osgCmpPick[k]; }); }
+    async function osgSavedRemove(r, b) {
+      if (!window.confirm('Remove the strategy for ' + (r.address || 'this property') + ' from ' + osgFmtWhen(r.created_at) + ' from this buyer? It is kept in the database, only hidden here.')) return;
+      try {
+        const rows = await _osgStoreRequest('PATCH', 'id=eq.' + encodeURIComponent(r.id) + '&removed_at=is.null',
+          { removed_at: new Date().toISOString() }, 'return=representation');
+        if (!Array.isArray(rows) || rows.length !== 1) throw new Error('the database did not confirm it');
+        delete osgCmpPick[r.id];
+        showGoldToast('Strategy removed from this buyer.');
+      } catch (e) {
+        showToast('The strategy was NOT removed: ' + _osgStoreErr(e), 7000);
+      }
+      osgSavedLoad(b);
+    }
+    // Opens a saved strategy on Step 3 exactly as it was saved. It stays as it
+    // was: the first change saves a new strategy (see the watch above).
+    function osgOpenSaved(r) {
+      const b = byrActiveBuyer.value;
+      if (!r || !b || String(r.buyer_id) !== String(b.id)) return;
+      go('offer-strategy');
+      osgReset();
+      const i = r.inputs || {}, w = r.work || {};
+      osgAddress.value = i.address || ''; osgListPrice.value = i.listPrice || ''; osgDOM.value = i.dom || '';
+      osgPropType.value = i.propType || 'Single Family'; osgSqFt.value = i.sqft || ''; osgBedBath.value = i.bedBath || '';
+      osgYearBuilt.value = i.yearBuilt || ''; osgComps.value = _osgCopy(i.comps || []);
+      osgCompetition.value = i.competition || 'moderate'; osgFinancing.value = i.financing || 'conventional';
+      osgJustin.value = i.justin || 'no'; osgPreUW.value = i.preUW || 'no';
+      osgSellerMotivation.value = i.sellerMotivation || ''; osgSheet.value = _osgCopy(i.sheet || null);
+      osgResult.value = _osgCopy(w.result || null);
+      osgChatMsgs.value = _osgCopy(w.chat || []);
+      if (w.buyerInc) Object.assign(osgBuyerInc, w.buyerInc);
+      if (w.client) Object.assign(osgClient, w.client);
+      osgClientFor.value = w.clientFor || '';
+      Object.keys(w.compOff || {}).forEach(function (k) { if (w.compOff[k]) osgBuyerCompOff[k] = true; });
+      Object.assign(osgStore, { id: null, from: r.id, fromWhen: osgFmtWhen(r.created_at), fromAgent: r.agent_name || '',
+        created: false, tries: 0, buyerId: b.id, buyerName: b.buyer_name || '', inputs: _osgCopy(i),
+        baseline: _osgWorkJson(), state: 'viewing', msg: '', when: '' });
+      osgStep.value = 3;
+      Vue.nextTick(function () { if (osgStore.state === 'viewing') osgStore.baseline = _osgWorkJson(); window.scrollTo(0, 0); });
+    }
+    function osgNewForBuyer() {
+      go('offer-strategy');
+      if (osgResult.value) osgReset();
+    }
+
     // Start Over wipes chat corrections and hand edits. Ask first when there are any.
     function osgStartOver() {
-      if ((osgChatMsgs.value.length || osgEditTouched.value) &&
-          !window.confirm('Start over? Your edits and chat corrections to this strategy will be lost. Download or save the PDF first if you want to keep them.')) return;
+      // A strategy kept on the buyer is not lost by starting over (Nov 9, 2026).
+      const kept = osgStore.state === 'viewing' || (osgStore.id && osgStore.state !== 'error');
+      if (!kept && (osgChatMsgs.value.length || osgEditTouched.value) &&
+          !window.confirm('Start over? This strategy is NOT saved to a buyer, so your edits and chat corrections will be lost. Download the PDF first if you want to keep them.')) return;
       osgReset();
     }
 
     function osgReset() {
+      osgStoreFlush(); _osgStoreClear(); osgCmpClear();
       osgStep.value = 1; osgAddress.value = ''; osgListPrice.value = ''; osgDOM.value = '';
       osgPropType.value = 'Single Family'; osgSqFt.value = ''; osgBedBath.value = ''; osgYearBuilt.value = '';
       osgComps.value = []; osgAddingComp.value = false;
@@ -23573,7 +23867,7 @@ No markdown. Valid JSON only.`;
 
     async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
-      mbBuyerOpen.value = false;
+      mbBuyerOpen.value = false; osgSavedOpen.value = false;
       byrClaimAllTools(buyer.id);   // clears any tool, incl. the Needs Analysis on this card, that belonged to another buyer
       loadByrFiles(buyer);
       view.value = 'buyer-detail';
@@ -25999,6 +26293,18 @@ const CHANGELOG = [
       {
         title: 'Long AI Answers Are Never Cut Short Without Telling You',
         detail: 'An AI answer can also stop because it ran past the length it was allowed. Until now that half answer was used as if it were complete. Now it is refused everywhere in the OS, with the message "the AI\'s answer ran past its length limit". The tools that were given the least room (the Buyer Package letter, budget and neighborhood sections, the flyer version, buyer avatars, voice answers and LinkedIn screenshots) now have enough room to finish. In the Listing Description Writer and other chats that type as they go, a cut-off answer now ends with a message saying it is not complete. The Offer Strategy chat on Step 3 counts the seconds and stops after 3 minutes, the same as Generate, putting your request back in the box.\n\nHow to use: Nothing changes. If you see one of these messages, press the button or send the message again.\n\nBest practice: In the description writer, never copy an answer that ends with that message; ask again for the full one.'
+      }
+    ]
+  }
+  ,
+  {
+    id: 'v2026-11-09',
+    date: 'November 9, 2026',
+    title: 'Every Offer Strategy Is Kept on the Buyer',
+    updates: [
+      {
+        title: 'Every Offer Strategy Is Kept on the Buyer',
+        detail: 'Running several offer strategies for one client used to leave you only Start Over, and the earlier strategy was gone from the OS. Now every strategy you generate from a buyer is saved to that buyer by itself, the moment it finishes, and stays up to date as you edit figures, use the chat, write the client wording or choose what the buyer sees. A line at the top of the strategy says it was saved, or says plainly that it was NOT and offers Try again. Start Over no longer loses anything.\n\nOn the buyer\'s page, Offer Strategies lists every one with its address, date, agent and the market value, winning offer and max value. Open one to read it or download its PDFs again; it stays exactly as it was, and any change you make is saved as a new strategy beside it. Tick two or more to see them side by side. The PDFs you save to the buyer folder now also show under Generated Reports.\n\nHow to use: Open the buyer, then Offer Strategy, and work as usual. To come back to one, open the buyer, press Offer Strategies and pick it.\n\nBest practice: Always start Offer Strategy from the buyer\'s page. A strategy made with no buyer open is not saved, and the screen says so.'
       }
     ]
   }
@@ -28654,6 +28960,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgChatSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
+      osgStore, osgStoreSave, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
       osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,
