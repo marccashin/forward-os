@@ -178,6 +178,7 @@ jobs:
               t "Approve for marketing database test (the repo's SQL in a throwaway Postgres)" node head/ci/description-approval-db-test.js head
               t "Meeting briefs test (open, move to the right card, remove, one per person)" node head/ci/meeting-briefs-test.js head
               t "Meeting briefs database test (the repo's SQL in a throwaway Postgres)" node head/ci/meeting-briefs-db-test.js head
+              t "Offer strategies database test (the repo's SQL in a throwaway Postgres)" node head/ci/offer-strategies-db-test.js head
               t "AI key test (notice when the key is missing, no demo output anywhere)" node head/ci/ai-key-test.js head
               t "Showing tour plan test (route, figures the agent confirms, buyer and agent PDFs, sending)" node head/ci/tour-plan-test.js head
               ;;
@@ -210,6 +211,7 @@ jobs:
               t "Campaign headline test (the Listing Description headline is never cut, no copy is dropped)" node head/ci/campaign-headline-test.js head
               t "Campaign avatars test (revised buyer avatars print as separate cards, nothing cut)" node head/ci/campaign-avatars-test.js head
               t "Campaign editor test (one Seller Prep card, typing and clicking never move the panel)" node head/ci/campaign-editor-test.js head
+              t "Offer strategies test (every strategy kept on the buyer, reopened as a new copy, side by side)" node head/ci/offer-strategies-test.js head
               ;;
           esac
           if [ -n "$failed" ]; then
