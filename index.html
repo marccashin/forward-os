@@ -4151,7 +4151,14 @@ body {
                   <div v-else-if="!osgSavedList(byrActiveBuyer).rows.length" style="font-size:13px;color:#9ca3af;">No strategies saved yet.</div>
                   <div v-for="r in osgSavedList(byrActiveBuyer).rows" :key="r.id" class="mb-row" data-osg-saved-row :data-id="r.id">
                     <label style="display:flex;align-items:flex-start;padding-top:2px;cursor:pointer;" title="Compare"><input type="checkbox" data-osg-cmp v-model="osgCmpPick[r.id]" style="width:18px;height:18px;"></label>
-                    <div class="mb-row-open" data-osg-open @click="osgOpenSaved(r)">
+                    <div v-if="osgSavedIsPdf(r)" data-osg-pdf-entry style="flex:1;min-width:0;padding:4px 0;">
+                      <div class="subfolder-tool-name" style="overflow-wrap:anywhere;">{{ r.address || 'No address' }} <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;background:#f3f4f6;color:#6b7280;border-radius:3px;padding:2px 6px;vertical-align:middle;">FROM PDF</span></div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ osgFmtWhen(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                      <div style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">Market {{ osgSavedFig(r,'marketValue') || '-' }} &middot; Winning offer {{ osgSavedFig(r,'winningOffer') || '-' }} &middot; Max {{ osgSavedFig(r,'maxValue') || '-' }}</div>
+                      <div style="font-size:11px;color:#9ca3af;margin-top:4px;line-height:1.5;">Saved before strategies were kept in the OS: the figures are copied from the PDF. Open the PDF to read it.</div>
+                      <a v-for="p in osgSavedPdfs(r)" :key="p.file_name + p.saved_at" data-osg-pdf-link :href="p.drive_link" target="_blank" rel="noopener" class="mb-open-link" style="display:block;margin-top:4px;text-decoration:none;">{{ osgPdfLabel(p) }} &rsaquo;</a>
+                    </div>
+                    <div v-else class="mb-row-open" data-osg-open @click="osgOpenSaved(r)">
                       <div style="flex:1;min-width:0;">
                         <div class="subfolder-tool-name" style="overflow-wrap:anywhere;">{{ r.address || 'No address' }}</div>
                         <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ osgFmtWhen(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}<span v-if="r.copied_from"> &middot; changed copy of {{ osgSavedWhen(r.copied_from, byrActiveBuyer) }}</span></div>
@@ -23207,9 +23214,16 @@ No markdown. Valid JSON only.`;
       return r ? osgFmtWhen(r.created_at) : 'an earlier one';
     }
     function osgSavedFig(r, k) { return (r && r.work && r.work.result && r.work.result[k]) || ''; }
+    // Entries read from PDFs saved before strategies were kept (imported Nov 9,
+    // 2026; Marc: "get all of the previous strategies there"). Only the PDFs
+    // existed, so the entry holds the three figures copied exactly as printed
+    // and the PDFs themselves. It cannot be opened in the tool or changed.
+    function osgSavedIsPdf(r) { return !!(r && r.work && r.work.source === 'pdf'); }
+    function osgSavedPdfs(r) { return (osgSavedIsPdf(r) && Array.isArray(r.work.pdfs)) ? r.work.pdfs : []; }
+    function osgPdfLabel(p) { return (p.kind === 'agent' ? 'Agent PDF' : 'Buyer PDF') + ', saved ' + osgFmtWhen(p.saved_at); }
     function osgSavedIn(r, k) { return (r && r.inputs && r.inputs[k]) || ''; }
     const OSG_CMP_ROWS = [
-      { label: 'Saved', get: function (r) { return osgFmtWhen(r.created_at) + (r.agent_name ? ' · ' + r.agent_name : ''); } },
+      { label: 'Saved', get: function (r) { return osgFmtWhen(r.created_at) + (r.agent_name ? ' · ' + r.agent_name : '') + (osgSavedIsPdf(r) ? ' (from PDF)' : ''); } },
       { label: 'List price', get: function (r) { return osgSavedIn(r, 'listPrice'); } },
       { label: 'Competition', get: function (r) { return osgSavedIn(r, 'competition'); } },
       { label: 'Financing', get: function (r) { return osgSavedIn(r, 'financing'); } },
@@ -23241,6 +23255,7 @@ No markdown. Valid JSON only.`;
     function osgOpenSaved(r) {
       const b = byrActiveBuyer.value;
       if (!r || !b || String(r.buyer_id) !== String(b.id)) return;
+      if (osgSavedIsPdf(r)) return;   // read from a PDF: open the PDF instead
       go('offer-strategy');
       osgReset();
       const i = r.inputs || {}, w = r.work || {};
@@ -26365,6 +26380,10 @@ const CHANGELOG = [
       {
         title: 'Offer Strategy Says Which Home Is Better',
         detail: 'Offer Strategy used to call a comparable sale superior or inferior, and that wording reached the buyer PDF. Clients read those words backwards. Like the CMA, Offer Strategy now says which home is better: this home or the comparable sale. Client wording that still uses either word is shown in red, and the buyer PDF is not made until it is changed.\n\nHow to use: On a strategy written before today, press Rewrite Client Wording, or change the red words yourself.\n\nBest practice: Read the client wording before you send it. It is written to your buyer.'
+      },
+      {
+        title: 'Earlier Offer Strategies Are on the List Too',
+        detail: 'Strategies saved as PDFs before today are now on each buyer\'s Offer Strategies list, marked From PDF, with their market value, recommended offer and top of range copied from the PDF. Only the PDFs were kept back then, so these open the PDF itself; they cannot be opened in the tool or changed. You can tick them to compare side by side with newer ones.\n\nHow to use: Open the buyer, press Offer Strategies, then press the PDF under an entry.\n\nBest practice: To work on one of these again, start a new strategy for the same address.'
       }
     ]
   }
@@ -29020,7 +29039,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgChatSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
-      osgStore, osgStoreSave, osgClientWordIssues, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
+      osgStore, osgStoreSave, osgClientWordIssues, osgSavedIsPdf, osgSavedPdfs, osgPdfLabel, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
       osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,

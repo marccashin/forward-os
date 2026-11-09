@@ -268,6 +268,32 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(n1 === n0 - 1 && bay.removed_at && DB.includes(bay), 'gone from the list, kept in the table', { n0, n1 });
   ok(!writes.some(w => w.m === 'DELETE'), 'nothing is ever deleted');
 
+  console.log('\nEntries read from PDFs saved before strategies were kept');
+  const PDFROW = { id: 'pdf-0000-4000-8000-000000000001', buyer_id: BJ, buyer_name: 'Julia Long', agent_name: 'Marc Cashin', address: '14207 Manor Rd, Phoenix, MD 21131', copied_from: null,
+    created_at: '2026-11-04T21:39:00Z', updated_at: '2026-11-04T21:39:00Z', removed_at: null,
+    inputs: { source: 'pdf', address: '14207 Manor Rd, Phoenix, MD 21131' },
+    work: { source: 'pdf', result: { marketValue: '$465,000', winningOffer: '$468,000', maxValue: '$482,000' },
+      pdfs: [ { kind: 'buyer', file_name: 'Offer_Recommendation_14207.pdf', drive_link: 'https://drive.google.com/file/d/BUYERPDF/view', saved_at: '2026-11-04T21:39:00Z' },
+              { kind: 'agent', file_name: 'Offer_Strategy_14207.pdf', drive_link: 'https://drive.google.com/file/d/AGENTPDF/view', saved_at: '2026-11-04T21:42:00Z' } ] } };
+  DB.push(PDFROW);
+  await openBuyer(BJ);
+  await page.locator('[data-osg-saved-toggle]').click(); await wait(600);
+  const prow = page.locator('[data-osg-saved-row]', { hasText: '14207 Manor' });
+  const ptext = (await prow.innerText()).replace(/\s+/g, ' ');
+  ok(/FROM PDF/i.test(ptext) && /Market \$465,000/.test(ptext) && /Winning offer \$468,000/.test(ptext) && /Max \$482,000/.test(ptext), 'the entry is marked From PDF and shows the figures exactly', ptext.slice(0, 300));
+  const hrefs = await prow.locator('[data-osg-pdf-link]').evaluateAll(els => els.map(e => [e.getAttribute('href'), e.getAttribute('target'), e.innerText.trim()]));
+  ok(hrefs.length === 2 && hrefs[0][0].endsWith('/BUYERPDF/view') && hrefs[1][0].endsWith('/AGENTPDF/view') && hrefs.every(h => h[1] === '_blank') && /Buyer PDF/i.test(hrefs[0][2]) && /Agent PDF/i.test(hrefs[1][2]), 'it links to each of its PDFs, labelled buyer and agent', hrefs);
+  ok(await prow.locator('[data-osg-open]').count() === 0, 'it has no Open strategy: it cannot be loaded into the tool');
+  const wp = writes.length;
+  const v0 = await st(() => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.osgOpenSaved(s.osgSavedList(s.byrActiveBuyer).rows.find(r => r.work && r.work.source === 'pdf')); return s.view; });
+  await wait(1500);
+  ok(v0 === 'buyer-detail' && writes.length === wp, 'even called directly, opening it changes nothing and sends nothing', { v0, sent: writes.slice(wp) });
+  await prow.locator('[data-osg-cmp]').check();
+  await page.locator('[data-osg-saved-row]', { hasText: '3 Old Sound' }).first().locator('[data-osg-cmp]').check(); await wait(200);
+  const pcmp = await st(() => document.querySelector('[data-osg-compare]').innerText);
+  ok(/\(from PDF\)/.test(pcmp) && /\$465,000/.test(pcmp) && /\$468,000/.test(pcmp) && /\$482,000/.test(pcmp), 'it compares side by side with a kept strategy, marked from PDF', pcmp.slice(0, 400));
+  await st(() => document.querySelector('#app').__vue_app__._instance.setupState.osgCmpClear());
+
   console.log('\nSuperior and inferior: the wording says which home is better (Nov 9, 2026)');
   const genPrompt = prompts.find(t => /Analyze this property and produce an offer strategy/.test(t)) || '';
   ok(/Never call a comp or the subject superior or inferior/.test(genPrompt) && /the comp is better/.test(genPrompt), 'Generate tells the AI to say which home is better', genPrompt.length);
