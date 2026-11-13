@@ -88,6 +88,10 @@ const LOOK = {
   let routeDelay = 0;
 
   function routeAnswer(body) {
+    // Google matched another street address: the backend names it and the box (Nov 13, 2026)
+    const sgi = body.stops.findIndex(s => s.address === '12 Suggest st, Arlington, VA 22201');
+    if (sgi >= 0) return [422, { detail: 'Google could only place 12 Suggest st, Arlington, VA 22201 approximately (it matched 12 Suggest Street, Arlington, VA 22201, USA). Check the spelling, city and ZIP', suggestion: '12 Suggest Street, Arlington, VA 22201', which: { kind: 'home', index: sgi } }];
+    if (body.start_address === '1111 23rd st NW Washington, DC 20037') return [422, { detail: 'Google could only place 1111 23rd st NW Washington, DC 20037 approximately (it matched 1111 23rd St NW, Washington, DC 20037, USA). Check the spelling, city and ZIP', suggestion: '1111 23rd St NW, Washington, DC 20037', which: { kind: 'start' } }];
     if (body.stops.some(s => /Nowhere/.test(s.address))) return [422, { detail: 'Google could only place 9 Nowhere Ln approximately (it matched Virginia, USA). Check the spelling, city and ZIP' }];
     if (body.stops.length > 8) return [422, { detail: 'A tour needs 1 to 8 homes' }];
     let stops;
@@ -225,12 +229,42 @@ const LOOK = {
   await page.click('[data-tp-run]'); await wait(page, 300);
   addrs = await page.locator('[data-tp-home] .tp-addr').allInnerTexts();
   ok(/NOT worked out: Google could only place 9 Nowhere Ln approximately/.test(await page.locator('[data-tp-error]').innerText()) && addrs[0] === C && addrs[3] === '9 Nowhere Ln, Nowhere, VA 22000', 'the reason Google gave is shown and nothing moves', addrs);
+  ok(await page.locator('[data-tp-suggest]').count() === 0, 'Google matched only an area: no address is offered');
   await st(page, 'st.ttRemoveProperty(st.tt.activeTour.properties[3].id)');
   await st(page, 'for (let i = 0; i < 6; i++) { st.tt.newPropAddr = (i + 1) + "00 Extra Rd, Arlington, VA 22201"; st.ttAddProperty(); }');
   const nRoute = B_.route.length;
   await page.click('[data-tp-run]'); await wait(page);
   ok(B_.route.length === nRoute && /up to 8 homes, and this tour has 9\. Remove 1/.test(await page.locator('[data-tp-error]').innerText()), 'a ninth home: nothing is sent and the limit is said');
   await st(page, 'st.tt.activeTour.properties.splice(3); st.ttSaveTours();');
+
+  console.log("Google's suggested address in one press (Marc, Nov 13, 2026)");
+  await st(page, 'st.tt.newPropAddr = "12 Suggest st, Arlington, VA 22201"; st.ttAddProperty();');
+  await page.locator('[data-tp-minutes]').nth(3).selectOption('15');
+  let nS = B_.route.length;
+  await page.click('[data-tp-run]'); await wait(page, 300);
+  const sgText = await page.locator('[data-tp-suggest]').innerText();
+  ok(B_.route.length === nS + 1 && /Home 4/.test(sgText) && /Use 12 Suggest Street, Arlington, VA 22201/.test(sgText), 'a refused home shows Google\'s address, for that home, as a button', sgText);
+  await page.click('[data-tp-usesuggest]'); await wait(page, 300);
+  let homesNow = await st(page, 'return st.tt.activeTour.properties.map(h => h.address)');
+  ok(B_.route.length === nS + 2 && B_.route[nS + 1].stops.some(x => x.address === '12 Suggest Street, Arlington, VA 22201') && !B_.route[nS + 1].stops.some(x => /Suggest st,/.test(x.address))
+    && homesNow.includes('12 Suggest Street, Arlington, VA 22201') && homesNow.filter(a => [A, B, C].includes(a)).length === 3
+    && await page.locator('[data-tp-error]').count() === 0 && await page.locator('[data-tp-suggest]').count() === 0,
+    'one press puts it in that home only, works the route out again, and it goes through', homesNow);
+  await st(page, 'st.ttRemoveProperty(st.tt.activeTour.properties.find(h => /Suggest/.test(h.address)).id)');
+  await page.fill('[data-tp-startaddr]', '1111 23rd st NW Washington, DC 20037'); await page.press('[data-tp-startaddr]', 'Tab');
+  nS = B_.route.length;
+  await page.click('[data-tp-run]'); await wait(page, 300);
+  ok(/Starting from/.test(await page.locator('[data-tp-suggest]').innerText()), 'a refused starting point is offered for Starting from');
+  await page.fill('[data-tp-startaddr]', '1 Elsewhere Rd, Arlington, VA 22201'); await page.press('[data-tp-startaddr]', 'Tab');
+  await page.click('[data-tp-usesuggest]').catch(() => {}); await wait(page, 200);
+  ok(B_.route.length === nS + 1 && await page.inputValue('[data-tp-startaddr]') === '1 Elsewhere Rd, Arlington, VA 22201', 'a box changed after the refusal is never overwritten by the suggestion');
+  await page.fill('[data-tp-startaddr]', '1111 23rd st NW Washington, DC 20037'); await page.press('[data-tp-startaddr]', 'Tab');
+  await page.click('[data-tp-run]'); await wait(page, 300);
+  nS = B_.route.length;
+  await page.click('[data-tp-usesuggest]'); await wait(page, 300);
+  ok(B_.route.length === nS + 1 && B_.route[nS].start_address === '1111 23rd St NW, Washington, DC 20037' && await page.inputValue('[data-tp-startaddr]') === '1111 23rd St NW, Washington, DC 20037' && await page.locator('[data-tp-error]').count() === 0, 'one press fills Starting from with Google\'s address and the route goes through');
+  await page.fill('[data-tp-startaddr]', '1 Office Way, Arlington, VA 22201'); await page.press('[data-tp-startaddr]', 'Tab');
+  await page.click('[data-tp-run]'); await wait(page, 300);
 
   console.log('Times confirmed');
   await page.click('[data-tp-mode="confirmed"]'); await wait(page);
