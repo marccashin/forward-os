@@ -82,6 +82,18 @@
 .dp-howto-btn{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border-radius:6px;background:var(--navy,#0A2342);color:#fff !important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-decoration:none}
 .dp-howto-btn:hover{background:#13305a}
 .dp-howto-btn:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
+.fos-guides{margin:0 0 20px}
+.fos-guides-count{font-family:'Montserrat',sans-serif;font-size:11px;color:#6b6862}
+a.fos-guide-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--cream-mid);cursor:pointer;transition:background 0.12s;text-decoration:none;color:inherit;min-height:44px}
+a.fos-guide-row:hover{background:var(--cream,#F7F4EF)}
+.fos-guide-badge{width:38px;height:38px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--gold,#C8A96E);background:var(--navy,#0A2342)}
+.fos-guide-info{flex:1;min-width:0}
+a.fos-guide-row:last-child{border-bottom:none}
+a.fos-guide-row:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:-3px}
+.fos-guide-title{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:var(--navy,#0A2342)}
+.fos-guide-sub{font-size:12.5px;line-height:1.45;color:#3f3d39;margin-top:3px}
+.fos-guide-date{font-size:11px;color:#6b6862;margin-top:4px}
+.fos-guide-open{flex:0 0 auto;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 14px;border-radius:2px;border:1px solid var(--navy,#0A2342);color:var(--navy,#0A2342)}
 .dp-agent-note{margin:4px 0 6px}
 .dp-otc-note{font-size:12px;line-height:1.45;color:#5c5a55;background:#f7f4ee;border-left:3px solid var(--gold,#C8A96E);padding:8px 10px;margin:10px 0 4px}
 .dp-auto-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0A2342;padding-top:12px}
@@ -2618,6 +2630,24 @@ body {
                 <button class="vbtn vbtn-primary" @click="go('buyer-package')" style="font-size:8px;">+ New Buyer</button>
               </div>
             </div>
+          </div>
+
+          <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
+               one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login. -->
+          <div class="panel fos-guides" data-guides>
+            <div class="panel-header">
+              <div class="panel-title">Guides &amp; SOPs</div>
+              <div class="fos-guides-count">{{ fosGuides.length }} {{ fosGuides.length === 1 ? 'guide' : 'guides' }}</div>
+            </div>
+            <a v-for="g in fosGuides" :key="g.id" class="fos-guide-row" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" @click="fosGuideClick(g, $event)">
+              <div class="fos-guide-badge">PDF</div>
+              <div class="fos-guide-info">
+                <div class="fos-guide-title">{{ g.title }}</div>
+                <div class="fos-guide-sub">{{ g.sub }}</div>
+                <div class="fos-guide-date">{{ g.dated }}</div>
+              </div>
+              <span class="fos-guide-open">Open</span>
+            </a>
           </div>
 
           <!-- Admin Tools Row -->
@@ -9682,6 +9712,21 @@ const fosListingFiles = {
 // every 15 minutes into otc_properties / otc_tasks) and what was set off automatically.
 // "Happens automatically" for each stage, word for word from FORWARD_If_This_Then_That.pdf
 // (October 2026). Change the guide first, then this.
+// Guides & SOPs on the Dashboard (Marc, Nov 13, 2026: the If This, Then That guide
+// moves to the Dashboard, in a folder that will also hold turnaround times, internal
+// response timelines and other SOPs and memos). One entry per PDF in guides/. To add
+// a guide: put the PDF in guides/ and add one entry here; nothing else changes.
+// The dated line is copied from the PDF itself, never guessed.
+const FOS_GUIDES = [
+  {
+    id: 'ittt',
+    title: 'If This, Then That',
+    sub: 'Every Follow Up Boss stage: what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card.',
+    url: '/guides/FORWARD_If_This_Then_That.pdf',
+    file: 'FORWARD_If_This_Then_That.pdf',
+    dated: 'October 2026'
+  }
+];
 const DP_AUTOMATIONS = {
   "Listing Agreement Signed": [
     "Email to Concierge and Transactions: “Order Sign Install”. Concierge orders it.",
@@ -25114,6 +25159,15 @@ No markdown. Valid JSON only.`;
       ev.preventDefault();
       pdfViewOpen('/guides/FORWARD_If_This_Then_That.pdf', 'How it works: If This, Then That', 'FORWARD_If_This_Then_That.pdf');
     }
+    // Guides & SOPs on the Dashboard. A computer opens the PDF in a new tab (the link
+    // itself); a phone opens the in-app viewer, because a PDF link would replace the
+    // home-screen app with no way back.
+    const fosGuides = FOS_GUIDES;
+    function fosGuideClick(g, ev) {
+      if (!fosIsPhone()) return;
+      ev.preventDefault();
+      pdfViewOpen(g.url, g.title, g.file);
+    }
     // Meet Your Advisor for buyers. A card, not a link, so the click decides: no guide
     // for this login = a plain message; phone = the in-app viewer (a PDF link would
     // replace the home-screen app); computer = a named download of the agent's own file.
@@ -26386,8 +26440,19 @@ const CHANGELOG = [
         detail: 'Strategies saved as PDFs before today are now on each buyer\'s Offer Strategies list, marked From PDF, with their market value, recommended offer and top of range copied from the PDF. Only the PDFs were kept back then, so these open the PDF itself; they cannot be opened in the tool or changed. You can tick them to compare side by side with newer ones.\n\nHow to use: Open the buyer, press Offer Strategies, then press the PDF under an entry.\n\nBest practice: To work on one of these again, start a new strategy for the same address.'
       }
     ]
+  },
+  {
+    id: 'v2026-11-13',
+    date: 'November 13, 2026',
+    title: 'Guides and SOPs on Your Dashboard',
+    summary: 'The If This, Then That guide is now on your Dashboard, in a new Guides and SOPs folder.',
+    updates: [
+      {
+        title: 'Guides and SOPs on Your Dashboard',
+        detail: 'Your Dashboard has a new Guides and SOPs panel, under Active Listings and Buyer Pipeline. It is where every FORWARD guide, SOP and internal memo will live, so you never have to open a listing to find one. The first guide in it is If This, Then That: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card. More guides are added here as they are finished.\n\nThe How it works card inside a listing\'s Deal Progress tab still opens the same guide.\n\nHow to use: Open the Dashboard and press a guide in Guides and SOPs. On a computer it opens in a new tab. On a phone it opens inside the OS, with Back and Share.\n\nBest practice: Check Guides and SOPs before you ask the team how something works. If a guide is wrong or missing something, tell Marc so it gets fixed for everyone.'
+      }
+    ]
   }
-
 
 ];
 
@@ -28976,7 +29041,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldBound, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, fosGuides, fosGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
