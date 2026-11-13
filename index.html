@@ -82,6 +82,18 @@
 .dp-howto-btn{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border-radius:6px;background:var(--navy,#0A2342);color:#fff !important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-decoration:none}
 .dp-howto-btn:hover{background:#13305a}
 .dp-howto-btn:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
+.fos-guides{margin:0 0 20px}
+.fos-guides-count{font-family:'Montserrat',sans-serif;font-size:11px;color:#6b6862}
+a.fos-guide-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--cream-mid);cursor:pointer;transition:background 0.12s;text-decoration:none;color:inherit;min-height:44px}
+a.fos-guide-row:hover{background:var(--cream,#F7F4EF)}
+.fos-guide-badge{width:38px;height:38px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--gold,#C8A96E);background:var(--navy,#0A2342)}
+.fos-guide-info{flex:1;min-width:0}
+a.fos-guide-row:last-child{border-bottom:none}
+a.fos-guide-row:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:-3px}
+.fos-guide-title{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:var(--navy,#0A2342)}
+.fos-guide-sub{font-size:12.5px;line-height:1.45;color:#3f3d39;margin-top:3px}
+.fos-guide-date{font-size:11px;color:#6b6862;margin-top:4px}
+.fos-guide-open{flex:0 0 auto;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 14px;border-radius:2px;border:1px solid var(--navy,#0A2342);color:var(--navy,#0A2342)}
 .dp-agent-note{margin:4px 0 6px}
 .dp-otc-note{font-size:12px;line-height:1.45;color:#5c5a55;background:#f7f4ee;border-left:3px solid var(--gold,#C8A96E);padding:8px 10px;margin:10px 0 4px}
 .dp-auto-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0A2342;padding-top:12px}
@@ -2620,6 +2632,24 @@ body {
             </div>
           </div>
 
+          <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
+               one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login. -->
+          <div class="panel fos-guides" data-guides>
+            <div class="panel-header">
+              <div class="panel-title">Guides &amp; SOPs</div>
+              <div class="fos-guides-count">{{ fosGuides.length }} {{ fosGuides.length === 1 ? 'guide' : 'guides' }}</div>
+            </div>
+            <a v-for="g in fosGuides" :key="g.id" class="fos-guide-row" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" @click="fosGuideClick(g, $event)">
+              <div class="fos-guide-badge">PDF</div>
+              <div class="fos-guide-info">
+                <div class="fos-guide-title">{{ g.title }}</div>
+                <div class="fos-guide-sub">{{ g.sub }}</div>
+                <div class="fos-guide-date">{{ g.dated }}</div>
+              </div>
+              <span class="fos-guide-open">Open</span>
+            </a>
+          </div>
+
           <!-- Admin Tools Row -->
           <div v-if="isAdmin || agentName === 'Marc Cashin'" class="admin-row">
 
@@ -4151,7 +4181,14 @@ body {
                   <div v-else-if="!osgSavedList(byrActiveBuyer).rows.length" style="font-size:13px;color:#9ca3af;">No strategies saved yet.</div>
                   <div v-for="r in osgSavedList(byrActiveBuyer).rows" :key="r.id" class="mb-row" data-osg-saved-row :data-id="r.id">
                     <label style="display:flex;align-items:flex-start;padding-top:2px;cursor:pointer;" title="Compare"><input type="checkbox" data-osg-cmp v-model="osgCmpPick[r.id]" style="width:18px;height:18px;"></label>
-                    <div class="mb-row-open" data-osg-open @click="osgOpenSaved(r)">
+                    <div v-if="osgSavedIsPdf(r)" data-osg-pdf-entry style="flex:1;min-width:0;padding:4px 0;">
+                      <div class="subfolder-tool-name" style="overflow-wrap:anywhere;">{{ r.address || 'No address' }} <span style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:.1em;background:#f3f4f6;color:#6b7280;border-radius:3px;padding:2px 6px;vertical-align:middle;">FROM PDF</span></div>
+                      <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ osgFmtWhen(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}</div>
+                      <div style="font-size:12px;color:#374151;margin-top:4px;line-height:1.5;">Market {{ osgSavedFig(r,'marketValue') || '-' }} &middot; Winning offer {{ osgSavedFig(r,'winningOffer') || '-' }} &middot; Max {{ osgSavedFig(r,'maxValue') || '-' }}</div>
+                      <div style="font-size:11px;color:#9ca3af;margin-top:4px;line-height:1.5;">Saved before strategies were kept in the OS: the figures are copied from the PDF. Open the PDF to read it.</div>
+                      <a v-for="p in osgSavedPdfs(r)" :key="p.file_name + p.saved_at" data-osg-pdf-link :href="p.drive_link" target="_blank" rel="noopener" class="mb-open-link" style="display:block;margin-top:4px;text-decoration:none;">{{ osgPdfLabel(p) }} &rsaquo;</a>
+                    </div>
+                    <div v-else class="mb-row-open" data-osg-open @click="osgOpenSaved(r)">
                       <div style="flex:1;min-width:0;">
                         <div class="subfolder-tool-name" style="overflow-wrap:anywhere;">{{ r.address || 'No address' }}</div>
                         <div style="font-size:12px;color:#9ca3af;margin-top:2px;">{{ osgFmtWhen(r.created_at) }}{{ r.agent_name ? ' \u00b7 ' + r.agent_name : '' }}<span v-if="r.copied_from"> &middot; changed copy of {{ osgSavedWhen(r.copied_from, byrActiveBuyer) }}</span></div>
@@ -5199,6 +5236,7 @@ body {
                     <div v-for="f in osgClientShown" :key="f.k" style="margin-top:10px;">
                       <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.04em;color:#6b7280;margin-bottom:4px;">{{ f.label.toUpperCase() }}</label>
                       <textarea v-model="osgClient[f.k]" rows="5" style="width:100%;box-sizing:border-box;font-family:'Cormorant Garamond',serif;font-size:13px;line-height:1.6;padding:8px 10px;border:1.5px solid #d1d5db;border-radius:8px;resize:vertical;"></textarea>
+                      <div v-for="w in osgClientWordIssues.filter(x => x.k === f.k)" :key="w.k" data-osg-client-issue style="font-size:12px;color:#dc2626;margin-top:4px;line-height:1.5;">Says "{{ w.word }}". Clients read that backwards: say which home is better (this home or the comparable sale). It must be changed before the buyer PDF.</div>
                     </div>
                   </template>
                 </div>
@@ -9674,6 +9712,21 @@ const fosListingFiles = {
 // every 15 minutes into otc_properties / otc_tasks) and what was set off automatically.
 // "Happens automatically" for each stage, word for word from FORWARD_If_This_Then_That.pdf
 // (October 2026). Change the guide first, then this.
+// Guides & SOPs on the Dashboard (Marc, Nov 13, 2026: the If This, Then That guide
+// moves to the Dashboard, in a folder that will also hold turnaround times, internal
+// response timelines and other SOPs and memos). One entry per PDF in guides/. To add
+// a guide: put the PDF in guides/ and add one entry here; nothing else changes.
+// The dated line is copied from the PDF itself, never guessed.
+const FOS_GUIDES = [
+  {
+    id: 'ittt',
+    title: 'If This, Then That',
+    sub: 'Every Follow Up Boss stage: what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card.',
+    url: '/guides/FORWARD_If_This_Then_That.pdf',
+    file: 'FORWARD_If_This_Then_That.pdf',
+    dated: 'October 2026'
+  }
+];
 const DP_AUTOMATIONS = {
   "Listing Agreement Signed": [
     "Email to Concierge and Transactions: “Order Sign Install”. Concierge orders it.",
@@ -22413,7 +22466,8 @@ No markdown. No preamble. Valid JSON only.`;
       '- If there are no closed sales, say so plainly at the start of valuationReasoning and state that the figures are low-confidence.\n' +
       '- Compare like with like. Each comp lists its features (beds and baths, finished space below grade, basement, year built and renovated, lot, garage, waterfront, frontage and dock). For a comp from an MLS sheet the sqft is above-grade finished area. Where the subject and a comp differ on a feature, say which way it moves that comp\'s indication of value and why.\n' +
       '- A waterfront subject is valued from waterfront closed sales first; a sale that is not waterfront is weaker evidence for it, and the reverse. Never treat a comp as the closest evidence only because it is on the same street.\n' +
-      '- Everything you know about the subject and the comps is in this request. If a fact is not listed, or is listed as not given, say it was not in the information you were given. Never say the MLS sheet or the listing does not mention it.\n';
+      '- Everything you know about the subject and the comps is in this request. If a fact is not listed, or is listed as not given, say it was not in the information you were given. Never say the MLS sheet or the listing does not mention it.\n' +
+      '- Never call a comp or the subject superior or inferior. Say which home is better on that feature: "the subject is better" (its value indication moves up) or "the comp is better" (it moves down). The client reads superior and inferior backwards.\n';
 
     // Pull the JSON object out of a model reply. A reply with a sentence
     // before or after the object, or wrapped in a code fence, is still usable;
@@ -22781,6 +22835,7 @@ No markdown. Valid JSON only.`;
         '- You may explain the negotiating plan in plain terms, such as leaving room to respond to a counteroffer. Do not speculate about the seller\'s motives, finances or state of mind. Where the notes reason from the seller\'s behavior, state the market fact instead, for example "The home has been listed for 208 days without a price change."\n' +
         '- Never use an em dash. Use a comma, a period or parentheses. Number ranges such as $310 to $312 per square foot are fine.\n' +
         '- Never use these words: stunning, luxurious, impeccable, nestled, boasts, charming.\n' +
+        '- Never use the words superior or inferior. Say which home is better: "this home is better" or "the comparable sale is better", and which way that moves its indication of value. Where the source says a comp is superior, write that the comparable sale is better; where it says inferior, write that this home is better.\n' +
         '- Keep each section about as long as the source, or shorter.';
       try {
         let out = null;
@@ -22790,6 +22845,7 @@ No markdown. Valid JSON only.`;
             const o = osgParseJson(raw);
             if (!o || typeof o !== 'object' || Array.isArray(o)) throw new Error('the reply was not in the expected format');
             keys.forEach(k => { if (typeof o[k] !== 'string' || !o[k].trim()) throw new Error('the reply left out ' + OSG_CLIENT_LABELS[k]); });
+            keys.forEach(k => { const w = _osgBetterWord(o[k]); if (w) throw new Error('the wording said "' + w + '" (it must say which home is better)'); });
             out = o;
           } catch (ve) { if (_try === OSG_AI_TRIES - 1 || !_osgRetryable(ve)) throw ve; }
         }
@@ -22806,6 +22862,17 @@ No markdown. Valid JSON only.`;
 
     // Why the buyer PDF cannot be built yet, or '' when it can. Agent notes
     // are never printed in place of client wording.
+    // Clients read superior and inferior backwards (Marc, Oct 4, 2026, for the
+    // CMA; same rule for Offer Strategy, Nov 9, 2026). The wording says which
+    // home is better. Whole words only, so "superiority" style words in a
+    // street name are not caught by accident.
+    const OSG_BETTER_RX = /\b(superior|inferior)\b/i;
+    function _osgBetterWord(t) { const m = String(t || '').match(OSG_BETTER_RX); return m ? m[1] : ''; }
+    const osgClientWordIssues = computed(() => {
+      if (!osgClientFor.value) return [];
+      return Object.keys(OSG_CLIENT_SRC).filter(k => _osgBetterWord(osgClient[k]))
+        .map(k => ({ k: k, label: OSG_CLIENT_LABELS[k], word: _osgBetterWord(osgClient[k]) }));
+    });
     function osgClientBlock() {
       const r = osgResult.value, inc = osgBuyerInc; if (!r) return '';
       const need = [];
@@ -22818,6 +22885,8 @@ No markdown. Valid JSON only.`;
       if (osgClientStale.value) return 'The strategy changed after the client wording was written. Rewrite the client wording before sending.';
       const blank = need.filter(k => _osgEmpty(osgClient[k]));
       if (blank.length) return OSG_CLIENT_LABELS[blank[0]] + ' is ticked but its client wording is empty. Rewrite it, or untick the section.';
+      const worded = need.filter(k => _osgBetterWord(osgClient[k]));
+      if (worded.length) return OSG_CLIENT_LABELS[worded[0]] + ' says "' + _osgBetterWord(osgClient[worded[0]]) + '". Clients read that backwards: change it to say which home is better, or press Rewrite Client Wording.';
       return '';
     }
 
@@ -23190,9 +23259,16 @@ No markdown. Valid JSON only.`;
       return r ? osgFmtWhen(r.created_at) : 'an earlier one';
     }
     function osgSavedFig(r, k) { return (r && r.work && r.work.result && r.work.result[k]) || ''; }
+    // Entries read from PDFs saved before strategies were kept (imported Nov 9,
+    // 2026; Marc: "get all of the previous strategies there"). Only the PDFs
+    // existed, so the entry holds the three figures copied exactly as printed
+    // and the PDFs themselves. It cannot be opened in the tool or changed.
+    function osgSavedIsPdf(r) { return !!(r && r.work && r.work.source === 'pdf'); }
+    function osgSavedPdfs(r) { return (osgSavedIsPdf(r) && Array.isArray(r.work.pdfs)) ? r.work.pdfs : []; }
+    function osgPdfLabel(p) { return (p.kind === 'agent' ? 'Agent PDF' : 'Buyer PDF') + ', saved ' + osgFmtWhen(p.saved_at); }
     function osgSavedIn(r, k) { return (r && r.inputs && r.inputs[k]) || ''; }
     const OSG_CMP_ROWS = [
-      { label: 'Saved', get: function (r) { return osgFmtWhen(r.created_at) + (r.agent_name ? ' · ' + r.agent_name : ''); } },
+      { label: 'Saved', get: function (r) { return osgFmtWhen(r.created_at) + (r.agent_name ? ' · ' + r.agent_name : '') + (osgSavedIsPdf(r) ? ' (from PDF)' : ''); } },
       { label: 'List price', get: function (r) { return osgSavedIn(r, 'listPrice'); } },
       { label: 'Competition', get: function (r) { return osgSavedIn(r, 'competition'); } },
       { label: 'Financing', get: function (r) { return osgSavedIn(r, 'financing'); } },
@@ -23224,6 +23300,7 @@ No markdown. Valid JSON only.`;
     function osgOpenSaved(r) {
       const b = byrActiveBuyer.value;
       if (!r || !b || String(r.buyer_id) !== String(b.id)) return;
+      if (osgSavedIsPdf(r)) return;   // read from a PDF: open the PDF instead
       go('offer-strategy');
       osgReset();
       const i = r.inputs || {}, w = r.work || {};
@@ -25082,6 +25159,15 @@ No markdown. Valid JSON only.`;
       ev.preventDefault();
       pdfViewOpen('/guides/FORWARD_If_This_Then_That.pdf', 'How it works: If This, Then That', 'FORWARD_If_This_Then_That.pdf');
     }
+    // Guides & SOPs on the Dashboard. A computer opens the PDF in a new tab (the link
+    // itself); a phone opens the in-app viewer, because a PDF link would replace the
+    // home-screen app with no way back.
+    const fosGuides = FOS_GUIDES;
+    function fosGuideClick(g, ev) {
+      if (!fosIsPhone()) return;
+      ev.preventDefault();
+      pdfViewOpen(g.url, g.title, g.file);
+    }
     // Meet Your Advisor for buyers. A card, not a link, so the click decides: no guide
     // for this login = a plain message; phone = the in-app viewer (a PDF link would
     // replace the home-screen app); computer = a named download of the agent's own file.
@@ -26344,10 +26430,29 @@ const CHANGELOG = [
       {
         title: 'Every Offer Strategy Is Kept on the Buyer',
         detail: 'Running several offer strategies for one client used to leave you only Start Over, and the earlier strategy was gone from the OS. Now every strategy you generate from a buyer is saved to that buyer by itself, the moment it finishes, and stays up to date as you edit figures, use the chat, write the client wording or choose what the buyer sees. A line at the top of the strategy says it was saved, or says plainly that it was NOT and offers Try again. Start Over no longer loses anything.\n\nOn the buyer\'s page, Offer Strategies lists every one with its address, date, agent and the market value, winning offer and max value. Open one to read it or download its PDFs again; it stays exactly as it was, and any change you make is saved as a new strategy beside it. Tick two or more to see them side by side. The PDFs you save to the buyer folder now also show under Generated Reports.\n\nHow to use: Open the buyer, then Offer Strategy, and work as usual. To come back to one, open the buyer, press Offer Strategies and pick it.\n\nBest practice: Always start Offer Strategy from the buyer\'s page. A strategy made with no buyer open is not saved, and the screen says so.'
+      },
+      {
+        title: 'Offer Strategy Says Which Home Is Better',
+        detail: 'Offer Strategy used to call a comparable sale superior or inferior, and that wording reached the buyer PDF. Clients read those words backwards. Like the CMA, Offer Strategy now says which home is better: this home or the comparable sale. Client wording that still uses either word is shown in red, and the buyer PDF is not made until it is changed.\n\nHow to use: On a strategy written before today, press Rewrite Client Wording, or change the red words yourself.\n\nBest practice: Read the client wording before you send it. It is written to your buyer.'
+      },
+      {
+        title: 'Earlier Offer Strategies Are on the List Too',
+        detail: 'Strategies saved as PDFs before today are now on each buyer\'s Offer Strategies list, marked From PDF, with their market value, recommended offer and top of range copied from the PDF. Only the PDFs were kept back then, so these open the PDF itself; they cannot be opened in the tool or changed. You can tick them to compare side by side with newer ones.\n\nHow to use: Open the buyer, press Offer Strategies, then press the PDF under an entry.\n\nBest practice: To work on one of these again, start a new strategy for the same address.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-11-13',
+    date: 'November 13, 2026',
+    title: 'Guides and SOPs on Your Dashboard',
+    summary: 'The If This, Then That guide is now on your Dashboard, in a new Guides and SOPs folder.',
+    updates: [
+      {
+        title: 'Guides and SOPs on Your Dashboard',
+        detail: 'Your Dashboard has a new Guides and SOPs panel, under Active Listings and Buyer Pipeline. It is where every FORWARD guide, SOP and internal memo will live, so you never have to open a listing to find one. The first guide in it is If This, Then That: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card. More guides are added here as they are finished.\n\nThe How it works card inside a listing\'s Deal Progress tab still opens the same guide.\n\nHow to use: Open the Dashboard and press a guide in Guides and SOPs. On a computer it opens in a new tab. On a phone it opens inside the OS, with Back and Share.\n\nBest practice: Check Guides and SOPs before you ask the team how something works. If a guide is wrong or missing something, tell Marc so it gets fixed for everyone.'
       }
     ]
   }
-
 
 ];
 
@@ -28936,7 +29041,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Listing Desc (Chat)
       ld, ldMessages, ldInput, ldBound, ldLoading, ldOutput, ldCharCount, LD_CHAR_LIMIT, ldStarted, ldSaving, ldMockMode, ldConvPropId, ldBegin, ldResume, ldOpenWriter, ldStartFresh, ldHasSaved, ldResumeNote, ldSend, refine, ldGetPDFBase64, ldVoiceListening, ldVoiceLiveText, ldVoiceSend, ldSaveToProperty, ldSavedToProperty,
       // Listing Package
-      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, pdfView, pdfViewClose, pdfViewShare,
+      lpActivePanel, lpOpen, lpres, lpresHas, lpresPagesLine, lpresUpdatedLine, lpresDownload, lpresRefresh, sellerGuideUrl, sellerGuideFileName, sellerGuideClick, buyerGuideUrl, buyerGuideFileName, buyerGuideClick, dpGuideClick, fosGuides, fosGuideClick, pdfView, pdfViewClose, pdfViewShare,
       checklistSections, checklistProgress,
       sellerPrepType, sellerPrepSections, sellerPrepRemovedCount, sellerPrepRestore, sellerPrepLoadNote,
       sellerPrepAddingSi, sellerPrepNewLabel, sellerPrepAddItem,
@@ -28999,7 +29104,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       osgCompetition, osgFinancing, osgJustin, osgPreUW, osgSellerMotivation,
       osgAnalyzing, osgAnalyzeError, osgAnalyzeSecs, osgChatSecs, osgResult, osgSaving, osgSaved,
       osgAnalyze, osgDownloadPDF, osgSavePDF, osgReset,
-      osgStore, osgStoreSave, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
+      osgStore, osgStoreSave, osgClientWordIssues, osgSavedIsPdf, osgSavedPdfs, osgPdfLabel, osgSavedList, osgSavedLoad, osgSavedOpen, osgSavedToggle, osgSavedRemove, osgSavedWhen, osgSavedFig, osgSavedIn, osgFmtWhen, osgCmpPick, osgCmpList, osgCmpClear, OSG_CMP_ROWS, osgOpenSaved, osgNewForBuyer,
       osgChatMsgs, osgChatInput, osgChatBusy, osgChatError, osgPrevResult, osgEditKey,
       osgBuyerInc, osgBuyerCompOff, osgSaveMsg, osgSaveError,
       osgClient, osgClientFor, osgClientBusy, osgClientError, osgClientShown, osgClientStale, osgClientWrite,
