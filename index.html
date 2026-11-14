@@ -5659,6 +5659,8 @@ body {
                   </button>
                   <div v-if="ttRoute.busy" class="tp-working" data-tp-working="route"><div class="tp-bar"><i></i></div><span>Working out the drives with traffic&hellip; {{ ttSecs(ttRoute.started) }}s. This usually takes 5 to 15 seconds.</span></div>
                   <div v-if="ttRoute.error" data-tp-error class="tp-bad">{{ ttRoute.error }}</div>
+                  <div v-if="ttRoute.error && ttRoute.suggest && ttRoute.suggest.tourId===tt.activeTour.id && !ttRoute.busy" data-tp-suggest class="tp-warn" style="margin-top:6px;">Google suggests this address for {{ ttSuggestLabel(ttRoute.suggest) }}:
+                    <button type="button" class="tp-link" data-tp-usesuggest @click="ttUseSuggestion()">Use {{ ttRoute.suggest.address }}</button></div>
                   <div v-else-if="ttPlanStale(tt.activeTour)" data-tp-stale class="tp-warn">The tour changed since the route was worked out. Press {{ tt.activeTour.plan.mode==='plan' ? 'Find the best order' : 'Check the times' }} again.</div>
                   <div v-if="ttRouteFor(tt.activeTour)" style="font-size:11px;color:#6b7280;margin-top:6px;" data-tp-routeinfo>
                     {{ ttRouteFor(tt.activeTour).mode==='plan' ? (ttRouteFor(tt.activeTour).booking==='standard' ? 'Suggested bookings on the FORWARD standard, each on the 5 minutes. Use them to request showings.' : 'Suggested times, each rounded up to 5 minutes, with 5 minutes between showings. Use them to request showings.') : 'Your confirmed times, in time order.' }}
@@ -20399,7 +20401,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     const TT_PLACES_RX = /\b(?:schools?|perfect for|ideal for)\b/i;
     // FORWARD's office, for the Office pick on Starting from and Ending at. Empty = no Office pick.
     const TT_OFFICE_ADDRESS = '';
-    const ttRoute = reactive({ busy: false, error: '', maps: {}, started: 0 });
+    const ttRoute = reactive({ busy: false, error: '', maps: {}, started: 0, suggest: null });
     const ttLook = reactive({ busy: {}, error: {}, figErr: {}, started: {} });
     const ttCmp = reactive({ busy: false, error: '', started: 0 });
     // A clock for the "still working" panels: ticks once a second only while something runs.
@@ -20561,12 +20563,50 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const res = await fetch(RAILWAY_URL + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       let j = null;
       try { j = await res.clone().json(); } catch (e) { j = null; }
-      if (!res.ok) throw new Error((j && typeof j.detail === 'string' && j.detail) || ('the service answered ' + res.status));
+      if (!res.ok) {
+        const err = new Error((j && typeof j.detail === 'string' && j.detail) || ('the service answered ' + res.status));
+        // The route's address refusal also names Google's street address and which box it
+        // belongs to (forward-os-backend tour_plan.AddressNotPlaced), for the one-press fix.
+        if (j && typeof j.suggestion === 'string' && j.suggestion.trim() && j.which && typeof j.which === 'object') {
+          err.suggestion = j.suggestion.trim(); err.which = j.which;
+        }
+        throw err;
+      }
       if (!j) throw new Error('the service sent no readable answer');
       return j;
     }
+    // Google's suggested address after a refused route (Marc, Nov 13, 2026: "If google
+    // recommends an address, let me click it so that it adds and works"). Kept with the
+    // tour, the box it belongs to and the exact address that was sent, so a press only
+    // ever replaces that same text in that same box, then works the route out again.
+    function ttSuggestLabel(sg) {
+      if (!sg) return '';
+      if (sg.kind === 'start') return 'Starting from';
+      if (sg.kind === 'end') return 'Ending at';
+      return 'Home ' + (sg.index + 1);
+    }
+    function ttUseSuggestion() {
+      const sg = ttRoute.suggest, tour = tt.activeTour;
+      if (!sg || !tour || ttRoute.busy || tour.id !== sg.tourId) return;
+      ttEnsurePlan(tour);
+      const p = tour.plan;
+      if (sg.kind === 'start' || sg.kind === 'end') {
+        const field = sg.kind === 'start' ? 'startAddress' : 'endAddress';
+        if (String(p[field] || '').trim() !== sg.sent) { ttRoute.suggest = null; ttRoute.error = 'That address was changed since the route was tried. Press the button again.'; return; }
+        p[field] = sg.address;
+        ttPlaceTyped(sg.kind);
+      } else {
+        const h = tour.properties[sg.index];
+        if (!h || String(h.address || '').trim() !== sg.sent) { ttRoute.suggest = null; ttRoute.error = 'That home was changed since the route was tried. Press the button again.'; return; }
+        h.address = sg.address;
+      }
+      ttRoute.suggest = null; ttRoute.error = '';
+      ttSaveTours();
+      return ttRunRoute();
+    }
     async function ttRunRoute() {
       const tour = tt.activeTour; if (!tour || ttRoute.busy) return false;
+      ttRoute.suggest = null;
       ttEnsurePlan(tour);
       const why = ttRouteProblem(tour);
       if (why) { ttRoute.error = why; return false; }
@@ -20585,7 +20625,15 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         ttApplyRoute(tour, j);
         return true;
       } catch (e) {
-        if (tt.activeTour === tour) ttRoute.error = 'The route was NOT worked out: ' + fosWhy(e);
+        if (tt.activeTour === tour) {
+          ttRoute.error = 'The route was NOT worked out: ' + fosWhy(e);
+          const w = e && e.which, k = w && w.kind;
+          const sent = k === 'start' ? body.start_address : k === 'end' ? body.end_address
+            : (k === 'home' && Number.isInteger(w.index) && body.stops[w.index]) ? body.stops[w.index].address : '';
+          if (e && e.suggestion && sent && e.suggestion !== sent) {
+            ttRoute.suggest = { tourId: tour.id, kind: k, index: k === 'home' ? w.index : null, sent: sent, address: e.suggestion };
+          }
+        }
         return false;
       } finally { ttRoute.busy = false; }
     }
@@ -26386,7 +26434,19 @@ const CHANGELOG = [
         detail: 'Strategies saved as PDFs before today are now on each buyer\'s Offer Strategies list, marked From PDF, with their market value, recommended offer and top of range copied from the PDF. Only the PDFs were kept back then, so these open the PDF itself; they cannot be opened in the tool or changed. You can tick them to compare side by side with newer ones.\n\nHow to use: Open the buyer, press Offer Strategies, then press the PDF under an entry.\n\nBest practice: To work on one of these again, start a new strategy for the same address.'
       }
     ]
+  },
+  {
+    id: 'v2026-11-13',
+    date: 'November 13, 2026',
+    title: 'Use Google\'s Address in One Press',
+    updates: [
+      {
+        title: 'Use Google\'s Address in One Press',
+        detail: 'When the tour planner could not place an address exactly, it showed the address Google matched and stopped, and pasting that address back in did not help. Some buildings, such as large condo buildings, are placed by Google at the middle of the building, and the planner refused them even when the address was exactly right. Those addresses now work when the house number, street and ZIP are the ones you typed. When Google matches a different address, a button now shows it: press it and the planner puts it in the right box and works the route out again.\n\nHow to use: Press Find the best order. If the address is refused, press Use followed by the address Google suggests.\n\nBest practice: Read the suggested address before you press it. Google can match a nearby street or the wrong unit, so check it is the home you are showing.'
+      }
+    ]
   }
+
 
 
 ];
@@ -29014,7 +29074,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttLegAfter, ttMapFor, ttFmtTime, ttWarnText, ttLookup, ttLookupAll, ttAllLooked, ttConfirmFig, ttUnconfirmFig, ttTypeFig,
       ttFigOptions, ttSourceHost, ttFigCount, ttHomeProblems, ttTextIssues, ttOnOverviewEdit, ttCompare,
       ttCompareStale, ttCompareIssues, ttBuyerProblems, ttAgentPdf, ttSendBuyer,
-      ttAddrProblem, ttAddErr, ttUseFound, TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
+      ttAddrProblem, ttAddErr, ttUseFound, ttUseSuggestion, ttSuggestLabel, TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
       // Buyer Needs Analysis
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
