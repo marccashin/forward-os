@@ -464,7 +464,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
       adj: comps.map((c) => (c._adj ? c._adj.hoa : null)),
       orange: document.querySelectorAll('.f-needs, .f-check').length,
       count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
-      warn: (() => { const w = document.getElementById('hoaWarn'); return !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('li'), (li) => li.textContent); })(),
+      warn: (() => { const w = document.getElementById('hoaWarn'); return !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('[data-adj-item]'), (li) => li.textContent); })(),
       warnText: (document.getElementById('hoaWarn') || {}).textContent || '',
     };
   });
@@ -559,7 +559,8 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
 
   // The notice: sale price 500,000, so the line is 25,000.
   ok(f.warn.length === 2 && /20 House Ln: -\$56,500/.test(f.warn[0]) && /50 Printed Zero Way: -\$86,500/.test(f.warn[1]), 'the notice names the two comps whose HOA adjustment is over 5% of the sale price', f.warn);
-  ok(/Check the HOA adjustment/.test(f.warnText) && /Confirm what each fee includes/.test(f.warnText) && /Step 2/.test(f.warnText), 'and says what to check and where to change it', f.warnText);
+  ok(/Check the HOA adjustment/.test(f.warnText) && /check what each fee includes/.test(f.warnText) && /lower the HOA multiplier in Step 2/.test(f.warnText), 'and says what to check and where to change it', f.warnText);
+  ok(/20 House Ln: -\$56,500.*\(comp \$300\.00 . listing \$865\.00 a month\) . 100 \(HOA multiplier, Step 2\)/.test(f.warn[0]), 'each comp shows the sum it was worked out from: the two fees and the multiplier', f.warn);
   ok(!/601 Penn|30 Both Ct|40 Nothing/.test(f.warn.join(' ')), 'small adjustments (5,200 and 11,500) and the comp still waiting for its fee are not named', f.warn);
   const warnBefore = await feeMoney(page);
   await page.fill('#comp-row-1 td[data-label="HOA/Mo"] input', '615');
@@ -832,7 +833,7 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
       park: comps.map((c, i) => cls(document.querySelector('#comp-row-' + i + ' td[data-label="Parking"]'))),
       flag: comps.map((c, i) => { const f = document.querySelector('#comp-row-' + i + ' td[data-label="Parking"] .fieldflag'); return f ? f.textContent : ''; }),
       net: comps.map((c) => (c._adj ? c._adj.net : null)),
-      warn: !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('li'), (li) => li.textContent),
+      warn: !w || w.style.display === 'none' ? [] : Array.prototype.map.call(w.querySelectorAll('[data-adj-item]'), (li) => li.textContent),
       warnText: w ? w.textContent : '',
       orange: document.querySelectorAll('.f-needs, .f-check').length,
       count: b.style.display === 'none' ? 0 : (m ? +m[1] : -1),
@@ -843,9 +844,9 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(g.net[0] === -590000 && g.net[1] === 10000 && g.net[2] === 80000, 'the arithmetic is unchanged: 32 garage spaces still count as typed (-590,000 in total)', g.net);
   ok(g.park[0] === 'f-check' && /32 GARAGE SPACES\?/.test(g.flag[0]) && /Confirm/.test(g.flag[0]), 'a garage count of 32 is orange and asks whether it is right', [g.park[0], g.flag[0]]);
   ok(g.park[1] === '' && g.park[2] === '', 'a believable count (2) is not flagged', g.park);
-  ok(g.warn.length === 1 && /9201 Bad Garage Way: -\$590,000 in total, 36% of its sale price/.test(g.warn[0]) && /Largest line: Parking -\$600,000/.test(g.warn[0]) && /garage box holds 32/.test(g.warn[0]), 'a notice names the comp whose total adjustment is over 15% of its price, the total, and the line that caused it', g.warn);
+  ok(g.warn.length === 1 && /9201 Bad Garage Way: -\$590,000 in total, 36% of its \$1,645,000 sale price/.test(g.warn[0]) && /Largest line: Parking -\$600,000/.test(g.warn[0]) && /garage box holds 32/.test(g.warn[0]), 'a notice names the comp whose total adjustment is over 15% of its price, the total, and the line that caused it', g.warn);
   ok(!/Normal St|Smaller St/.test(g.warn.join(' ')), 'a comp at 11% (80,000 on 700,000) is not named', g.warn);
-  ok(/Correct the box, or remove the comp/.test(g.warnText), 'and it says what to do', g.warnText);
+  ok(/Parking -\$600,000: \(listing 2 . comp 32 garage spaces\) . \$20,000/.test(g.warn[0]) && /What to check:[\s\S]*Parking: check the Garage boxes/.test(g.warnText) && /remove it with the/.test(g.warnText), 'and it shows the sum behind the line and says which box to check', g.warnText);
   ok(g.count === g.orange, 'the number in the banner equals the orange boxes', [g.count, g.orange]);
   const recBefore = g.rec, netBefore = JSON.stringify(g.net);
 
@@ -953,6 +954,60 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(lpk.type === 'None' && !/f-check/.test(lpk.cls), 'a CMA saved earlier keeps the parking type that was saved', lpk);
   await page.context().close();
 
+  // ════════════════ THE NOTICES SHOW THEIR WORKING ════════════════
+  // Marc, Nov 13, 2026, on his own CMA for 1324 E St SE #208: "There is no way for the agent to
+  // know if the OS is calculating something incorrectly so either give steps on what exactly
+  // needs to be fixed or make sure the calculations are right." His inputs exactly. The nets
+  // below were worked out outside the app before this change and matched the screen to the
+  // dollar; every line the notices print is worked out again here from the numbers it shows.
+  console.log('The notices show their working and say what to check (Marc\'s 1324 E St SE CMA)');
+  {
+    const M = (a, sp, gla, g, d, cond, hoa, con) => comp(a, { salePrice: sp, gla, beds: 1, fullBaths: 1, halfBaths: 0, below: 0, garageSpaces: g, drivewaySpaces: d, condition: cond, hoaMonthly: hoa, concessions: con });
+    const mComps = [M('1391 Pennsylvania Ave SE #430', 379900, 684, 1, '0', 'B', 511.69, 0), M('1391 Pennsylvania Ave SE #367', 345000, 675, 0, '0', 'B', 491.9, 3500),
+      M('1391 Pennsylvania Ave SE #368', 475000, 895, 1, '0', 'C', 642.73, 1700), M('1218 D St SE #4', 385575, 504, 0, '0', 'B', 150, 0),
+      M('1239 C St SE #1', 395000, 646, 0, '0', 'C', 350, 0), M('1391 Pennsylvania Ave SE #210', 360000, 632, 1, '', 'C', 455, 0),
+      M('1391 Pennsylvania Ave SE #264', 395000, 728, 1, '', 'B', 518, ''), M('1391 Pennsylvania Ave SE #248', 389900, 684, 1, '0', 'C', 490, 10000)];
+    const mSubj = Object.assign(subject('Marc Cashin'), { address: '1324 E St SE #208', city: 'Washington', state: 'DC', zip: '20003', propType: 'Condominium', beds: '1', fullBaths: '1', halfBaths: '0', gla: '679', below: '0', yearBuilt: '1895', condition: 'A', parkingType: 'Assigned Space', parkingSpaces: '1', drivewaySpaces: '', hoaMonthly: '0', condoFee: '200' });
+    table = [row('Marc Cashin', LISTING, '2026-11-13T21:00:00Z', draft('Marc Cashin', mComps, { subject: mSubj, gradeMethod: 'pct1', adjustments: { gla: '50', below: '25', bedroom: '15000', bath: '12000', halfbath: '5000', garage: '20000', hoa: '100' } }))];
+    writes = [];
+    page = await builder('Marc Cashin');
+    const n = await page.evaluate(() => {
+      const items = (id) => Array.prototype.map.call(document.querySelectorAll('#' + id + ' [data-adj-item]'), (li) => ({
+        text: li.textContent,
+        lines: Array.prototype.map.call(li.querySelectorAll('[data-adj-how]'), (h) => ({ key: h.getAttribute('data-adj-how'), how: h.textContent, line: (h.closest('[data-adj-line]') || li).textContent })),
+      }));
+      return { nets: comps.map((c) => Math.round(c._adj.net)), adj: comps.map((c) => c._adj), names: comps.map((c) => c.address),
+        hoa: items('hoaWarn'), big: items('adjWarn'), bigText: document.getElementById('adjWarn').textContent, hoaText: document.getElementById('hoaWarn').textContent,
+        steps: Array.prototype.map.call(document.querySelectorAll('#adjWarn > div ul > li strong'), (s) => s.textContent) };
+    });
+    ok(JSON.stringify(n.nets) === JSON.stringify([61311, 73490, 120509, 54596, 110441, 95103, 60950, 91588]), 'the eight nets are the ones worked out outside the app (and on Marc\'s screen)', n.nets);
+    // Work every printed line out again from the numbers it prints, by the rule for its kind.
+    const nums = (t) => (t.match(/-?\$?[\d,]+(\.\d+)?/g) || []).map((x) => parseFloat(x.replace(/[$,]/g, '')));
+    const redo = (key, how) => {
+      const v = nums(how.replace(/\(([-+]\d+%)\)/g, '').replace(/counting 2 at most/, ''));
+      if (key === 'condition') { const [sp, a, b] = [v[0], v[1], v[2]]; return Math.round(sp * a / b - sp); }
+      if (key === 'hoa') return (v[0] - v[1]) * v[2];
+      if (key === 'concessions') return -v[0];
+      return (v[0] - v[1]) * v[2];
+    };
+    const checked = [];
+    n.big.forEach((it) => {
+      const ci = n.names.findIndex((a) => it.text.indexOf(a + ':') === 0);
+      it.lines.forEach((l) => {
+        const shown = parseFloat((/^[A-Za-z ]+ ([-+]\$[\d,]+):/.exec(l.line) || [])[1].replace(/[$,+]/g, ''));
+        checked.push([n.names[ci], l.key, redo(l.key, l.how), shown, Math.round(n.adj[ci][l.key])]);
+      });
+    });
+    const bad = checked.filter((c) => Math.abs(c[2] - c[3]) > 1 || c[3] !== c[4]);
+    ok(checked.length >= 25 && bad.length === 0, 'every line printed in the 15% notice works out, from its own printed numbers, to the amount it shows and to the builder\'s own line', { lines: checked.length, bad });
+    ok(n.big.length === 7 && !n.big.some((it) => /1218 D St/.test(it.text)), 'the seven comps over 15% are named, and 1218 D St SE #4 (14%) is not', n.big.map((it) => it.text.slice(0, 40)));
+    ok(/368: \+\$120,509 in total, 25% of its \$475,000 sale price\. Largest line: Condition \+\$88,736\./.test(n.big[2].text) && /Condition \+\$88,736: listing A \(\+8%\), comp C \(-9%\): \$475,000 . 1\.08 . 0\.91 . \$475,000/.test(n.big[2].text), 'a comp shows its total, its largest line and the sum behind it', n.big[2].text);
+    ok(/The math is right/.test(n.bigText) && /Your listing is graded A \(\+8% against a standard home\), so condition alone moves a B comp \+8%, a C comp \+18\.7% of its sale price, more than the 15% line by itself\./.test(n.bigText), 'it says the math is right and that the listing\'s A grade alone pushes every C comp past 15%', n.bigText.slice(0, 500));
+    ok(n.steps[0] === 'Condition:' && n.steps.indexOf('HOA:') > 0 && /Your listing is graded A \(Fully renovated\)\..*change its grade in Step 1/.test(n.bigText), 'the steps start with the biggest cause, the listing\'s grade, and say where to change it', n.steps);
+    ok(n.hoa.length === 6 && n.hoa.every((it) => /\(comp \$[\d.,]+ . listing \$200\.00 a month\) . 100 \(HOA multiplier, Step 2\)/.test(it.text)) && /At 50 every HOA line is half what it is now/.test(n.hoaText), 'the HOA notice shows each fee gap times the multiplier, and what a lower multiplier does', n.hoa.map((it) => it.text.slice(0, 60)));
+    await page.context().close();
+  }
+
   // ════════════════ CONDITION GRADES ════════════════
   console.log('Condition grades: percent for a new CMA, dollars kept on a saved one');
   const expectPct = (price, subj, cmp) => { const P = { 'A+': 16, A: 8, B: 0, C: -9, D: -18 }; return Math.round(price * (1 + P[subj] / 100) / (1 + P[cmp] / 100) - price); };
@@ -979,6 +1034,18 @@ const PREFILL = (agent, extra) => Object.assign({ address: STREET, city: 'VA', s
   ok(/^B: Standard \(C3\)$/.test(gs.sLabel), 'the grade names the appraiser rating it stands for', gs.sLabel);
   ok(/f-needs/.test(gs.sFlag), 'the listing\'s Condition is marked YOU FILL IN: B has to be the agent\'s decision', gs.sFlag);
   ok(gs.keyShown && gs.key2Shown && gs.keyRows.length === 5, 'the key is on screen before any grade is picked, in Step 1 and again above the comps', [gs.keyShown, gs.key2Shown, gs.keyRows.length]);
+  // Marc, Nov 13, 2026: the key is read first, just under the PDF box, before any box is filled in;
+  // its second copy sits below the adjustment settings and above Active Listings.
+  const keyPlace = await page.evaluate(() => {
+    const y = (el) => el.getBoundingClientRect().top + window.scrollY;
+    const k1 = document.getElementById('gradeKeySubject'), k2 = document.getElementById('gradeKeyComps');
+    const firstField = document.querySelector('#s_address').closest('.field');
+    const card = (t) => Array.prototype.find.call(document.querySelectorAll('.card'), (c) => (c.querySelector('.card-title') || {}).textContent && c.querySelector('.card-title').textContent.indexOf(t) > -1);
+    return { k1: y(k1), drop: y(document.getElementById('pdfDrop')), field: y(firstField), cond: y(document.getElementById('s_condition')),
+             k2: y(k2), adj: y(card('Adjustment Settings')), active: y(card('Active Listings')), closed: card('Closed Sales').contains(k2) };
+  });
+  ok(keyPlace.k1 > keyPlace.drop && keyPlace.k1 < keyPlace.field && keyPlace.k1 < keyPlace.cond, 'the key is just under the PDF box, above every box of Step 1 and the listing\'s Condition', keyPlace);
+  ok(keyPlace.k2 > keyPlace.adj && keyPlace.k2 < keyPlace.active && !keyPlace.closed, 'its second copy is below the adjustment settings and above Active Listings, no longer inside Closed Sales', keyPlace);
   ok(/^A\+ C1 .*\+16%$/.test(gs.keyRows[0]) && /^A C2 .*\+8%$/.test(gs.keyRows[1]) && /^B C3 .*Standard: 0%$/.test(gs.keyRows[2]) && /^C C4 .*9%$/.test(gs.keyRows[3]) && /^D C5 or C6 .*18%$/.test(gs.keyRows[4]), 'the key shows each grade, its rating and its percent: +16, +8, 0, -9, -18', gs.keyRows);
   ok(!gs.flatNotice && !gs.flatBoxes, 'the dollar grade boxes are not shown on a new CMA', [gs.flatNotice, gs.flatBoxes]);
   await page.evaluate(() => { addComp(); addComp(); addComp(); });

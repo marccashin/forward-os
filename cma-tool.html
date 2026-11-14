@@ -278,6 +278,9 @@
         <div id="pdfBar" style="height:100%;width:6%;background:linear-gradient(90deg,#1a3a5c,#c9a227);border-radius:99px;transition:width .7s ease;"></div>
       </div>
     </div>
+    <!-- The condition key, read BEFORE anything is filled in or graded: just under the PDF box
+         (Marc, Nov 13, 2026; it sat at the end of Step 1 under the fields until then). Filled by _cmaRenderGradeKeys(). -->
+    <div class="pct-only" id="gradeKeySubject" style="margin-bottom:14px;"></div>
     <div id="needsBanner" style="display:none;font-size:12px;color:#b45309;background:#fffbeb;border:1px solid #f59e0b;border-radius:6px;padding:8px 12px;margin-bottom:14px;"></div>
     <div class="form-grid form-grid-wide" style="margin-bottom:14px;">
       <div class="field" style="grid-column:span 2;">
@@ -385,8 +388,6 @@
       <label>Notes / Pool / Features</label>
       <textarea id="s_notes" rows="2" placeholder="Additional notes about the subject property..." style="border:1.5px solid var(--border);border-radius:6px;padding:7px 10px;font-size:13px;resize:vertical;width:100%;"></textarea>
     </div>
-    <!-- The condition key, shown BEFORE the agent picks a grade (Marc, Oct 5, 2026). Filled by _cmaRenderGradeKeys(). -->
-    <div class="pct-only" id="gradeKeySubject" style="margin-top:14px;"></div>
   </div>
 
   <!-- ── ADJUSTMENT SETTINGS ── -->
@@ -482,7 +483,7 @@
     <!-- Condition: percent of sale price (CMAs started on or after Oct 6, 2026) -->
     <div class="pct-only" id="condPctBlock" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
       <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin-bottom:6px;">Condition (percent of each comp's sale price)</div>
-      <div style="font-size:12px;color:var(--muted);line-height:1.5;">Condition is not a fixed dollar amount. Each grade is worth a percent of the comp's sale price, measured against a standard home (grade B), so the same step is worth more on a $2,000,000 sale than on a $500,000 one. The grades and their percents are in the key under Step 1. They are the same for every CMA and cannot be changed here.</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.5;">Condition is not a fixed dollar amount. Each grade is worth a percent of the comp's sale price, measured against a standard home (grade B), so the same step is worth more on a $2,000,000 sale than on a $500,000 one. The grades and their percents are in the key at the top of Step 1, and again just below these settings. They are the same for every CMA and cannot be changed here.</div>
     </div>
 
     <!-- Condition Grade Settings (dollar grades: only for a CMA saved before Oct 6, 2026) -->
@@ -550,6 +551,11 @@
   </div>
 
   <!-- ── COMPARABLE SALES ── -->
+
+  <!-- Condition key again, above the comps it is used on: below the adjustment settings and
+       above Active Listings (Marc, Nov 13, 2026; it sat inside Closed Sales until then).
+       Filled by _cmaRenderGradeKeys(). -->
+  <div class="card pct-only" id="gradeKeyComps"></div>
 
   <!-- ACTIVE LISTINGS -->
   <div class="card">
@@ -637,8 +643,6 @@
       <span class="badge badge-gold" id="compCountBadge">0 of 10</span>
     </div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">Enter up to 10 closed sales. All adjustments are calculated automatically and feed the value estimate. <strong>Indicated Value</strong> is what each sale says your listing is worth: its sale price, plus where your listing is better than that comp, minus where the comp is better.</div>
-    <!-- Condition key again, beside the comps it is used on. Filled by _cmaRenderGradeKeys(). -->
-    <div class="pct-only" id="gradeKeyComps" style="margin-bottom:14px;"></div>
     <!-- Condition Grade Reference (dollar grades) -->
     <details class="flat-only" style="margin-bottom:14px;background:#f8f9fc;border:1px solid var(--border);border-radius:8px;padding:0;">
       <summary style="cursor:pointer;padding:10px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);list-style:none;display:flex;align-items:center;gap:8px;">
@@ -3055,6 +3059,92 @@ function _fillPDFDoc(doc) {
   //
   // DISPLAY ONLY. It reads c._adj and writes nothing: no value, no price, no PDF.
   var HOA_WARN_SHARE = 0.05;
+  // ── What each adjustment line is made of, in numbers (Marc, Nov 13, 2026: "There is no way
+  // for the agent to know if the OS is calculating something incorrectly so either give steps
+  // on what exactly needs to be fixed or make sure the calculations are right"). The notices
+  // below used to name a comp and a total only. They now show every line as the sum the
+  // builder did, from the boxes on screen, and say which box to check and what to change.
+  // Written from the same boxes recalcAll() reads; ci/cma-builder-test.js works each "how"
+  // out again and compares it with c._adj, so the text cannot drift from the math.
+  // DISPLAY ONLY: reads c._adj and the boxes, writes nothing.
+  function nMoney(n) { return '$' + Math.round(Math.abs(n)).toLocaleString('en-US'); }
+  function sMoney(n) { return (n > 0 ? '+' : n < 0 ? '-' : '') + nMoney(n); }
+  function fee(n) { return '$' + (Math.round(n * 100) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function num(n) { return (Math.round(n * 100) / 100).toLocaleString('en-US'); }
+  function pctTxt(p) { return (p > 0 ? '+' : p < 0 ? '-' : '') + Math.abs(p) + '%'; }
+  function adjHow(c, key) {
+    var sp = parseFloat(c.salePrice) || 0;
+    var rate = function (id) { return nMoney(getNum(id)); };
+    if (key === 'gla') return '(listing ' + num(getNum('s_gla')) + ' − comp ' + num(parseFloat(c.gla) || 0) + ' sq ft) × ' + rate('adj_gla') + ' a sq ft';
+    if (key === 'below') return '(listing ' + num(getNum('s_below')) + ' − comp ' + num(parseFloat(c.below) || 0) + ' sq ft below grade) × ' + rate('adj_below') + ' a sq ft';
+    if (key === 'bedroom') return '(listing ' + num(getNum('s_beds')) + ' − comp ' + num(parseFloat(c.beds) || 0) + ' bedrooms) × ' + rate('adj_bedroom');
+    if (key === 'fullBath') return '(listing ' + num(getNum('s_fullBaths')) + ' − comp ' + num(parseFloat(c.fullBaths) || 0) + ' full baths) × ' + rate('adj_bath');
+    if (key === 'halfBath') return '(listing ' + num(getNum('s_halfBaths')) + ' − comp ' + num(parseFloat(c.halfBaths) || 0) + ' half baths) × ' + rate('adj_halfbath');
+    if (key === 'garage') {
+      var pt = getVal('s_parkingType') || '';
+      var sg = (pt === 'Driveway' || pt === 'None') ? 0 : getNum('s_parkingSpaces');
+      return '(listing ' + num(sg) + ' − comp ' + num(parseFloat(c.garageSpaces) || 0) + ' garage spaces) × ' + rate('adj_garage');
+    }
+    if (key === 'driveway') return '(listing ' + num(Math.min(_cmaSubjectDriveway(), DRIVEWAY_MAX_SPACES)) + ' − comp ' + num(Math.min(parseFloat(c.drivewaySpaces) || 0, DRIVEWAY_MAX_SPACES)) +
+      ' driveway spaces, counting 2 at most) × ' + nMoney(DRIVEWAY_DC_PER_SPACE) + ' (DC)';
+    if (key === 'condition') {
+      var lg = getVal('s_condition') || _cmaDefaultGrade(), cg = c.condition || _cmaDefaultGrade();
+      if (_cmaIsPct()) {
+        var lp = _cmaGradePct(lg), cp = _cmaGradePct(cg);
+        return 'listing ' + lg + ' (' + pctTxt(lp) + '), comp ' + cg + ' (' + pctTxt(cp) + '): ' + nMoney(sp) + ' × ' + ((100 + lp) / 100).toFixed(2) +
+          ' ÷ ' + ((100 + cp) / 100).toFixed(2) + ' − ' + nMoney(sp);
+      }
+      return 'listing ' + lg + ' grade value − comp ' + cg + ' grade value (the dollar grades in Step 2)';
+    }
+    if (key === 'hoa') return '(comp ' + fee(parseFloat(c.hoaMonthly) || 0) + ' − listing ' + fee(getNum('s_hoaMonthly') + getNum('s_condoFee')) + ' a month) × ' + num(getNum('adj_hoa')) + ' (HOA multiplier, Step 2)';
+    if (key === 'concessions') return 'the seller credit of ' + nMoney(parseFloat(c.concessions) || 0) + ' comes off its sale price';
+    return '';
+  }
+  // What to check for each kind of line, once per notice.
+  var ADJ_FIX = {
+    condition: function () {
+      var lg = getVal('s_condition') || _cmaDefaultGrade();
+      var r = _cmaIsPct() && CMA_GRADES.find(function (x) { return x.g === lg; });
+      return '<strong>Condition:</strong> grades cause most large totals. Your listing is graded ' + esc(lg) + (r ? ' (' + esc(r.name) + ')' : '') +
+        '. Check it against the condition key: if the listing is not ' + (r ? esc(r.name.toLowerCase()) : 'that grade') + ', change its grade in Step 1 (most homes are a B) and every comp moves with it. ' +
+        'Then check each comp’s grade against its MLS photos and remarks from when it sold.';
+    },
+    hoa: function () {
+      return '<strong>HOA:</strong> check that the listing’s fees in Step 1 and each comp’s HOA/Mo box hold the full monthly fee from the MLS sheet (HOA plus condo fee). ' +
+        'Then check what each fee includes on its MLS listing. If a comp’s fee pays for things the listing’s does not (utilities, a front desk, parking, a gym), the gap overstates the cost: lower the HOA multiplier in Step 2. ' +
+        'At ' + num(Math.round(getNum('adj_hoa') / 2)) + ' every HOA line is half what it is now; at 0 fees are left out. If the fees cover the same things, keep it: the comp’s owner pays more every month.';
+    },
+    gla: function () { return '<strong>Sq Ft:</strong> check both square footages against the MLS sheets (above grade only). If they are right, the sale is a different size of home: remove it and use one closer in size.'; },
+    below: function () { return '<strong>Below grade:</strong> check the finished below-grade square footage on both MLS sheets.'; },
+    bedroom: function () { return '<strong>Bedrooms:</strong> check the bedroom count on both MLS sheets.'; },
+    fullBath: function () { return '<strong>Full baths:</strong> check the full bath count on both MLS sheets.'; },
+    halfBath: function () { return '<strong>Half baths:</strong> check the half bath count on both MLS sheets.'; },
+    garage: function () { return '<strong>Parking:</strong> check the Garage boxes (garage spaces only, not driveway or street) and the listing’s parking in Step 1 against the MLS sheets.'; },
+    driveway: function () { return '<strong>Driveway:</strong> check the Driveway boxes against the MLS sheets. Driveways are valued in DC only, 2 spaces at most.'; },
+    concessions: function () { return '<strong>Seller credit:</strong> check the Concess. box against the comp’s MLS sheet. A seller credit comes off the sale price in full.'; }
+  };
+  function adjFixList(keys) {
+    var seen = {}, out = [];
+    keys.forEach(function (k) { if (!seen[k] && ADJ_FIX[k]) { seen[k] = 1; out.push('<li>' + ADJ_FIX[k]() + '</li>'); } });
+    return out.length ? '<div style="margin-top:6px;"><strong>What to check:</strong><ul style="margin:4px 0 4px 18px;padding:0;">' + out.join('') + '</ul></div>' : '';
+  }
+  // When the listing is graded above or below B, every comp carries that gap. Said once, up front.
+  function adjGradeLead() {
+    if (!_cmaIsPct()) return '';
+    var lg = getVal('s_condition') || _cmaDefaultGrade(), lp = _cmaGradePct(lg);
+    if (!lp) return '';
+    var used = {};
+    (comps || []).forEach(function (c) { if (parseFloat(c.salePrice)) used[c.condition || _cmaDefaultGrade()] = 1; });
+    var parts = CMA_GRADES.filter(function (g) { return used[g.g] && g.g !== lg; }).map(function (g) {
+      var p = Math.round(((100 + lp) / (100 + g.pct) - 1) * 1000) / 10;
+      return 'a ' + g.g + ' comp ' + (p > 0 ? '+' : '-') + Math.abs(p) + '%';
+    });
+    if (!parts.length) return '';
+    return '<div style="margin:4px 0 6px;">Your listing is graded <strong>' + esc(lg) + '</strong> (' + pctTxt(lp) + ' against a standard home), so condition alone moves ' +
+      parts.join(', ') + ' of its sale price' + (parts.some(function (t) { return Math.abs(parseFloat(t.replace(/[^0-9.]/g, ''))) > ADJ_WARN_SHARE * 100; }) ? ', more than the 15% line by itself' : '') + '.</div>';
+  }
+
+  // ══ 1b. HOA NOTICE ══ (HOA_WARN_SHARE above: 5% of a comp's sale price, from the HOA line alone)
   function updateHoaWarning() {
     try {
       var el = document.getElementById('hoaWarn'); if (!el) return;
@@ -3065,15 +3155,13 @@ function _fillPDFDoc(doc) {
         if (fieldState(c, 'hoaMonthly') === 'needs') return;
         var a = c._adj.hoa || 0;
         if (Math.abs(a) <= sp * HOA_WARN_SHARE) return;
-        items.push('<li>' + esc(c.address || 'A comp with no address') + ': ' + (a > 0 ? '+' : '-') + '$' +
-                   Math.round(Math.abs(a)).toLocaleString('en-US') + '</li>');
+        items.push('<li data-adj-item>' + esc(c.address || 'A comp with no address') + ': <strong>' + sMoney(a) + '</strong>, ' + Math.round(Math.abs(a) / sp * 100) + '% of its ' + nMoney(sp) + ' sale price. ' +
+          '<span data-adj-how="hoa">' + esc(adjHow(c, 'hoa')) + '</span></li>');
       });
       if (!items.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
       el.style.display = '';
-      el.innerHTML = '<strong>Check the HOA adjustment.</strong> It is more than 5% of the sale price on:' +
-        '<ul style="margin:4px 0 4px 18px;padding:0;">' + items.join('') + '</ul>' +
-        'A fee gap this large usually means the two fees do not cover the same things (utilities, front desk, parking, amenities). ' +
-        'Confirm what each fee includes. If they are not like for like, lower the HOA multiplier in Step 2 for this CMA.';
+      el.innerHTML = '<strong>Check the HOA adjustment.</strong> It is more than 5% of the sale price on these comps. The math is right; check the fees it is worked out from:' +
+        '<ul style="margin:4px 0 4px 18px;padding:0;">' + items.join('') + '</ul>' + adjFixList(['hoa']);
     } catch (e) { /* a notice must never break the tool */ }
   }
 
@@ -3092,26 +3180,35 @@ function _fillPDFDoc(doc) {
   function updateAdjWarning() {
     try {
       var el = document.getElementById('adjWarn'); if (!el) return;
-      var money = function (n) { return (n > 0 ? '+' : '-') + '$' + Math.round(Math.abs(n)).toLocaleString('en-US'); };
-      var items = [];
+      var items = [], keys = [], weight = {};
       (comps || []).forEach(function (c) {
         var sp = parseFloat(c.salePrice) || 0;
         if (!sp || !c._adj) return;
         var net = c._adj.net || 0;
         if (Math.abs(net) <= sp * ADJ_WARN_SHARE) return;
-        var top = null;
-        ADJ_LINES.forEach(function (l) { var v = c._adj[l[0]] || 0; if (!top || Math.abs(v) > Math.abs(top[1])) top = [l[1], v]; });
-        var why = top && top[1] ? ' Largest line: ' + top[0] + ' ' + money(top[1]) + '.' : '';
-        if (top && top[0] === 'Parking' && (parseFloat(c.garageSpaces) || 0) > GARAGE_PLAUSIBLE_MAX) why += ' The garage box holds ' + esc(String(parseFloat(c.garageSpaces))) + '.';
-        items.push('<li>' + esc(c.address || 'A comp with no address') + ': ' + money(net) + ' in total, ' +
-                   Math.round(Math.abs(net) / sp * 100) + '% of its sale price.' + why + '</li>');
+        // Every line that moved this comp, largest first, each with its working.
+        var lines = ADJ_LINES.map(function (l) { return [l[0], l[1], c._adj[l[0]] || 0]; })
+          .filter(function (l) { return Math.round(l[2]) !== 0; })
+          .sort(function (x, y) { return Math.abs(y[2]) - Math.abs(x[2]); });
+        // Steps are given for the lines that matter: any line over 5% of the sale price, and always the largest.
+        lines.forEach(function (l, i) { if (i === 0 || Math.abs(l[2]) > sp * 0.05) { keys.push(l[0]); weight[l[0]] = (weight[l[0]] || 0) + Math.abs(l[2]); } });
+        var odd = lines.length ? ' Largest line: ' + lines[0][1] + ' ' + sMoney(lines[0][2]) + '.' : '';
+        if (lines.length && lines[0][0] === 'garage' && (parseFloat(c.garageSpaces) || 0) > GARAGE_PLAUSIBLE_MAX) odd += ' The garage box holds ' + esc(String(parseFloat(c.garageSpaces))) + '.';
+        items.push('<li data-adj-item style="margin-bottom:4px;">' + esc(c.address || 'A comp with no address') + ': <strong>' + sMoney(net) + '</strong> in total, ' +
+          Math.round(Math.abs(net) / sp * 100) + '% of its ' + nMoney(sp) + ' sale price.' + odd +
+          '<ul style="margin:2px 0 0 16px;padding:0;color:#7f1d1d;">' + lines.map(function (l) {
+            return '<li data-adj-line="' + l[0] + '">' + l[1] + ' ' + sMoney(l[2]) + ': <span data-adj-how="' + l[0] + '">' + esc(adjHow(c, l[0])) + '</span></li>';
+          }).join('') + '</ul></li>');
       });
       if (!items.length) { el.style.display = 'none'; el.innerHTML = ''; return; }
       el.style.display = '';
-      el.innerHTML = '<strong>Check ' + (items.length === 1 ? 'this comp' : 'these comps') + ' before you use the value.</strong> The total adjustment is more than 15% of the sale price on:' +
+      el.innerHTML = '<strong>Check ' + (items.length === 1 ? 'this comp' : 'these comps') + ' before you use the value.</strong> The total adjustment is more than 15% of the sale price (FORWARD\u2019s line for a second look). ' +
+        'The math is right: every line below is worked out from the boxes on screen. A total this large means a box to check, or a sale that is not like your listing.' +
+        adjGradeLead() +
         '<ul style="margin:4px 0 4px 18px;padding:0;">' + items.join('') + '</ul>' +
-        'A total this large usually means a wrong number in one of the boxes, or a sale that is not comparable to this listing. ' +
-        'Correct the box, or remove the comp and use a closer one.';
+        // The step for the line that added the most across these comps comes first.
+        adjFixList(keys.slice().sort(function (x, y) { return (weight[y] || 0) - (weight[x] || 0); })) +
+        '<div style="margin-top:4px;">If every box is right and a sale still is not like your listing, remove it with the \u2715 at the end of its row and use a closer one.</div>';
     } catch (e) { /* a notice must never break the tool */ }
   }
 
