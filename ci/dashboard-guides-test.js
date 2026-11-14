@@ -108,7 +108,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     // Marc, Nov 13, 2026: right under the Deal Cards & SOP Tasks card, above the stat cards.
     const place = await page.evaluate(() => {
       const g = document.querySelector('[data-guides]');
-      const fub = [...document.querySelectorAll('div')].find(d => d.children.length === 2 && /^\s*Follow Up Boss\s*Deal Cards & SOP Tasks/.test(d.innerText) && /taskModal|cursor/.test(d.getAttribute('style') || ''));
+      const fub = document.querySelector('[data-fub-reminder]');
+      if (fub && !/Deal Cards & SOP Tasks/i.test(fub.textContent)) return { right: false, beforeStats: false, why: 'marker not on the Deal Cards card' };
       const stats = document.querySelector('.stat-grid');
       return { right: !!(g && fub && fub.nextElementSibling === g), beforeStats: !!(g && stats && (g.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING)) };
     });
