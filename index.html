@@ -82,18 +82,15 @@
 .dp-howto-btn{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border-radius:6px;background:var(--navy,#0A2342);color:#fff !important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-decoration:none}
 .dp-howto-btn:hover{background:#13305a}
 .dp-howto-btn:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:2px}
-.fos-guides{margin:0 0 20px}
-.fos-guides-count{font-family:'Montserrat',sans-serif;font-size:11px;color:#6b6862}
-a.fos-guide-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid var(--cream-mid);cursor:pointer;transition:background 0.12s;text-decoration:none;color:inherit;min-height:44px}
-a.fos-guide-row:hover{background:var(--cream,#F7F4EF)}
-.fos-guide-badge{width:38px;height:38px;border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:.08em;color:var(--gold,#C8A96E);background:var(--navy,#0A2342)}
-.fos-guide-info{flex:1;min-width:0}
-a.fos-guide-row:last-child{border-bottom:none}
-a.fos-guide-row:focus-visible{outline:3px solid var(--gold,#C8A96E);outline-offset:-3px}
-.fos-guide-title{font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;color:var(--navy,#0A2342)}
-.fos-guide-sub{font-size:12.5px;line-height:1.45;color:#3f3d39;margin-top:3px}
-.fos-guide-date{font-size:11px;color:#6b6862;margin-top:4px}
-.fos-guide-open{flex:0 0 auto;font-family:'Montserrat',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:8px 14px;border-radius:2px;border:1px solid var(--navy,#0A2342);color:var(--navy,#0A2342)}
+.fos-guides{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;background:#fff;border:1.5px solid var(--gold,#C8A96E);border-radius:10px;padding:16px 20px;margin:0 0 20px}
+.fos-guides-txt{flex:1 1 260px;min-width:0}
+.fos-guides-title{font-family:'Montserrat',sans-serif;font-size:14px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--navy,#0A2342)}
+.fos-guides-body{font-size:13px;line-height:1.45;color:#3f3d39;margin-top:4px}
+.fos-guides-list{display:flex;flex-wrap:wrap;gap:10px}
+a.fos-guide-btn{flex:0 0 auto;display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border-radius:6px;background:var(--navy,#0A2342);color:#fff !important;font-family:'Montserrat',sans-serif;font-size:13px;font-weight:700;text-decoration:none;outline:2px solid var(--gold,#C8A96E);outline-offset:2px}
+a.fos-guide-btn:hover{background:#13305a}
+a.fos-guide-btn:focus-visible{outline-width:3px}
+@media (max-width:600px){.fos-guides-list{width:100%}a.fos-guide-btn{flex:1 1 100%;justify-content:center}}
 .dp-agent-note{margin:4px 0 6px}
 .dp-otc-note{font-size:12px;line-height:1.45;color:#5c5a55;background:#f7f4ee;border-left:3px solid var(--gold,#C8A96E);padding:8px 10px;margin:10px 0 4px}
 .dp-auto-hd{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0A2342;padding-top:12px}
@@ -2472,20 +2469,14 @@ body {
           <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
                one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login, right under
                the Deal Cards & SOP Tasks card (Marc, Nov 13, 2026). -->
-          <div class="panel fos-guides" data-guides>
-            <div class="panel-header">
-              <div class="panel-title">Guides &amp; SOPs</div>
-              <div class="fos-guides-count">{{ fosGuides.length }} {{ fosGuides.length === 1 ? 'guide' : 'guides' }}</div>
+          <div class="fos-guides" data-guides>
+            <div class="fos-guides-txt">
+              <div class="fos-guides-title">Guides &amp; SOPs</div>
+              <div class="fos-guides-body">Every FORWARD guide, SOP and memo, in one place.</div>
             </div>
-            <a v-for="g in fosGuides" :key="g.id" class="fos-guide-row" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" @click="fosGuideClick(g, $event)">
-              <div class="fos-guide-badge">PDF</div>
-              <div class="fos-guide-info">
-                <div class="fos-guide-title">{{ g.title }}</div>
-                <div class="fos-guide-sub">{{ g.sub }}</div>
-                <div class="fos-guide-date">{{ g.dated }}</div>
-              </div>
-              <span class="fos-guide-open">Open</span>
-            </a>
+            <div class="fos-guides-list">
+              <a v-for="g in fosGuides" :key="g.id" class="fos-guide-btn" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" :title="g.sub + ' (' + g.dated + ')'" @click="fosGuideClick(g, $event)">{{ g.title }}</a>
+            </div>
           </div>
 
           <!-- Stat Grid -->

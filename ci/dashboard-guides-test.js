@@ -102,9 +102,13 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const panel = page.locator('[data-guides]');
     ok(await panel.count() === 1 && await panel.isVisible(), agent + ': the Guides & SOPs panel is on the Dashboard');
     const txt = (await panel.count()) ? await panel.innerText() : '';
-    ok(/Guides & SOPs/.test(txt), agent + ': the panel is titled Guides & SOPs', txt.slice(0, 80));
-    ok(await page.locator('[data-guide]').count() === GUIDES.length, agent + ': one row per guide', await page.locator('[data-guide]').count());
-    for (const g of GUIDES) ok(txt.includes(g.title) && txt.includes(g.sub) && txt.includes(g.dated), agent + ': ' + g.title + ' shows its title, description and date');
+    ok(/Guides & SOPs/i.test(txt), agent + ': the panel is titled Guides & SOPs', txt.slice(0, 80));
+    ok(await page.locator('[data-guide]').count() === GUIDES.length, agent + ': one button per guide', await page.locator('[data-guide]').count());
+    for (const g of GUIDES) {
+      const b = page.locator('[data-guide="' + g.id + '"]');
+      const label = ((await b.innerText()) || '').trim(), tip = (await b.getAttribute('title')) || '';
+      ok(label.toLowerCase() === g.title.toLowerCase() && tip.includes(g.sub) && tip.includes(g.dated), agent + ': ' + g.title + ' is a button with its name, and its description and date on hover', { label, tip });
+    }
     // Marc, Nov 13, 2026: right under the Deal Cards & SOP Tasks card, above the stat cards.
     const place = await page.evaluate(() => {
       const g = document.querySelector('[data-guides]');
