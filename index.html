@@ -7343,6 +7343,7 @@ body {
                   <div class="form-row" style="position:relative;">
                     <label>Property Location</label>
                     <input id="ns-address-input-detail" v-model="ns.address" type="text" placeholder="Start typing an address..." @input="nsOnAddressInput" autocomplete="off"/>
+                    <div v-if="ns._pickNote" data-ns-pick-note style="margin-top:6px;font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ ns._pickNote }}</div>
                     <div v-if="ns._suggestions.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;">
                       <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="padding:8px 12px;font-size:12px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
                     </div>
@@ -17758,7 +17759,25 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       else if (two && two[1].indexOf(',') > -1 && NS_US_CODES.indexOf(two[2].toUpperCase()) > -1) { other = two[2].toUpperCase(); }
       if (other) return { ok: false, problem: 'This address is in ' + other + '. The net sheet covers DC, Maryland and Virginia only.' };
       rest = rest.replace(/[\s,]+$/, '').trim();
-      const parts = code ? fosSplitListingAddress(rest + ', ' + code + (zip ? ' ' + zip : '')) : { street: rest, city: '' };
+      let parts = code ? fosSplitListingAddress(rest + ', ' + code + (zip ? ' ' + zip : '')) : { street: rest, city: '' };
+      // DC has one city (Marc, Nov 13, 2026: the sheet said "missing the city" for "1324 E. SE #208"
+      // with Washington, DC picked: "That should be an easy catch for the OS"). With a DC ZIP, and
+      // the address saying DC or the Jurisdiction set to Washington, DC, the city is Washington and
+      // the state is DC. `fill` is the completed address; nsAddressOk() puts it in the box on a
+      // press so the sheet and its PDF print it. Maryland and Virginia are not filled: a county
+      // does not name a city. Never filled without a DC ZIP: a street typed with DC picked could
+      // be anywhere.
+      let fill = '';
+      const jPick = String(ns.jurisdiction || '');
+      if (zip && /^20[0-5]\d\d$/.test(zip) && (code === 'DC' || (!code && jPick === 'dc'))) {
+        const dcParts = code ? parts : fosSplitListingAddress(rest + ', DC ' + zip);
+        const dcCity = String(dcParts.city || '').trim();
+        if ((!dcCity || /^washington$/i.test(dcCity)) && /\d/.test(dcParts.street || '') && /[a-z]/i.test(dcParts.street || '')) {
+          const street = String(dcParts.street).replace(/[\s,]+$/, '').trim();
+          fill = street + ', Washington, DC ' + zip;
+          if (!dcCity || !code) { code = 'DC'; parts = { street: street, city: 'Washington' }; } else fill = '';
+        }
+      }
       if (!/\d/.test(parts.street || '') || !/[a-z]/i.test(parts.street || '')) missing.push('street number and name');
       if (!code) missing.push('state');
       else if (!String(parts.city || '').trim()) missing.push('city');
@@ -17776,7 +17795,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         if (!mk) return { ok: false, state: code, problem: 'This listing has no state on its badge. Click the badge at the top of the listing and choose ' + NS_STATE_NAME[code] + ' if that is right, then calculate.' };
         if (mk !== code) return { ok: false, state: code, problem: 'The address is in ' + NS_STATE_NAME[code] + ' but this listing is marked ' + NS_STATE_NAME[mk] + '. Correct the listing\'s state badge or the address before calculating.' };
       }
-      return { ok: true, state: code, problem: '' };
+      return { ok: true, state: code, problem: '', fill: fill };
     }
     // No net sheet without a closing date (Marc, Oct 30, 2026). nsCompute() adds the
     // property tax and HOA dues lines only when there is a closing date, so a sheet
@@ -17818,6 +17837,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function nsAddressOk() {
       const c = nsAddressCheck();
       if (!c.ok) { showToast(c.problem, 7000); return false; }
+      if (c.fill && c.fill !== ns.address) {
+        // A DC address typed without its city or state: complete it in the box, and say so.
+        // Said under the address box, not in a pop-up: Calculate and Download show their own
+        // message straight after, which would replace it before anyone read it.
+        ns.address = c.fill;
+        ns._pickNote = 'Washington, DC was added to the address. DC has one city, so the OS filled it in from the ZIP and the Jurisdiction.';
+      }
       const d = nsClosingDateCheck();
       if (!d.ok) { showToast(d.problem, 7000); return false; }
       const t = nsTaxCheck();
@@ -26533,6 +26559,10 @@ const CHANGELOG = [
       {
         title: 'CMA Builder: Clearer Checks on Large Adjustments',
         detail: 'The red and amber boxes under your closed sales used to name a comp and a total, and nothing more. Now each comp shows every adjustment as the sum it came from, such as your listing A (+8%) against a comp C (-9%), or the comp\'s fee minus yours times the HOA multiplier, and the box tells you which box to check and what to change, starting with the biggest cause. The math itself has not changed and is checked; a large total means a number to check or a sale that is not like your listing.\n\nThe condition key now sits just under the PDF box at the top of Step 1, so you read it before you fill anything in, and again just above Active Listings.\n\nHow to use: When a box appears under your closed sales, read the What to check steps and fix the boxes it names. The box goes away once the totals are reasonable.\n\nBest practice: Grade your listing first and grade it honestly. Most homes are a B; a listing graded A adds 8% to every B comp and almost 19% to every C comp.'
+      },
+      {
+        title: 'Net Sheet: DC Addresses Fill In Their City',
+        detail: 'A net sheet needs the full address, so an address like 1324 E St SE #208, 20003 was refused for missing the city even with Washington, DC picked. DC has one city, so the OS now fills it in: with a DC ZIP code, and Washington, DC picked or DC in the address, Calculate, Download and Save add Washington, DC to the address box themselves and say so under it. Maryland and Virginia still need the city typed, because a county does not name a city.\n\nHow to use: Type the street and ZIP code, pick Washington, DC, and press Calculate.\n\nBest practice: Add the full address to the listing itself too, so every tool has it.'
       }
     ]
   }
