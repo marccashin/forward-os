@@ -49,7 +49,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
 (async () => {
   ok(GUIDES.length >= 1, 'FOS_GUIDES is in index.html and lists at least one guide', GUIDES.length);
-  ok(GUIDES.some(g => g.url === '/guides/FORWARD_If_This_Then_That.pdf' && g.title === 'If This, Then That'), 'the If This, Then That guide is in the list');
+  ok(GUIDES.some(g => g.url === '/guides/FORWARD_If_This_Then_That.pdf' && g.title === 'Deal Stages: Who Does What'), 'the If This, Then That guide is in the list as Deal Stages: Who Does What (Marc, Nov 13, 2026)');
   ok(new Set(GUIDES.map(g => g.id)).size === GUIDES.length, 'every guide has its own id');
   for (const g of GUIDES) {
     const f = path.join(dir, g.url);
