@@ -205,6 +205,7 @@ jobs:
               t "Net sheet per listing test (no card shows another card's net sheet)" node head/ci/net-sheet-listing-test.js head
               t "Seller Prep per listing test (no listing shows another listing's checklist)" node head/ci/seller-prep-listing-test.js head
               t "Dashboard rows test (a row opens that listing or that buyer)" node head/ci/dashboard-rows-test.js head
+              t "Address map test (New Property confirmed on a map, net sheet shows the pin)" node head/ci/address-map-pin-test.js head
               t "Deal Progress test (who did what on a listing; agent ticks)" node head/ci/deal-progress-test.js head
               t "Version history test (every earlier save of a listing item can be opened)" node head/ci/note-history-test.js head
               t "Net sheet numbers test (executed statements to the penny, every jurisdiction)" node head/ci/net-sheet-numbers-test.js head
