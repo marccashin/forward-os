@@ -2451,7 +2451,9 @@ body {
             </div>
           </div>
 
-          <!-- FUB Reminder Card -->
+          <!-- FUB Reminder Card. Named Keep Follow Up Boss current (Marc, Nov 14, 2026): it only
+               opens the reminder popup, and as Deal Cards & SOP Tasks it read like the SOP folder
+               next to Guides & SOPs. The old name is the small line above it. -->
           <div
             data-fub-reminder
             @click="taskModalShow=true"
@@ -2460,15 +2462,15 @@ body {
             @mouseleave="$event.currentTarget.style.borderColor='var(--cream-mid)'"
           >
             <div>
-              <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--navy);opacity:0.42;margin-bottom:5px;">Follow Up Boss</div>
-              <div style="font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">Deal Cards &amp; SOP Tasks</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--navy);opacity:0.42;margin-bottom:5px;">Deal Cards &amp; SOP Tasks</div>
+              <div style="font-family:'Montserrat',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);">Keep Follow Up Boss current</div>
             </div>
             <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:var(--navy);opacity:0.35;">→</div>
           </div>
 
           <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
                one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login, right under
-               the Deal Cards & SOP Tasks card (Marc, Nov 13, 2026). -->
+               the Keep Follow Up Boss current card (Marc, Nov 13, 2026). -->
           <div class="fos-guides" data-guides>
             <div class="fos-guides-txt">
               <div class="fos-guides-title">Guides &amp; SOPs</div>
@@ -8522,6 +8524,9 @@ body {
                         </div>
                       </div>
                     </div>
+                    <div v-if="section.notWritten && !(section.content || '').trim()" data-bp-unwritten style="padding:10px 18px;background:#fef2f2;border-top:1px solid #fecaca;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;color:#b91c1c;">
+                      This section was NOT written: {{ section.notWritten }}. Nothing was put in its place and it is left out of the PDF. Write it yourself and tick Include, or close this and press Generate Buyer Package again.
+                    </div>
                     <!-- Edit area -->
                     <div v-if="byrPackageOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div v-if="!section.editable" style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b7280;font-style:italic;margin-bottom:8px;">This section is auto-formatted in the PDF and is shown here for reference only.</div>
@@ -8540,6 +8545,7 @@ body {
                     <div v-else-if="!section.included" style="padding:8px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
                 </div>
+                <div v-if="byrPackageReviewProblem" data-bp-problem style="padding:10px 24px;background:#fef2f2;border-top:1px solid #fecaca;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;color:#b91c1c;flex-shrink:0;">{{ byrPackageReviewProblem }}</div>
                 <!-- Footer actions -->
                 <div style="padding:16px 24px;border-top:1px solid var(--cream-mid);display:flex;gap:10px;flex-shrink:0;background:var(--cream);">
                   <button @click="byrApprovePackage()" style="flex:1;padding:13px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;cursor:pointer;transition:background 0.15s;">&#10003; Approve &amp; Download</button>
@@ -24274,12 +24280,14 @@ No markdown. Valid JSON only.`;
     const byrPackageSections = ref([]);
     const byrShowPackageReview = ref(false);
     const byrPackageOpenSection = ref(null);
+    const byrPackageReviewProblem = ref('');
 
     async function byrGeneratePackage() {
       if (!byrActiveBuyer.value) return;
       const b = byrActiveBuyer.value;
       byrPackageLoading.value = true;
       byrPackageError.value = '';
+      byrPackageReviewProblem.value = '';
       try {
         const _name    = b.buyer_name || 'Valued Client';
         const _agent   = agentName.value || 'Your FORWARD Agent';
@@ -24306,6 +24314,10 @@ No markdown. Valid JSON only.`;
           _timeline    ? 'Timeline: '        + _timeline    : '',
         ].filter(Boolean).join('\n');
 
+        // A section whose AI call fails is NOT written and says so (Marc, Nov 14, 2026: no demo
+        // output). Until then the letter, budget and neighborhood sections filled in with canned
+        // paragraphs, with made-up market claims ("offers within 5-10 days"), and nothing said so.
+        const _unwritten = {};
         const _sys = 'You are a luxury real estate agent writing polished, client-facing documents for FORWARD | Corcoran McEnearney. Tone: warm, confident, professional. Plain text only, no markdown, no asterisks, no em dashes.';
 
         // ── 1. Letter to Buyer
@@ -24322,10 +24334,8 @@ No markdown. Valid JSON only.`;
             + '- Plain text only, no markdown';
           _letter = await claude(_lPrompt, _sys, 3000);
         } catch(e) {
-          _letter = 'Dear ' + _name + ',\n\n'
-            + 'Thank you for trusting FORWARD to guide you through your home search. It is my privilege to represent you, and I am fully committed to finding you the right home at the right price.\n\n'
-            + 'Every step of the process — from understanding your needs, to navigating the market, to negotiating on your behalf — I will be your advocate and your guide.\n\n'
-            + 'Enclosed you will find everything you need to begin this search with clarity and confidence. Please reach out any time with questions.';
+          _unwritten.letter = fosWhy(e);
+          _letter = '';
         }
 
         // ── 2. What Your Budget Gets You
@@ -24347,7 +24357,8 @@ No markdown. Valid JSON only.`;
             + 'Be specific to the DMV market. No markdown.';
           _budget = await claude(_bPrompt, _sys, 3000);
         } catch(e) {
-          _budget = 'At ' + (_budgetStr || 'your target budget') + (_markets ? ' in ' + _markets : ' in your target markets') + ', you are competing in an active tier of the DMV market. Properties matching your criteria move quickly — well-priced homes in this range typically receive offers within 5-10 days.\n\nYour pre-approval' + (_preApproval ? ' of ' + _preApproval : '') + ' positions you as a serious buyer. When the right home appears, we will be ready to move decisively.';
+          _unwritten.budget = fosWhy(e);
+          _budget = '';
         }
 
         // ── 3. Neighborhood Intelligence
@@ -24365,7 +24376,8 @@ No markdown. Valid JSON only.`;
             + 'Be specific to the actual DMV neighborhoods. Knowledgeable and honest. No markdown headers.';
           _neighborhoods = await claude(_nPrompt, _sys, 6000);
         } catch(e) {
-          _neighborhoods = 'Your target markets span some of the most sought-after areas in the DMV. Each has its own character, price dynamics, and buyer profile — and understanding those nuances is what turns a good search into a great outcome.\n\nI will walk you through what each area offers at your budget level as we tour, and will flag any market shifts that affect our strategy along the way.';
+          _unwritten.neighborhoods = fosWhy(e);
+          _neighborhoods = '';
         }
 
         // ── Static sections (editable in review panel)
@@ -24380,9 +24392,9 @@ No markdown. Valid JSON only.`;
         const _bio = AGENT_BIOS[_agent] || (_agent + '\nFORWARD | Corcoran McEnearney\n' + (AGENT_EMAILS[_agent] || '') + (AGENT_PHONES[_agent] ? '  ·  ' + AGENT_PHONES[_agent] : '') + '\nwww.FwrdRealEstate.com');
 
         byrPackageSections.value = [
-          { id: 'letter',        title: 'Letter to Buyer',           content: _letter,        editable: true,  included: true },
-          { id: 'budget',        title: 'What Your Budget Gets You', content: _budget,        editable: true,  included: true },
-          { id: 'neighborhoods', title: 'Neighborhood Intelligence', content: _neighborhoods, editable: true,  included: true },
+          { id: 'letter',        title: 'Letter to Buyer',           content: _letter,        editable: true,  included: !_unwritten.letter,        notWritten: _unwritten.letter || '' },
+          { id: 'budget',        title: 'What Your Budget Gets You', content: _budget,        editable: true,  included: !_unwritten.budget,        notWritten: _unwritten.budget || '' },
+          { id: 'neighborhoods', title: 'Neighborhood Intelligence', content: _neighborhoods, editable: true,  included: !_unwritten.neighborhoods, notWritten: _unwritten.neighborhoods || '' },
           { id: 'difference',    title: 'The FORWARD Difference',    content: _difference,    editable: true,  included: true },
           { id: 'partners',      title: 'Trusted Partners',          content: _partners,      editable: true,  included: true },
           { id: 'how-we-work',   title: 'How We Work',               content: _howWeWork,     editable: true,  included: true },
@@ -24406,8 +24418,23 @@ No markdown. Valid JSON only.`;
     }
 
     async function byrApprovePackage() {
+      // A ticked section with no text used to be left out of the PDF without a word. Say so and
+      // make nothing until it is written or unticked (Nov 14, 2026).
+      const _empty = (byrPackageSections.value || []).filter(function (s) { return s.included && !(s.content || '').trim(); }).map(function (s) { return s.title; });
+      if (_empty.length) {
+        byrPackageReviewProblem.value = 'Not made: ' + _empty.join(', ') + (_empty.length === 1 ? ' is' : ' are') + ' ticked to include but empty. Write it, or untick Include.';
+        return;
+      }
+      byrPackageReviewProblem.value = '';
       byrShowPackageReview.value = false;
-      await byrBuildPackage(byrActiveBuyer.value, byrPackageSections.value);
+      // A failed PDF step (its fonts or the PDF library not loading) used to close the panel and
+      // say nothing. Reopen it with the reason; the sections are kept as they were (Nov 14, 2026).
+      try {
+        await byrBuildPackage(byrActiveBuyer.value, byrPackageSections.value);
+      } catch (e) {
+        byrPackageReviewProblem.value = 'The PDF was NOT made: ' + fosWhy(e) + '. Your sections are kept. Press Approve again.';
+        byrShowPackageReview.value = true;
+      }
     }
 
     async function byrBuildPackage(b, sections) {
@@ -26563,6 +26590,21 @@ const CHANGELOG = [
       {
         title: 'Net Sheet: DC Addresses Fill In Their City',
         detail: 'A net sheet needs the full address, so an address like 1324 E St SE #208, 20003 was refused for missing the city even with Washington, DC picked. DC has one city, so the OS now fills it in: with a DC ZIP code, and Washington, DC picked or DC in the address, Calculate, Download and Save add Washington, DC to the address box themselves and say so under it. Maryland and Virginia still need the city typed, because a county does not name a city.\n\nHow to use: Type the street and ZIP code, pick Washington, DC, and press Calculate.\n\nBest practice: Add the full address to the listing itself too, so every tool has it.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-11-14',
+    date: 'November 14, 2026',
+    title: 'Buyer Package Says What Was Not Written',
+    updates: [
+      {
+        title: 'Buyer Package Says What Was Not Written',
+        detail: 'When the AI could not write the Letter to Buyer, What Your Budget Gets You or Neighborhood Intelligence, the Buyer Package quietly put in stock paragraphs instead, including market claims that were never checked. Now a section the AI could not write is left empty, marked in red with the reason, and left out of the PDF. Nothing is ever put in its place. If a section is ticked to include but has no text, the package is not made and the panel says which one. If the PDF itself cannot be made, the panel opens again and says why, with your sections kept.\n\nHow to use: Generate the Buyer Package as usual. If a section is red, press Generate Buyer Package again, or write that section yourself and tick Include.\n\nBest practice: Read every section before you approve. The package goes to your buyer under your name.'
+      },
+      {
+        title: 'Keep Follow Up Boss Current',
+        detail: 'The card at the top of the Dashboard that opens the Follow Up Boss reminder is now called Keep Follow Up Boss current, so it is not mistaken for Guides and SOPs right under it. It opens the same reminder as before.\n\nHow to use: Press Keep Follow Up Boss current on the Dashboard to see the reminder.\n\nBest practice: Update your Follow Up Boss deal cards and SOP tasks the same day anything changes on a deal.'
       }
     ]
   }
@@ -29201,7 +29243,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrOfferSync, byrRetryOfferSave, voiceCopyGenerated, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrConfirmArchive, byrDoArchive, byrArchiveTarget, byrArchiving, byrUpdateProfile,
-      byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrGeneratePackage, byrApprovePackage,
+      byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrPackageReviewProblem, byrGeneratePackage, byrApprovePackage,
       byrCreating,
       atEntries, atNewSection, atNewTitle, atNewDesc, atAddEntry, atDeleteEntry, atHandleFile,
       FORWARD_AGENTS, webhookErrors, webhookErrorsLoading, webhookErrorAgents, webhookErrorResolving, loadWebhookErrors, resolveWebhookError,
