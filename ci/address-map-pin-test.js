@@ -152,6 +152,26 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/could not be drawn/.test(s) && /map test failure/.test(s), 'New Property: a map that cannot be drawn says so in its box', s);
   await S(page, () => { window.__g.mapThrows = false; document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = false; });
 
+  // Closing the window and pressing New Property again starts blank (Marc, Nov 14, 2026:
+  // the last address came back, already marked Confirmed on the map).
+  await S(page, () => { window.__g.answers = { preds: [{ description: '4 Wendslow Pl, Lutherville, MD 21093, USA', place_id: 'P4' }], details: { P4: { geometry: { location: { lat: () => 39.4, lng: () => -76.6 } }, formatted_address: '4 Wendslow Pl, Lutherville, MD 21093, USA' } } }; });
+  await openNew('4 Wendslow Pl', 'Lutherville', 'MD', '21093');
+  await page.locator('input[placeholder="e.g. #4B"]').first().fill('2');
+  await page.locator('[data-nl-pin-check]').click(); await page.waitForTimeout(400);
+  await page.locator('[data-nl-pin-yes]').click(); await page.waitForTimeout(150);
+  ok(await page.locator('[data-nl-pin-ok]').isVisible(), 'New Property again: confirmed before closing');
+  await page.evaluate(() => { const m = document.querySelector('input[placeholder="e.g. 1234 Oak St NW"]').closest('div[style*="position: fixed"]'); Array.from(m.querySelectorAll('button')).find(b => b.textContent.trim() === '✕').click(); }); await page.waitForTimeout(200);
+  await S(page, async () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.view = 'listings'; await new Promise(r => setTimeout(r, 400)); });
+  const before = posts.length;
+  await page.locator('button.btn-navy', { hasText: 'New Property' }).first().click(); await page.waitForTimeout(250);
+  s = await page.evaluate(() => Array.from(document.querySelector('input[placeholder="e.g. 1234 Oak St NW"]').closest('div[style*="position: fixed"]').querySelectorAll('input')).filter(i => i.type !== 'checkbox').map(i => i.value));
+  ok(s.length >= 6 && s.every(v => v === ''), 'New Property again: closing and pressing New Property opens a blank form (address, unit, city, state, ZIP, sellers)', s);
+  ok(!(await page.locator('[data-nl-pin-ok]').count()) && !(await page.locator('[data-pin-map="nl"]').count()), 'New Property again: no map and no Confirmed carried over');
+  s = await S(page, () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; return x.lstNewMarket + '|' + x.lstNewPin.state + '|' + x.lstNewPin.ok; });
+  ok(s === '||false', 'New Property again: Market starts empty and the map check is cleared', s);
+  ok(posts.length === before, 'New Property again: nothing was sent', posts.length);
+  await S(page, () => { document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = false; });
+
   // ---------------- Net sheet ----------------
   await S(page, async () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.view = 'just-listed'; await new Promise(r => setTimeout(r, 300)); x.lpOpen('netsheet'); await new Promise(r => setTimeout(r, 400)); });
   await S(page, () => { window.__g.answers = { preds: [{ description: '1324 E St SE, Washington, DC 20003, USA', place_id: 'P1' }], details: { P1: Object.assign({}, { geometry: { location: { lat: () => 38.8831, lng: () => -76.9874 } }, formatted_address: '1324 E St SE, Washington, DC 20003, USA', address_components: [{ types: ['administrative_area_level_1'], short_name: 'DC', long_name: 'District of Columbia' }] }) } }; window.__g.maps = []; window.__g.details = []; });
