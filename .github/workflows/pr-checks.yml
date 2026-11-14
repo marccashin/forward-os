@@ -29,6 +29,9 @@
 #                        and Back to Listing returns to the listing.
 #   ci/dashboard-rows-test.js  a row under Active Listings or Buyer Pipeline on
 #                        the Dashboard opens that listing or that buyer.
+#   ci/tool-panel-jump-test.js  a listing tool pressed below an open one stays
+#                        where it was pressed and opens under it, on a computer
+#                        and a phone; Go to MLS Data shows MLS Data.
 #   ci/dashboard-guides-test.js  Guides & SOPs on the Dashboard: every login sees
 #                        every guide, each file is a PDF in guides/, a computer
 #                        opens a new tab, a phone opens the in-app viewer.
@@ -216,6 +219,7 @@ jobs:
               t "Campaign editor test (one Seller Prep card, typing and clicking never move the panel)" node head/ci/campaign-editor-test.js head
               t "Offer strategies test (every strategy kept on the buyer, reopened as a new copy, side by side)" node head/ci/offer-strategies-test.js head
               t "Dashboard guides test (Guides & SOPs for every login, new tab on a computer, in-app viewer on a phone)" node head/ci/dashboard-guides-test.js head
+              t "Tool panel test (a listing tool opens where it was pressed, the page never jumps)" node head/ci/tool-panel-jump-test.js head
               ;;
           esac
           if [ -n "$failed" ]; then

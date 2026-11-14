@@ -6749,7 +6749,7 @@ body {
 
               <!-- Tool: MLS Data (Manual Form) -->
               <div class="subfolder-panel">
-                <div class="subfolder-header" @click="lstToolOpen = lstToolOpen==='mlsdata' ? null : 'mlsdata'">
+                <div class="subfolder-header" data-tool-header="mlsdata" @click="lstToolOpen = lstToolOpen==='mlsdata' ? null : 'mlsdata'">
                   <div style="display:flex;align-items:center;gap:10px;">
                     <svg viewBox="0 0 24 24" style="width:16px;height:16px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><rect x="8" y="1" width="8" height="4" rx="1" fill="#0d1f35"/><rect x="4" y="3" width="16" height="19" rx="1" fill="#0d1f35"/><rect x="7" y="8" width="10" height="1.5" fill="white"/><rect x="7" y="12" width="10" height="1.5" fill="white"/><rect x="7" y="16" width="6" height="1.5" fill="white"/></svg>
                     <span class="subfolder-tool-name">MLS Data</span>
@@ -9265,7 +9265,7 @@ body {
         <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;">Action Required</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--navy);margin-bottom:12px;">Complete MLS Data First</div>
         <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:var(--navy);opacity:0.7;line-height:1.6;margin-bottom:20px;">Fill in and save the MLS Data section before using the other listing tools. They need the list price, beds, baths, square footage and property type to give accurate results.<span v-if="mlsGateMissing.length" data-mls-gate-missing style="display:block;margin-top:8px;font-weight:600;opacity:1;color:#b91c1c;">Still missing: {{ mlsGateMissing.join(', ') }}.</span></div>
-        <button @click="mlsGate=false" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;">Go to MLS Data</button>
+        <button data-mls-gate-go @click="mlsGate=false; fosShowToolHeader('mlsdata')" style="display:block;width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;">Go to MLS Data</button>
       </div>
     </div>
 
@@ -9423,6 +9423,37 @@ body {
 
 <script>
 const { createApp, ref, reactive, computed, onMounted, nextTick, watch, watchEffect } = Vue;
+
+// A tool header stays where it was pressed (Marc, Nov 13, 2026: "opening up the CMA snapshot
+// in the seller package jumps down to the campaign generator settings"). Only one tool panel
+// is open at a time, so pressing a header closes the panel open above it; the page lost that
+// panel's height, the pressed header went off the top of the screen and the agent was left
+// looking at whatever came next. Every tool header (.subfolder-header), whatever its own
+// click handler does, is put back at the same place on screen after the panels change,
+// before the screen is drawn. Scroll only: nothing about the tools changes.
+function fosKeepHeaderInPlace(header, topBefore) {
+  if (!header || !header.isConnected) return 0;
+  const moved = header.getBoundingClientRect().top - topBefore;
+  if (Math.abs(moved) < 1) return 0;
+  window.scrollTo({ top: window.scrollY + moved, left: window.scrollX, behavior: 'instant' });
+  return moved;
+}
+// The MLS gate sends the agent to MLS Data, which sits above the tool they pressed: bring
+// its header to the top of the screen so the panel they are sent to is in view.
+function fosShowToolHeader(key) {
+  const h = document.querySelector('[data-tool-header="' + key + '"]');
+  if (!h) return;
+  window.scrollTo({ top: Math.max(0, window.scrollY + h.getBoundingClientRect().top - 80), left: window.scrollX, behavior: 'instant' });
+}
+if (typeof document !== 'undefined') {
+  document.addEventListener('click', function (e) {
+    const header = e.target && e.target.closest && e.target.closest('.subfolder-header');
+    if (!header) return;
+    const topBefore = header.getBoundingClientRect().top;
+    // After the click's own handler and Vue's update (both finish before the next frame).
+    requestAnimationFrame(function () { fosKeepHeaderInPlace(header, topBefore); });
+  }, true);
+}
 
 // ── Active API key (module-level so claude/claudeChat/claudeVision can access it) ──
 // Set by doLogin() after fetching from Supabase — ensures key works on any device
@@ -26494,6 +26525,10 @@ const CHANGELOG = [
       {
         title: 'Guides and SOPs on Your Dashboard',
         detail: 'Your Dashboard has a new Guides and SOPs panel, near the top, right under Deal Cards and SOP Tasks. It is where every FORWARD guide, SOP and internal memo will live, so you never have to open a listing to find one. The first guide in it is Deal Stages: Who Does What (the If This, Then That guide): for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card. More guides are added here as they are finished.\n\nThe How it works card inside a listing\'s Deal Progress tab still opens the same guide.\n\nHow to use: Open the Dashboard and press a guide in Guides and SOPs. On a computer it opens in a new tab. On a phone it opens inside the OS, with Back and Share.\n\nBest practice: Check Guides and SOPs before you ask the team how something works. If a guide is wrong or missing something, tell Marc so it gets fixed for everyone.'
+      },
+      {
+        title: 'Listing Tools Stay Where You Pressed Them',
+        detail: 'Only one tool on a listing opens at a time, so pressing a tool closes the one that was open. When the open tool was above the one you pressed (MLS Data above CMA Snapshot, for example), the page jumped and you landed somewhere else, often on the Campaign Generator Settings. Now the tool you press stays where it was on your screen and opens right under your finger, on a computer and on a phone. If MLS Data still needs figures, Go to MLS Data now takes you to it.\n\nHow to use: Nothing changes. Press any tool on a listing and it opens where you pressed it.\n\nBest practice: Close a tool you are done with before you scroll on, so the listing page stays short and easy to move around.'
       }
     ]
   }
@@ -29125,7 +29160,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       ttLegAfter, ttMapFor, ttFmtTime, ttWarnText, ttLookup, ttLookupAll, ttAllLooked, ttConfirmFig, ttUnconfirmFig, ttTypeFig,
       ttFigOptions, ttSourceHost, ttFigCount, ttHomeProblems, ttTextIssues, ttOnOverviewEdit, ttCompare,
       ttCompareStale, ttCompareIssues, ttBuyerProblems, ttAgentPdf, ttSendBuyer,
-      ttAddrProblem, ttAddErr, ttUseFound, ttUseSuggestion, ttSuggestLabel, TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
+      ttAddrProblem, ttAddErr, ttUseFound, fosShowToolHeader, ttUseSuggestion, ttSuggestLabel, TT_OFFICE_ADDRESS, ttNow, ttSecs, ttMyHomeVal, ttPickPlace, ttPlaceTyped, ttTickable, ttConfirmAll, ttHomeMissing, ttAgentProblems,
       // Buyer Needs Analysis
       bnaFormatBlock,
       bnaMode, bnaView, bnaTranscript, bnaTextareaRef, bnaListening, bnaLoading, bnaError, bnaResult, bnaTab, bnaSaving, bnaSaved, bnaApplying, bnaApplied, bnaEditing,
