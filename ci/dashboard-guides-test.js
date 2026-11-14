@@ -4,7 +4,7 @@
  *
  * Opens the real index.html in headless Chromium and checks, with real clicks:
  * - every login (agents, Marc, Operations, Concierge) sees the Guides & SOPs panel
- *   on the Dashboard, below Active Listings and Buyer Pipeline, with every guide in
+ *   on the Dashboard, right under the Deal Cards & SOP Tasks card, with every guide in
  *   FOS_GUIDES and its date;
  * - every guide's file is in the repo and is a PDF (a guide pointing at a missing
  *   file would open a blank tab);
@@ -105,11 +105,14 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     ok(/Guides & SOPs/.test(txt), agent + ': the panel is titled Guides & SOPs', txt.slice(0, 80));
     ok(await page.locator('[data-guide]').count() === GUIDES.length, agent + ': one row per guide', await page.locator('[data-guide]').count());
     for (const g of GUIDES) ok(txt.includes(g.title) && txt.includes(g.sub) && txt.includes(g.dated), agent + ': ' + g.title + ' shows its title, description and date');
-    const after = await page.evaluate(() => {
-      const g = document.querySelector('[data-guides]'); const b = [...document.querySelectorAll('.panel')].find(p => /Buyer Pipeline/.test(p.innerText));
-      return !!(g && b && (b.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING));
+    // Marc, Nov 13, 2026: right under the Deal Cards & SOP Tasks card, above the stat cards.
+    const place = await page.evaluate(() => {
+      const g = document.querySelector('[data-guides]');
+      const fub = [...document.querySelectorAll('div')].find(d => d.children.length === 2 && /^\s*Follow Up Boss\s*Deal Cards & SOP Tasks/.test(d.innerText) && /taskModal|cursor/.test(d.getAttribute('style') || ''));
+      const stats = document.querySelector('.stat-grid');
+      return { right: !!(g && fub && fub.nextElementSibling === g), beforeStats: !!(g && stats && (g.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING)) };
     });
-    ok(after, agent + ': the panel comes after Active Listings and Buyer Pipeline');
+    ok(place.right && place.beforeStats, agent + ': the panel is right under Deal Cards & SOP Tasks and above the stat cards', place);
     ok(errors.length === 0, agent + ': no page errors', errors);
     await ctx.close();
   }

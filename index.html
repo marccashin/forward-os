@@ -2468,6 +2468,25 @@ body {
             <div style="font-family:'Montserrat',sans-serif;font-size:12px;color:var(--navy);opacity:0.35;">→</div>
           </div>
 
+          <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
+               one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login, right under
+               the Deal Cards & SOP Tasks card (Marc, Nov 13, 2026). -->
+          <div class="panel fos-guides" data-guides>
+            <div class="panel-header">
+              <div class="panel-title">Guides &amp; SOPs</div>
+              <div class="fos-guides-count">{{ fosGuides.length }} {{ fosGuides.length === 1 ? 'guide' : 'guides' }}</div>
+            </div>
+            <a v-for="g in fosGuides" :key="g.id" class="fos-guide-row" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" @click="fosGuideClick(g, $event)">
+              <div class="fos-guide-badge">PDF</div>
+              <div class="fos-guide-info">
+                <div class="fos-guide-title">{{ g.title }}</div>
+                <div class="fos-guide-sub">{{ g.sub }}</div>
+                <div class="fos-guide-date">{{ g.dated }}</div>
+              </div>
+              <span class="fos-guide-open">Open</span>
+            </a>
+          </div>
+
           <!-- Stat Grid -->
           <div class="stat-grid">
             <div class="stat-card" v-if="isAdmin">
@@ -2630,24 +2649,6 @@ body {
                 <button class="vbtn vbtn-primary" @click="go('buyer-package')" style="font-size:8px;">+ New Buyer</button>
               </div>
             </div>
-          </div>
-
-          <!-- Guides & SOPs (Nov 13, 2026): every guide, SOP and memo agents reference,
-               one row per entry in FOS_GUIDES (PDFs in guides/). Shown to every login. -->
-          <div class="panel fos-guides" data-guides>
-            <div class="panel-header">
-              <div class="panel-title">Guides &amp; SOPs</div>
-              <div class="fos-guides-count">{{ fosGuides.length }} {{ fosGuides.length === 1 ? 'guide' : 'guides' }}</div>
-            </div>
-            <a v-for="g in fosGuides" :key="g.id" class="fos-guide-row" :data-guide="g.id" :href="g.url" target="_blank" rel="noopener" @click="fosGuideClick(g, $event)">
-              <div class="fos-guide-badge">PDF</div>
-              <div class="fos-guide-info">
-                <div class="fos-guide-title">{{ g.title }}</div>
-                <div class="fos-guide-sub">{{ g.sub }}</div>
-                <div class="fos-guide-date">{{ g.dated }}</div>
-              </div>
-              <span class="fos-guide-open">Open</span>
-            </a>
           </div>
 
           <!-- Admin Tools Row -->
@@ -26500,7 +26501,7 @@ const CHANGELOG = [
       },
       {
         title: 'Guides and SOPs on Your Dashboard',
-        detail: 'Your Dashboard has a new Guides and SOPs panel, under Active Listings and Buyer Pipeline. It is where every FORWARD guide, SOP and internal memo will live, so you never have to open a listing to find one. The first guide in it is If This, Then That: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card. More guides are added here as they are finished.\n\nThe How it works card inside a listing\'s Deal Progress tab still opens the same guide.\n\nHow to use: Open the Dashboard and press a guide in Guides and SOPs. On a computer it opens in a new tab. On a phone it opens inside the OS, with Back and Share.\n\nBest practice: Check Guides and SOPs before you ask the team how something works. If a guide is wrong or missing something, tell Marc so it gets fixed for everyone.'
+        detail: 'Your Dashboard has a new Guides and SOPs panel, near the top, right under Deal Cards and SOP Tasks. It is where every FORWARD guide, SOP and internal memo will live, so you never have to open a listing to find one. The first guide in it is If This, Then That: for every Follow Up Boss stage, what you do, what Concierge and Transactions do, and what happens on its own when you move the deal card. More guides are added here as they are finished.\n\nThe How it works card inside a listing\'s Deal Progress tab still opens the same guide.\n\nHow to use: Open the Dashboard and press a guide in Guides and SOPs. On a computer it opens in a new tab. On a phone it opens inside the OS, with Back and Share.\n\nBest practice: Check Guides and SOPs before you ask the team how something works. If a guide is wrong or missing something, tell Marc so it gets fixed for everyone.'
       }
     ]
   }
