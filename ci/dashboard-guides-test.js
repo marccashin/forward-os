@@ -4,7 +4,7 @@
  *
  * Opens the real index.html in headless Chromium and checks, with real clicks:
  * - every login (agents, Marc, Operations, Concierge) sees the Guides & SOPs panel
- *   on the Dashboard, right under the Deal Cards & SOP Tasks card, with every guide in
+ *   on the Dashboard, right under the Keep Follow Up Boss current card (called Deal Cards & SOP Tasks until Nov 14, 2026), with every guide in
  *   FOS_GUIDES and its date;
  * - every guide's file is in the repo and is a PDF (a guide pointing at a missing
  *   file would open a blank tab);
@@ -109,15 +109,15 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       const label = ((await b.innerText()) || '').trim(), tip = (await b.getAttribute('title')) || '';
       ok(label.toLowerCase() === g.title.toLowerCase() && tip.includes(g.sub) && tip.includes(g.dated), agent + ': ' + g.title + ' is a button with its name, and its description and date on hover', { label, tip });
     }
-    // Marc, Nov 13, 2026: right under the Deal Cards & SOP Tasks card, above the stat cards.
+    // Marc, Nov 13, 2026: right under the Keep Follow Up Boss current card (called Deal Cards & SOP Tasks until Nov 14, 2026), above the stat cards.
     const place = await page.evaluate(() => {
       const g = document.querySelector('[data-guides]');
       const fub = document.querySelector('[data-fub-reminder]');
-      if (fub && !/Deal Cards & SOP Tasks/i.test(fub.textContent)) return { right: false, beforeStats: false, why: 'marker not on the Deal Cards card' };
+      if (fub && !/Keep Follow Up Boss current/i.test(fub.textContent)) return { right: false, beforeStats: false, why: 'marker not on the Keep Follow Up Boss current card' };
       const stats = document.querySelector('.stat-grid');
       return { right: !!(g && fub && fub.nextElementSibling === g), beforeStats: !!(g && stats && (g.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING)) };
     });
-    ok(place.right && place.beforeStats, agent + ': the panel is right under Deal Cards & SOP Tasks and above the stat cards', place);
+    ok(place.right && place.beforeStats, agent + ': the panel is right under Keep Follow Up Boss current and above the stat cards', place);
     ok(errors.length === 0, agent + ': no page errors', errors);
     await ctx.close();
   }
