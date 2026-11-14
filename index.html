@@ -3109,6 +3109,10 @@ body {
                     <div v-if="ns._suggestions.length" style="padding:4px 14px 6px;font-size:9px;color:#9ca3af;text-align:right;">Powered by Google</div>
                   </div>
                   <div v-if="ns._pickNote" data-ns-pick-note style="margin-top:6px;font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ ns._pickNote }}</div>
+                  <div v-if="nsPinShown" data-ns-pin style="margin-top:8px;">
+                    <div data-pin-map="ns" style="width:100%;height:180px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;background:#e5e7eb;"></div>
+                    <div style="margin-top:4px;font-size:11px;line-height:1.4;color:#374151;">Google places <strong>{{ ns._pin.label }}</strong> at the pin. Check it is the right property. The map shows the building, not the unit.</div>
+                  </div>
                 </div>
                 <div class="form-row"><label>Unit #</label><input v-model="ns.unit" type="text" placeholder="If Applicable"/></div>
               </div>
@@ -7346,6 +7350,10 @@ body {
                     <label>Property Location</label>
                     <input id="ns-address-input-detail" v-model="ns.address" type="text" placeholder="Start typing an address..." @input="nsOnAddressInput" autocomplete="off"/>
                     <div v-if="ns._pickNote" data-ns-pick-note style="margin-top:6px;font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ ns._pickNote }}</div>
+                    <div v-if="nsPinShown" data-ns-pin style="margin-top:8px;">
+                    <div data-pin-map="ns" style="width:100%;height:180px;border:1px solid #d1d5db;border-radius:6px;overflow:hidden;background:#e5e7eb;"></div>
+                    <div style="margin-top:4px;font-size:11px;line-height:1.4;color:#374151;">Google places <strong>{{ ns._pin.label }}</strong> at the pin. Check it is the right property. The map shows the building, not the unit.</div>
+                  </div>
                     <div v-if="ns._suggestions.length" style="position:absolute;top:100%;left:0;right:0;z-index:999;background:#fff;border:1px solid #d1d5db;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);max-height:180px;overflow-y:auto;">
                       <div v-for="(s,i) in ns._suggestions" :key="i" @mousedown.prevent="nsSelectSuggestion(s)" style="padding:8px 12px;font-size:12px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
                     </div>
@@ -9329,6 +9337,24 @@ body {
               <option value="VA">Virginia</option>
             </select>
           </div>
+        </div>
+
+        <!-- Address on a map, confirmed once (Nov 14, 2026) -->
+        <div data-nl-pin style="margin-bottom:14px;">
+          <button v-if="!lstNewPinCurrent" type="button" data-nl-pin-check @click="lstNewPinLookup" :disabled="!lstNewStreet.trim()" style="width:100%;padding:10px;background:var(--white);border:1px solid var(--gold-muted);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Check the address on a map</button>
+          <template v-else>
+            <div v-if="lstNewPin.state==='looking'" style="font-family:'Montserrat',sans-serif;font-size:10px;color:var(--navy);opacity:0.6;">Finding it on the map...</div>
+            <template v-if="lstNewPin.state==='found'">
+              <div data-pin-map="nl" style="width:100%;height:200px;border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;background:#e5e7eb;"></div>
+              <div style="margin-top:6px;font-size:11px;line-height:1.4;color:#374151;">Google places <strong>{{ lstNewPin.label }}</strong> at the pin. The map shows the building, not the unit.</div>
+              <button v-if="!lstNewPin.ok" type="button" data-nl-pin-yes @click="lstNewPin.ok=true" style="margin-top:8px;width:100%;padding:10px;background:var(--navy);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);cursor:pointer;">Yes, this is the property</button>
+              <div v-else data-nl-pin-ok style="margin-top:6px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:#15803d;">Confirmed on the map</div>
+            </template>
+            <template v-if="lstNewPin.state==='notfound'">
+              <div data-nl-pin-why style="font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ lstNewPin.why }} Check the address carefully against the listing agreement before creating the property.</div>
+              <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--navy);cursor:pointer;"><input type="checkbox" v-model="lstNewPin.ok" data-nl-pin-manual> I checked the address myself and it is correct</label>
+            </template>
+          </template>
         </div>
 
         <!-- Seller name(s) -->
@@ -14024,6 +14050,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (!lstNewMarket.value) { lstCreateError.value = 'Choose the listing\'s state in Market: DC, Maryland or Virginia.'; return; }
         if (_st && _st !== lstNewMarket.value) { lstCreateError.value = 'The State box says ' + _st + ' but Market says ' + lstNewMarket.value + '. Make them match before creating the listing.'; return; }
       }
+      // Confirmed on a map first (Nov 14, 2026); an address changed after the check needs it again.
+      if (lstNewStreet.value.trim() && !(lstNewPinCurrent.value && lstNewPin.ok)) {
+        lstCreateError.value = lstNewPinCurrent.value ? 'Confirm the address on the map before creating the property.' : 'Check the address on a map first: press Check the address on a map.';
+        return;
+      }
       lstCreating.value = true; lstCreateError.value = '';
       try {
         if (!SUPABASE_URL) throw new Error('Supabase is not configured.');
@@ -14075,6 +14106,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
         lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
         lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = '';
+        lstNewPinReset();
 
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
@@ -17695,7 +17727,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       _propId:null, _voicePrefill:false, nsTaxH1Touched:false, nsTaxH2Touched:false,
       result:null, breakdown:[],
       _showLoans:false, _showComp:false, _showConcession:false, _showHOA:false, _showTax:false, _showOther:false,
-      _suggestions:[], _listingSugs:[], _pickNote:'',
+      _suggestions:[], _listingSugs:[], _pickNote:'', _pin:null,
       _detectedCounty:'', _detectedState:''
     });
     // HOA fee from the listing's saved MLS Data note (line 'HOA Fee : <value>').
@@ -17876,6 +17908,85 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     let nsPlacesService = null;
     let nsPlacesDetails = null;
     let nsSearchTimer = null;
+    // A map with a pin where an address is entered for the first time (Marc, Nov 14, 2026:
+    // "a map with a pin should show up anytime an agent needs to enter an address to
+    // specifically make sure that it's the correct location"). It uses the Maps JavaScript
+    // API already loaded for the suggestions: no new Google service. The pin is where Google
+    // puts the BUILDING; it cannot tell units apart, and the wording under every map says so.
+    // Google caps map loads for this key at 100 a day (Nov 14, 2026). A map that cannot be
+    // drawn says so in its box, never a blank square.
+    function fosPinFromPlace(place) {
+      const loc = place && place.geometry && place.geometry.location;
+      if (!loc) return null;
+      const lat = typeof loc.lat === 'function' ? loc.lat() : loc.lat;
+      const lng = typeof loc.lng === 'function' ? loc.lng() : loc.lng;
+      if (typeof lat !== 'number' || typeof lng !== 'number') return null;
+      return { lat: lat, lng: lng, label: String(place.formatted_address || '').replace(/,\s*USA$/, '') };
+    }
+    async function fosPinMapDraw(sel, pin) {
+      await nextTick();
+      if (!pin) return;
+      const els = document.querySelectorAll('[data-pin-map="' + sel + '"]');
+      for (const el of els) {
+        try {
+          if (typeof google === 'undefined' || !google.maps) throw new Error('Google Maps is not loaded');
+          let MapC = google.maps.Map, MarkerC = google.maps.Marker;
+          if ((!MapC || !MarkerC) && google.maps.importLibrary) {
+            MapC = MapC || (await google.maps.importLibrary('maps')).Map;
+            MarkerC = MarkerC || (await google.maps.importLibrary('marker')).Marker;
+          }
+          const pos = { lat: pin.lat, lng: pin.lng };
+          if (!el._fosMap) {
+            el._fosMap = new MapC(el, { center: pos, zoom: 18, mapTypeId: 'hybrid', disableDefaultUI: true, zoomControl: true, gestureHandling: 'cooperative' });
+            el._fosPin = new MarkerC({ position: pos, map: el._fosMap });
+          } else { el._fosMap.setCenter(pos); el._fosPin.setPosition(pos); }
+        } catch (e) {
+          console.warn('Address map not drawn:', e);
+          el.textContent = 'The map could not be drawn here (' + fosWhy(e) + '). Check the address against Google Maps yourself.';
+          el.style.cssText += ';height:auto;padding:10px;font-size:11px;color:#b91c1c;background:#fef2f2;';
+        }
+      }
+    }
+    // New Property: the address every listing tool reads is confirmed on a map once, here
+    // (Nov 14, 2026). Check on map looks the typed address up (the same Google lookup as the
+    // net sheet, one suggestion list plus one detail), and only takes Google's answer when
+    // its house number and street are the typed ones. Create Property refuses until the
+    // agent presses Yes, this is the property, or, when Google cannot place it (new
+    // construction, a typo Google does not know), ticks that they checked it themselves.
+    // Changing any address box makes the check out of date (lstNewPinSig).
+    const lstNewPin = reactive({ state: '', lat: null, lng: null, label: '', sig: '', ok: false, why: '' });
+    const lstNewPinSig = computed(() => [lstNewStreet.value, lstNewCity.value, lstNewState.value, lstNewZip.value].map(v => String(v || '').trim().toLowerCase()).join('|'));
+    const lstNewPinCurrent = computed(() => !!lstNewPin.state && lstNewPin.sig === lstNewPinSig.value);
+    // A map box removed and shown again (an address changed and changed back) is a new box:
+    // draw it again, never leave it blank.
+    watch(() => lstNewPinCurrent.value && lstNewPin.state === 'found', (on) => { if (on) fosPinMapDraw('nl', { lat: lstNewPin.lat, lng: lstNewPin.lng }); });
+    function lstNewPinReset() { Object.assign(lstNewPin, { state: '', lat: null, lng: null, label: '', sig: '', ok: false, why: '' }); }
+    function lstNewPinLookup() {
+      const street = lstNewStreet.value.trim();
+      if (!street) return;
+      const sig = lstNewPinSig.value;
+      lstNewPinReset(); lstNewPin.sig = sig; lstNewPin.state = 'looking';
+      if (!nsPlacesService || !nsPlacesDetails) initAddressAutocomplete();
+      const notFound = (why) => { if (lstNewPin.sig !== sig) return; lstNewPin.state = 'notfound'; lstNewPin.why = why; };
+      if (!nsPlacesService || !nsPlacesDetails) { notFound('Google Maps could not be reached, so the address cannot be shown on a map.'); return; }
+      const typed = [street, lstNewCity.value.trim(), [lstNewState.value.trim().toUpperCase(), lstNewZip.value.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+      const want = fosAddrParts(typed, '');
+      nsPlacesService.getPlacePredictions({ input: typed, types: ['address'], componentRestrictions: { country: 'us' } }, (preds, status) => {
+        if (lstNewPin.sig !== sig) return;
+        const hit = (status === 'OK' && preds ? preds : []).find(pr => {
+          const g = fosAddrParts(pr.description, '');
+          return g.street === want.street && (!g.quad || !want.quad || g.quad === want.quad) && (!want.state || !g.state || g.state === want.state);
+        });
+        if (!hit) { notFound('Google did not find this exact street address.'); return; }
+        nsPlacesDetails.getDetails({ placeId: hit.place_id, fields: ['geometry', 'formatted_address'] }, (place, s2) => {
+          if (lstNewPin.sig !== sig) return;
+          const pin = s2 === 'OK' ? fosPinFromPlace(place) : null;
+          if (!pin) { notFound('Google could not place this address on a map.'); return; }
+          Object.assign(lstNewPin, { state: 'found', lat: pin.lat, lng: pin.lng, label: pin.label });
+          fosPinMapDraw('nl', pin);
+        });
+      });
+    }
     function initAddressAutocomplete() {
       try {
         if (typeof google !== 'undefined' && google.maps && google.maps.places) {
@@ -17907,7 +18018,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       const st = parts.state || fosMarketCode(p.market);
       ns.address = [parts.streetRaw, parts.city, [st, parts.zip].filter(Boolean).join(' ')].filter(Boolean).join(', ');
       ns.unit = parts.unitRaw;
-      ns._suggestions = []; ns._listingSugs = []; ns._pickNote = '';
+      ns._suggestions = []; ns._listingSugs = []; ns._pickNote = ''; ns._pin = null;
       nsDetectJurisdiction();
       if (!parts.zip || !parts.city) nsCompletePicked(parts, st);
     }
@@ -17948,8 +18059,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
         });
       });
     }
+    const nsPinShown = computed(() => !!(ns._pin && ns.address && fosAddrParts(ns.address, '').street === ns._pin.street));
+    watch(nsPinShown, (on) => { if (on) fosPinMapDraw('ns', ns._pin); });
     function nsOnAddressInput() {
       ns._pickNote = '';
+      ns._pin = null;
       ns._listingSugs = nsListingSuggestions(ns.address);
       nsDetectJurisdiction(); // regex fallback always runs
       clearTimeout(nsSearchTimer);
@@ -17974,8 +18088,13 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       ns._suggestions = [];
       // Use PlacesService.getDetails to get structured address components
       if (nsPlacesDetails) {
-        nsPlacesDetails.getDetails({ placeId: suggestion.place_id, fields: ['address_components'] }, (place, status) => {
+        nsPlacesDetails.getDetails({ placeId: suggestion.place_id, fields: ['address_components', 'geometry', 'formatted_address'] }, (place, status) => {
           if (status !== 'OK' || !place) { nsDetectJurisdiction(); return; }
+          // The pin for the map under the address box (Nov 14, 2026). Tied to the street it
+          // was found for, so typing another address hides it (nsPinShown).
+          const _pin = fosPinFromPlace(place);
+          ns._pin = _pin ? Object.assign(_pin, { street: fosAddrParts(ns.address, '').street }) : null;
+          if (ns._pin) fosPinMapDraw('ns', ns._pin);
           const components = place.address_components || [];
           let state = '', stateLong = '', county = '', city = '';
           for (const c of components) {
@@ -26605,6 +26724,10 @@ const CHANGELOG = [
       {
         title: 'Keep Follow Up Boss Current',
         detail: 'The card at the top of the Dashboard that opens the Follow Up Boss reminder is now called Keep Follow Up Boss current, so it is not mistaken for Guides and SOPs right under it. It opens the same reminder as before.\n\nHow to use: Press Keep Follow Up Boss current on the Dashboard to see the reminder.\n\nBest practice: Update your Follow Up Boss deal cards and SOP tasks the same day anything changes on a deal.'
+      },
+      {
+        title: 'Check the Address on a Map',
+        detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself.\n\nHow to use: In New Property, fill in the address, press Check the address on a map, look at the pin, and press Yes, this is the property. If Google cannot find the address (new construction, for example), check it against the listing agreement and tick the box that says you checked it.\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
       }
     ]
   }
@@ -28386,7 +28509,7 @@ async function dismissUpdates() {
             result:null, breakdown:[],
             _showLoans:false, _showComp:false, _showConcession:false,
             _showHOA:false, _showTax:false, _showOther:false,
-            _suggestions:[], _listingSugs:[], _pickNote:'', _detectedCounty:'', _detectedState:''
+            _suggestions:[], _listingSugs:[], _pickNote:'', _pin:null, _detectedCounty:'', _detectedState:''
           });
           break;
         case 'cash-to-close':
@@ -29243,7 +29366,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Buyer System
       byrBuyers, byrActiveBuyer, byrLoading, byrShowNewModal, byrProfileOpen, byrNewName, byrNewEmail, byrNewPhone, byrDeleteTarget, byrDeleting, byrActiveFiles, byrUploading, byrOfferMap, byrNewOffer, byrOfferStatuses, byrGetOffers, byrAddOffer, byrUpdateOfferStatus, byrRemoveOffer, byrOfferSync, byrRetryOfferSave, voiceCopyGenerated, byrSubfolderFiles, byrUploadFile, byrDeleteFile, loadByrFiles,
       byrFetchBuyers, byrCreateBuyer, byrOpenBuyer, byrConfirmDelete, byrDoDelete, byrConfirmArchive, byrDoArchive, byrArchiveTarget, byrArchiving, byrUpdateProfile,
-      byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrPackageReviewProblem, byrGeneratePackage, byrApprovePackage,
+      byrPackageLoading, byrPackageError, byrPackageSections, byrShowPackageReview, byrPackageOpenSection, byrPackageReviewProblem, lstNewPin, lstNewPinCurrent, lstNewPinLookup, nsPinShown, byrGeneratePackage, byrApprovePackage,
       byrCreating,
       atEntries, atNewSection, atNewTitle, atNewDesc, atAddEntry, atDeleteEntry, atHandleFile,
       FORWARD_AGENTS, webhookErrors, webhookErrorsLoading, webhookErrorAgents, webhookErrorResolving, loadWebhookErrors, resolveWebhookError,

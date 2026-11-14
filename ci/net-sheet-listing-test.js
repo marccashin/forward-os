@@ -296,13 +296,17 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     const start = st.lstNewMarket;
     fill('VA', 'DC'); await st.lstCreateProperty(); const clash = st.lstCreateError, clashPosts = posts.length;
     fill('', ''); st.lstNewAddress = ''; await st.lstCreateProperty(); const none = st.lstCreateError, nonePosts = posts.length;
+    // Since Nov 14, 2026 the address is confirmed on a map before anything is created.
+    fill('VA', ''); await st.lstCreateProperty(); const unpinned = st.lstCreateError, unpinnedPosts = posts.length;
+    Object.assign(st.lstNewPin, { state: 'found', sig: ['1300 army navy dr', 'arlington', 'va', '22202'].join('|'), ok: true });
     fill('VA', ''); await st.lstCreateProperty(); await new Promise(r => setTimeout(r, 200));
     window.fetch = f0;
-    return { start, clash, clashPosts, none, nonePosts, sent: posts.map(p => p.market) };
+    return { start, clash, clashPosts, none, nonePosts, unpinned, unpinnedPosts, sent: posts.map(p => p.market) };
   });
   ok(s.start === '', 'New Listing: Market starts empty, not DC', s.start);
   ok(/State box says VA but Market says DC/.test(s.clash) && s.clashPosts === 0, 'New Listing: State VA with Market DC is refused and nothing is created', s);
   ok(/Choose the listing's state/.test(s.none) && s.nonePosts === 0, 'New Listing: no state anywhere is refused and nothing is created', s);
+  ok(/Check the address on a map/.test(s.unpinned) && s.unpinnedPosts === 0, 'New Listing: an address not checked on a map is refused and nothing is created', s);
   ok(s.sent.length === 1 && s.sent[0] === 'VA', 'New Listing: State VA with Market left empty creates the listing as VA', s.sent);
 
   ok(errors.length === 0, 'no page errors', errors);
