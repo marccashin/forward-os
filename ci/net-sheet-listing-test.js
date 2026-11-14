@@ -236,6 +236,53 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     return { r: st.ns.result, problem: st.nsAddrProblem };
   });
   ok(s.r !== null && s.problem === '', 'a unit written before the city with no comma ("4200 Mass. Ave Unit 106 Washington, DC 20016", Marc Oct 16) is a full address and calculates', s);
+  console.log('DC has one city: an address with no city or state is completed when Washington, DC is picked (Marc, Nov 13)');
+  s = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    const tryOne = async (addr, jur) => {
+      st.ns.address = addr; st.ns.jurisdiction = jur; st.ns.result = null; st.ns.salePrice = '565000'; st.ns.closingDate = '2027-03-31';
+      (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0'));
+      await new Promise(r => setTimeout(r, 30));
+      const before = st.nsAddrProblem; st.ns._pickNote = '';
+      st.calcNetSheet(); await new Promise(r => setTimeout(r, 150));
+      const shown = document.querySelector('[data-ns-pick-note]');
+      return { addr, before, result: st.ns.result, box: st.ns.address, jur: st.ns.jurisdiction, toast: shown && shown.offsetParent ? shown.innerText : '' };
+    };
+    const out = [];
+    out.push(await tryOne('1324 E. SE #208, 20003', 'dc'));                     // Marc's: no city, no state, DC picked
+    out.push(await tryOne('1324 E St SE #208 20003', 'dc'));                    // no commas at all
+    out.push(await tryOne('1324 E St SE #208, DC 20003', 'dc'));                // state but no city
+    out.push(await tryOne('1324 E St SE #208, Washington 20003', 'dc'));        // city but no state
+    out.push(await tryOne('1324 E St SE #208, Washington, DC 20003', 'dc'));    // already full: left exactly as typed
+    out.push(await tryOne('1300 Army Navy Dr #518, 22202', 'dc'));              // not a DC ZIP: refused
+    out.push(await tryOne('1324 E St SE #208', 'dc'));                          // no ZIP: refused
+    out.push(await tryOne('1324 E St SE #208, Arlington 20003', 'dc'));         // another city named: refused
+    out.push(await tryOne('9 Typed Rd, 20814', 'md-montgomery'));               // Maryland: the city is never filled
+    return out;
+  });
+  const full = '1324 E St SE #208, Washington, DC 20003';
+  ok(s[0].before === '' && s[0].result !== null && s[0].box === '1324 E. SE #208, Washington, DC 20003' && /Washington, DC was added/.test(s[0].toast), 'Marc\'s address with Washington, DC picked: no red line, it calculates, the box now holds the full address and the agent is told', s[0]);
+  ok([1, 2, 3].every(i => s[i].result !== null && s[i].box === full && s[i].before === ''), 'with no commas, with DC but no city, or with Washington but no state: completed to the same full address', s.slice(1, 4).map(x => [x.box, x.before]));
+  ok(s[4].result !== null && s[4].box === full && s[4].toast === '', 'an address that is already full is left exactly as typed, with no note', s[4]);
+  ok(s[5].result === null && /missing the state/.test(s[5].before) && s[5].box === '1300 Army Navy Dr #518, 22202', 'a ZIP outside DC is not completed, even with DC picked: refused, box untouched', s[5]);
+  ok(s[6].result === null && /ZIP code/.test(s[6].before) && s[6].box === '1324 E St SE #208', 'no ZIP: nothing is filled and the sheet is refused', s[6]);
+  ok(s[7].result === null && s[7].box === '1324 E St SE #208, Arlington 20003', 'another city named with a DC ZIP: not replaced, refused', s[7]);
+  ok(s[8].result === null && /missing the state/.test(s[8].before) && s[8].box === '9 Typed Rd, 20814', 'Maryland is not filled: a county does not name a city', s[8]);
+  // The same inside a listing's own net sheet, where Marc saw it.
+  await run(() => { document.querySelector('#app').__vue_app__._instance.setupState.go('listings'); });
+  await openListing(C); await clickNetSheet();
+  s = await run(async () => {
+    const st = document.querySelector('#app').__vue_app__._instance.setupState;
+    st.ns.address = '300 Charlie St NW, 20001'; st.ns.salePrice = '1200000'; st.ns.result = null; st.ns.closingDate = '2027-03-31'; st.ns._pickNote = '';
+    (String(st.ns.propTaxAnnual == null ? '' : st.ns.propTaxAnnual).trim() === '' && (st.ns.propTaxAnnual = '0'));
+    await new Promise(r => setTimeout(r, 30));
+    const before = st.nsAddrProblem;
+    st.calcNetSheet(); await new Promise(r => setTimeout(r, 200));
+    const box = document.getElementById('ns-address-input-detail');
+    const note = box && box.parentElement.querySelector('[data-ns-pick-note]');
+    return { before, result: st.ns.result, box: box && box.value, note: note && note.offsetParent ? note.innerText : '', jur: st.ns.jurisdiction };
+  });
+  ok(s.before === '' && s.result !== null && s.box === '300 Charlie St NW, Washington, DC 20001' && /Washington, DC was added/.test(s.note), 'in a DC listing\'s own net sheet: it calculates, the box is completed, and the note shows under the address box', s);
   console.log('New Listing: no default state, and Market must agree with the State box');
   s = await run(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
