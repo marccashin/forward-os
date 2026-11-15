@@ -2276,6 +2276,84 @@ body {
   </script>
 <div id="app">
 
+  <!-- Open House sign-in screen (Marc, Nov 15, 2026). Full screen over the whole OS
+       and kept at the top level of #app, like the PDF viewer, so it draws on a phone.
+       Leaving it needs the agent's 4-digit code or the access code (ohExitTry). -->
+  <div v-if="oh.kiosk" data-oh-kiosk style="position:fixed;inset:0;z-index:30000;background:var(--cream);overflow-y:auto;-webkit-overflow-scrolling:touch;">
+    <div style="position:relative;height:36vh;min-height:200px;background:var(--navy);overflow:hidden;">
+      <img v-if="oh.kiosk.hero" :src="oh.kiosk.hero" alt="" data-oh-kiosk-hero style="width:100%;height:100%;object-fit:cover;display:block;">
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,35,66,0) 45%,rgba(10,35,66,0.82) 100%);"></div>
+      <div data-oh-kiosk-address style="position:absolute;left:0;right:0;bottom:0;padding:18px 22px;color:#fff;">
+        <div style="font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;">Open House</div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:28px;line-height:1.15;">{{ oh.kiosk.street }}{{ oh.kiosk.unit ? ' ' + oh.kiosk.unit : '' }}</div>
+        <div style="font-size:13px;opacity:0.85;">{{ oh.kiosk.city }}, {{ oh.kiosk.state }} {{ oh.kiosk.zip }}</div>
+      </div>
+      <button type="button" data-oh-exit @click="ohExitOpen" aria-label="Agent" style="position:absolute;top:10px;right:10px;background:rgba(10,35,66,0.55);color:#fff;border:1px solid rgba(255,255,255,0.35);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;padding:7px 10px;cursor:pointer;">Agent</button>
+    </div>
+
+    <div style="max-width:640px;margin:0 auto;padding:18px 20px 28px;">
+      <div data-oh-kiosk-card style="display:flex;gap:14px;align-items:center;margin-bottom:18px;">
+        <img v-if="oh.kiosk.card && oh.kiosk.card.photo" :src="oh.kiosk.card.photo" alt="" :style="{width:'96px',height:'128px',objectFit:'cover',objectPosition:oh.kiosk.card.photoPos,borderRadius:'2px',flex:'none'}">
+        <div v-if="oh.kiosk.card" style="line-height:1.4;color:var(--navy);">
+          <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;opacity:0.6;">Your host</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:22px;">{{ oh.kiosk.card.name }}</div>
+          <div style="font-size:13px;">{{ oh.kiosk.card.team }} | {{ oh.kiosk.card.brokerage }}</div>
+          <div style="font-size:12px;opacity:0.7;">{{ oh.kiosk.card.phone }}<span v-if="oh.kiosk.card.phone && oh.kiosk.card.email"> · </span>{{ oh.kiosk.card.email }}</div>
+        </div>
+      </div>
+
+      <div v-if="oh.phase==='form'" data-oh-form>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:26px;color:var(--navy);margin-bottom:12px;">Welcome. Please sign in.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+          <input v-model="oh.form.first" type="text" data-oh-first placeholder="First name" autocomplete="given-name" style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border:1px solid var(--cream-dark);border-radius:2px;background:#fff;color:var(--navy);">
+          <input v-model="oh.form.last" type="text" data-oh-last placeholder="Last name" autocomplete="family-name" style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border:1px solid var(--cream-dark);border-radius:2px;background:#fff;color:var(--navy);">
+        </div>
+        <input v-model="oh.form.phone" data-oh-phone type="tel" inputmode="tel" placeholder="Phone" autocomplete="tel" style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border:1px solid var(--cream-dark);border-radius:2px;background:#fff;color:var(--navy);margin-bottom:10px;">
+        <input v-model="oh.form.email" data-oh-email type="email" inputmode="email" placeholder="Email" autocomplete="email" autocapitalize="off" style="width:100%;box-sizing:border-box;font-size:18px;padding:14px;border:1px solid var(--cream-dark);border-radius:2px;background:#fff;color:var(--navy);margin-bottom:12px;">
+        <div v-if="oh.formError" data-oh-form-error style="font-size:14px;color:#b91c1c;margin-bottom:10px;">{{ oh.formError }}</div>
+        <button type="button" data-oh-signin @click="ohSubmit" style="width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;padding:18px;cursor:pointer;">Sign In</button>
+      </div>
+      <div v-else data-oh-thanks style="text-align:center;padding:30px 10px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:30px;color:var(--navy);margin-bottom:8px;">Thank you{{ oh.thanksName ? ', ' + oh.thanksName : '' }}.</div>
+        <div style="font-size:15px;color:var(--navy);opacity:0.75;margin-bottom:20px;">Enjoy the home.</div>
+        <button type="button" data-oh-thanks-done @click="ohThanksDone" style="background:none;border:1px solid var(--gold-muted);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);padding:10px 18px;cursor:pointer;">Next guest</button>
+      </div>
+
+      <div data-oh-status style="margin-top:22px;font-size:11px;color:var(--navy);opacity:0.6;text-align:center;">
+        <span v-if="!oh.online">No internet connection: sign-ins are saved on this device. </span>
+        <span v-if="ohWaitingCount">{{ ohWaitingCount }} waiting to be sent. </span>
+        <span v-if="ohHeldCount" style="color:#b91c1c;opacity:1;">{{ ohHeldCount }} need the agent. </span>
+      </div>
+      <div v-if="oh.launchNote" style="margin-top:6px;font-size:11px;color:#92400e;text-align:center;">{{ oh.launchNote }}</div>
+    </div>
+
+    <!-- No connection (Marc, Nov 15, 2026): the agent acknowledges it -->
+    <div v-if="oh.offlinePopup" data-oh-offline-popup role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:30010;background:rgba(10,35,66,0.72);display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-top:4px solid #dc2626;border-radius:2px;max-width:440px;width:100%;padding:22px 20px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);margin-bottom:8px;">No internet connection</div>
+        <div style="font-size:14px;line-height:1.55;color:#374151;margin-bottom:10px;">Sign-ins are still being saved safely on this device. They will be added to Follow Up Boss automatically once the connection is back, and will not show in Follow Up Boss until then.</div>
+        <div style="font-size:13px;line-height:1.5;color:#374151;margin-bottom:16px;"><strong>Not on Wi-Fi?</strong> Turn on the Personal Hotspot on your phone and connect this device to it. Keep FORWARD OS open on this device until every sign-in is sent.</div>
+        <button type="button" data-oh-offline-ok @click="ohDismissOffline" style="width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:10px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px;cursor:pointer;">I understand</button>
+      </div>
+    </div>
+
+    <!-- Agent: end the open house -->
+    <div v-if="oh.exitOpen" data-oh-exit-panel role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:30020;background:rgba(10,35,66,0.72);display:flex;align-items:center;justify-content:center;padding:20px;">
+      <div style="background:#fff;border-radius:2px;max-width:360px;width:100%;padding:22px 20px;">
+        <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--navy);margin-bottom:6px;">End the open house</div>
+        <div style="font-size:13px;color:#374151;line-height:1.5;margin-bottom:10px;">{{ oh.exitForgot ? 'Type the FORWARD OS access code.' : 'Type the 4-digit code set at launch.' }} {{ oh.kiosk.count || 0 }} sign-in{{ (oh.kiosk.count || 0) === 1 ? '' : 's' }} so far, {{ oh.kiosk.sent || 0 }} sent to Follow Up Boss.</div>
+        <input v-model="oh.exitCode" data-oh-exit-code type="password" :inputmode="oh.exitForgot ? 'text' : 'numeric'" autocomplete="off" @keyup.enter="ohExitTry" style="width:100%;box-sizing:border-box;font-size:20px;padding:12px;border:1px solid var(--cream-dark);border-radius:2px;margin-bottom:8px;">
+        <div v-if="oh.exitError" data-oh-exit-error style="font-size:12px;color:#b91c1c;margin-bottom:8px;">{{ oh.exitError }}</div>
+        <button type="button" data-oh-exit-go @click="ohExitTry" style="width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:13px;cursor:pointer;margin-bottom:8px;">End open house</button>
+        <div style="display:flex;justify-content:space-between;">
+          <a href="#" data-oh-exit-forgot @click.prevent="oh.exitForgot=!oh.exitForgot;oh.exitCode='';oh.exitError=''" style="font-size:11px;color:var(--navy);">{{ oh.exitForgot ? 'Use the 4-digit code' : 'Forgot the code?' }}</a>
+          <a href="#" data-oh-exit-cancel @click.prevent="oh.exitOpen=false" style="font-size:11px;color:var(--navy);">Back to sign-in</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
   <!-- In-app PDF viewer (Oct 13, 2026). On the phone home-screen app a link to a PDF
        on the OS's own site replaced the whole app with the PDF and no way back
        (Marc: "I actually have to kill it"). Phones open the PDF here instead.
@@ -2365,6 +2443,10 @@ body {
         <div class="nav-item" :class="{active:view==='listings'||view==='listing-detail'}" @click="go('listings')">
           <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="1" width="10" height="12" rx="0.6"/><line x1="4.5" y1="5" x2="9.5" y2="5"/><line x1="4.5" y1="7.5" x2="9.5" y2="7.5"/><line x1="4.5" y1="10" x2="7" y2="10"/></svg>
           Seller Package
+        </div>
+        <div class="nav-item" data-nav-open-house :class="{active:view==='open-house'}" @click="go('open-house')">
+          <svg class="nav-icon" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M1.5 6.5L7 2l5.5 4.5"/><path d="M3 5.5V12h8V5.5"/><rect x="5.6" y="8" width="2.8" height="4"/></svg>
+          Open House
         </div>
         <div class="nav-section">Buyer Tools</div>
         <div class="nav-item" :class="{active:view==='buyer-package'||view==='buyer-detail'||view==='cash-to-close'||view==='buyer-consult'||view==='tour-tracker'||view==='buyer-needs'||view==='offer-strategy'||view==='buyer-market-report'}" @click="go('buyer-package')">
@@ -2985,6 +3067,138 @@ body {
                 </div>
               </div>
 
+            </div>
+          </div>
+        </template>
+
+        <!-- ============ OPEN HOUSE (Marc, Nov 15, 2026: replaces Spacio) ============ -->
+        <template v-else-if="view==='open-house'">
+          <div data-oh-setup style="max-width:620px;">
+            <div v-if="oh.endNote" data-oh-endnote style="margin-bottom:14px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:2px;font-size:12px;line-height:1.5;color:#14532d;">{{ oh.endNote }}</div>
+
+            <!-- Connection: always said, before anything is typed (Marc, Nov 15, 2026) -->
+            <div data-oh-hotspot style="margin-bottom:14px;padding:12px 14px;background:var(--white);border:1px solid var(--gold-muted);border-left:4px solid var(--gold);border-radius:2px;font-size:12px;line-height:1.55;color:var(--navy);">
+              <strong>Not on Wi-Fi? Use your phone's hotspot.</strong> On an iPad or computer, connect to the property's Wi-Fi. If there is none, turn on the Personal Hotspot on your phone and connect this device to it before you launch. FORWARD OS needs a connection to open. If the connection drops during the open house, sign-ins are saved on this device and sent to Follow Up Boss automatically when it is back.
+              <div style="margin-top:6px;opacity:0.75;">On an iPad, Guided Access (Settings, Accessibility, Guided Access) keeps visitors on the sign-in screen.</div>
+            </div>
+            <div v-if="!oh.online" data-oh-offline-inline style="margin-bottom:14px;padding:10px 12px;background:#fef2f2;border:1px solid #fca5a5;border-radius:2px;font-size:12px;line-height:1.5;color:#991b1b;">
+              <strong>No internet connection.</strong> You can still launch. Sign-ins will be saved on this device and sent to Follow Up Boss automatically once the connection is back; they will not show in Follow Up Boss until then. Connect to Wi-Fi or your phone's hotspot as soon as you can.
+            </div>
+
+            <!-- Sign-ins still on this device -->
+            <div v-if="oh.queue.length" data-oh-queue style="margin-bottom:14px;padding:12px 14px;background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;">
+              <div style="font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;">Sign-ins on this device, not yet in Follow Up Boss: {{ oh.queue.length }}</div>
+              <div v-for="q in oh.queue" :key="q.id" data-oh-queue-row style="padding:6px 0;border-top:1px solid var(--cream-mid);font-size:12px;line-height:1.45;color:#374151;">
+                <strong>{{ q.first }} {{ q.last }}</strong>, {{ q.street }}{{ q.unit ? ' ' + q.unit : '' }} ({{ q.agent }})
+                <div v-if="q.error" :style="{color: q.status==='held' ? '#b91c1c' : '#92400e'}">{{ q.error }}</div>
+                <button v-if="q.status==='held'" type="button" data-oh-retry @click="ohRetry(q.id)" style="margin-top:4px;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;padding:6px 10px;cursor:pointer;">Send again</button>
+              </div>
+              <div v-if="ohWaitingCount" style="margin-top:6px;font-size:11px;color:var(--navy);opacity:0.7;">{{ oh.sending ? 'Sending...' : (oh.online ? 'Sending automatically.' : 'Waiting for a connection. They go automatically when it is back.') }}</div>
+            </div>
+
+            <div style="background:var(--white);border:1px solid var(--cream-mid);border-radius:2px;padding:20px 18px;">
+              <div style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--navy);margin-bottom:4px;">Launch an Open House</div>
+              <div style="font-size:12px;color:var(--navy);opacity:0.7;line-height:1.5;margin-bottom:16px;">Visitors sign in on this device. Each sign-in goes to Follow Up Boss, assigned to the hosting agent and tagged FORWARD OS, Open House and the street address.</div>
+
+              <!-- Hosting agent -->
+              <div v-if="ohCanPickHost" class="form-row" style="margin-bottom:12px;">
+                <label>Hosting Agent</label>
+                <select v-model="oh.host" data-oh-host style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+                  <option value="" disabled>Choose the agent</option>
+                  <option v-for="a in FORWARD_AGENTS" :key="a" :value="a">{{ a }}</option>
+                </select>
+              </div>
+              <div v-if="ohHostCard" data-oh-card-preview style="display:flex;gap:12px;align-items:center;margin-bottom:16px;padding:10px;background:var(--cream);border-radius:2px;">
+                <img v-if="ohHostCard.photo" :src="ohHostCard.photo" alt="" :style="{width:'54px',height:'72px',objectFit:'cover',objectPosition:ohHostCard.photoPos,borderRadius:'2px',flex:'none'}">
+                <div style="font-size:12px;line-height:1.45;color:var(--navy);">
+                  <div style="font-family:'Cormorant Garamond',serif;font-size:17px;">{{ ohHostCard.name }}</div>
+                  <div>{{ ohHostCard.team }} | {{ ohHostCard.brokerage }}</div>
+                  <div style="opacity:0.7;">{{ ohHostCard.phone }} · {{ ohHostCard.email }}</div>
+                </div>
+              </div>
+              <div v-if="ohHostCard && !ohHostCard.photo && oh.photoError" data-oh-photo-error style="margin:-8px 0 14px;font-size:11px;color:#92400e;">{{ oh.photoError }}</div>
+
+              <!-- Address -->
+              <div class="form-row" style="margin-bottom:10px;">
+                <label>Street Address</label>
+                <input v-model="oh.street" type="text" data-oh-street placeholder="e.g. 1234 Oak St NW" style="width:100%;box-sizing:border-box;">
+              </div>
+              <div class="form-row" style="margin-bottom:10px;">
+                <label>Unit / Apt <span style="font-weight:400;opacity:0.5;font-size:9px;">(optional)</span></label>
+                <input v-model="oh.unit" type="text" data-oh-unit placeholder="e.g. #4B" style="width:100%;box-sizing:border-box;">
+              </div>
+              <div class="form-row" style="margin-bottom:10px;">
+                <label>City</label>
+                <input v-model="oh.city" type="text" data-oh-city placeholder="Washington" style="width:100%;box-sizing:border-box;">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+                <div class="form-row">
+                  <label>State</label>
+                  <select v-model="oh.state" data-oh-state style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+                    <option value="" disabled>Choose state</option>
+                    <option value="DC">DC</option>
+                    <option value="MD">Maryland</option>
+                    <option value="VA">Virginia</option>
+                  </select>
+                </div>
+                <div class="form-row">
+                  <label>Zip Code</label>
+                  <input v-model="oh.zip" type="text" data-oh-zip placeholder="20010" inputmode="numeric" maxlength="5" style="width:100%;box-sizing:border-box;">
+                </div>
+              </div>
+
+              <!-- Is this the right address? (the New Property map check, Nov 14, 2026) -->
+              <div data-oh-pin style="margin-bottom:16px;">
+                <button v-if="!ohPinCurrent" type="button" data-oh-pin-check @click="ohPinLookup" :disabled="!oh.street.trim()" style="width:100%;padding:10px;background:var(--white);border:1px solid var(--gold-muted);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);cursor:pointer;">Check the address on a map</button>
+                <template v-else>
+                  <div v-if="oh.pin.state==='looking'" style="font-family:'Montserrat',sans-serif;font-size:10px;color:var(--navy);opacity:0.6;">Finding it on the map...</div>
+                  <template v-if="oh.pin.state==='found'">
+                    <div data-pin-map="oh" style="width:100%;height:200px;border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;background:#e5e7eb;"></div>
+                    <div style="margin-top:6px;font-size:11px;line-height:1.4;color:#374151;">Is this the right address? Google places <strong>{{ oh.pin.label }}</strong> at the pin. The map shows the building, not the unit.</div>
+                    <button v-if="!oh.pin.ok" type="button" data-oh-pin-yes @click="oh.pin.ok=true" style="margin-top:8px;width:100%;padding:10px;background:var(--navy);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);cursor:pointer;">Yes, this is the property</button>
+                    <button v-if="!oh.pin.ok" type="button" data-oh-pin-no @click="ohPinWrong" style="margin-top:6px;width:100%;padding:9px;background:var(--white);border:1px solid #fca5a5;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#b91c1c;cursor:pointer;">No, this is not the property</button>
+                    <div v-else data-oh-pin-ok style="margin-top:6px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:#15803d;">Confirmed on the map <a href="#" @click.prevent="ohPinWrong" style="margin-left:8px;font-weight:600;color:#b91c1c;">Not right?</a></div>
+                  </template>
+                  <template v-if="oh.pin.state==='wrong'">
+                    <div data-oh-pin-wrong style="font-size:11px;line-height:1.5;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">Not used. <strong>If the address is spelled wrong</strong>, correct it above and check it again. <strong>If the address is right but Google put the pin in the wrong place</strong>, check it against the listing and tick the box below.</div>
+                    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--navy);cursor:pointer;"><input type="checkbox" v-model="oh.pin.ok" data-oh-pin-manual> I checked the address against the listing and it is correct</label>
+                    <button type="button" @click="ohPinLookup" style="margin-top:6px;background:none;border:none;padding:0;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--navy);text-decoration:underline;cursor:pointer;">Show the map again</button>
+                  </template>
+                  <template v-if="oh.pin.state==='notfound'">
+                    <div data-oh-pin-why style="font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ oh.pin.why }} Check the address carefully against the listing: every sign-in is tagged with it.</div>
+                    <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--navy);cursor:pointer;"><input type="checkbox" v-model="oh.pin.ok" data-oh-pin-manual> I checked the address myself and it is correct</label>
+                  </template>
+                </template>
+              </div>
+
+              <!-- Main photo: always uploaded by the agent (Marc, Nov 15, 2026) -->
+              <div class="form-row" style="margin-bottom:16px;">
+                <label>Main Photo of the Property</label>
+                <div style="font-size:11px;color:var(--navy);opacity:0.7;line-height:1.45;margin-bottom:6px;">Upload the listing's main photo. It fills the top of the sign-in screen.</div>
+                <img v-if="oh.hero" :src="oh.hero" alt="" data-oh-hero-preview style="width:100%;max-height:220px;object-fit:cover;border-radius:2px;display:block;margin-bottom:6px;">
+                <label style="display:block;text-align:center;padding:10px;background:var(--white);border:1px dashed var(--gold-muted);border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--navy);cursor:pointer;">
+                  {{ oh.heroBusy ? 'Preparing the photo...' : (oh.hero ? 'Choose a different photo' : 'Upload the main photo') }}
+                  <input type="file" accept="image/*" data-oh-hero @change="ohHeroPick" style="display:none;">
+                </label>
+                <div v-if="oh.heroError" data-oh-hero-error style="margin-top:6px;font-size:11px;color:#b91c1c;">{{ oh.heroError }}</div>
+              </div>
+
+              <!-- Code to leave the sign-in screen -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:6px;">
+                <div class="form-row">
+                  <label>4-Digit Code</label>
+                  <input v-model="oh.code" data-oh-code type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" style="width:100%;box-sizing:border-box;">
+                </div>
+                <div class="form-row">
+                  <label>Code Again</label>
+                  <input v-model="oh.code2" data-oh-code2 type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" style="width:100%;box-sizing:border-box;">
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--navy);opacity:0.7;line-height:1.45;margin-bottom:16px;">Visitors cannot leave the sign-in screen without this code. Forgot it? The FORWARD OS access code also works.</div>
+
+              <div v-if="oh.launchError" data-oh-launch-error style="font-size:12px;color:#b91c1c;margin-bottom:10px;">{{ oh.launchError }}</div>
+              <div v-else-if="ohLaunchProblem" data-oh-launch-problem style="font-size:11px;color:var(--navy);opacity:0.7;margin-bottom:10px;">{{ ohLaunchProblem }}</div>
+              <button type="button" data-oh-launch @click="ohLaunch" :disabled="oh.launching || !!ohLaunchProblem" :style="{opacity:(oh.launching||ohLaunchProblem)?'0.45':'1'}" style="width:100%;background:var(--navy);color:var(--gold);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;padding:14px;cursor:pointer;">{{ oh.launching ? 'Starting...' : 'Launch Open House' }}</button>
             </div>
           </div>
         </template>
@@ -10204,6 +10418,15 @@ const AGENT_EMAILS = {
   'Charlotte Lee':  'charlotte.lee@corcoranmce.com',
 };
 const FORWARD_AGENTS = ['Marc Cashin','Ashling McGowan','Niki Lang','Cesar Rivera','Charlotte Lee'];
+// Open House card photos (Nov 15, 2026): open-house/agents/<slug>.jpg are the Meet Your
+// Advisor photos, and these are their framings, copied from seller-guides/_source/agents.json.
+const OH_AGENT_PHOTO_POS = {
+  'Marc Cashin':     '50% 30%',
+  'Ashling McGowan': '50% 20%',
+  'Niki Lang':       '50% 40%',
+  'Cesar Rivera':    '72% 30%',
+  'Charlotte Lee':   '50% 50%',
+};
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
   'Ashling McGowan':'202.779.6263',
@@ -25314,7 +25537,7 @@ No markdown. Valid JSON only.`;
     const firstName  = computed(() => agentName.value.split(' ')[0]);
     const savedCount = computed(() => lib.value.length);
     const dashToolsCompleted = computed(() => Object.values(lstNotes).filter(v => v && v.trim()).length);
-    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','buyer-market-report':'Buyer Market Report','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','buyer-market-report':'Buyer Market Report','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin' }[view.value]||'FORWARD OS'));
+    const pageTitle  = computed(() => ({ dashboard:'Dashboard',cma:'CMA Builder','listing-desc':'Listing Description','just-listed':'Listing Package','social-post':'Social Post Generator','buyer-package':'My Buyers', 'buyer-detail':'Buyer Detail', 'offer-strategy':'Offer Strategy', 'buyer-needs':'Buyer Needs Analysis','buyer-market-report':'Buyer Market Report','prop-files':'Client Files','meeting-prep':'Meeting Prep','cash-to-close':'Cash to Close Estimate','buyer-consult':'Buyer Consultation Kit','tour-tracker':'Property Tour Tracker','buyer-market-report':'Buyer Market Report','training':'Training Center','agent-tools':'Agent Tools',library:'Saved Library',settings:'Settings','admin-training':'Training Admin', 'open-house':'Open House' }[view.value]||'FORWARD OS'));
     const filteredLib = computed(() => libFilter.value==='all' ? lib.value : lib.value.filter(i=>i.type===libFilter.value));
     const jlTabObj   = computed(() => jlTabs.find(t=>t.k===jlTab.value));
     const jlCurrent  = computed(() => jlOutput.value ? (jlOutput.value[jlTab.value]||'') : '');
@@ -26800,9 +27023,18 @@ const CHANGELOG = [
         detail: 'Tour Tracker, Cash to Close and Offer Strategy now have a Check on a map button under their addresses: each home on a showing tour, the tour\'s start and end, the Cash to Close property and the Offer Strategy property. It shows the address on a map with a pin and Google\'s version of the address underneath. Picking an address from Google\'s list in Cash to Close shows the map straight away. Nothing is created from these, so the map is there to check, not to approve. The CMA does not need one: it always opens from a listing, whose address was checked when the listing was created.\n\nHow to use: Type the address and press Check on a map. If the pin is on the wrong house, correct the address. Change the address and the button comes back.\n\nBest practice: Check every home before you request showings. A tour planned to the wrong house costs the buyer\'s time and yours.'
       }
     ]
+  },
+  {
+    id: 'v2026-11-15',
+    date: 'November 15, 2026',
+    title: 'Open House Sign-In',
+    updates: [
+      {
+        title: 'Open House Sign-In',
+        detail: 'FORWARD OS now has its own open house sign-in, under Open House in the menu. You enter the address, check it on the map, upload the main photo of the property and set a 4-digit code. Visitors then sign in on a screen with the property photo and your card: your photo, name, FORWARD, Corcoran McEnearney, phone and email. Each sign-in goes to Follow Up Boss assigned to you, with the visitor\'s name, phone and email, tagged FORWARD OS, Open House and the street address. If the internet drops, a notice says so and sign-ins keep being saved on the device; they go to Follow Up Boss on their own once the connection is back.\n\nHow to use: Press Open House in the menu, fill in the address, press Check the address on a map and Yes, this is the property, upload the main photo, set your code twice and press Launch Open House. Hand the device to your visitors. To finish, press Agent at the top of the screen and type your code.\n\nBest practice: On an iPad or computer, connect to the Wi-Fi or turn on your phone\'s Personal Hotspot before you launch: FORWARD OS needs a connection to open. Keep FORWARD OS open on that device after the open house until every sign-in has been sent.'
+      }
+    ]
   }
-
-
 
 ];
 
@@ -28484,6 +28716,414 @@ async function dismissUpdates() {
       else showToast('Deleted.');
     }
 
+    // ── Open House sign-in (Marc, Nov 15, 2026: replaces Spacio) ──────────────
+    // The agent launches an open house on an iPad, a computer or a phone: the
+    // property's address (checked on a map), a main photo the agent uploads (Marc: no
+    // photos pulled from Zillow and no Street View), the hosting agent's card (photo,
+    // name, FORWARD, Corcoran McEnearney, phone, email) and a sign-in form. Each
+    // sign-in is sent to Follow Up Boss as a "Visited Open House" event, assigned to
+    // the hosting agent and tagged FORWARD OS, Open House and the street address
+    // (Marc: "make sure that lead gets into Follow-Up Boss ... tagged to the correct
+    // agent"). FORWARD's own action plan starts on any new lead; Spacio's are not used.
+    //
+    // No connection is normal at an open house (Marc: "Sometimes the agent might launch
+    // this in the property"). So the open house launches and runs offline exactly the
+    // same: every sign-in is written to this device FIRST (localStorage, OH_QUEUE_KEY)
+    // and only then sent; a sign-in leaves the device's list only after Follow Up Boss
+    // answered 200 or 201. When the connection drops, a pop-up tells the agent the
+    // sign-ins are saved and will reach Follow Up Boss when it is back (Marc's wording
+    // asked for an acknowledgement, so it stays until I understand is pressed). The
+    // list is retried every 20 seconds, when the browser says it is online again, and
+    // when FORWARD OS opens. The OS itself still needs a connection to OPEN (no saved
+    // copy of the app on the device; Marc, Nov 15, 2026: no service worker), so the
+    // setup screen tells agents on an iPad or computer to use their phone's hotspot.
+    //
+    // This is the one place the OS keeps something only on a device: a sign-in waiting
+    // for Follow Up Boss has nowhere else to go while offline. Follow Up Boss is where
+    // the lead lives once sent.
+    //
+    // The running open house is kept on the device (OH_SESSION_KEY) so a reload or an
+    // accidental close comes back to the sign-in screen, not to the OS. Leaving it needs
+    // the 4-digit code the agent set at launch, or the FORWARD OS access code.
+    const OH_QUEUE_KEY = 'fos_oh_queue';
+    const OH_SESSION_KEY = 'fos_oh_session';
+    const OH_SOURCE = 'FORWARD OS Open House';
+    const OH_HOST_PICKERS = ['Marc Cashin', 'Operations', 'Concierge'];
+    function _ohRead(key, fallback) {
+      try { const v = JSON.parse(localStorage.getItem(key) || 'null'); return v == null ? fallback : v; } catch (e) { return fallback; }
+    }
+    const oh = reactive({
+      host: '',
+      street: '', unit: '', city: '', state: '', zip: '',
+      pin: { state: '', lat: null, lng: null, label: '', sig: '', ok: false, why: '' },
+      hero: '', heroName: '', heroError: '', heroBusy: false,
+      code: '', code2: '',
+      launchError: '', launching: false, launchNote: '',
+      kiosk: _ohRead(OH_SESSION_KEY, null),
+      phase: 'form',
+      form: { first: '', last: '', phone: '', email: '' }, formError: '', thanksName: '',
+      online: navigator.onLine !== false,
+      offlinePopup: false,
+      exitOpen: false, exitCode: '', exitError: '', exitForgot: false,
+      queue: _ohRead(OH_QUEUE_KEY, []),
+      sending: false, endNote: '',
+      photo: {}, photoError: ''
+    });
+    if (!Array.isArray(oh.queue)) oh.queue = [];
+    if (oh.kiosk && !oh.online) oh.offlinePopup = true;
+    let _ohThanksTimer = null;
+
+    const ohCanPickHost = computed(() => OH_HOST_PICKERS.indexOf(agentName.value) !== -1);
+    // The hosting agent: an agent hosts as themselves; Marc, Operations and Concierge
+    // pick the agent (their own login is not an agent's card, except Marc's).
+    const ohHostAgent = computed(() => {
+      if (ohCanPickHost.value) return FORWARD_AGENTS.indexOf(oh.host) !== -1 ? oh.host : '';
+      return FORWARD_AGENTS.indexOf(agentName.value) !== -1 ? agentName.value : '';
+    });
+    function ohSlug(name) { return String(name || '').toLowerCase().replace(/[^a-z]+/g, '-').replace(/^-|-$/g, ''); }
+    function ohCard(name) {
+      if (!name) return null;
+      return {
+        name: name, team: 'FORWARD', brokerage: 'Corcoran McEnearney',
+        phone: AGENT_PHONES[name] || '', email: AGENT_EMAILS[name] || '',
+        photo: oh.photo[name] || '', photoPos: OH_AGENT_PHOTO_POS[name] || '50% 30%'
+      };
+    }
+    const ohHostCard = computed(() => ohCard(ohHostAgent.value));
+    // The agent's photo is kept on the device as well, so a launch with no connection
+    // still shows it. It comes from open-house/agents/, the Meet Your Advisor photos.
+    async function ohLoadPhoto(name) {
+      if (!name) return;
+      const key = 'fos_oh_photo_' + ohSlug(name);
+      if (!oh.photo[name]) { try { const c = localStorage.getItem(key); if (c) oh.photo[name] = c; } catch (e) {} }
+      try {
+        const res = await fetch('/open-house/agents/' + ohSlug(name) + '.jpg', { cache: 'no-cache' });
+        await fosOk(res, 'photo not found');
+        const blob = await res.blob();
+        const data = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = () => reject(r.error); r.readAsDataURL(blob); });
+        if (!/^data:image\//.test(String(data))) throw new Error('the photo is not an image');
+        oh.photo[name] = data; oh.photoError = '';
+        try { localStorage.setItem(key, data); } catch (e) {}
+      } catch (e) {
+        if (!oh.photo[name]) oh.photoError = 'Your photo could not be loaded (' + fosWhy(e) + '). Open this screen once with a connection to keep it on this device.';
+      }
+    }
+
+    // Address on a map: the same check as New Property (Nov 14, 2026), in box 'oh'.
+    const ohPinSig = computed(() => [oh.street, oh.city, oh.state, oh.zip].map(v => String(v || '').trim().toLowerCase()).join('|'));
+    const ohPinCurrent = computed(() => !!oh.pin.state && oh.pin.sig === ohPinSig.value);
+    watch(() => ohPinCurrent.value && oh.pin.state === 'found' && view.value === 'open-house', (on) => { if (on) fosPinMapDraw('oh', { lat: oh.pin.lat, lng: oh.pin.lng }); });
+    function ohPinReset() { Object.assign(oh.pin, { state: '', lat: null, lng: null, label: '', sig: '', ok: false, why: '' }); }
+    function ohPinWrong() { oh.pin.ok = false; oh.pin.state = 'wrong'; }
+    function ohPinLookup() {
+      const street = oh.street.trim();
+      if (!street) return;
+      const sig = ohPinSig.value;
+      ohPinReset(); oh.pin.sig = sig; oh.pin.state = 'looking';
+      const notFound = (why) => { if (oh.pin.sig !== sig) return; oh.pin.state = 'notfound'; oh.pin.why = why; };
+      if (!oh.online || navigator.onLine === false) { notFound('There is no internet connection, so the address cannot be shown on a map.'); return; }
+      if (!nsPlacesService || !nsPlacesDetails) initAddressAutocomplete();
+      if (!nsPlacesService || !nsPlacesDetails) { notFound('Google Maps could not be reached, so the address cannot be shown on a map.'); return; }
+      const typed = [street, oh.city.trim(), [oh.state.trim().toUpperCase(), oh.zip.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ');
+      const want = fosAddrParts(typed, '');
+      nsPlacesService.getPlacePredictions({ input: typed, types: ['address'], componentRestrictions: { country: 'us' } }, (preds, status) => {
+        if (oh.pin.sig !== sig) return;
+        const hit = (status === 'OK' && preds ? preds : []).find(pr => {
+          const g = fosAddrParts(pr.description, '');
+          return g.street === want.street && (!g.quad || !want.quad || g.quad === want.quad) && (!want.state || !g.state || g.state === want.state);
+        });
+        if (!hit) { notFound('Google did not find this exact street address.'); return; }
+        nsPlacesDetails.getDetails({ placeId: hit.place_id, fields: ['geometry', 'formatted_address'] }, (place, s2) => {
+          if (oh.pin.sig !== sig) return;
+          const pin = s2 === 'OK' ? fosPinFromPlace(place) : null;
+          if (!pin) { notFound('Google could not place this address on a map.'); return; }
+          Object.assign(oh.pin, { state: 'found', lat: pin.lat, lng: pin.lng, label: pin.label });
+          fosPinMapDraw('oh', pin);
+        });
+      });
+    }
+
+    // The main photo: the agent uploads it (Marc, Nov 15, 2026). Made smaller on the
+    // device (1600 pixels on the long side) so it fits beside the sign-ins.
+    async function ohHeroPick(ev) {
+      const input = ev && ev.target, file = input && input.files && input.files[0];
+      oh.heroError = '';
+      if (!file) return;
+      if (!/^image\//.test(file.type || '')) { oh.heroError = 'That file is not a photo. Choose a JPG or PNG of the property.'; if (input) input.value = ''; return; }
+      oh.heroBusy = true;
+      try {
+        const url = URL.createObjectURL(file);
+        try {
+          const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = () => reject(new Error('the photo could not be opened')); i.src = url; });
+          const scale = Math.min(1, 1600 / Math.max(img.naturalWidth || 1, img.naturalHeight || 1));
+          const c = document.createElement('canvas');
+          c.width = Math.max(1, Math.round(img.naturalWidth * scale)); c.height = Math.max(1, Math.round(img.naturalHeight * scale));
+          c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+          const data = c.toDataURL('image/jpeg', 0.85);
+          if (!/^data:image\/jpeg/.test(data)) throw new Error('the photo could not be prepared');
+          oh.hero = data; oh.heroName = file.name || 'photo';
+        } finally { URL.revokeObjectURL(url); }
+      } catch (e) {
+        oh.hero = ''; oh.heroName = '';
+        oh.heroError = 'The photo was not used (' + fosWhy(e) + '). Try another photo.';
+      } finally { oh.heroBusy = false; if (input) input.value = ''; }
+    }
+
+    function ohAddressLine(s) {
+      const street = [String(s.street || '').trim(), String(s.unit || '').trim()].filter(Boolean).join(' ');
+      return street + ', ' + String(s.city || '').trim() + ', ' + String(s.state || '').trim().toUpperCase() + ' ' + String(s.zip || '').trim();
+    }
+    const ohLaunchProblem = computed(() => {
+      if (!ohHostAgent.value) return ohCanPickHost.value ? 'Choose the agent hosting the open house.' : 'Open houses are hosted under an agent\'s own login. Sign in as the hosting agent on this device.';
+      if (!/^\s*\d+\S*\s+\S/.test(oh.street)) return 'Type the street address with its house number.';
+      if (!oh.city.trim()) return 'Type the city.';
+      if (!oh.state) return 'Choose the state.';
+      if (!/^\d{5}$/.test(oh.zip.trim())) return 'Type the 5-digit ZIP code.';
+      if (!(ohPinCurrent.value && oh.pin.ok)) return 'Check the address on the map and confirm it (or tick that you checked it yourself).';
+      if (!oh.hero) return 'Upload the main photo of the property.';
+      if (!/^\d{4}$/.test(oh.code)) return 'Set a 4-digit code. You will need it to leave the sign-in screen.';
+      if (oh.code !== oh.code2) return 'The two codes do not match.';
+      return '';
+    });
+    async function ohHash(s) {
+      const text = 'fos-open-house:' + String(s);
+      try {
+        if (window.crypto && crypto.subtle) {
+          const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+          return 'sha256:' + Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+      } catch (e) {}
+      let h = 5381; for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
+      return 'djb2:' + h.toString(16);
+    }
+    function ohUid() {
+      try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+      return 'oh-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+    }
+    // The hosting agent's Follow Up Boss user, matched by email like the card scanner.
+    // Looked up while online and kept on the open house, so sign-ins taken offline are
+    // still assigned to them.
+    async function ohFubUserId(name) {
+      const email = String(AGENT_EMAILS[name] || '').toLowerCase();
+      if (!email) return null;
+      const find = (list) => { const u = (list || []).find(x => x && x.email && String(x.email).toLowerCase() === email); return u ? u.id : null; };
+      let id = find(_ohRead('fos_fub_users', []));
+      if (id) return id;
+      if (!oh.online || navigator.onLine === false) return null;
+      const users = await fubGetUsers();
+      try { localStorage.setItem('fos_fub_users', JSON.stringify(users)); } catch (e) {}
+      return find(users);
+    }
+    async function ohLaunch() {
+      oh.launchError = '';
+      if (ohLaunchProblem.value) { oh.launchError = ohLaunchProblem.value; return; }
+      oh.launching = true;
+      try {
+        const host = ohHostAgent.value;
+        let fubUserId = null;
+        try { fubUserId = await ohFubUserId(host); } catch (e) { console.warn('Open house: Follow Up Boss users not loaded yet:', e); }
+        const session = {
+          id: ohUid(), startedAt: new Date().toISOString(), startedBy: agentName.value,
+          agent: host, card: ohCard(host), fubUserId: fubUserId,
+          street: oh.street.trim(), unit: oh.unit.trim(), city: oh.city.trim(), state: oh.state, zip: oh.zip.trim(),
+          hero: oh.hero, codeHash: await ohHash(oh.code), count: 0, sent: 0
+        };
+        session.address = ohAddressLine(session);
+        oh.launchNote = '';
+        try { localStorage.setItem(OH_SESSION_KEY, JSON.stringify(session)); }
+        catch (e) {
+          // Too big to keep: run without the photo kept for a reload rather than not at all.
+          try { localStorage.setItem(OH_SESSION_KEY, JSON.stringify(Object.assign({}, session, { hero: '' }))); oh.launchNote = 'This device is short of space, so if the page reloads the sign-in screen comes back without the property photo. Sign-ins are not affected.'; }
+          catch (e2) { oh.launchNote = 'This device is short of space, so if the page reloads you will need to launch again. Sign-ins already taken are kept.'; }
+        }
+        oh.kiosk = session;
+        ohFormClear(); oh.phase = 'form';
+        oh.code = ''; oh.code2 = '';
+        if (!oh.online || navigator.onLine === false) { oh.online = false; oh.offlinePopup = true; }
+      } catch (e) {
+        oh.launchError = 'The open house did not start (' + fosWhy(e) + ').';
+      } finally { oh.launching = false; }
+    }
+    function ohFormClear() { Object.assign(oh.form, { first: '', last: '', phone: '', email: '' }); oh.formError = ''; }
+    function ohSaveSession() { try { if (oh.kiosk) localStorage.setItem(OH_SESSION_KEY, JSON.stringify(oh.kiosk)); } catch (e) { console.warn('Open house: count not kept on the device:', e); } }
+    // Writes the waiting sign-ins to the device. Throws when the device refused, so a
+    // sign-in is never thanked unless it is kept.
+    function ohPersistQueue() { localStorage.setItem(OH_QUEUE_KEY, JSON.stringify(oh.queue)); }
+
+    function ohPhoneDigits(p) { let d = String(p || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d; }
+    const ohFormProblem = computed(() => {
+      if (!oh.form.first.trim()) return 'Please enter your first name.';
+      if (!oh.form.last.trim()) return 'Please enter your last name.';
+      if (ohPhoneDigits(oh.form.phone).length !== 10) return 'Please enter your 10-digit phone number.';
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(oh.form.email.trim())) return 'Please enter your email address.';
+      return '';
+    });
+    function ohSubmit() {
+      oh.formError = '';
+      if (!oh.kiosk) return;
+      if (ohFormProblem.value) { oh.formError = ohFormProblem.value; return; }
+      const k = oh.kiosk;
+      const item = {
+        id: ohUid(), session: k.id, at: new Date().toISOString(),
+        agent: k.agent, fubUserId: k.fubUserId || null,
+        street: k.street, unit: k.unit, city: k.city, state: k.state, zip: k.zip,
+        first: oh.form.first.trim(), last: oh.form.last.trim(),
+        phone: oh.form.phone.trim(), email: oh.form.email.trim(),
+        status: 'waiting', error: '', tries: 0
+      };
+      oh.queue.push(item);
+      try { ohPersistQueue(); }
+      catch (e) {
+        oh.queue.pop();
+        oh.formError = 'This sign-in could not be saved on this device (' + fosWhy(e) + '). Please ask the agent.';
+        return;
+      }
+      k.count = (k.count || 0) + 1; ohSaveSession();
+      oh.thanksName = item.first;
+      ohFormClear(); oh.phase = 'thanks';
+      clearTimeout(_ohThanksTimer);
+      _ohThanksTimer = setTimeout(() => { oh.phase = 'form'; }, 5000);
+      ohSync();
+    }
+    function ohThanksDone() { clearTimeout(_ohThanksTimer); oh.phase = 'form'; }
+
+    // What Follow Up Boss receives for one sign-in (POST /v1/events).
+    function ohEventBody(item, fubUserId) {
+      const street = [item.street, item.unit].filter(Boolean).join(' ');
+      const when = new Date(item.at);
+      const whenText = when.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + ' at ' + when.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      const person = {
+        firstName: item.first, lastName: item.last,
+        emails: [{ value: item.email }], phones: [{ value: item.phone }],
+        tags: ['FORWARD OS', 'Open House', street]
+      };
+      if (fubUserId) person.assignedUserId = fubUserId;
+      return {
+        source: OH_SOURCE, system: 'FORWARD OS', type: 'Visited Open House',
+        occurredAt: item.at,
+        description: 'Signed in at the open house at ' + ohAddressLine(item) + ' on ' + whenText + '. Hosted by ' + item.agent + '. Signed in on FORWARD OS.',
+        person: person,
+        property: { street: street, city: item.city, state: item.state, code: item.zip }
+      };
+    }
+    function ohSetOnline(v) {
+      if (oh.online && !v && oh.kiosk) oh.offlinePopup = true;
+      const back = !oh.online && v;
+      oh.online = v;
+      if (back) ohSync();
+    }
+    // Sends one sign-in. Returns normally whatever Follow Up Boss said (the item
+    // records it); throws only when the request never reached it (no connection).
+    async function ohSendOne(item) {
+      let fubUserId = item.fubUserId;
+      if (!fubUserId) {
+        fubUserId = await ohFubUserId(item.agent);
+        if (!fubUserId) {
+          item.status = 'held';
+          item.error = 'Follow Up Boss has no user with ' + item.agent + '\'s email (' + (AGENT_EMAILS[item.agent] || 'none on file') + '), so this lead was not sent: it would not be assigned to them. Tell Marc.';
+          return;
+        }
+        item.fubUserId = fubUserId;
+      }
+      let key = localStorage.getItem('fos_fub_key');
+      if (!key) key = await ensureFubKey();
+      if (!key) { item.error = 'This device has no Follow Up Boss key yet. It will be sent once the key loads.'; return; }
+      item.tries = (item.tries || 0) + 1;
+      const res = await fetch('/fub-api/events', {
+        method: 'POST',
+        headers: { 'Authorization': 'Basic ' + btoa(key + ':'), 'Content-Type': 'application/json', 'X-System': 'FORWARD OS', 'X-System-Key': 'forwardos' },
+        body: JSON.stringify(ohEventBody(item, fubUserId))
+      });
+      if (res.status === 200 || res.status === 201) {
+        oh.queue = oh.queue.filter(x => x.id !== item.id);
+        if (oh.kiosk && oh.kiosk.id === item.session) { oh.kiosk.sent = (oh.kiosk.sent || 0) + 1; ohSaveSession(); }
+        return;
+      }
+      let msg = 'Follow Up Boss answered ' + res.status;
+      try { const j = await res.json(); if (j && (j.errorMessage || j.message)) msg += ': ' + (j.errorMessage || j.message); } catch (e) {}
+      if (res.status === 204) {
+        item.status = 'held';
+        item.error = 'Follow Up Boss did not take this lead: its lead flow for the source ' + OH_SOURCE + ' is archived. Turn it back on in Follow Up Boss (Admin, Lead Flow), then press Send again.';
+      } else if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+        item.status = 'held';
+        item.error = msg + '. It was not added. Press Send again once it is fixed.';
+      } else {
+        item.error = msg + '. It will be tried again.';
+      }
+    }
+    async function ohSync() {
+      if (oh.sending) return;
+      const waiting = oh.queue.filter(x => x.status === 'waiting');
+      if (!waiting.length) return;
+      if (navigator.onLine === false) { ohSetOnline(false); return; }
+      oh.sending = true;
+      try {
+        for (const item of waiting) {
+          try { await ohSendOne(item); }
+          catch (e) {
+            // The request never arrived: no connection. Stop and wait for one.
+            item.error = 'Not sent yet: no internet connection.';
+            ohSetOnline(false);
+            break;
+          }
+          ohSetOnline(true);
+        }
+      } finally {
+        try { ohPersistQueue(); } catch (e) { console.warn('Open house: waiting sign-ins not rewritten on the device:', e); }
+        oh.sending = false;
+      }
+    }
+    function ohRetry(id) {
+      const it = oh.queue.find(x => x.id === id);
+      if (!it) return;
+      it.status = 'waiting'; it.error = '';
+      try { ohPersistQueue(); } catch (e) {}
+      ohSync();
+    }
+    const ohWaitingCount = computed(() => oh.queue.filter(x => x.status === 'waiting').length);
+    const ohHeldCount = computed(() => oh.queue.filter(x => x.status === 'held').length);
+    function ohDismissOffline() { oh.offlinePopup = false; }
+
+    // Leaving the sign-in screen.
+    function ohExitOpen() { oh.exitOpen = true; oh.exitCode = ''; oh.exitError = ''; oh.exitForgot = false; }
+    async function ohExitTry() {
+      oh.exitError = '';
+      const typed = String(oh.exitCode || '').trim();
+      let good = false;
+      if (oh.exitForgot) good = typed === ACCESS_CODE;
+      else good = !!oh.kiosk && (await ohHash(typed)) === oh.kiosk.codeHash;
+      if (!good) { oh.exitError = oh.exitForgot ? 'That is not the FORWARD OS access code.' : 'That code is not right.'; oh.exitCode = ''; return; }
+      ohEnd();
+    }
+    function ohEnd() {
+      const k = oh.kiosk;
+      const left = oh.queue.filter(x => k && x.session === k.id).length;
+      oh.endNote = k ? ('Open house at ' + k.address + ' ended: ' + (k.count || 0) + ' sign-in' + ((k.count || 0) === 1 ? '' : 's') + ', ' + (k.sent || 0) + ' sent to Follow Up Boss.' + (left ? ' ' + left + ' still on this device: keep FORWARD OS open here with a connection until they are sent.' : '')) : '';
+      clearTimeout(_ohThanksTimer);
+      oh.kiosk = null; oh.exitOpen = false; oh.exitCode = ''; oh.phase = 'form'; oh.offlinePopup = false;
+      ohFormClear();
+      try { localStorage.removeItem(OH_SESSION_KEY); } catch (e) {}
+      oh.hero = ''; oh.heroName = ''; ohPinReset();
+      view.value = 'open-house';
+    }
+
+    window.addEventListener('online', () => ohSetOnline(true));
+    window.addEventListener('offline', () => ohSetOnline(false));
+    setInterval(() => {
+      if (navigator.onLine === false) { ohSetOnline(false); return; }
+      if (oh.queue.some(x => x.status === 'waiting')) ohSync();
+      else if (!oh.online) ohSetOnline(true);
+    }, 20000);
+    watch(view, (v) => {
+      if (v !== 'open-house') return;
+      if (ohCanPickHost.value && !oh.host && FORWARD_AGENTS.indexOf(agentName.value) !== -1) oh.host = agentName.value;
+      if (ohHostAgent.value) ohLoadPhoto(ohHostAgent.value);
+    });
+    watch(() => oh.host, (h) => { if (h) ohLoadPhoto(h); });
+    onMounted(() => {
+      setTimeout(() => { ohSync(); if (FORWARD_AGENTS.indexOf(agentName.value) !== -1) ohLoadPhoto(agentName.value); }, 1500);
+    });
+
     // ── Auth ───────────────────────────────────────────────
     async function doLogin() {
       loginError.value = '';
@@ -29520,6 +30160,8 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       // Helpers
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
+      oh, ohCanPickHost, ohHostCard, ohPinCurrent, ohPinLookup, ohPinWrong, ohHeroPick, ohLaunchProblem, ohLaunch,
+      ohSubmit, ohThanksDone, ohRetry, ohSync, ohWaitingCount, ohHeldCount, ohDismissOffline, ohExitOpen, ohExitTry,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }
