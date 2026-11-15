@@ -283,7 +283,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     return { before, result: st.ns.result, box: box && box.value, note: note && note.offsetParent ? note.innerText : '', jur: st.ns.jurisdiction };
   });
   ok(s.before === '' && s.result !== null && s.box === '300 Charlie St NW, Washington, DC 20001' && /Washington, DC was added/.test(s.note), 'in a DC listing\'s own net sheet: it calculates, the box is completed, and the note shows under the address box', s);
-  console.log('New Listing: no default state, and Market must agree with the State box');
+  console.log('New Listing: no default state; the State dropdown is the listing\'s market');
   s = await run(async () => {
     const st = document.querySelector('#app').__vue_app__._instance.setupState;
     const posts = []; const f0 = window.fetch;
@@ -293,21 +293,19 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
       return f0(u, o);
     };
     const fill = (state, market) => { st.lstNewStreet = '1300 Army Navy Dr'; st.lstNewUnit = '518'; st.lstNewCity = 'Arlington'; st.lstNewState = state; st.lstNewZip = '22202'; st.lstNewSeller = 'Seller Z'; st.lstNewMarket = market; st.lstCreateError = ''; };
-    const start = st.lstNewMarket;
-    fill('VA', 'DC'); await st.lstCreateProperty(); const clash = st.lstCreateError, clashPosts = posts.length;
+    const start = st.lstNewMarket + '|' + st.lstNewState;
     fill('', ''); st.lstNewAddress = ''; await st.lstCreateProperty(); const none = st.lstCreateError, nonePosts = posts.length;
     // Since Nov 14, 2026 the address is confirmed on a map before anything is created.
     fill('VA', ''); await st.lstCreateProperty(); const unpinned = st.lstCreateError, unpinnedPosts = posts.length;
     Object.assign(st.lstNewPin, { state: 'found', sig: ['1300 army navy dr', 'arlington', 'va', '22202'].join('|'), ok: true });
-    fill('VA', ''); await st.lstCreateProperty(); await new Promise(r => setTimeout(r, 200));
+    fill('VA', 'DC'); await st.lstCreateProperty(); await new Promise(r => setTimeout(r, 200));   // a Market left over from anywhere never wins over the State chosen
     window.fetch = f0;
-    return { start, clash, clashPosts, none, nonePosts, unpinned, unpinnedPosts, sent: posts.map(p => p.market) };
+    return { start, none, nonePosts, unpinned, unpinnedPosts, sent: posts.map(p => p.market) };
   });
-  ok(s.start === '', 'New Listing: Market starts empty, not DC', s.start);
-  ok(/State box says VA but Market says DC/.test(s.clash) && s.clashPosts === 0, 'New Listing: State VA with Market DC is refused and nothing is created', s);
+  ok(s.start === '|', 'New Listing: State (and so the market) starts empty, not DC', s.start);
   ok(/Choose the listing's state/.test(s.none) && s.nonePosts === 0, 'New Listing: no state anywhere is refused and nothing is created', s);
   ok(/Check the address on a map/.test(s.unpinned) && s.unpinnedPosts === 0, 'New Listing: an address not checked on a map is refused and nothing is created', s);
-  ok(s.sent.length === 1 && s.sent[0] === 'VA', 'New Listing: State VA with Market left empty creates the listing as VA', s.sent);
+  ok(s.sent.length === 1 && s.sent[0] === 'VA', 'New Listing: State Virginia creates the listing with market VA, whatever Market held before', s.sent);
 
   ok(errors.length === 0, 'no page errors', errors);
   await browser.close(); srv.close();
