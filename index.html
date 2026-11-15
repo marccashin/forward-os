@@ -244,6 +244,18 @@ a.fos-guide-btn:focus-visible{outline-width:3px}
 .ohs-done{grid-column:1/-1;background:#fff;border-left:3px solid #C8A96E;padding:12px 16px;font:400 13px/1.55 'Montserrat',sans-serif;color:#0A2342}
 @media (max-width:600px){.ohs-step{padding-left:48px}.ohs-launch{padding-left:0}.ohs-head h1{font-size:32px}}
 .ohk .ohk-field input:-webkit-autofill{-webkit-text-fill-color:#F7F4EF;-webkit-box-shadow:0 0 0 40px #0A2342 inset}
+/* Questions on the guest book: each answer is a chip; the chosen one fills gold. */
+.ohk-qs{margin-top:30px;display:flex;flex-direction:column;gap:22px}
+.ohk-q{border:0;margin:0;padding:0;min-width:0}
+.ohk-q legend{padding:0;margin-bottom:10px;font:400 20px/1.3 'Cormorant Garamond',serif;color:#F7F4EF}
+.ohk-chips{display:flex;flex-wrap:wrap;gap:8px}
+.ohk .ohk-chip{position:relative;display:inline-flex;align-items:center;margin:0;padding:11px 16px;border:1px solid rgba(200,169,110,.55);color:#F7F4EF;font:400 14px/1 'Montserrat',sans-serif;letter-spacing:.01em;text-transform:none;cursor:pointer;transition:background .15s,color .15s,border-color .15s;min-height:44px;box-sizing:border-box}
+.ohk .ohk-chip input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.ohk .ohk-chip.on{background:#C8A96E;border-color:#C8A96E;color:#0A2342;font-weight:500}
+.ohk .ohk-chip:focus-within{box-shadow:0 0 0 2px #0A2342,0 0 0 4px #C8A96E}
+.ohk .ohk-field textarea{appearance:none;-webkit-appearance:none;background:transparent;border:0;border-bottom:1px solid rgba(247,244,239,.35);border-radius:0;color:#F7F4EF;font:400 17px/1.45 'Montserrat',sans-serif;padding:6px 0 8px;outline:none;width:100%;box-sizing:border-box;resize:vertical;min-height:56px}
+.ohk .ohk-field textarea:focus{border-bottom-color:#C8A96E;box-shadow:0 1px 0 #C8A96E}
+.ohs-preview .pv-qs{margin-top:10px;font:italic 400 9.5px/1.3 'Cormorant Garamond',serif;color:rgba(247,244,239,.65)}
 
   /* Check on a map (Nov 14, 2026) */
   .fos-pin-btn { padding:6px 10px; background:var(--white); border:1px solid var(--gold-muted); border-radius:2px; font-family:'Montserrat',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--navy); cursor:pointer; }
@@ -2447,6 +2459,18 @@ body {
                 <div class="ohk-field"><label for="ohk-phone">Phone</label><input id="ohk-phone" v-model="oh.form.phone" data-oh-phone type="tel" inputmode="tel" autocomplete="tel"></div>
                 <div class="ohk-field"><label for="ohk-email">Email</label><input id="ohk-email" v-model="oh.form.email" data-oh-email type="email" inputmode="email" autocomplete="email" autocapitalize="off"></div>
               </div>
+              <!-- Questions (Marc, Nov 15, 2026: Spacio's five, word for word). All optional. -->
+              <div class="ohk-qs">
+                <fieldset v-for="qq in OH_QUESTIONS" :key="qq.id" class="ohk-q" :data-oh-q="qq.id">
+                  <legend>{{ qq.q }}</legend>
+                  <div v-if="qq.options" class="ohk-chips">
+                    <label v-for="opt in qq.options" :key="opt" class="ohk-chip" :class="{on: oh.form.answers[qq.id]===opt}">
+                      <input type="radio" :name="'ohq-' + qq.id" :value="opt" v-model="oh.form.answers[qq.id]">{{ opt }}
+                    </label>
+                  </div>
+                  <div v-else class="ohk-field"><textarea v-model="oh.form.answers[qq.id]" :data-oh-q-text="qq.id" rows="2" :aria-label="qq.q"></textarea></div>
+                </fieldset>
+              </div>
               <div v-if="oh.formError" data-oh-form-error class="ohk-err" role="alert">{{ oh.formError }}</div>
               <button type="submit" data-oh-signin class="ohk-sign">Sign the guest book</button>
             </form>
@@ -3369,6 +3393,7 @@ body {
                   <div class="pv-addr">{{ oh.street.trim() ? (oh.street.trim() + (oh.unit.trim() ? ' ' + oh.unit.trim() : '')) : 'The address' }}</div>
                   <div class="pv-city">{{ [oh.city.trim(), [oh.state, oh.zip.trim()].filter(Boolean).join(' ')].filter(Boolean).join(', ') || 'City, state and ZIP' }}</div>
                   <div class="pv-lines"><i>First name</i><i>Last name</i><i>Phone</i><i>Email</i></div>
+                  <div class="pv-qs">and {{ OH_QUESTIONS.length }} short questions, all optional</div>
                   <div class="pv-btn">Sign the guest book</div>
                 </div></div>
                 <div class="pv-host" v-if="ohHostCard">
@@ -10604,6 +10629,15 @@ const OH_AGENT_PHOTO_POS = {
   'Cesar Rivera':    '72% 30%',
   'Charlotte Lee':   '50% 50%',
 };
+// Open House questions (Marc, Nov 15, 2026): the five Spacio asked, word for word, in
+// its order. All optional. Each answer goes to Follow Up Boss with its question's words.
+const OH_QUESTIONS = [
+  { id: 'stage',       q: 'At what point in the buying process are you?', options: ['Seeing what\'s out there', 'Actively looking', 'I\'m ready'] },
+  { id: 'timeline',    q: 'When are you looking to move?', options: ['3 months', '3-6 months', '6-12 months', 'Other'] },
+  { id: 'preapproved', q: 'Are you mortgage pre-approved?', options: ['Yes', 'No'] },
+  { id: 'pricing',     q: 'How well priced is this property?', options: ['Overpriced', 'Just Right', 'Underpriced'] },
+  { id: 'feedback',    q: 'Do you have any feedback about the property that would be helpful for the sellers to hear?' },
+];
 const AGENT_PHONES = {
   'Marc Cashin':    '202.900.3126',
   'Ashling McGowan':'202.779.6263',
@@ -27208,7 +27242,7 @@ const CHANGELOG = [
     updates: [
       {
         title: 'Open House Sign-In',
-        detail: 'FORWARD OS now has its own open house sign-in, under Open House in the menu. You enter the address, check it on the map, upload the main photo of the property and set a 4-digit code. Visitors then sign in on a screen with the property photo and your card: your photo, name, FORWARD, Corcoran McEnearney, phone and email. Each sign-in goes to Follow Up Boss assigned to you, with the visitor\'s name, phone and email, tagged FORWARD OS, Open House and the street address. If the internet drops, a notice says so and sign-ins keep being saved on the device; they go to Follow Up Boss on their own once the connection is back.\n\nHow to use: Press Open House in the menu, fill in the address, press Check the address on a map and Yes, this is the property, upload the main photo, set your code twice and press Launch Open House. Hand the device to your visitors. To finish, press Agent at the top of the screen and type your code.\n\nBest practice: On an iPad or computer, connect to the Wi-Fi or turn on your phone\'s Personal Hotspot before you launch: FORWARD OS needs a connection to open. Keep FORWARD OS open on that device after the open house until every sign-in has been sent.'
+        detail: 'FORWARD OS now has its own open house sign-in, under Open House in the menu. You enter the address, check it on the map, upload the main photo of the property and set a 4-digit code. Visitors then sign in on a screen with the property photo and your card: your photo, name, FORWARD, Corcoran McEnearney, phone and email. Visitors can also answer five short questions: where they are in the buying process, when they want to move, whether they are pre-approved, how well priced the home is, and any feedback for the sellers. Each sign-in goes to Follow Up Boss assigned to you, with the visitor\'s name, phone, email and answers, tagged FORWARD OS, Open House and the street address. If the internet drops, a notice says so and sign-ins keep being saved on the device; they go to Follow Up Boss on their own once the connection is back.\n\nHow to use: Press Open House in the menu, fill in the address, press Check the address on a map and Yes, this is the property, upload the main photo, set your code twice and press Launch Open House. Hand the device to your visitors. To finish, press Agent at the top of the screen and type your code.\n\nBest practice: On an iPad or computer, connect to the Wi-Fi or turn on your phone\'s Personal Hotspot before you launch: FORWARD OS needs a connection to open. Keep FORWARD OS open on that device after the open house until every sign-in has been sent.'
       }
     ]
   }
@@ -28938,7 +28972,7 @@ async function dismissUpdates() {
       launchError: '', launching: false, launchNote: '',
       kiosk: _ohRead(OH_SESSION_KEY, null),
       phase: 'form',
-      form: { first: '', last: '', phone: '', email: '' }, formError: '', thanksName: '',
+      form: { first: '', last: '', phone: '', email: '', answers: {} }, formError: '', thanksName: '',
       online: navigator.onLine !== false,
       offlinePopup: false,
       exitOpen: false, exitCode: '', exitError: '', exitForgot: false,
@@ -29130,7 +29164,7 @@ async function dismissUpdates() {
         oh.launchError = 'The open house did not start (' + fosWhy(e) + ').';
       } finally { oh.launching = false; }
     }
-    function ohFormClear() { Object.assign(oh.form, { first: '', last: '', phone: '', email: '' }); oh.formError = ''; }
+    function ohFormClear() { Object.assign(oh.form, { first: '', last: '', phone: '', email: '', answers: {} }); oh.formError = ''; }
     function ohSaveSession() { try { if (oh.kiosk) localStorage.setItem(OH_SESSION_KEY, JSON.stringify(oh.kiosk)); } catch (e) { console.warn('Open house: count not kept on the device:', e); } }
     // Writes the waiting sign-ins to the device. Throws when the device refused, so a
     // sign-in is never thanked unless it is kept.
@@ -29155,6 +29189,7 @@ async function dismissUpdates() {
         street: k.street, unit: k.unit, city: k.city, state: k.state, zip: k.zip,
         first: oh.form.first.trim(), last: oh.form.last.trim(),
         phone: oh.form.phone.trim(), email: oh.form.email.trim(),
+        answers: ohAnswerList(oh.form.answers),
         status: 'waiting', error: '', tries: 0
       };
       oh.queue.push(item);
@@ -29170,6 +29205,17 @@ async function dismissUpdates() {
       clearTimeout(_ohThanksTimer);
       _ohThanksTimer = setTimeout(() => { oh.phase = 'form'; }, 5000);
       ohSync();
+    }
+    // The visitor's answers to OH_QUESTIONS, in the questions' order, each with the
+    // question's own words at the time of sign-in. Questions are optional: an unanswered
+    // one is left out, never sent as blank.
+    function ohAnswerList(ans) {
+      const out = [];
+      OH_QUESTIONS.forEach(q => {
+        const a = String((ans || {})[q.id] == null ? '' : ans[q.id]).trim();
+        if (a) out.push({ id: q.id, q: q.q, a: a });
+      });
+      return out;
     }
     function ohThanksDone() { clearTimeout(_ohThanksTimer); oh.phase = 'form'; }
 
@@ -29187,7 +29233,8 @@ async function dismissUpdates() {
       return {
         source: OH_SOURCE, system: 'FORWARD OS', type: 'Visited Open House',
         occurredAt: item.at,
-        description: 'Signed in at the open house at ' + ohAddressLine(item) + ' on ' + whenText + '. Hosted by ' + item.agent + '. Signed in on FORWARD OS.',
+        description: 'Signed in at the open house at ' + ohAddressLine(item) + ' on ' + whenText + '. Hosted by ' + item.agent + '. Signed in on FORWARD OS.'
+          + ((item.answers && item.answers.length) ? '\n\n' + item.answers.map(x => x.q + '\n' + x.a).join('\n\n') : ''),
         person: person,
         property: { street: street, city: item.city, state: item.state, code: item.zip }
       };
@@ -30347,7 +30394,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       nsAccordion, ctcAccordion, toggleNsAcc, toggleCtcAcc,
       bmrStep,bmrFile,bmrDragOver,bmrAnalysis,bmrClientName,bmrOfferPrice,bmrReportTitle,bmrOfferTerms,bmrDisclaimerAck,bmrAnalyzing,bmrDeploying,bmrUploadError,bmrDeployError,bmrResult,bmrCopied,bmrTermOptions,bmrLsPillClass,bmrAnalyze,bmrDeploy,bmrCopyLink,bmrOpenEmail,bmrReset,bmrRegenerating,bmrRegenError,bmrRegenerate,bmrQualityWarnings,bmrNExcluded,bmrLastRegen,bmrNoSubject,bmrCompareOffers,bmrSetAsSubject,bmrMarketConditions,bmrSubjectDom,bmrDomTip,
       oh, ohCanPickHost, ohHostCard, ohPinCurrent, ohPinLookup, ohPinWrong, ohHeroPick, ohLaunchProblem, ohLaunch,
-      ohSubmit, ohThanksDone, ohRetry, ohSync, ohWaitingCount, ohToday, ohStepDone, ohHeldCount, ohDismissOffline, ohExitOpen, ohExitTry,
+      ohSubmit, ohThanksDone, ohRetry, ohSync, ohWaitingCount, ohToday, ohStepDone, OH_QUESTIONS, ohHeldCount, ohDismissOffline, ohExitOpen, ohExitTry,
       firstName, pageTitle, go, copy, fmtDate, fmtPost, saveOut,
     };
   }

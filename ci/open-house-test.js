@@ -184,6 +184,15 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/10-digit phone/.test(s.oh.formError) && fub.events.length === 0 && s.oh.queue.length === 0, 'a short phone number is refused and nothing is saved or sent', s.oh.formError);
   await page.locator('[data-oh-phone]').fill('(202) 555-0101'); await page.locator('[data-oh-signin]').click(); await page.waitForTimeout(300);
   ok(/email/.test((await S(page)).oh.formError) && fub.events.length === 0, 'a bad email is refused and nothing is sent');
+  const qs = await page.locator('[data-oh-q] legend').allInnerTexts();
+  ok(JSON.stringify(qs) === JSON.stringify(['At what point in the buying process are you?', 'When are you looking to move?', 'Are you mortgage pre-approved?', 'How well priced is this property?', 'Do you have any feedback about the property that would be helpful for the sellers to hear?']), 'the five questions are on the guest book, word for word, in order', qs);
+  const opts = await page.locator('[data-oh-q="timeline"] .ohk-chip').allInnerTexts();
+  ok(JSON.stringify(opts.map(x => x.trim())) === JSON.stringify(['3 months', '3-6 months', '6-12 months', 'Other']), 'each question has its answers word for word', opts);
+  await page.locator('[data-oh-q="stage"] .ohk-chip', { hasText: 'Actively looking' }).click();
+  await page.locator('[data-oh-q="preapproved"] .ohk-chip', { hasText: 'No' }).click();
+  await page.locator('[data-oh-q="preapproved"] .ohk-chip', { hasText: 'Yes' }).click();
+  await page.locator('[data-oh-q-text="feedback"]').fill('Loved the light. The kitchen feels small.');
+  ok(await page.locator('[data-oh-q="preapproved"] .ohk-chip.on').innerText() === 'Yes', 'a picked answer is marked, and picking another replaces it');
   await page.locator('[data-oh-email]').fill('ann.visitor@example.com'); await page.locator('[data-oh-signin]').click(); await page.waitForTimeout(800);
   s = await S(page);
   ok(fub.events.length === 1, 'one sign-in is one request to Follow Up Boss', fub.events.length);
@@ -195,11 +204,12 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   };
   ok(ev && JSON.stringify({ source: ev.source, system: ev.system, type: ev.type, person: ev.person, property: ev.property }) === JSON.stringify(expect), 'the event is Visited Open House with the visitor\'s name, phone and email, assigned to the agent, tagged FORWARD OS, Open House and the street address, with the property', ev);
   ok(ev && !isNaN(Date.parse(ev.occurredAt)) && /1324 E St SE #208, Washington, DC 20003/.test(ev.description) && /Hosted by Niki Lang/.test(ev.description), 'the event carries when the visitor signed in and a plain description', ev && ev.description);
+  ok(ev && ev.description.endsWith('\n\nAt what point in the buying process are you?\nActively looking\n\nAre you mortgage pre-approved?\nYes\n\nDo you have any feedback about the property that would be helpful for the sellers to hear?\nLoved the light. The kitchen feels small.'), 'the answers go to Follow Up Boss with each question, in order; unanswered questions are left out', ev && ev.description);
   ok(fub.events[0] && fub.events[0].auth === 'Basic ' + Buffer.from('fub-test-key:').toString('base64'), 'it is sent with the Follow Up Boss key, through the app\'s own Follow Up Boss route');
   ok(s.oh.queue.length === 0 && JSON.parse(s.stored).length === 0 && s.oh.kiosk.count === 1 && s.oh.kiosk.sent === 1, 'once Follow Up Boss took it, it leaves the device; 1 signed in, 1 sent', { q: s.oh.queue, k: s.oh.kiosk.count, sent: s.oh.kiosk.sent });
   ok(await page.locator('[data-oh-thanks]').isVisible() && /Thank you, Ann/.test(await page.locator('[data-oh-thanks]').innerText()), 'the visitor is thanked by name');
-  ok(await page.locator('[data-oh-first]').count() === 0, 'the form is cleared for the next guest (no name left on screen)');
   await next(page);
+  ok(await page.locator('[data-oh-first]').inputValue() === '' && await page.locator('[data-oh-q-text="feedback"]').inputValue() === '' && await page.locator('.ohk-chip.on').count() === 0, 'the next guest gets a clean page: no name, no answers left from the last visitor');
 
   // ── 2. The connection drops ────────────────────────────────────────────────
   await ctx.setOffline(true); await page.waitForTimeout(400);
@@ -211,6 +221,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await page.locator('[data-oh-offline-ok]').click(); await page.waitForTimeout(200);
   ok(!(await page.locator('[data-oh-offline-popup]').count()), 'I understand closes it');
   const before = fub.events.length;
+  await page.locator('[data-oh-q="pricing"] .ohk-chip', { hasText: 'Overpriced' }).click();
   await signIn(page, 'Bob', 'Offline', '202-555-0102', 'bob@example.com'); await next(page);
   await signIn(page, 'Cy', 'Offline', '2025550103', 'cy@example.com'); await next(page);
   s = await S(page);
@@ -236,6 +247,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   s = await S(page);
   const sentNames = fub.events.slice(before).map(e => e.body.person.firstName);
   ok(sentNames.length === 2 && sentNames.join() === 'Bob,Cy', 'when the connection is back each waiting sign-in is sent exactly once, in order', sentNames);
+  ok(/How well priced is this property\?\nOverpriced$/.test(fub.events[before].body.description) && !/\?\n/.test(fub.events[before + 1].body.description), 'answers given offline are kept on the device and sent with the sign-in; a visitor who answered nothing sends no questions', [fub.events[before].body.description, fub.events[before + 1].body.description]);
   ok(fub.events.slice(before).every(e => e.body.person.assignedUserId === 7 && e.body.person.tags[2] === '1324 E St SE #208'), 'sign-ins taken offline are still assigned to the agent and tagged with the address');
   ok(s.oh.queue.length === 0 && JSON.parse(s.stored).length === 0 && s.oh.kiosk.sent === 3, 'they leave the device once sent; 3 sent', { q: s.oh.queue.length, sent: s.oh.kiosk.sent });
   ok(fub.events.slice(before).every(e => Date.parse(e.body.occurredAt) < Date.now() - 500), 'a late-sent sign-in carries the time the visitor signed in, not the time it was sent');
