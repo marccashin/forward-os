@@ -37,7 +37,7 @@ window.google = { maps: {
     AutocompleteService: function () { this.getPlacePredictions = function (req, cb) { window.__g.preds.push(req.input); var a = window.__g.answers.preds; setTimeout(function () { cb(a || [], a && a.length ? 'OK' : 'ZERO_RESULTS'); }, 10); }; },
     PlacesService: function () { this.getDetails = function (req, cb) { window.__g.details.push({ id: req.placeId, fields: req.fields }); var d = window.__g.answers.details && window.__g.answers.details[req.placeId]; setTimeout(function () { cb(d || null, d ? 'OK' : 'NOT_FOUND'); }, 10); }; }
   },
-  Map: function (el, opts) { if (window.__g.mapThrows) throw new Error('map test failure'); window.__g.maps.push({ box: el.getAttribute('data-pin-map'), lat: opts.center.lat, lng: opts.center.lng }); this.setCenter = function (c) { window.__g.maps.push({ box: el.getAttribute('data-pin-map'), lat: c.lat, lng: c.lng, moved: true }); }; },
+  Map: function (el, opts) { if (window.__g.mapThrows) throw new Error('map test failure'); var bx = el.getAttribute('data-pin-map') || (el.closest('[data-pin-check]') ? el.closest('[data-pin-check]').getAttribute('data-pin-check') : null); window.__g.maps.push({ box: bx, lat: opts.center.lat, lng: opts.center.lng }); this.setCenter = function (c) { window.__g.maps.push({ box: el.getAttribute('data-pin-map'), lat: c.lat, lng: c.lng, moved: true }); }; },
   Marker: function (o) { window.__g.markers.push(o.position); this.setPosition = function (p) { window.__g.markers.push(p); }; }
 } };
 `;
@@ -231,6 +231,67 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   // The pin is part of the ns form: in its initializer and in the only reset (resetToolForm).
   { const html = fs.readFileSync(path.join(dir, 'index.html'), 'utf8'); const r = html.slice(html.indexOf("case 'net-sheet':"), html.indexOf("case 'cash-to-close':"));
     ok(/_pin:null/.test(r) && /_pickNote:'', _pin:null,\s*\n\s*_detectedCounty/.test(html), 'Net sheet: the pin is in the form\'s initializer and in resetToolForm(\'net-sheet\')'); }
+  await ctx.close();
+
+  // ---------------- Round 2: tour, Cash to Close, Offer Strategy ----------------
+  // Check on a map is a check for the agent, not a gate: nothing is created from these boxes.
+  const G = (addr, lat, lng, id) => ({ preds: [{ description: addr + ', USA', place_id: id }], details: { [id]: { geometry: { location: { lat: lat, lng: lng } }, formatted_address: addr + ', USA' } } });   // plain numbers: fosPinFromPlace takes either form
+  const pinBox = (attr) => page.locator('[data-pin-check="' + attr + '"]').first();
+  async function checkBox(attr, answers, label) {
+    await S(page, (a) => { window.__g.answers = a; window.__g.preds = []; window.__g.details = []; window.__g.maps = []; }, answers);
+    await pinBox(attr).locator('[data-pin-go]').click(); await page.waitForTimeout(400);
+    const r = await S(page, () => ({ g: window.__g }));
+    r.label = (await pinBox(attr).locator('[data-pin-label]').count()) ? await pinBox(attr).locator('[data-pin-label]').innerText() : '';
+    r.why = (await pinBox(attr).locator('[data-pin-why]').count()) ? await pinBox(attr).locator('[data-pin-why]').innerText() : '';
+    return r;
+  }
+  ({ ctx, page } = await openPage(true));
+  const postsRound2 = posts.length;
+  // Tour: homes, start and end.
+  await S(page, async () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.go('tour-tracker'); await new Promise(r => setTimeout(r, 500)); x.tt.newTourName = 'Map tour'; x.ttCreateTour(); await new Promise(r => setTimeout(r, 200)); });
+  await page.locator('input[placeholder="e.g. 1234 Q St NW"]').fill('1324 E St SE, Washington, DC 20003');
+  await page.locator('button', { hasText: '+ Add' }).click(); await page.waitForTimeout(300);
+  ok(await pinBox('tour-home').locator('[data-pin-go]').isVisible(), 'Tour: each home on the plan has Check on a map');
+  let r = await checkBox('tour-home', G('1324 E St SE, Washington, DC 20003', 38.8831, -76.9874, 'T1'));
+  ok(r.g.preds[0] === '1324 E St SE, Washington, DC 20003' && r.g.details.length === 1 && r.g.details[0].fields.join() === 'geometry,formatted_address', 'Tour home: Google is asked for exactly that address, and only its point and address', r.g);
+  ok(r.g.maps.filter(m => !m.moved).length === 1 && r.g.maps[0].box === 'tour-home' && r.g.maps[0].lat === 38.8831, 'Tour home: one map in that home\'s box at Google\'s point', r.g.maps);
+  ok(/1324 E St SE, Washington, DC 20003/.test(r.label) && !/USA/.test(r.label) && /not the unit/.test(r.label) && /correct the address/.test(r.label), 'Tour home: Google\'s address is under the map, with the unit warning and what to do if it is wrong', r.label);
+  await page.locator('[data-tp-start-pick="typed"]').click(); await page.waitForTimeout(150);
+  ok(await pinBox('tour-start').locator('[data-pin-go]').isDisabled(), 'Tour start: Check on a map is off while the box is empty');
+  await page.locator('[data-tp-startaddr]').fill('77 Q St NW, Washington, DC 20001'); await page.waitForTimeout(100);
+  r = await checkBox('tour-start', G('77 Q St NW, Washington, DC 20001', 38.91, -77.01, 'T2'));
+  ok(r.g.preds[0] === '77 Q St NW, Washington, DC 20001' && r.g.maps.length === 1 && r.g.maps[0].box === 'tour-start' && /77 Q St NW/.test(r.label), 'Tour start: the typed start is shown on its own map', r);
+  await page.locator('[data-tp-startaddr]').fill('79 Q St NW, Washington, DC 20001'); await page.waitForTimeout(150);
+  ok(await pinBox('tour-start').locator('[data-pin-go]').isVisible() && !(await pinBox('tour-start').locator('[data-pin-map-box]').count()), 'Tour start: changing the address hides the map and offers the check again');
+  await S(page, () => { window.__g.maps = []; });
+  await page.locator('[data-tp-startaddr]').fill('77 Q St NW, Washington, DC 20001'); await page.waitForTimeout(300);
+  r = await S(page, () => window.__g.maps);
+  ok(r.filter(m => !m.moved).length === 1 && r[0].box === 'tour-start' && (await pinBox('tour-start').locator('[data-pin-label]').count()) === 1, 'Tour start: changed back, the map is drawn again (never a blank box) with no new lookup', r);
+  await page.locator('[data-tp-end-pick="next"]').click(); await page.waitForTimeout(150);
+  await page.locator('[data-tp-endaddr]').fill('1326 E St SE, Washington, DC 20003'); await page.waitForTimeout(100);
+  r = await checkBox('tour-end', { preds: [{ description: '1328 E St SE, Washington, DC 20003, USA', place_id: 'T3' }], details: { T3: { geometry: { location: { lat: 1, lng: 2 } }, formatted_address: 'x' } } });
+  ok(r.g.details.length === 0 && r.g.maps.length === 0 && /did not find this exact street address/.test(r.why) && /yourself/.test(r.why), 'Tour end: Google\'s different house number is never taken; no map and the reason is shown', r);
+  r = await S(page, () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; return JSON.stringify(x.tt.tours) + JSON.stringify(x.tt.activeTour); });
+  ok(!/38\.8831|38\.91|fosPin|"lat"/.test(r), 'Tour: no pin or map point is stored on the tour (kept in memory only)');
+  // Cash to Close: a picked suggestion shows at once; a typed one has the button.
+  await S(page, async () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.go('cash-to-close'); await new Promise(r => setTimeout(r, 400)); });
+  await S(page, (a) => { window.__g.answers = a; window.__g.preds = []; window.__g.details = []; window.__g.maps = []; }, G('1324 E St SE, Washington, DC 20003', 38.8831, -76.9874, 'C1'));
+  await page.locator('#ctc-address-input').click(); await page.locator('#ctc-address-input').pressSequentially('1324 E St', { delay: 20 }); await page.waitForTimeout(600);
+  ok(await pinBox('ctc').locator('[data-pin-go]').isVisible() && !(await pinBox('ctc').locator('[data-pin-map-box]').count()), 'Cash to Close: no map while typing; Check on a map is there');
+  await page.locator('div', { hasText: /^1324 E St SE, Washington, DC 20003, USA$/ }).last().dispatchEvent('mousedown'); await page.waitForTimeout(500);
+  r = await S(page, () => ({ g: window.__g, j: document.querySelector('#app').__vue_app__._instance.setupState.ctc.jurisdiction }));
+  r.label = (await pinBox('ctc').locator('[data-pin-label]').count()) ? await pinBox('ctc').locator('[data-pin-label]').innerText() : '';
+  ok(r.g.maps.filter(m => !m.moved).length === 1 && r.g.maps[0].box === 'ctc' && /1324 E St SE/.test(r.label) && r.j === 'dc', 'Cash to Close: picking Google\'s suggestion shows it on the map at once, and the jurisdiction is set as before', r);
+  await page.locator('#ctc-address-input').fill('9 Other St, Washington, DC 20001'); await page.waitForTimeout(150);
+  ok(!(await pinBox('ctc').locator('[data-pin-map-box]').count()), 'Cash to Close: typing another address hides the map');
+  // Offer Strategy
+  await S(page, async () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.go('offer-strategy'); await new Promise(r => setTimeout(r, 400)); });
+  await page.locator('input[placeholder="123 Main St, Arlington VA 22201"]').fill('4 Wendslow Place, Lutherville, MD 21093');
+  r = await checkBox('osg', G('4 Wendslow Place, Lutherville, MD 21093', 39.4, -76.6, 'O1'));
+  ok(r.g.preds[0] === '4 Wendslow Place, Lutherville, MD 21093' && r.g.maps.length === 1 && r.g.maps[0].box === 'osg' && /4 Wendslow Place, Lutherville, MD 21093/.test(r.label), 'Offer Strategy: the typed property is shown on a map with Google\'s address', r);
+  r = await S(page, () => { const x = document.querySelector('#app').__vue_app__._instance.setupState; return x.osgAddress; });
+  ok(r === '4 Wendslow Place, Lutherville, MD 21093', 'Offer Strategy: the check never changes what the agent typed', r);
+  ok(posts.length === postsRound2, 'Round 2: no property is created by any of these checks', posts.length - postsRound2);
   await ctx.close();
 
   // ---------------- No Google at all ----------------
