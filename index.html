@@ -6194,7 +6194,7 @@ body {
               <h2 style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;color:var(--navy);margin:0;">My Listings</h2>
               <p style="font-size:8.5px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold-muted);margin:4px 0 0;">Seller Package · Property Files · Assets</p>
             </div>
-            <button class="btn-navy" @click="lstShowNewModal=true" style="white-space:nowrap;display:inline-flex;align-items:center;gap:7px;">
+            <button class="btn-navy" @click="lstOpenNewProperty()" style="white-space:nowrap;display:inline-flex;align-items:center;gap:7px;">
               <svg width="9" height="9" viewBox="0 0 9 9" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="4.5" y1="0.5" x2="4.5" y2="8.5"/><line x1="0.5" y1="4.5" x2="8.5" y2="4.5"/></svg>
               New Property
             </button>
@@ -6214,7 +6214,7 @@ body {
             <div class="empty-state-title">No listings yet</div>
             <div class="empty-state-sub">Create a property folder to organise assets and generate your campaign</div>
             <div class="empty-state-actions">
-              <button class="btn-navy" @click="lstShowNewModal=true" style="padding:10px 24px;">Create First Property</button>
+              <button class="btn-navy" @click="lstOpenNewProperty()" style="padding:10px 24px;">Create First Property</button>
             </div>
           </div>
 
@@ -14103,10 +14103,7 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         refreshPropFiles();
 
         lstShowNewModal.value = false;
-        lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
-        lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
-        lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = '';
-        lstNewPinReset();
+        lstNewFormReset();
 
         // 3. Open the new property
         prop._assetMap = {}; prop._assetCount = 0;
@@ -17961,6 +17958,16 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     // draw it again, never leave it blank.
     watch(() => lstNewPinCurrent.value && lstNewPin.state === 'found', (on) => { if (on) fosPinMapDraw('nl', { lat: lstNewPin.lat, lng: lstNewPin.lng }); });
     function lstNewPinReset() { Object.assign(lstNewPin, { state: '', lat: null, lng: null, label: '', sig: '', ok: false, why: '' }); }
+    // Every new property starts from a blank form (Marc, Nov 14, 2026: closing the window and
+    // pressing New Property again showed the last address, already marked Confirmed on the map).
+    // Typed text is not kept between openings: one form, one property.
+    function lstNewFormReset() {
+      lstNewAddress.value = ''; lstNewStreet.value = ''; lstNewUnit.value = '';
+      lstNewCity.value = ''; lstNewState.value = ''; lstNewZip.value = '';
+      lstNewSeller.value = ''; lstNewSeller2.value = ''; lstNewMarket.value = '';
+      lstNewPinReset();
+    }
+    function lstOpenNewProperty() { lstNewFormReset(); lstShowNewModal.value = true; }
     function lstNewPinLookup() {
       const street = lstNewStreet.value.trim();
       if (!street) return;
@@ -26727,7 +26734,7 @@ const CHANGELOG = [
       },
       {
         title: 'Check the Address on a Map',
-        detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself.\n\nHow to use: In New Property, fill in the address, press Check the address on a map, look at the pin, and press Yes, this is the property. If Google cannot find the address (new construction, for example), check it against the listing agreement and tick the box that says you checked it.\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
+        detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself. New Property now starts blank every time you open it, so an address from an earlier try never carries over.\n\nHow to use: In New Property, fill in the address, press Check the address on a map, look at the pin, and press Yes, this is the property. If Google cannot find the address (new construction, for example), check it against the listing agreement and tick the box that says you checked it.\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
       }
     ]
   }
@@ -29416,7 +29423,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstOpenNewProperty, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
