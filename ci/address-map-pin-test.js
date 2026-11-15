@@ -96,7 +96,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
     await S(page, () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; s.lstShowNewModal = true; });
     await page.waitForTimeout(150);
     const box = (ph) => page.locator('input[placeholder="' + ph + '"]').first();
-    await box('e.g. 1234 Oak St NW').fill(street); await box('Washington').fill(city); await box('DC').fill(state); await box('20010').fill(zip);
+    await box('e.g. 1234 Oak St NW').fill(street); await box('Washington').fill(city); await page.locator('[data-nl-state]').selectOption(state); await box('20010').fill(zip);
     await box('First Last').fill('Seller Pin');
   };
   await S(page, () => { window.__g.answers = { preds: [{ description: '1324 E St SE, Washington, DC 20003, USA', place_id: 'P1' }, { description: '1326 E St SE, Washington, DC, USA', place_id: 'P2' }], details: { P1: { geometry: { location: { lat: () => 38.8831, lng: () => -76.9874 } }, formatted_address: '1324 E St SE, Washington, DC 20003, USA' } } }; });
@@ -152,6 +152,46 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/could not be drawn/.test(s) && /map test failure/.test(s), 'New Property: a map that cannot be drawn says so in its box', s);
   await S(page, () => { window.__g.mapThrows = false; document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = false; });
 
+  // One State dropdown, no second Market list (Marc, Nov 14, 2026).
+  await S(page, () => { document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = true; }); await page.waitForTimeout(150);
+  s = await page.evaluate(() => { const m = document.querySelector('input[placeholder="e.g. 1234 Oak St NW"]').closest('div[style*="position: fixed"]'); return { selects: m.querySelectorAll('select').length, opts: Array.from(m.querySelector('[data-nl-state]').options).map(o => o.value + '=' + o.text).join(','), labels: Array.from(m.querySelectorAll('label')).map(l => l.textContent.trim()), stateInputs: m.querySelectorAll('input[placeholder="DC"]').length }; });
+  ok(s.selects === 1 && s.opts === '=Choose state,DC=DC,MD=Maryland,VA=Virginia' && !s.labels.some(l => /^Market/.test(l)) && s.stateInputs === 0, 'New Property: State is one dropdown (DC, Maryland, Virginia) and there is no Market list or typed State box', s);
+  await S(page, () => { document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = false; });
+
+  // No, this is not the property: no pin is dragged; fix the text or tick after checking the agreement.
+  await S(page, () => { window.__g.answers = { preds: [{ description: '4 Wendslow Place, Lutherville, MD 21093, USA', place_id: 'P5' }], details: { P5: { geometry: { location: { lat: () => 39.4, lng: () => -76.6 } }, formatted_address: '4 Wendslow Place, Lutherville, MD 21093, USA' } } }; });
+  await page.evaluate(() => { const x = document.querySelector('#app').__vue_app__._instance.setupState; x.view = 'listings'; });
+  await page.waitForTimeout(300);
+  await page.locator('button.btn-navy', { hasText: 'New Property' }).first().click(); await page.waitForTimeout(200);
+  { const box = (ph) => page.locator('input[placeholder="' + ph + '"]').first();
+    await box('e.g. 1234 Oak St NW').fill('4 Wendslow Place'); await box('Washington').fill('Lutherville'); await page.locator('[data-nl-state]').selectOption('MD'); await box('20010').fill('21093'); await box('First Last').fill('Seller No'); }
+  await page.locator('[data-nl-pin-check]').click(); await page.waitForTimeout(400);
+  ok(await page.locator('[data-nl-pin-no]').isVisible() && await page.locator('[data-nl-pin-yes]').isVisible(), 'No button: shown beside Yes under the map');
+  const beforeNo = posts.length;
+  await page.locator('[data-nl-pin-no]').click(); await page.waitForTimeout(150);
+  s = { wrong: (await page.locator('[data-nl-pin-wrong]').count()) ? await page.locator('[data-nl-pin-wrong]').innerText() : '', map: await page.locator('[data-pin-map="nl"]').count(), yes: await page.locator('[data-nl-pin-yes]').count() };
+  ok(/spelled wrong/.test(s.wrong) && /listing agreement/.test(s.wrong) && s.map === 0 && s.yes === 0, 'No button: the map goes, and the two ways forward are said (fix the spelling, or check the agreement and tick)', s);
+  await page.locator('button', { hasText: 'Create Property' }).click(); await page.waitForTimeout(300);
+  ok(posts.length === beforeNo, 'No button: Create is refused after No', posts.length);
+  await page.locator('[data-nl-pin-again]').click(); await page.waitForTimeout(400);
+  ok(await page.locator('[data-nl-pin-yes]').isVisible() && await page.locator('[data-pin-map="nl"]').count() === 1, 'No button: Show the map again brings the map and Yes back');
+  await page.locator('[data-nl-pin-yes]').click(); await page.waitForTimeout(150);
+  await page.locator('[data-nl-pin-undo]').click(); await page.waitForTimeout(150);
+  ok(await page.locator('[data-nl-pin-wrong]').isVisible() && !(await page.locator('[data-nl-pin-ok]').count()), 'No button: Not right? after confirming takes the confirmation back');
+  await page.locator('[data-nl-pin-manual]').check(); await page.waitForTimeout(100);
+  await page.locator('button', { hasText: 'Create Property' }).click(); await page.waitForTimeout(800);
+  ok(posts.length === beforeNo + 1 && posts[posts.length - 1].market === 'MD' && /4 Wendslow Place, Lutherville MD 21093/.test(posts[posts.length - 1].address), 'No button: ticked after checking the agreement, it is created with the typed address and market MD from the State dropdown', posts[posts.length - 1]);
+  // Correcting the address after No asks for the map again.
+  await page.evaluate(async () => { document.querySelector('#app').__vue_app__._instance.setupState.view = 'listings'; await new Promise(r => setTimeout(r, 300)); });
+  await page.locator('button.btn-navy', { hasText: 'New Property' }).first().click(); await page.waitForTimeout(200);
+  { const box = (ph) => page.locator('input[placeholder="' + ph + '"]').first();
+    await box('e.g. 1234 Oak St NW').fill('4 Wendslow Place'); await box('Washington').fill('Lutherville'); await page.locator('[data-nl-state]').selectOption('MD'); await box('20010').fill('21093'); }
+  await page.locator('[data-nl-pin-check]').click(); await page.waitForTimeout(400);
+  await page.locator('[data-nl-pin-no]').click(); await page.waitForTimeout(150);
+  await page.locator('input[placeholder="e.g. 1234 Oak St NW"]').fill('4 Wendslow Road'); await page.waitForTimeout(150);
+  ok(await page.locator('[data-nl-pin-check]').isVisible() && !(await page.locator('[data-nl-pin-wrong]').count()), 'No button: correcting the street brings back Check the address on a map');
+  await S(page, () => { document.querySelector('#app').__vue_app__._instance.setupState.lstShowNewModal = false; });
+
   // Closing the window and pressing New Property again starts blank (Marc, Nov 14, 2026:
   // the last address came back, already marked Confirmed on the map).
   await S(page, () => { window.__g.answers = { preds: [{ description: '4 Wendslow Pl, Lutherville, MD 21093, USA', place_id: 'P4' }], details: { P4: { geometry: { location: { lat: () => 39.4, lng: () => -76.6 } }, formatted_address: '4 Wendslow Pl, Lutherville, MD 21093, USA' } } }; });
@@ -195,12 +235,13 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
 
   // ---------------- No Google at all ----------------
   ({ ctx, page } = await openPage(false));
+  const beforeNoGoogle = posts.length;
   await openNew('1324 E St SE', 'Washington', 'DC', '20003');
   await page.locator('[data-nl-pin-check]').click(); await page.waitForTimeout(300);
   s = await page.locator('[data-nl-pin-why]').innerText().catch(() => '');
   ok(/could not be reached/.test(s), 'Google unreachable: New Property says the address cannot be shown on a map', s);
   await page.locator('[data-nl-pin-manual]').check(); await page.locator('button', { hasText: 'Create Property' }).click(); await page.waitForTimeout(800);
-  ok(posts.length === 3, 'Google unreachable: the agent can still create the property after checking it themselves', posts.length);
+  ok(posts.length === beforeNoGoogle + 1, 'Google unreachable: the agent can still create the property after checking it themselves', posts.length);
   await ctx.close();
 
   ok(errors.length === 0, 'no page errors', errors);
