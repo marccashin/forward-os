@@ -48,6 +48,38 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAIAAAA7ljmRAAAAGElEQVQ
 
 const FUB_USERS = [{ id: 7, name: 'Niki Lang', email: 'niki.lang@corcoranmce.com' }, { id: 3, name: 'Marc Cashin', email: 'marc.cashin@corcoranmce.com' }];
 const fub = { events: [], mode: 'ok', users: FUB_USERS, userCalls: 0 };
+// A made-up open_house_signins / open_house_reports pair that behaves like the SQL in
+// sql/2026-11-15_open_house.sql: a retried insert is ignored, only report and
+// updated_by can be updated, no delete.
+const db = { signins: [], reports: [], mode: 'ok', reportPatch: 'ok', reqs: [] };
+const JSPDF = fs.readFileSync(require.resolve('jspdf/dist/jspdf.umd.min.js'), 'utf8');
+function dbRoute(route) {
+  const req = route.request(), u = new URL(req.url()), m = req.method(), table = u.pathname.split('/').pop();
+  db.reqs.push({ m, table, q: decodeURIComponent(u.search) });
+  if (db.mode === 'missing') return J(route, 404, { code: 'PGRST205', message: 'Could not find the table' });
+  const rows = table === 'open_house_signins' ? db.signins : db.reports, key = table === 'open_house_signins' ? 'id' : 'open_house_id';
+  const eq = (name) => { const v = u.searchParams.get(name); return v && v.startsWith('eq.') ? v.slice(3) : null; };
+  if (m === 'GET') {
+    let out = rows.slice();
+    if (eq('open_house_id')) out = out.filter(r => r.open_house_id === eq('open_house_id'));
+    if (eq('agent_name')) out = out.filter(r => r.agent_name === eq('agent_name'));
+    return J(route, 200, JSON.parse(JSON.stringify(out)));
+  }
+  if (m === 'POST') {
+    const body = JSON.parse(req.postData() || '{}');
+    (Array.isArray(body) ? body : [body]).forEach(r => { if (!rows.some(x => x[key] === r[key])) rows.push(Object.assign({}, r, { updated_at: new Date().toISOString() })); });
+    return route.fulfill({ status: 201, headers: { 'access-control-allow-origin': '*' }, body: '' });
+  }
+  if (m === 'PATCH') {
+    if (db.reportPatch === 'fail') return J(route, 500, { message: 'database is down' });
+    const body = JSON.parse(req.postData() || '{}');
+    if (Object.keys(body).some(k => k !== 'report' && k !== 'updated_by')) return J(route, 401, { message: 'permission denied' });
+    const hit = rows.filter(r => r.open_house_id === eq('open_house_id'));
+    hit.forEach(r => Object.assign(r, body, { updated_at: new Date().toISOString() }));
+    return J(route, 200, JSON.parse(JSON.stringify(hit)));
+  }
+  return J(route, 405, { message: 'not allowed' });
+}
 const J = (route, status, body) => route.fulfill({ status, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify(body) });
 function api(route) {
   const req = route.request(), u = decodeURIComponent(req.url()), m = req.method();
@@ -96,6 +128,8 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
         return u.includes('/.netlify/') ? J(route, 200, {}) : route.continue();
       }
       if (/cdnjs.*\/vue\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: VUE });
+      if (/cdnjs.*\/jspdf\//.test(u)) return route.fulfill({ status: 200, contentType: 'text/javascript', body: JSPDF });
+      if (/\/rest\/v1\/open_house_(signins|reports)/.test(u)) return dbRoute(route);
       const t = route.request().resourceType();
       if (t === 'script') return route.fulfill({ status: 200, contentType: 'text/javascript', body: '' });
       if (t === 'stylesheet' || t === 'image' || t === 'font' || t === 'media') return route.fulfill({ status: 200, body: '' });
@@ -206,6 +240,9 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(ev && !isNaN(Date.parse(ev.occurredAt)) && /1324 E St SE #208, Washington, DC 20003/.test(ev.description) && /Hosted by Niki Lang/.test(ev.description), 'the event carries when the visitor signed in and a plain description', ev && ev.description);
   ok(ev && ev.description.endsWith('\n\nAt what point in the buying process are you?\nActively looking\n\nAre you mortgage pre-approved?\nYes\n\nDo you have any feedback about the property that would be helpful for the sellers to hear?\nLoved the light. The kitchen feels small.'), 'the answers go to Follow Up Boss with each question, in order; unanswered questions are left out', ev && ev.description);
   ok(fub.events[0] && fub.events[0].auth === 'Basic ' + Buffer.from('fub-test-key:').toString('base64'), 'it is sent with the Follow Up Boss key, through the app\'s own Follow Up Boss route');
+  const row0 = db.signins[0];
+  ok(db.signins.length === 1 && row0.agent_name === 'Niki Lang' && row0.street === '1324 E St SE' && row0.unit === '#208' && row0.zip === '20003' && row0.open_house_id === s.oh.kiosk.id && JSON.stringify(row0.answers.map(a => a.id)) === '["stage","preapproved","feedback"]', 'the sign-in\'s answers are saved once for the seller report, with the open house and address', row0);
+  ok(!/Ann|Visitor|ann\.visitor|555-0101|first|last|phone|email/i.test(JSON.stringify(row0)), 'the saved row holds no name, phone or email', row0);
   ok(s.oh.queue.length === 0 && JSON.parse(s.stored).length === 0 && s.oh.kiosk.count === 1 && s.oh.kiosk.sent === 1, 'once Follow Up Boss took it, it leaves the device; 1 signed in, 1 sent', { q: s.oh.queue, k: s.oh.kiosk.count, sent: s.oh.kiosk.sent });
   ok(await page.locator('[data-oh-thanks]').isVisible() && /Thank you, Ann/.test(await page.locator('[data-oh-thanks]').innerText()), 'the visitor is thanked by name');
   await next(page);
@@ -250,6 +287,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(/How well priced is this property\?\nOverpriced$/.test(fub.events[before].body.description) && !/\?\n/.test(fub.events[before + 1].body.description), 'answers given offline are kept on the device and sent with the sign-in; a visitor who answered nothing sends no questions', [fub.events[before].body.description, fub.events[before + 1].body.description]);
   ok(fub.events.slice(before).every(e => e.body.person.assignedUserId === 7 && e.body.person.tags[2] === '1324 E St SE #208'), 'sign-ins taken offline are still assigned to the agent and tagged with the address');
   ok(s.oh.queue.length === 0 && JSON.parse(s.stored).length === 0 && s.oh.kiosk.sent === 3, 'they leave the device once sent; 3 sent', { q: s.oh.queue.length, sent: s.oh.kiosk.sent });
+  ok(db.signins.length === 3 && new Set(db.signins.map(r => r.id)).size === 3, 'sign-ins taken offline reach the report table once each when the connection is back', db.signins.length);
   ok(fub.events.slice(before).every(e => Date.parse(e.body.occurredAt) < Date.now() - 500), 'a late-sent sign-in carries the time the visitor signed in, not the time it was sent');
 
   // ── 3. Follow Up Boss refuses ──────────────────────────────────────────────
@@ -258,6 +296,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   s = await S(page);
   ok(s.oh.queue.length === 1 && s.oh.queue[0].status === 'held' && /lead flow/.test(s.oh.queue[0].error) && /archived/.test(s.oh.queue[0].error), 'an archived lead flow (204) keeps the sign-in on the device and says why', s.oh.queue[0]);
   ok(/1 need the agent/.test(await page.locator('[data-oh-status]').innerText()), 'the sign-in screen says one needs the agent');
+  ok(db.signins.length === 4 && s.oh.queue[0].dbDone === true, 'a sign-in Follow Up Boss refused is still saved for the seller report', db.signins.length);
   const n1 = fub.events.length;
   await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.ohSync()); await page.waitForTimeout(400);
   ok(fub.events.length === n1, 'a refused sign-in is not sent again by itself', fub.events.length - n1);
@@ -281,6 +320,56 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await page.locator('[data-oh-retry]').click(); await page.waitForTimeout(800);
   s = await S(page);
   ok(fub.events.length === n1 + 1 && fub.events[n1].body.person.firstName === 'Dee' && s.oh.queue.length === 0, 'Send again sends it once and it leaves the device', { sent: fub.events.length - n1, q: s.oh.queue.length });
+  ok(db.signins.length === 4, 'Send again does not save the sign-in to the report table twice', db.signins.length);
+
+  // ── 4b. The seller report ────────────────────────────────────────────────
+  const houseId = db.signins[0].open_house_id;
+  await page.locator('[data-oh-end-report]').click(); await page.waitForTimeout(800);
+  s = await S(page);
+  ok(await page.locator('[data-ohr]').isVisible() && (await page.locator('[data-ohr-count]').innerText()).replace(/\s+/g, ' ') === '4 guests signed in', 'Write the seller report opens this open house\'s report with every sign-in counted', await page.locator('[data-ohr-count]').innerText().catch(() => ''));
+  const listReq = db.reqs.find(r => r.m === 'GET' && r.table === 'open_house_signins' && /signed_in_at=gte/.test(r.q));
+  ok(listReq && /agent_name=eq\.Niki Lang/.test(listReq.q), 'an agent\'s list asks only for their own open houses', listReq && listReq.q);
+  const tStage = (await page.locator('[data-ohr-tally="stage"]').innerText()).replace(/\s+/g, ' ');
+  const tPrice = (await page.locator('[data-ohr-tally="pricing"]').innerText()).replace(/\s+/g, ' ');
+  ok(/Actively looking 1/.test(tStage) && /Seeing what's out there 0/.test(tStage) && /1 of 4 guests answered/.test(tStage), 'the tallies are counted from the sign-ins', tStage);
+  ok(/Overpriced 1/.test(tPrice) && /Just Right 0/.test(tPrice) && /1 of 4 guests answered/.test(tPrice), 'the price question is counted the same way', tPrice);
+  ok(await page.locator('[data-ohr-tally] input[type=number], [data-ohr-tally] input[type=text]').count() === 0, 'the counts cannot be typed over');
+  ok(await page.locator('[data-ohr-fb]').count() === 1 && await page.locator('[data-ohr-fb-text]').inputValue() === 'Loved the light. The kitchen feels small.', 'the guest\'s written feedback starts in the report word for word');
+  ok(!/Ann|Visitor|Bob|Cy|Dee/.test(await page.locator('[data-ohr]').innerText()), 'no guest name is anywhere on the report screen');
+  await page.locator('[data-ohr-fb-text]').fill('Loved the light.');
+  ok(/Edited/.test(await page.locator('[data-ohr-fb]').innerText()), 'an edited comment is marked Edited, with a way back to the guest\'s words');
+  await page.locator('[data-ohr-add]').click();
+  await page.locator('[data-ohr-fb-text]').nth(1).fill('Two guests asked about the HOA fee.');
+  await page.locator('[data-ohr-add]').click();
+  await page.locator('[data-ohr-fb-text]').nth(2).fill('Throwaway line');
+  await page.locator('[data-ohr-fb-delete]').nth(1).click();
+  ok(await page.locator('[data-ohr-fb]').count() === 2, 'an added comment can be deleted');
+  await page.locator('[data-ohr-note]').fill('Thank you for having us.');
+  await page.locator('[data-ohr-show="preapproved"]').uncheck();
+  ok(/Changes not saved yet/.test(await page.locator('[data-ohr-save-state]').innerText()), 'unsaved edits are said on screen');
+  db.reportPatch = 'fail';
+  await page.locator('[data-ohr-save]').click(); await page.waitForTimeout(500);
+  ok(/NOT saved/.test(await page.locator('[data-ohr-save-state]').innerText()) && await page.locator('[data-ohr-note]').inputValue() === 'Thank you for having us.', 'a failed save says NOT saved and keeps every edit on screen');
+  db.reportPatch = 'ok';
+  await page.locator('[data-ohr-save]').click(); await page.waitForTimeout(500);
+  const rep0 = db.reports.find(r => r.open_house_id === houseId);
+  ok(/Saved/.test(await page.locator('[data-ohr-save-state]').innerText()) && rep0 && rep0.updated_by === 'Niki Lang' && rep0.report.note === 'Thank you for having us.' && rep0.report.show.preapproved === false && rep0.report.feedback.length === 2, 'Save report keeps the working copy with the agent\'s name', rep0);
+  await page.locator('[data-ohr-back]').click(); await page.waitForTimeout(600);
+  ok(/1324 E St SE #208/.test(await page.locator('[data-ohr-row]').first().innerText()) && /4 guests signed in/.test(await page.locator('[data-ohr-row]').first().innerText()), 'the list shows the open house with its address and count');
+  await page.locator('[data-ohr-row]').first().click(); await page.waitForTimeout(700);
+  ok(await page.locator('[data-ohr-note]').inputValue() === 'Thank you for having us.' && await page.locator('[data-ohr-fb]').count() === 2 && await page.locator('[data-ohr-fb-text]').first().inputValue() === 'Loved the light.', 'reopened, the report is exactly as saved (the guest comment is not added twice)');
+  await page.locator('[data-ohr-fb-toggle]').first().click();
+  await page.locator('[data-ohr-fb-toggle]').first().click();
+  await page.locator('[data-ohr-send]').click(); await page.waitForTimeout(1500);
+  const pdf = await page.evaluate(async () => { const s = document.querySelector('#app').__vue_app__._instance.setupState; const b = s.pdfViewerBlob; if (!b) return null; const a = new Uint8Array(await b.arrayBuffer()); let out = ''; for (let i = 0; i < a.length; i++) out += String.fromCharCode(a[i]); return { name: s.pdfViewerName, text: out }; });
+  ok(pdf && /^Open_House_Report_1324_E_St_SE_208_\d{4}-\d{2}-\d{2}\.pdf$/.test(pdf.name) && pdf.text.startsWith('%PDF'), 'Send to seller makes the branded PDF on a computer, named for the address and date', pdf && pdf.name);
+  // Only the text the PDF draws (the Tj strings), not the logo's image bytes.
+  const P = pdf ? (pdf.text.match(/\((?:[^()\\]|\\.)*\)\s*Tj/g) || []).map(x => x.replace(/\)\s*Tj$/, '').slice(1).replace(/\\(.)/g, '$1')).join('\n') : '';
+  ok(/OPEN HOUSE REPORT/.test(P) && /1324 E St SE #208/.test(P) && /Hosted by Niki Lang/.test(P) && /guests signed in/.test(P), 'the PDF carries the address, the host and the count');
+  ok(/Loved the light\./.test(P) && /Two guests asked about the HOA fee\./.test(P) && /Thank you for having us\./.test(P), 'the PDF carries the edited and added feedback and the agent\'s note');
+  ok(!/kitchen feels small/.test(P) && !/Throwaway line/.test(P), 'the guest\'s original wording that was edited out and the deleted comment are not in the PDF');
+  ok(/How well priced is this property\?/.test(P) && !/Are you mortgage pre-approved\?/.test(P), 'an unticked tally is left out of the PDF');
+  ok(!/Ann|Visitor|Bob|Dee|ann\.visitor|example\.com|555/.test(P), 'no guest name or contact detail is in the PDF');
   await ctx.close();
 
   // ── 5. Launched with no connection at all ─────────────────────────────────
@@ -307,6 +396,24 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(!(await page.locator('[data-oh-kiosk]').count()) && !(await S(page)).session, 'Forgot the code: the FORWARD OS access code also ends the open house');
   await ctx.close();
 
+  // ── 5b. The report table is not set up yet ─────────────────────────────────
+  db.mode = 'missing';
+  ({ ctx, page } = await open('Niki Lang'));
+  await setUp(page);
+  await page.locator('[data-oh-launch]').click(); await page.waitForTimeout(500);
+  const n5 = fub.events.length;
+  await signIn(page, 'Gus', 'Notable', '2025550107', 'gus@example.com'); await page.waitForTimeout(800);
+  s = await S(page);
+  ok(fub.events.length === n5 + 1 && s.oh.queue.length === 1 && s.oh.queue[0].fubDone && !s.oh.queue[0].dbDone && /not been added to the database/.test(s.oh.queue[0].dbError), 'with the report table not set up, the lead still reaches Follow Up Boss and the answers wait on the device with the reason', s.oh.queue[0]);
+  await page.evaluate(() => document.querySelector('#app').__vue_app__._instance.setupState.ohSync()); await page.waitForTimeout(300);
+  ok(fub.events.length === n5 + 1, 'Follow Up Boss is not sent the lead twice while the answers wait');
+  db.mode = 'ok';
+  const nS = db.signins.length;
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(2500); await dismiss(page);
+  s = await S(page);
+  ok(db.signins.length === nS + 1 && s.oh.queue.length === 0 && fub.events.length === n5 + 1, 'once the table exists the answers are saved when FORWARD OS opens, and the lead is not sent again', { rows: db.signins.length - nS, q: s.oh.queue.length });
+  await ctx.close();
+
   // ── 6. The agent has no Follow Up Boss user ───────────────────────────────
   fub.users = [{ id: 3, name: 'Marc Cashin', email: 'marc.cashin@corcoranmce.com' }];
   ({ ctx, page } = await open('Niki Lang', { noUsers: true }));
@@ -325,6 +432,10 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(await page.locator('[data-oh-host]').isVisible() && /Choose the agent hosting/.test((await S(page)).problem), 'Operations must choose the hosting agent before launching');
   await page.locator('[data-oh-host]').selectOption('Cesar Rivera'); await page.waitForTimeout(800);
   ok(/Cesar Rivera/.test(await page.locator('[data-oh-card-preview]').innerText()), 'the card is the chosen agent\'s');
+  db.reqs = [];
+  await page.locator('[data-oh-tab="reports"]').click(); await page.waitForTimeout(700);
+  const opsReq = db.reqs.find(r => r.m === 'GET' && r.table === 'open_house_signins');
+  ok(opsReq && !/agent_name=/.test(opsReq.q) && await page.locator('[data-ohr-row]').count() >= 2, 'Operations sees every agent\'s open houses', opsReq && opsReq.q);
   await ctx.close();
 
   // ── 8. Phone ──────────────────────────────────────────────────────────────
