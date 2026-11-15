@@ -104,6 +104,12 @@ a.fos-guide-btn:focus-visible{outline-width:3px}
 .dp-earlier-row summary{display:flex;justify-content:space-between;gap:12px;cursor:pointer;min-height:28px;align-items:center;flex-wrap:wrap}
 @media (max-width:600px){.dp-strip{grid-template-columns:repeat(5,minmax(0,1fr));gap:3px}.dp-strip-label{font-size:9px}.dp-stage{padding:16px}}
 
+  /* Check on a map (Nov 14, 2026) */
+  .fos-pin-btn { padding:6px 10px; background:var(--white); border:1px solid var(--gold-muted); border-radius:2px; font-family:'Montserrat',sans-serif; font-size:8.5px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--navy); cursor:pointer; }
+  .fos-pin-btn:disabled { opacity:0.45; cursor:default; }
+  .fos-pin-map { width:100%; height:200px; border:1px solid var(--cream-mid); border-radius:2px; overflow:hidden; background:#e5e7eb; }
+  .fos-pin-note { margin-top:6px; font-size:11px; line-height:1.4; color:#374151; }
+  .fos-pin-warn { font-size:11px; line-height:1.4; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:6px 8px; }
 </style>
   <style>
 .pdf-view{position:fixed;inset:0;z-index:10050;background:#e9e6df;display:flex;flex-direction:column;}
@@ -4874,7 +4880,7 @@ body {
                 <div v-if="osgSheetWarn" style="font-family:'Cormorant Garamond',serif;background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#92400e;font-weight:600;">{{ osgSheetWarn }}</div>
                 <div v-if="osgSheetStatus" style="font-family:'Cormorant Garamond',serif;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:#15803d;line-height:1.5;">{{ osgSheetStatus }}</div>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-                  <div class="form-row" style="grid-column:1/-1;"><label>Property Address *</label><input v-model="osgAddress" type="text" placeholder="123 Main St, Arlington VA 22201"></div>
+                  <div class="form-row" style="grid-column:1/-1;"><label>Property Address *</label><input v-model="osgAddress" type="text" placeholder="123 Main St, Arlington VA 22201"><div data-pin-check="osg" style="margin-top:6px;"><button v-if="!fosPinFor('osg',osgAddress)" type="button" data-pin-go @click="fosPinCheck('osg',osgAddress)" :disabled="!String(osgAddress||'').trim()" class="fos-pin-btn">Check on a map</button><template v-else><div v-if="fosPinFor('osg',osgAddress).state==='looking'" class="fos-pin-note">Finding it on the map...</div><template v-if="fosPinFor('osg',osgAddress).state==='found'"><div :ref="el => fosPinMount(el,'osg')" data-pin-map-box class="fos-pin-map"></div><div data-pin-label class="fos-pin-note">Google places <strong>{{ fosPinFor('osg',osgAddress).label }}</strong> at the pin. The map shows the building, not the unit. If this is not the home, correct the address.</div></template><div v-if="fosPinFor('osg',osgAddress).state==='notfound'" data-pin-why class="fos-pin-warn">{{ fosPinFor('osg',osgAddress).why }} Check the address yourself before you rely on it.</div></template></div></div>
                   <div class="form-row"><label>List Price *</label><input :value="osgListPrice" type="text" inputmode="numeric" placeholder="750,000"
                     @focus="$event.target.value=osgListPrice.replace(/[^0-9]/g,'')"
                     @blur="e=>{const n=+e.target.value.replace(/[^0-9]/g,'');osgListPrice=n?n.toLocaleString('en-US'):e.target.value;e.target.value=osgListPrice}"
@@ -5646,6 +5652,7 @@ body {
                   </div>
                   <input v-if="tt.activeTour.plan.startPick" data-tp-startaddr v-model="tt.activeTour.plan.startAddress" @change="ttPlaceTyped('start')" style="margin-top:6px;width:100%;"
                     :placeholder="tt.activeTour.plan.startPick==='home' ? 'Your home address (kept on this device only)' : tt.activeTour.plan.startPick==='buyer' ? 'The buyer\'s home address (kept with this buyer\'s tours)' : 'Street, city, state and ZIP'"/>
+                  <div v-if="tt.activeTour.plan.startPick"><div data-pin-check="tour-start" style="margin-top:6px;"><button v-if="!fosPinFor('tt-start',tt.activeTour.plan.startAddress)" type="button" data-pin-go @click="fosPinCheck('tt-start',tt.activeTour.plan.startAddress)" :disabled="!String(tt.activeTour.plan.startAddress||'').trim()" class="fos-pin-btn">Check on a map</button><template v-else><div v-if="fosPinFor('tt-start',tt.activeTour.plan.startAddress).state==='looking'" class="fos-pin-note">Finding it on the map...</div><template v-if="fosPinFor('tt-start',tt.activeTour.plan.startAddress).state==='found'"><div :ref="el => fosPinMount(el,'tt-start')" data-pin-map-box class="fos-pin-map"></div><div data-pin-label class="fos-pin-note">Google places <strong>{{ fosPinFor('tt-start',tt.activeTour.plan.startAddress).label }}</strong> at the pin. The map shows the building, not the unit. If this is not the home, correct the address.</div></template><div v-if="fosPinFor('tt-start',tt.activeTour.plan.startAddress).state==='notfound'" data-pin-why class="fos-pin-warn">{{ fosPinFor('tt-start',tt.activeTour.plan.startAddress).why }} Check the address yourself before you rely on it.</div></template></div></div>
                   <div class="tp-sub-k" style="margin-top:12px;">Ending at</div>
                   <div class="tp-picks">
                     <button type="button" data-tp-end-pick="none" :class="{on: !tt.activeTour.plan.endPick || tt.activeTour.plan.endPick==='none'}" @click="ttPickPlace('end','none')">No preference</button>
@@ -5655,12 +5662,14 @@ body {
                   </div>
                   <input v-if="tt.activeTour.plan.endPick && tt.activeTour.plan.endPick!=='none'" data-tp-endaddr v-model="tt.activeTour.plan.endAddress" @change="ttPlaceTyped('end')" style="margin-top:6px;width:100%;"
                     :placeholder="tt.activeTour.plan.endPick==='home' ? 'Your home address (kept on this device only)' : 'Where you go next: street, city, state and ZIP'"/>
+                  <div v-if="tt.activeTour.plan.endPick && tt.activeTour.plan.endPick!=='none'"><div data-pin-check="tour-end" style="margin-top:6px;"><button v-if="!fosPinFor('tt-end',tt.activeTour.plan.endAddress)" type="button" data-pin-go @click="fosPinCheck('tt-end',tt.activeTour.plan.endAddress)" :disabled="!String(tt.activeTour.plan.endAddress||'').trim()" class="fos-pin-btn">Check on a map</button><template v-else><div v-if="fosPinFor('tt-end',tt.activeTour.plan.endAddress).state==='looking'" class="fos-pin-note">Finding it on the map...</div><template v-if="fosPinFor('tt-end',tt.activeTour.plan.endAddress).state==='found'"><div :ref="el => fosPinMount(el,'tt-end')" data-pin-map-box class="fos-pin-map"></div><div data-pin-label class="fos-pin-note">Google places <strong>{{ fosPinFor('tt-end',tt.activeTour.plan.endAddress).label }}</strong> at the pin. The map shows the building, not the unit. If this is not the home, correct the address.</div></template><div v-if="fosPinFor('tt-end',tt.activeTour.plan.endAddress).state==='notfound'" data-pin-why class="fos-pin-warn">{{ fosPinFor('tt-end',tt.activeTour.plan.endAddress).why }} Check the address yourself before you rely on it.</div></template></div></div>
                   <div v-if="!tt.activeTour.properties.length" style="font-size:12px;color:#9ca3af;margin-top:10px;">Add the homes above, then plan the route here.</div>
                   <div v-for="(h,hi) in tt.activeTour.properties" :key="'tp'+h.id" data-tp-home class="tp-home-wrap">
                     <div class="tp-home">
                       <div class="tp-num">{{ hi+1 }}</div>
                       <div style="min-width:0;flex:1;">
                         <div class="tp-addr">{{ h.address }}</div>
+                        <div data-pin-check="tour-home" style="margin-top:4px;"><button v-if="!fosPinFor('tt-'+h.id,h.address)" type="button" data-pin-go @click="fosPinCheck('tt-'+h.id,h.address)" :disabled="!String(h.address||'').trim()" class="fos-pin-btn">Check on a map</button><template v-else><div v-if="fosPinFor('tt-'+h.id,h.address).state==='looking'" class="fos-pin-note">Finding it on the map...</div><template v-if="fosPinFor('tt-'+h.id,h.address).state==='found'"><div :ref="el => fosPinMount(el,'tt-'+h.id)" data-pin-map-box class="fos-pin-map"></div><div data-pin-label class="fos-pin-note">Google places <strong>{{ fosPinFor('tt-'+h.id,h.address).label }}</strong> at the pin. The map shows the building, not the unit. If this is not the home, correct the address.</div></template><div v-if="fosPinFor('tt-'+h.id,h.address).state==='notfound'" data-pin-why class="fos-pin-warn">{{ fosPinFor('tt-'+h.id,h.address).why }} Check the address yourself before you rely on it.</div></template></div>
                         <div v-if="ttAddrProblem(h.address)" data-tp-addrfix class="tp-warn" style="margin-top:4px;">This address is not complete: {{ ttAddrProblem(h.address).toLowerCase() }}.
                           <button v-if="h.facts && h.facts.matched_address && !ttAddrProblem(h.facts.matched_address)" type="button" class="tp-link" data-tp-usefound @click="ttUseFound(h)">Use {{ h.facts.matched_address }}</button></div>
                         <div v-if="tt.activeTour.plan.mode==='plan'" class="tp-times">
@@ -5926,6 +5935,7 @@ body {
                 <div v-for="(s,i) in ctc._suggestions" :key="i" @mousedown.prevent="ctcSelectSuggestion(s)" style="font-family:'Cormorant Garamond',serif;padding:10px 14px;font-size:13px;color:#374151;cursor:pointer;border-bottom:1px solid #f3f4f6;" onmouseover="this.style.background='#f0f4ff'" onmouseout="this.style.background='#fff'">{{ s.description }}</div>
               </div>
             </div>
+            <div data-pin-check="ctc" style="margin-top:-6px;"><button v-if="!fosPinFor('ctc',ctc.address)" type="button" data-pin-go @click="fosPinCheck('ctc',ctc.address)" :disabled="!String(ctc.address||'').trim()" class="fos-pin-btn">Check on a map</button><template v-else><div v-if="fosPinFor('ctc',ctc.address).state==='looking'" class="fos-pin-note">Finding it on the map...</div><template v-if="fosPinFor('ctc',ctc.address).state==='found'"><div :ref="el => fosPinMount(el,'ctc')" data-pin-map-box class="fos-pin-map"></div><div data-pin-label class="fos-pin-note">Google places <strong>{{ fosPinFor('ctc',ctc.address).label }}</strong> at the pin. The map shows the building, not the unit. If this is not the home, correct the address.</div></template><div v-if="fosPinFor('ctc',ctc.address).state==='notfound'" data-pin-why class="fos-pin-warn">{{ fosPinFor('ctc',ctc.address).why }} Check the address yourself before you rely on it.</div></template></div>
 
             <!-- Purchase Price & Down Payment -->
             <div class="form-row"><label>Purchase Price</label><input :value="ctc.purchasePrice" type="text" inputmode="numeric" placeholder="Enter Purchase Price" @input="ctcCurrencyInput($event,'purchasePrice');ctcSyncDownFromPct()" @blur="ctcCurrencyBlur($event,'purchasePrice')" @focus="ctcCurrencyFocus($event,'purchasePrice')"/></div>
@@ -17922,25 +17932,70 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       await nextTick();
       if (!pin) return;
       const els = document.querySelectorAll('[data-pin-map="' + sel + '"]');
-      for (const el of els) {
-        try {
-          if (typeof google === 'undefined' || !google.maps) throw new Error('Google Maps is not loaded');
-          let MapC = google.maps.Map, MarkerC = google.maps.Marker;
-          if ((!MapC || !MarkerC) && google.maps.importLibrary) {
-            MapC = MapC || (await google.maps.importLibrary('maps')).Map;
-            MarkerC = MarkerC || (await google.maps.importLibrary('marker')).Marker;
-          }
-          const pos = { lat: pin.lat, lng: pin.lng };
-          if (!el._fosMap) {
-            el._fosMap = new MapC(el, { center: pos, zoom: 18, mapTypeId: 'hybrid', disableDefaultUI: true, zoomControl: true, gestureHandling: 'cooperative' });
-            el._fosPin = new MarkerC({ position: pos, map: el._fosMap });
-          } else { el._fosMap.setCenter(pos); el._fosPin.setPosition(pos); }
-        } catch (e) {
-          console.warn('Address map not drawn:', e);
-          el.textContent = 'The map could not be drawn here (' + fosWhy(e) + '). Check the address against Google Maps yourself.';
-          el.style.cssText += ';height:auto;padding:10px;font-size:11px;color:#b91c1c;background:#fef2f2;';
+      for (const el of els) await fosPinDrawEl(el, pin);
+    }
+    async function fosPinDrawEl(el, pin) {
+      try {
+        if (typeof google === 'undefined' || !google.maps) throw new Error('Google Maps is not loaded');
+        let MapC = google.maps.Map, MarkerC = google.maps.Marker;
+        if ((!MapC || !MarkerC) && google.maps.importLibrary) {
+          MapC = MapC || (await google.maps.importLibrary('maps')).Map;
+          MarkerC = MarkerC || (await google.maps.importLibrary('marker')).Marker;
         }
+        const pos = { lat: pin.lat, lng: pin.lng };
+        if (!el._fosMap) {
+          el._fosMap = new MapC(el, { center: pos, zoom: 18, mapTypeId: 'hybrid', disableDefaultUI: true, zoomControl: true, gestureHandling: 'cooperative' });
+          el._fosPin = new MarkerC({ position: pos, map: el._fosMap });
+        } else { el._fosMap.setCenter(pos); el._fosPin.setPosition(pos); }
+        el._fosAt = pin.lat + ',' + pin.lng;
+      } catch (e) {
+        console.warn('Address map not drawn:', e);
+        el.textContent = 'The map could not be drawn here (' + fosWhy(e) + '). Check the address against Google Maps yourself.';
+        el.style.cssText += ';height:auto;padding:10px;font-size:11px;color:#b91c1c;background:#fef2f2;';
       }
+    }
+    // Check on a map, for an address typed into a tool (Nov 14, 2026, round 2: tour homes,
+    // the tour's start and end, Cash to Close, Offer Strategy). Nothing is created from these,
+    // so the map is a check for the agent, not a gate. One state per box (`key`), tied to the
+    // exact text it was found for: any edit shows Check on a map again. Google's answer is
+    // taken only with the typed house number and street (and quadrant and state when both
+    // name one), the same rule as New Property. Kept in memory only, never saved: a tour's
+    // My home address is not sent anywhere but Google, which the address box already uses.
+    const fosPins = reactive({});
+    const _fosPinNorm = (a) => String(a || '').replace(/\s+/g, ' ').trim().toLowerCase();
+    function fosPinFor(key, address) {
+      const p = fosPins[key];
+      return p && p.addr === _fosPinNorm(address) && _fosPinNorm(address) ? p : null;
+    }
+    function fosPinCheck(key, address) {
+      const typed = String(address || '').trim();
+      if (!typed) return;
+      const addr = _fosPinNorm(typed);
+      fosPins[key] = { addr, state: 'looking', lat: null, lng: null, label: '', why: '' };
+      const done = (patch) => { const p = fosPins[key]; if (!p || p.addr !== addr) return; Object.assign(p, patch); };
+      if (!nsPlacesService || !nsPlacesDetails) initAddressAutocomplete();
+      if (!nsPlacesService || !nsPlacesDetails) { done({ state: 'notfound', why: 'Google Maps could not be reached, so the address cannot be shown on a map.' }); return; }
+      const want = fosAddrParts(typed, '');
+      nsPlacesService.getPlacePredictions({ input: typed, types: ['address'], componentRestrictions: { country: 'us' } }, (preds, status) => {
+        const hit = (status === 'OK' && preds ? preds : []).find(pr => {
+          const g = fosAddrParts(pr.description, '');
+          return g.street === want.street && (!g.quad || !want.quad || g.quad === want.quad) && (!want.state || !g.state || g.state === want.state);
+        });
+        if (!hit) { done({ state: 'notfound', why: 'Google did not find this exact street address.' }); return; }
+        nsPlacesDetails.getDetails({ placeId: hit.place_id, fields: ['geometry', 'formatted_address'] }, (place, s2) => {
+          const pin = s2 === 'OK' ? fosPinFromPlace(place) : null;
+          if (!pin) { done({ state: 'notfound', why: 'Google could not place this address on a map.' }); return; }
+          done({ state: 'found', lat: pin.lat, lng: pin.lng, label: pin.label });
+        });
+      });
+    }
+    // Function ref on a map box: draws when the box appears (also after an address changed
+    // and changed back) and moves the pin when the answer changes; never a blank box.
+    function fosPinMount(el, key) {
+      const p = fosPins[key];
+      if (!el || !p || p.state !== 'found') return;
+      if (el._fosAt === p.lat + ',' + p.lng) return;
+      fosPinDrawEl(el, p);
     }
     // New Property: the address every listing tool reads is confirmed on a map once, here
     // (Nov 14, 2026). Check on map looks the typed address up (the same Google lookup as the
@@ -19006,6 +19061,7 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
     function ctcSelectSuggestion(suggestion) {
       ctc.address = suggestion.description;
       ctc._suggestions = [];
+      fosPinCheck('ctc', ctc.address);   // a picked suggestion shows on the map at once (Nov 14, 2026)
       if (nsPlacesDetails) {
         nsPlacesDetails.getDetails({ placeId: suggestion.place_id, fields: ['address_components'] }, (place, status) => {
           if (status !== 'OK' || !place) { ctcDetectJurisdiction(); return; }
@@ -26738,6 +26794,10 @@ const CHANGELOG = [
       {
         title: 'Check the Address on a Map',
         detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself. New Property now starts blank every time you open it, so an address from an earlier try never carries over. State is now one list (DC, Maryland, Virginia) instead of a typed box and a separate Market list.\n\nHow to use: In New Property, fill in the address, choose the State, press Check the address on a map, look at the pin, and press Yes, this is the property. If the pin is on the wrong house, press No, this is not the property: correct a misspelled address and check again, or, if the address is right and Google\'s pin is not, check it against the listing agreement and tick the box. The same box is there when Google cannot find the address at all (new construction, for example).\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
+      },
+      {
+        title: 'Check on a Map in More Tools',
+        detail: 'Tour Tracker, Cash to Close and Offer Strategy now have a Check on a map button under their addresses: each home on a showing tour, the tour\'s start and end, the Cash to Close property and the Offer Strategy property. It shows the address on a map with a pin and Google\'s version of the address underneath. Picking an address from Google\'s list in Cash to Close shows the map straight away. Nothing is created from these, so the map is there to check, not to approve. The CMA does not need one: it always opens from a listing, whose address was checked when the listing was created.\n\nHow to use: Type the address and press Check on a map. If the pin is on the wrong house, correct the address. Change the address and the button comes back.\n\nBest practice: Check every home before you request showings. A tour planned to the wrong house costs the buyer\'s time and yours.'
       }
     ]
   }
@@ -29426,7 +29486,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstOpenNewProperty, lstNewPinWrong, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstOpenNewProperty, lstNewPinWrong, fosPins, fosPinFor, fosPinCheck, fosPinMount, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
