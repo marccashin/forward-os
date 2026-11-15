@@ -9310,32 +9310,25 @@ body {
           <input v-model="lstNewUnit" placeholder="e.g. #4B" style="width:100%;box-sizing:border-box;">
         </div>
 
-        <!-- City + State in one row -->
-        <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;margin-bottom:10px;">
-          <div class="form-row">
-            <label>City</label>
-            <input v-model="lstNewCity" placeholder="Washington" style="width:100%;box-sizing:border-box;">
-          </div>
-          <div class="form-row">
-            <label>State</label>
-            <input v-model="lstNewState" placeholder="DC" maxlength="2" style="width:100%;box-sizing:border-box;text-transform:uppercase;" @input="lstNewState=lstNewState.toUpperCase()">
-          </div>
+        <!-- City, then State (one dropdown: it is the address's state AND the listing's market;
+             Marc, Nov 14, 2026: the State box and the Market list asked the same thing twice) -->
+        <div class="form-row" style="margin-bottom:10px;">
+          <label>City</label>
+          <input v-model="lstNewCity" placeholder="Washington" style="width:100%;box-sizing:border-box;">
         </div>
-
-        <!-- Zip + Market in one row -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div class="form-row">
-            <label>Zip Code</label>
-            <input v-model="lstNewZip" placeholder="20010" inputmode="numeric" maxlength="10" style="width:100%;box-sizing:border-box;">
-          </div>
-          <div class="form-row">
-            <label>Market</label>
-            <select v-model="lstNewMarket" style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
+            <label>State</label>
+            <select v-model="lstNewState" data-nl-state style="width:100%;box-sizing:border-box;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:600;padding:10px 12px;border:1px solid var(--cream-dark);border-radius:2px;color:var(--navy);background:var(--cream);outline:none;">
               <option value="" disabled>Choose state</option>
               <option value="DC">DC</option>
               <option value="MD">Maryland</option>
               <option value="VA">Virginia</option>
             </select>
+          </div>
+          <div class="form-row">
+            <label>Zip Code</label>
+            <input v-model="lstNewZip" placeholder="20010" inputmode="numeric" maxlength="10" style="width:100%;box-sizing:border-box;">
           </div>
         </div>
 
@@ -9348,7 +9341,13 @@ body {
               <div data-pin-map="nl" style="width:100%;height:200px;border:1px solid var(--cream-mid);border-radius:2px;overflow:hidden;background:#e5e7eb;"></div>
               <div style="margin-top:6px;font-size:11px;line-height:1.4;color:#374151;">Google places <strong>{{ lstNewPin.label }}</strong> at the pin. The map shows the building, not the unit.</div>
               <button v-if="!lstNewPin.ok" type="button" data-nl-pin-yes @click="lstNewPin.ok=true" style="margin-top:8px;width:100%;padding:10px;background:var(--navy);border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--gold);cursor:pointer;">Yes, this is the property</button>
-              <div v-else data-nl-pin-ok style="margin-top:6px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:#15803d;">Confirmed on the map</div>
+              <button v-if="!lstNewPin.ok" type="button" data-nl-pin-no @click="lstNewPinWrong" style="margin-top:6px;width:100%;padding:9px;background:var(--white);border:1px solid #fca5a5;border-radius:2px;font-family:'Montserrat',sans-serif;font-size:8.5px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:#b91c1c;cursor:pointer;">No, this is not the property</button>
+              <div v-else data-nl-pin-ok style="margin-top:6px;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:#15803d;">Confirmed on the map <a href="#" data-nl-pin-undo @click.prevent="lstNewPinWrong" style="margin-left:8px;font-weight:600;color:#b91c1c;">Not right?</a></div>
+            </template>
+            <template v-if="lstNewPin.state==='wrong'">
+              <div data-nl-pin-wrong style="font-size:11px;line-height:1.5;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">Not used. <strong>If the address is spelled wrong</strong>, correct it above and check it again. <strong>If the address is right but Google put the pin in the wrong place</strong> (new construction, a large lot, a new street), check it against the listing agreement and tick the box below.</div>
+              <label style="display:flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;color:var(--navy);cursor:pointer;"><input type="checkbox" v-model="lstNewPin.ok" data-nl-pin-manual> I checked the address against the listing agreement and it is correct</label>
+              <button type="button" data-nl-pin-again @click="lstNewPinLookup" style="margin-top:6px;background:none;border:none;padding:0;font-family:'Montserrat',sans-serif;font-size:9px;font-weight:700;letter-spacing:0.08em;color:var(--navy);text-decoration:underline;cursor:pointer;">Show the map again</button>
             </template>
             <template v-if="lstNewPin.state==='notfound'">
               <div data-nl-pin-why style="font-size:11px;line-height:1.4;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;">{{ lstNewPin.why }} Check the address carefully against the listing agreement before creating the property.</div>
@@ -14041,14 +14040,13 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
       if (!lstNewAddress.value.trim()) return;
       if (!agentName.value) { showToast('Session error: please log out and back in.', 4000); return; }
       if (!lstNewSeller.value.trim()) { lstCreateError.value = 'Seller name is required.'; return; }
-      // The listing's state is never assumed (Marc, Oct 12, 2026). Market follows the State box
-      // when the agent left it empty, and the two must agree: Market used to start on DC and could
-      // be saved as DC beside a Virginia address.
+      // The listing's state is never assumed (Marc, Oct 12, 2026). Since Nov 14, 2026 the State
+      // dropdown is the only place it is chosen: it goes into the address and is the listing's
+      // market, so the two can never disagree (Market used to be a second list that had to match).
       {
         const _st = fosMarketCode(lstNewState.value) || (lstNewStreet.value.trim() ? '' : fosMarketCode(fosSplitListingAddress(lstNewAddress.value).state));
-        if (!lstNewMarket.value && _st) lstNewMarket.value = _st;
-        if (!lstNewMarket.value) { lstCreateError.value = 'Choose the listing\'s state in Market: DC, Maryland or Virginia.'; return; }
-        if (_st && _st !== lstNewMarket.value) { lstCreateError.value = 'The State box says ' + _st + ' but Market says ' + lstNewMarket.value + '. Make them match before creating the listing.'; return; }
+        lstNewMarket.value = _st;
+        if (!_st) { lstCreateError.value = 'Choose the listing\'s state: DC, Maryland or Virginia.'; return; }
       }
       // Confirmed on a map first (Nov 14, 2026); an address changed after the check needs it again.
       if (lstNewStreet.value.trim() && !(lstNewPinCurrent.value && lstNewPin.ok)) {
@@ -17968,6 +17966,11 @@ Always stay in character. Be professional, warm, and efficient. Ask one question
       lstNewPinReset();
     }
     function lstOpenNewProperty() { lstNewFormReset(); lstShowNewModal.value = true; }
+    // No, this is not the property (Marc, Nov 14, 2026). The pin is never dragged: every tool
+    // uses the typed address, so a moved pin would only make a wrong address look confirmed. The
+    // agent corrects the text (which asks for the map again) or, when the text is right and Google's
+    // pin is not, ticks that they checked it against the listing agreement.
+    function lstNewPinWrong() { lstNewPin.ok = false; lstNewPin.state = 'wrong'; }
     function lstNewPinLookup() {
       const street = lstNewStreet.value.trim();
       if (!street) return;
@@ -26734,7 +26737,7 @@ const CHANGELOG = [
       },
       {
         title: 'Check the Address on a Map',
-        detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself. New Property now starts blank every time you open it, so an address from an earlier try never carries over.\n\nHow to use: In New Property, fill in the address, press Check the address on a map, look at the pin, and press Yes, this is the property. If Google cannot find the address (new construction, for example), check it against the listing agreement and tick the box that says you checked it.\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
+        detail: 'When you create a new property, the OS now shows the address on a map with a pin before the property is created. Every tool on a listing uses that address, so it is checked once, at the start. The net sheet shows the same map when you pick an address from Google\'s list. The pin shows the building, not the unit, so check unit numbers yourself. New Property now starts blank every time you open it, so an address from an earlier try never carries over. State is now one list (DC, Maryland, Virginia) instead of a typed box and a separate Market list.\n\nHow to use: In New Property, fill in the address, choose the State, press Check the address on a map, look at the pin, and press Yes, this is the property. If the pin is on the wrong house, press No, this is not the property: correct a misspelled address and check again, or, if the address is right and Google\'s pin is not, check it against the listing agreement and tick the box. The same box is there when Google cannot find the address at all (new construction, for example).\n\nBest practice: Zoom in on the pin before you confirm. A building in the right street but the wrong block is the mistake this is here to catch.'
       }
     ]
   }
@@ -29423,7 +29426,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
 
       feedbackModal, openFeedback, closeFeedback, selectFeedbackType, feedbackStartVoice, feedbackStopVoice, submitFeedback,
       // Listings System
-      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstOpenNewProperty, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
+      aiKey, fosCheckAiKey, lstProperties, lstLoading, lstLoadError, lstToolOpen, lstHistError, lstHistOpen, lstHistView, lstHistFor, lstHistWhen, lstHistWho, lstHistCurrent, lstPdfFor, lstPdfWhen, lstPdfOpen, lstPdfError, lstPdfOpening, fosMarketCode, lstAppr, lstApprIsOn, lstApprWhen, lstApprReload, lstApprove, lstApprNotify, lstFlyer, LST_FLYER_MAX, lstAv, ldAvChat, ldAvSaveFromChat, lstAvMethodNote, lstAvRes, lstAvResFresh, lstAvResWhen, lstAvResEnsure, lstAvReadback, lstAvCards, lstAvWrite, lstAvEdit, lstAvCancel, lstAvSave, lstAvGoListing, fosWordCount, lstFlyerIssues, lstWhoIssues, lstApprWhoBlocked, lstBrandIssues, lstApprBrandBlocked, lstFlyerReady, lstFlyerWrite, lstFlyerEdit, lstFlyerSave, lstApprRetryPdf, lstApprGoListing, photoLightbox, openPhotoLightbox, photoLightboxNav, downloadAllPhotos, lstShowNewModal, lstOpenNewProperty, lstNewPinWrong, lstNewAddress, lstNewStreet, lstNewUnit, lstNewCity, lstNewState, lstNewZip, lstNewSeller, lstNewSeller2, lstNewMarket,
       lstCreating, lstCreateError, lstActiveProp, lstActiveFiles, lstNotes,
       lstUploading, lstDragOver, lstSubfolders, lstSubfolderFiles, lstAssetCount,
       lstCanSubmit, lstShowSubmitConfirm, lstSubmitting,
