@@ -223,6 +223,7 @@ jobs:
               t "Offer strategies test (every strategy kept on the buyer, reopened as a new copy, side by side)" node head/ci/offer-strategies-test.js head
               t "Dashboard guides test (Guides & SOPs for every login, new tab on a computer, in-app viewer on a phone)" node head/ci/dashboard-guides-test.js head
               t "Tool panel test (a listing tool opens where it was pressed, the page never jumps)" node head/ci/tool-panel-jump-test.js head
+              t "Preferred Vendors test (the real list, ranked 1, 2, 3, on its own page and in FORWARD Voice)" node head/ci/vendor-list-test.js head
               ;;
           esac
           if [ -n "$failed" ]; then
