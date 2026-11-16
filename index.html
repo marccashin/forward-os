@@ -10765,10 +10765,11 @@ const OH_AGENT_PHOTO_POS = {
   'Charlotte Lee':   '50% 50%',
 };
 // Open House questions (Marc, Nov 15, 2026): the five Spacio asked, word for word, in
-// its order. All optional. Each answer goes to Follow Up Boss with its question's words.
+// its order, except '3 months', which Marc changed to 'As soon as possible' the same day.
+// All optional. Each answer goes to Follow Up Boss with its question's words.
 const OH_QUESTIONS = [
   { id: 'stage',       q: 'At what point in the buying process are you?', options: ['Seeing what\'s out there', 'Actively looking', 'I\'m ready'] },
-  { id: 'timeline',    q: 'When are you looking to move?', options: ['3 months', '3-6 months', '6-12 months', 'Other'] },
+  { id: 'timeline',    q: 'When are you looking to move?', options: ['As soon as possible', '3-6 months', '6-12 months', 'Other'] },
   { id: 'preapproved', q: 'Are you mortgage pre-approved?', options: ['Yes', 'No'] },
   { id: 'pricing',     q: 'How well priced is this property?', options: ['Overpriced', 'Just Right', 'Underpriced'] },
   { id: 'feedback',    q: 'Do you have any feedback about the property that would be helpful for the sellers to hear?' },
@@ -29305,6 +29306,15 @@ async function dismissUpdates() {
     // sign-in is never thanked unless it is kept.
     function ohPersistQueue() { localStorage.setItem(OH_QUEUE_KEY, JSON.stringify(oh.queue)); }
 
+    // Phone as Marc writes it (Nov 15, 2026): 555.555.5555, formatted while the guest
+    // types. A leading 1 is dropped; anything past ten digits is not kept.
+    function ohFmtPhone(p) {
+      let d = String(p || '').replace(/\D/g, '');
+      if (d.length === 11 && d[0] === '1') d = d.slice(1);
+      d = d.slice(0, 10);
+      return d.slice(0, 3) + (d.length > 3 ? '.' + d.slice(3, 6) : '') + (d.length > 6 ? '.' + d.slice(6) : '');
+    }
+    watch(() => oh.form.phone, (v) => { const f = ohFmtPhone(v); if (f !== v) oh.form.phone = f; });
     function ohPhoneDigits(p) { let d = String(p || '').replace(/\D/g, ''); if (d.length === 11 && d[0] === '1') d = d.slice(1); return d; }
     const ohFormProblem = computed(() => {
       if (!oh.form.first.trim()) return 'Please enter your first name.';

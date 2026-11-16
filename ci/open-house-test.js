@@ -216,12 +216,15 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   await signIn(page, 'Ann', 'Visitor', '202', 'ann@example');
   s = await S(page);
   ok(/10-digit phone/.test(s.oh.formError) && fub.events.length === 0 && s.oh.queue.length === 0, 'a short phone number is refused and nothing is saved or sent', s.oh.formError);
-  await page.locator('[data-oh-phone]').fill('(202) 555-0101'); await page.locator('[data-oh-signin]').click(); await page.waitForTimeout(300);
+  await page.locator('[data-oh-phone]').fill('(202) 555-0101'); await page.waitForTimeout(100);
+  const shownPhone = await page.locator('[data-oh-phone]').inputValue();
+  ok(shownPhone === '202.555.0101', 'a phone typed as (202) 555-0101 shows as 202.555.0101', shownPhone);
+  await page.locator('[data-oh-signin]').click(); await page.waitForTimeout(300);
   ok(/email/.test((await S(page)).oh.formError) && fub.events.length === 0, 'a bad email is refused and nothing is sent');
   const qs = await page.locator('[data-oh-q] legend').allInnerTexts();
   ok(JSON.stringify(qs) === JSON.stringify(['At what point in the buying process are you?', 'When are you looking to move?', 'Are you mortgage pre-approved?', 'How well priced is this property?', 'Do you have any feedback about the property that would be helpful for the sellers to hear?']), 'the five questions are on the guest book, word for word, in order', qs);
   const opts = await page.locator('[data-oh-q="timeline"] .ohk-chip').allInnerTexts();
-  ok(JSON.stringify(opts.map(x => x.trim())) === JSON.stringify(['3 months', '3-6 months', '6-12 months', 'Other']), 'each question has its answers word for word', opts);
+  ok(JSON.stringify(opts.map(x => x.trim())) === JSON.stringify(['As soon as possible', '3-6 months', '6-12 months', 'Other']), 'each question has its answers word for word', opts);
   await page.locator('[data-oh-q="stage"] .ohk-chip', { hasText: 'Actively looking' }).click();
   await page.locator('[data-oh-q="preapproved"] .ohk-chip', { hasText: 'No' }).click();
   await page.locator('[data-oh-q="preapproved"] .ohk-chip', { hasText: 'Yes' }).click();
@@ -233,7 +236,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   const ev = fub.events[0] && fub.events[0].body;
   const expect = {
     source: 'FORWARD OS Open House', system: 'FORWARD OS', type: 'Visited Open House',
-    person: { firstName: 'Ann', lastName: 'Visitor', emails: [{ value: 'ann.visitor@example.com' }], phones: [{ value: '(202) 555-0101' }], tags: ['FORWARD OS', 'Open House', '1324 E St SE #208'], assignedUserId: 7 },
+    person: { firstName: 'Ann', lastName: 'Visitor', emails: [{ value: 'ann.visitor@example.com' }], phones: [{ value: '202.555.0101' }], tags: ['FORWARD OS', 'Open House', '1324 E St SE #208'], assignedUserId: 7 },
     property: { street: '1324 E St SE #208', city: 'Washington', state: 'DC', code: '20003' }
   };
   ok(ev && JSON.stringify({ source: ev.source, system: ev.system, type: ev.type, person: ev.person, property: ev.property }) === JSON.stringify(expect), 'the event is Visited Open House with the visitor\'s name, phone and email, assigned to the agent, tagged FORWARD OS, Open House and the street address, with the property', ev);
@@ -242,7 +245,7 @@ function ok(c, name, extra) { if (c) { pass++; console.log('  ok   ' + name); } 
   ok(fub.events[0] && fub.events[0].auth === 'Basic ' + Buffer.from('fub-test-key:').toString('base64'), 'it is sent with the Follow Up Boss key, through the app\'s own Follow Up Boss route');
   const row0 = db.signins[0];
   ok(db.signins.length === 1 && row0.agent_name === 'Niki Lang' && row0.street === '1324 E St SE' && row0.unit === '#208' && row0.zip === '20003' && row0.open_house_id === s.oh.kiosk.id && JSON.stringify(row0.answers.map(a => a.id)) === '["stage","preapproved","feedback"]', 'the sign-in\'s answers are saved once for the seller report, with the open house and address', row0);
-  ok(!/Ann|Visitor|ann\.visitor|555-0101|first|last|phone|email/i.test(JSON.stringify(row0)), 'the saved row holds no name, phone or email', row0);
+  ok(!/Ann|Visitor|ann\.visitor|555.0101|555-0101|first|last|phone|email/i.test(JSON.stringify(row0)), 'the saved row holds no name, phone or email', row0);
   ok(s.oh.queue.length === 0 && JSON.parse(s.stored).length === 0 && s.oh.kiosk.count === 1 && s.oh.kiosk.sent === 1, 'once Follow Up Boss took it, it leaves the device; 1 signed in, 1 sent', { q: s.oh.queue, k: s.oh.kiosk.count, sent: s.oh.kiosk.sent });
   ok(await page.locator('[data-oh-thanks]').isVisible() && /Thank you, Ann/.test(await page.locator('[data-oh-thanks]').innerText()), 'the visitor is thanked by name');
   await next(page);
