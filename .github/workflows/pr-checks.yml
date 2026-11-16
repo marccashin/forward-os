@@ -199,6 +199,7 @@ jobs:
               t "MLS Data test (shorthand prices, five figures open the tools, address saves tell the truth)" node head/ci/mls-data-test.js head
               t "Seller Prep send test (phone share menu, computer download message)" node head/ci/seller-prep-send-test.js head
               t "Net sheet save test (asks which listing, saves what is on screen, Virginia wording)" node head/ci/net-sheet-save-test.js head
+              t "Open House test (sign-ins reach Follow Up Boss assigned and tagged, saved on the device when offline, sent once)" node head/ci/open-house-test.js head
               ;;
             3)
               t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head
