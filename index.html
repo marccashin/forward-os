@@ -11144,17 +11144,17 @@ async function getAgentToolsContent(query) {
 // If asOf falls more than two months behind, the packet tells the buyer the
 // figures are dated rather than printing them as current.
 const DMV_SNAPSHOT = {
-  asOf: 'September 2026',
+  asOf: 'October 2026',
   source: 'Bright MLS',
   // [ market, median sold price, average days on market, months of supply ]
   // The third figure is Bright's DOM cell, which is an AVERAGE, not a median. Bright's own
   // definition on the report: "the average of the days on market of the listings that
   // closed this month". Sold Median is a true median. Use DOM, never CDOM.
   rows: [
-    ['Washington, DC',        '$656,500', '46', '7.3'],
-    ['Arlington + Fairfax',   '$747,000', '28', '2.8'],
-    ['Montgomery County, MD', '$610,500', '35', '3.4'],
-    ['Loudoun County, VA',    '$760,000', '31', '2.6']
+    ['Washington, DC',        '$700,000', '45', '7.9'],
+    ['Arlington + Fairfax',   '$745,000', '28', '3.0'],
+    ['Montgomery County, MD', '$619,000', '36', '3.9'],
+    ['Loudoun County, VA',    '$760,000', '27', '3.3']
   ]
 };
 
