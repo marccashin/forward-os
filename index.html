@@ -282,7 +282,7 @@ a.fos-guide-btn:focus-visible{outline-width:3px}
 .fv .fv-trades button.on{background:#0A2342;color:#fff}
 .fv .fv-trades button.on .n{color:#C8A96E}
 .fv .fv-main{flex:999 1 560px;min-width:0;display:flex;flex-direction:column;gap:14px}
-.fv .fv-head{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid #C8A96E;padding-bottom:12px;margin-bottom:4px}
+.fv .fv-head{scroll-margin-top:96px;display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px;border-bottom:1px solid #C8A96E;padding-bottom:12px;margin-bottom:4px}
 .fv .fv-head h2{margin:0;font:500 34px/1.1 'Cormorant Garamond',serif;color:#0A2342;text-transform:none;letter-spacing:0}
 .fv .fv-head span{font-size:13px;color:#5b6472}
 .fv .fv-first{background:#0A2342;color:#fff;border-radius:18px;padding:26px 28px;display:grid;grid-template-columns:56px minmax(0,1fr);gap:20px}
@@ -12321,8 +12321,21 @@ createApp({
       .map(g => { const c = g.categories.find(x => x.name === fv.trade); return c && c.vendors.length ? { region: g.name, first: fosVendorTitle(c.vendors[0]) } : null; })
       .filter(Boolean));
     const fvEmptyTrades = computed(() => fvRegion.value ? fvRegion.value.categories.filter(c => !c.vendors.length).map(c => c.name) : []);
-    function fvPickTrade(name) { fv.trade = name; fv.fbVendor = ''; fv.fbDone = ''; fv.fbError = ''; fv.confirmId = ''; }
-    function fvPickRegion(name) { fv.region = name; fv.fbDone = ''; fv.fbError = ''; fv.confirmId = ''; }
+    // A new pick shows its First call (Marc, Nov 16, 2026: "when I switch services, it should
+    // jump back to the top showing the person"). Only when the trade's heading is above the
+    // screen: a pick made with the heading in view moves nothing.
+    function fvShowTop() {
+      nextTick(() => {
+        const el = document.querySelector('[data-fv-trade-title]');
+        if (!el || el.getBoundingClientRect().top >= 60) return;
+        let calm = false;
+        try { calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+        // 96 px clears the app's top bar (and staging's test banner).
+        window.scrollBy({ top: el.getBoundingClientRect().top - 96, behavior: calm ? 'auto' : 'smooth' });
+      });
+    }
+    function fvPickTrade(name) { fv.trade = name; fv.fbVendor = ''; fv.fbDone = ''; fv.fbError = ''; fv.confirmId = ''; fvShowTop(); }
+    function fvPickRegion(name) { fv.region = name; fv.fbDone = ''; fv.fbError = ''; fv.confirmId = ''; fvShowTop(); }
     function fvKeepTrade() {
       const g = fvRegion.value;
       if (!g) return;

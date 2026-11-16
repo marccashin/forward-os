@@ -250,6 +250,20 @@ async function runHandler(fetchImpl) {
   ok(/Read from Google Drive at .+ ET/.test(await text(page, '[data-fv-read]')) && /Not filled in yet for Washington, DC: HVAC\./.test(await text(page, '[data-fv-empty]')), 'the page says when it was read and which trades are not filled in');
   ok(await page.locator('[data-fv-edit]').count() === 0, 'an agent does not see the edit link');
 
+  // A pick made far down the trade list brings its First call into view (Marc, Nov 16, 2026).
+  await page.setViewportSize({ width: 1440, height: 500 });
+  await page.locator('[data-fv-trade="Home Staging"]').scrollIntoViewIfNeeded(); await page.waitForTimeout(150);
+  const before2 = await page.locator('[data-fv-trade-title]').evaluate(e => e.getBoundingClientRect().top);
+  await page.locator('[data-fv-trade="Home Staging"]').click(); await page.waitForTimeout(900);
+  const after2 = await page.locator('[data-fv-trade-title]').evaluate(e => e.getBoundingClientRect().top);
+  const firstTop = await page.locator('[data-fv-first]').evaluate(e => e.getBoundingClientRect().top);
+  ok(before2 < 0 && after2 >= 0 && after2 < 200 && firstTop < 500, 'picking a trade far down the list jumps back up to its heading and First call', { before2, after2, firstTop });
+  const y0 = await page.evaluate(() => { const m = document.scrollingElement; return [window.scrollY, m.scrollTop]; });
+  await page.evaluate(() => document.querySelector('[data-fv-trade="Title"]').click()); await page.waitForTimeout(400);
+  const y1 = await page.evaluate(() => { const m = document.scrollingElement; return [window.scrollY, m.scrollTop]; });
+  ok(JSON.stringify(y0) === JSON.stringify(y1), 'a pick made with the heading in view does not move the page', { y0, y1 });
+  await page.setViewportSize({ width: 1440, height: 900 });
+
   // From the team.
   await trade(page, 'Electrician');
   ok(/No notes on these vendors yet/.test(await text(page, '[data-fv-notes-none]')), 'with no notes it says so');
