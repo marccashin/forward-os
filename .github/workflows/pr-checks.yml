@@ -41,6 +41,9 @@
 #   ci/deal-progress-test.js  the Deal Progress tab: the right Command Center
 #                        and Open To Close records, who and when, an agent tick
 #                        writes only that agent row with the agent's name.
+#   ci/buyer-deal-progress-test.js  the same tab in a buyer folder (Nov 16, 2026): stage from
+#                         Follow Up Boss, the guide word for word, Command Center and Open To
+#                         Close read only, nothing written
 #   ci/listing-presentation-test.js  every agent downloads only their own
 #                        listing presentation, as a PDF from the backend; no
 #                        Canva link is left; Operations and Concierge get none.
@@ -201,6 +204,7 @@ jobs:
               t "Seller Prep send test (phone share menu, computer download message)" node head/ci/seller-prep-send-test.js head
               t "Net sheet save test (asks which listing, saves what is on screen, Virginia wording)" node head/ci/net-sheet-save-test.js head
               t "Open House test (sign-ins reach Follow Up Boss assigned and tagged, saved on the device when offline, sent once)" node head/ci/open-house-test.js head
+              t "Buyer Deal Progress test (the listing tab in the buyer folder: stage, guide wording, Concierge, Open To Close, read only)" node head/ci/buyer-deal-progress-test.js head
               ;;
             3)
               t "CMA Builder test (newest saved CMA opens, review highlights, Back to Listing)" node head/ci/cma-builder-test.js head

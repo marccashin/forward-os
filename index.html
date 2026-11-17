@@ -4967,7 +4967,207 @@ body {
                 <svg viewBox="0 0 24 24" style="width:13px;height:13px;display:inline-block;vertical-align:-3px;flex-shrink:0;vertical-align:-2px;" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="#0d1f35"/><rect x="11.25" y="5" width="1.5" height="14" rx=".75" fill="white"/><rect x="7.5" y="8.5" width="7" height="1.5" rx=".75" fill="white"/><rect x="7.5" y="14" width="7" height="1.5" rx=".75" fill="white"/></svg> Budget: <span style="color:#fff;font-weight:600;">{{ byrActiveBuyer.budget_min ? '$'+Number(byrActiveBuyer.budget_min).toLocaleString() : '' }}{{ (byrActiveBuyer.budget_min&&byrActiveBuyer.budget_max) ? ' – ' : '' }}{{ byrActiveBuyer.budget_max ? '$'+Number(byrActiveBuyer.budget_max).toLocaleString() : '' }}</span>
               </div>
             </div>
-            <div class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
+            <!-- Buyer Tools / Deal Progress (Nov 16, 2026): the listing folder's two tabs, same markup (Marc: the only addition to the buyer folder) -->
+            <div class="dp-tabs" role="tablist" aria-label="Buyer sections" data-bdp-tabs>
+              <button type="button" role="tab" :aria-selected="byrDetailTab!=='progress'" :class="['dp-tab', byrDetailTab!=='progress' ? 'dp-tab-on' : '']" @click="bdpOpenTab('tools')">Buyer Tools</button>
+              <button type="button" role="tab" :aria-selected="byrDetailTab==='progress'" :class="['dp-tab', byrDetailTab==='progress' ? 'dp-tab-on' : '']" @click="bdpOpenTab('progress')">Deal Progress</button>
+            </div>
+
+            <div v-if="byrDetailTab==='progress'" class="dp-wrap" data-bdp>
+              <div class="dp-howto">
+                <div class="dp-howto-txt">
+                  <div class="dp-howto-title">How it works</div>
+                  <div class="dp-howto-body">The If This, Then That guide. For every Follow Up Boss stage it shows what you do, what Concierge and Transactions do, and what happens automatically when you move the deal card. Everything on this page comes from it.</div>
+                </div>
+                <a class="dp-howto-btn" href="/guides/FORWARD_If_This_Then_That.pdf" target="_blank" rel="noopener" @click="dpGuideClick">Open the guide (PDF)</a>
+              </div>
+              <div v-if="bdp.loading" class="dp-note">Loading what the team has done…</div>
+              <div v-if="bdp.error" class="dp-err" data-bdp-error>{{ bdp.error }}</div>
+              <div v-if="!bdp.loading && bdpRenameDeal" class="dp-note dp-rename" role="note" data-bdp-rename>
+                <div class="dp-kicker">Rename the deal card</div>
+                Offer accepted: rename the Follow Up Boss deal card to the property address, update price, closing date and commission to match the contract, then slide it to Pending. FORWARD OS finds Transactions' Open To Close file by that address.
+              </div>
+
+              <!-- No Follow Up Boss deal for this buyer, or it could not be read (Marc, Nov 16, 2026: tell the agent to create the lead in Follow Up Boss) -->
+              <section v-if="!bdp.loading && !bdp.error && !bdp.closed && !(bdp.fub && bdp.fub.found)" class="dp-stage" aria-label="Where the deal is" data-bdp-unlinked>
+                <div v-if="bdp.fubError" class="dp-err-line">This buyer's stage in Follow Up Boss could not be read: {{ bdp.fubError }}</div>
+                <div v-else-if="bdp.fub && bdp.fub.how === 'ambiguous'" class="dp-meta">Follow Up Boss has {{ bdp.fub.count }} Buyers deals for this buyer under your name, so FORWARD OS cannot tell which one is this buyer. Ask Concierge to link the right one.</div>
+                <div v-else class="dp-meta">This buyer is not linked to a Follow Up Boss deal. Create the lead in Follow Up Boss under your name, with a deal card in the Buyers pipeline at Buyer Engaged, so FORWARD OS can sync with it.</div>
+              </section>
+
+              <!-- Before BA Signed: the deal's stage in Follow Up Boss and the guide for it -->
+              <template v-if="!bdp.loading && !bdp.error && bdpPre">
+                <section class="dp-stage" aria-label="Where the deal is">
+                  <div class="dp-stage-top">
+                    <div>
+                      <div class="dp-kicker">Stage in Follow Up Boss</div>
+                      <div class="dp-stage-name">{{ bdpFubStage }}</div>
+                    </div>
+                    <div v-if="bdp.fub.entered_stage_at" class="dp-stage-since">In {{ bdpFubStage }} since {{ dpDay(bdp.fub.entered_stage_at) }}</div>
+                  </div>
+                  <div v-if="bdpFubNote(bdpFubStage)" class="dp-stage-since" style="margin-top:12px;color:rgba(255,255,255,.82);">{{ bdpFubNote(bdpFubStage) }}</div>
+                </section>
+                <section class="dp-agent" aria-label="Your next steps">
+                  <div class="dp-lane-hd"><div class="dp-agent-name">Your Next Steps</div></div>
+                  <div v-for="(y, yi) in bdpPre.you" :key="'y' + yi" class="dp-row dp-reminder">
+                    <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                    <div class="dp-tt">{{ y }}</div>
+                  </div>
+                  <div class="dp-foot">From the If This, Then That guide.</div>
+                </section>
+                <section class="dp-lanes" aria-label="This stage">
+                  <div class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Concierge</div><div class="dp-lane-who">Abby Lee · Command Center</div></div></div>
+                    <div v-if="!bdpPre.concierge.length" class="dp-meta" style="padding:10px 0;">Nothing for this team at this step.</div>
+                    <div v-for="(c, ci) in bdpPre.concierge" :key="'c' + ci" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ c }}</div></div>
+                  </div>
+                  <div class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Transactions</div><div class="dp-lane-who">Sofia Burton · Open To Close</div></div></div>
+                    <div v-if="!bdpPre.transactions.length" class="dp-meta" style="padding:10px 0;">Nothing for this team at this step.</div>
+                    <div v-for="(t, ti) in bdpPre.transactions" :key="'t' + ti" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ t }}</div></div>
+                    <div class="dp-foot">The Open To Close file starts once the offer is ratified.</div>
+                  </div>
+                  <div class="dp-lane">
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What happens on its own</div></div></div>
+                    <div class="dp-meta" style="padding:10px 0 2px;">{{ bdpPre.trigger }}:</div>
+                    <div v-for="(a, ai) in bdpPre.auto" :key="'a' + ai" class="dp-row"><span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span><div class="dp-tt">{{ a }}</div></div>
+                  </div>
+                </section>
+              </template>
+
+              <div v-if="!bdp.loading && bdp.closed" class="dp-note dp-closed" data-bdp-closed>
+                <div class="dp-kicker">Closed<template v-if="bdp.closed.closing_date"> · {{ dpClosingDay(bdp.closed.closing_date) }}</template></div>
+                Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client. It is now safe to archive this buyer card in FORWARD OS.
+              </div>
+
+              <!-- In Follow Up Boss at BA Signed or later, but the Command Center has no buyer file for it -->
+              <section v-if="bdpNoFile && bdp.fub && bdp.fub.found" class="dp-stage" aria-label="Where the deal is" data-bdp-nofile>
+                <div class="dp-stage-top">
+                  <div>
+                    <div class="dp-kicker">Stage in Follow Up Boss</div>
+                    <div class="dp-stage-name">{{ bdpFubStage || 'Not set' }}</div>
+                  </div>
+                  <div v-if="bdp.fub.entered_stage_at" class="dp-stage-since">In {{ bdpFubStage }} since {{ dpDay(bdp.fub.entered_stage_at) }}</div>
+                </div>
+                <div v-if="bdpFubNote(bdpFubStage)" class="dp-stage-since" style="margin-top:12px;color:rgba(255,255,255,.82);">{{ bdpFubNote(bdpFubStage) }}</div>
+              </section>
+
+              <template v-if="!bdp.closed && bdp.deal && !bdpPre">
+                <!-- Where the deal is -->
+                <section class="dp-stage" aria-label="Where the deal is" data-bdp-stage>
+                  <div class="dp-stage-top">
+                    <div>
+                      <div class="dp-kicker">Stage now</div>
+                      <div class="dp-stage-name">{{ bdpStage || 'Not set' }}</div>
+                    </div>
+                    <div v-if="bdpStageSince" class="dp-stage-since">In {{ bdpStage }} since {{ dpWhen(bdpStageSince) }}</div>
+                  </div>
+                  <ol v-if="bdpStageIndex(bdpStage) >= 0" class="dp-strip">
+                    <li v-for="(s, si) in BDP_STAGES" :key="s.key" :class="si < bdpStageIndex(bdpStage) ? 'dp-past' : (si === bdpStageIndex(bdpStage) ? 'dp-now' : 'dp-next')">
+                      <div class="dp-bar"></div>
+                      <div class="dp-strip-label">{{ s.label }}</div>
+                      <div v-if="si === bdpStageIndex(bdpStage)" class="dp-here">You are here</div>
+                    </li>
+                  </ol>
+                </section>
+
+                <!-- The agent's column of the guide for this stage (read only for now) -->
+                <section v-if="(BDP_YOU[bdpStage] || []).length" class="dp-agent" aria-label="Agent responsibility" data-bdp-agent>
+                  <div class="dp-lane-hd"><div class="dp-agent-name">Agent Responsibility</div></div>
+                  <div v-for="(y, yi) in BDP_YOU[bdpStage]" :key="'y' + yi" class="dp-row dp-reminder">
+                    <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                    <div class="dp-tt">{{ y }}</div>
+                  </div>
+                  <div class="dp-foot">From the If This, Then That guide.</div>
+                </section>
+
+                <section v-if="!bdp.loading" class="dp-lanes" aria-label="This stage">
+                  <!-- Concierge -->
+                  <div class="dp-lane" data-bdp-concierge>
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Concierge</div><div class="dp-lane-who">Abby Lee · Command Center</div></div><div class="dp-count">{{ bdpConciergeItems.filter(i => i.completed).length }} of {{ bdpConciergeItems.length }} done</div></div>
+                    <div v-if="!bdpConciergeItems.length" class="dp-meta" style="padding:10px 0;">Nothing on Concierge's list for this stage.</div>
+                    <div v-for="item in bdpConciergeItems" :key="item.id" class="dp-row">
+                      <span :class="['dp-dot', item.completed ? 'dp-dot-done' : '']" aria-hidden="true">{{ item.completed ? '✓' : '' }}</span>
+                      <div><div class="dp-tt">{{ item.title }}</div><div :class="item.completed || dpIsWaiting(item) ? 'dp-meta' : 'dp-meta-open'">{{ item.completed ? dpDoneLabel(item) : dpItemOpenLabel(item, bdp.loadedAt) }}</div></div>
+                    </div>
+                  </div>
+
+                  <!-- Transactions -->
+                  <div class="dp-lane" data-bdp-otc>
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Transactions</div><div class="dp-lane-who">Sofia Burton · Open To Close</div></div><div v-if="bdp.otc" class="dp-count">{{ bdpOtcDone.length }} of {{ bdp.otcTasks.length }} done</div></div>
+                    <div class="dp-otcnow">
+                      <button type="button" class="dp-otcnow-btn" :disabled="otcNow.busy || dpOtcLeft > 0 || bdp.loading" @click="bdpCheckOtcNow">{{ otcNow.busy ? 'Checking Open To Close…' : 'Check Open To Close now' }}</button>
+                      <div class="dp-otcnow-meta">
+                        <template v-if="otcNow.busy">Reading every open file. About 15 seconds.</template>
+                        <template v-else-if="dpOtcLeft > 0">Available again in <b>{{ dpOtcLeftLabel }}</b></template>
+                        <template v-else>Open To Close is also checked every 15 minutes.</template>
+                      </div>
+                    </div>
+                    <div v-if="otcNow.error" class="dp-err-line">{{ otcNow.error }}</div>
+                    <div v-else-if="otcNow.note && !otcNow.busy" class="dp-meta">{{ otcNow.note }}</div>
+                    <div v-if="bdp.otcError" class="dp-err-line">{{ bdp.otcError }}</div>
+                    <div v-else-if="!bdp.otc && !(bdp.fub && bdp.fub.address)" class="dp-meta" style="padding:10px 0;">FORWARD OS finds the Open To Close file by the property address on the Follow Up Boss deal card, which goes there when the offer is accepted.</div>
+                    <div v-else-if="!bdp.otc" class="dp-meta" style="padding:10px 0;">No Open To Close file found for this address yet.</div>
+                    <template v-else>
+                      <div class="dp-prog"><div :style="{ width: (bdp.otcTasks.length ? Math.round(bdpOtcDone.length / bdp.otcTasks.length * 100) : 0) + '%' }"></div></div>
+                      <div class="dp-otc-note">Open To Close starts every file with the same standard task list, so some tasks may not apply to your deal. Transactions deletes the ones that do not as the file moves along.</div>
+                      <div v-if="bdp.otcOthers" class="dp-meta">Open To Close has this address {{ bdp.otcOthers + 1 }} times; showing the newest file.</div>
+                      <div v-if="bdpOtcLast" class="dp-meta">Last checked off: <b>{{ bdpOtcLast.title }}</b> · by {{ dpWhen(bdpOtcLast.completed_seen_at) }}</div>
+                      <div class="dp-kicker" style="margin-top:12px;">{{ bdp.showAllOtc ? 'Left · ' + bdpOtcOpen.length : 'Next up' }}</div>
+                      <div v-if="!bdpOtcOpen.length" class="dp-meta" style="padding:8px 0;">Every item is checked off.</div>
+                      <div v-for="t in (bdp.showAllOtc ? bdpOtcOpen : bdpOtcOpen.slice(0, 4))" :key="t.task_id" class="dp-row">
+                        <span class="dp-dot" aria-hidden="true"></span>
+                        <div><div class="dp-tt">{{ t.title }}</div><div class="dp-meta-open">{{ dpOpenLabel(t.otc_created, bdp.loadedAt) }}</div></div>
+                      </div>
+                      <template v-if="bdp.showAllOtc">
+                        <div class="dp-kicker" style="margin-top:12px;">Done · {{ bdpOtcDone.length }}</div>
+                        <div v-for="t in bdpOtcDone" :key="t.task_id" class="dp-row">
+                          <span class="dp-dot dp-dot-done" aria-hidden="true">✓</span>
+                          <div><div class="dp-tt">{{ t.title }}</div><div class="dp-meta">{{ dpOtcDoneLabel(t) }}</div></div>
+                        </div>
+                      </template>
+                      <button type="button" class="dp-link" @click="bdp.showAllOtc = !bdp.showAllOtc">{{ bdp.showAllOtc ? 'Show fewer' : 'See all ' + bdp.otcTasks.length + ': ' + bdpOtcDone.length + ' done, ' + bdpOtcOpen.length + ' left' }}</button>
+                      <div class="dp-foot">Open To Close does not record when or by whom an item was ticked. The time shown is when FORWARD OS first saw it ticked (checked every 15 minutes).</div>
+                    </template>
+                  </div>
+
+                  <!-- Automations -->
+                  <div v-if="BDP_AUTOMATIONS[bdpStage]" class="dp-lane" data-bdp-auto>
+                    <div class="dp-lane-hd"><div><div class="dp-lane-name">Automations</div><div class="dp-lane-who">What moving the deal card set off, and what the next move will</div></div></div>
+                    <div class="dp-auto-hd">This stage</div>
+                    <div class="dp-meta" style="padding:4px 0 2px;">When the Follow Up Boss deal card moved to <b>{{ bdpStage }}</b><template v-if="bdpStageSince"> ({{ dpWhen(bdpStageSince) }})</template>:</div>
+                    <div v-for="(a, ai) in BDP_AUTOMATIONS[bdpStage]" :key="ai" class="dp-row">
+                      <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                      <div class="dp-tt">{{ a }}</div>
+                    </div>
+                    <div v-if="bdpNext" class="dp-auto-next">
+                      <div class="dp-auto-hd">Next stage</div>
+                      <div class="dp-meta" style="padding:4px 0 2px;">When you move the Follow Up Boss deal card to <b>{{ bdpNext.label }}</b>:</div>
+                      <div v-for="(a, ai) in bdpNext.items" :key="'n' + ai" class="dp-row dp-row-next">
+                        <span class="dp-dot dp-dot-auto" aria-hidden="true">&#8250;</span>
+                        <div class="dp-tt">{{ a }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Earlier stages -->
+                <section v-if="bdpEarlier.length" class="dp-earlier" aria-label="Earlier stages">
+                  <div class="dp-h2">Earlier stages</div>
+                  <details v-for="g in bdpEarlier" :key="g.stage" class="dp-earlier-row">
+                    <summary><span class="dp-tt">{{ g.stage }}</span><span class="dp-meta">{{ g.done }} of {{ g.total }} done · moved on {{ dpDay(g.left) }}</span></summary>
+                    <div v-for="(r, ri) in g.rows" :key="ri" class="dp-row">
+                      <span :class="['dp-dot', r.completed ? 'dp-dot-done' : '']" aria-hidden="true">{{ r.completed ? '✓' : '' }}</span>
+                      <div><div class="dp-tt">{{ r.title }}</div><div class="dp-meta">{{ r.owner === 'agent' ? 'Agent · ' : 'Concierge · ' }}{{ r.completed ? dpDoneLabel(r) : 'Not done when the deal moved on' }}</div></div>
+                    </div>
+                  </details>
+                </section>
+              </template>
+
+              <button type="button" class="dp-link" @click="bdpLoad(byrActiveBuyer)" :disabled="bdp.loading">Refresh</button>
+              <span class="dp-foot" style="margin-left:8px;">Reloads this page. To ask Open To Close for its latest, use Check Open To Close now.</span>
+            </div>
+            <div v-show="byrDetailTab!=='progress'" class="card" style="margin-bottom:16px;border-top:3px solid var(--gold);">
               <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
                 <div style="flex:1;min-width:0;">
                   <div style="font-size:20px;font-weight:700;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;line-height:1.3;">{{ byrActiveBuyer.buyer_name }}</div>
@@ -5360,7 +5560,7 @@ body {
               </div>
               </div><!-- /v-if byrProfileOpen -->
             </div>
-            <div style="margin-top:16px;">
+            <div v-show="byrDetailTab!=='progress'" style="margin-top:16px;">
               <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
                 <div style="flex:1;height:1.5px;background:var(--gold);"></div>
                 <h3 style="margin:0;font-size:17px;font-weight:600;color:var(--navy);font-family:'Cormorant Garamond','Playfair Display',serif;white-space:nowrap;">Buyer Tools</h3>
@@ -5414,7 +5614,7 @@ body {
             </div>
           </div>
           <!-- Buyer File Storage -->
-          <div class="card" style="margin-bottom:16px;">
+          <div v-show="byrDetailTab!=='progress'" class="card" style="margin-bottom:16px;">
             <div style="font-family:'Montserrat',sans-serif;font-size:8px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--cream-mid);">Client Files</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
               <div v-for="sf in [{key:'pre_approval',label:'Pre-Approval',icon:'&lt;svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;&lt;rect x=&quot;5&quot; y=&quot;2&quot; width=&quot;14&quot; height=&quot;20&quot; rx=&quot;1&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;rect x=&quot;8&quot; y=&quot;7&quot; width=&quot;8&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;rect x=&quot;8&quot; y=&quot;11&quot; width=&quot;8&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;rect x=&quot;8&quot; y=&quot;15&quot; width=&quot;5&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;/svg&gt;'},{key:'buyer_documents',label:'Client Docs',icon:'&lt;svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;&lt;polygon points=&quot;2,6 2,20 22,20 22,9 11,9 8,6&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;/svg&gt;'},{key:'inspection',label:'Inspections',icon:'&lt;svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;&lt;polygon points=&quot;10,2 18,10 10,18 2,10&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;rect x=&quot;16&quot; y=&quot;15&quot; width=&quot;8&quot; height=&quot;3&quot; rx=&quot;1.5&quot; transform=&quot;rotate(45,16,15)&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;/svg&gt;'},{key:'closing',label:'Closing',icon:'&lt;svg viewBox=&quot;0 0 24 24&quot; style=&quot;width:1em;height:1em;display:inline-block;vertical-align:-3px;flex-shrink:0;&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot;&gt;&lt;rect x=&quot;8&quot; y=&quot;1&quot; width=&quot;8&quot; height=&quot;4&quot; rx=&quot;1&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;rect x=&quot;4&quot; y=&quot;3&quot; width=&quot;16&quot; height=&quot;19&quot; rx=&quot;1&quot; fill=&quot;#0d1f35&quot;/&gt;&lt;rect x=&quot;7&quot; y=&quot;8&quot; width=&quot;10&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;rect x=&quot;7&quot; y=&quot;12&quot; width=&quot;10&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;rect x=&quot;7&quot; y=&quot;16&quot; width=&quot;6&quot; height=&quot;1.5&quot; fill=&quot;white&quot;/&gt;&lt;/svg&gt;'}]" :key="sf.key" style="background:var(--white);border-radius:2px;padding:14px;border:1px solid var(--cream-mid);">
@@ -10934,6 +11134,154 @@ function dpOtcDoneLabel(t) {
   return 'Checked off by ' + dpWhen(t.completed_seen_at);
 }
 
+// ─── Buyer Deal Progress (Nov 16, 2026) ──────────────────────────────────────
+// The buyer folder's Deal Progress tab, the listing one mirrored (Marc, Nov 16, 2026:
+// "Look at the listing side... Make that the buy side. Do the same."). Every line below
+// is word for word from FORWARD_If_This_Then_That.pdf (October 2026), Buyers, sections 1
+// to 8 (Marc: "The language in the two PDFs that I sent you, that's the language that the
+// agents need to see"). Change the guide first, then this.
+// The Command Center opens a buyer file at BA Signed (its deals and deal_tasks tables,
+// keyed by the Follow Up Boss deal id), so these are the stages of the bar.
+const BDP_STAGES = [
+  { key: 'BA Signed', label: 'Agreement Signed' },
+  { key: 'Actively Showing', label: 'Showing' },
+  { key: 'Pending', label: 'Pending' },
+  { key: 'Closed This Quarter', label: 'Closed' }
+];
+function bdpStageIndex(stage) {
+  return BDP_STAGES.findIndex(x => x.key === String(stage || ''));
+}
+// "Happens automatically" for each stage (guide sections 5 to 8).
+const BDP_AUTOMATIONS = {
+  "BA Signed": [
+    "A buyer folder is created in Google Drive. Email to Transactions: “New Buyer Folder Created in Google Drive”.",
+    "The Command Center opens the buyer file with Concierge's tasks and yours. Concierge is emailed that the deal moved."
+  ],
+  "Actively Showing": [
+    "Follow Up Boss starts your “Buyer Actively Showing Property” action plan.",
+    "The Command Center updates the buyer file. Concierge is emailed that the deal moved."
+  ],
+  "Pending": [
+    "Email to Concierge and Operations: “New Buyer Under Contract Post Needed”.",
+    "Follow Up Boss starts your “Buyer Pending” action plan.",
+    "The Command Center updates the buyer file. Concierge is emailed that the deal moved."
+  ],
+  "Closed This Quarter": [
+    "Email to Concierge and Transactions: “Google Review” request for this client.",
+    "Email to Concierge and Operations: “New Buyer Closed Post Needed”.",
+    "The Command Center starts the 365 day buyer post-closing program, with due dates counted from closing. Concierge is emailed that the deal moved.",
+    "Follow Up Boss starts your “Buyer Closed: 365 Follow-Up” action plan and adds a congratulations note."
+  ]
+};
+// One next move per stage, as for listings (DP_NEXT_STAGE).
+const BDP_NEXT_STAGE = {
+  "BA Signed": "Actively Showing",
+  "Actively Showing": "Pending",
+  "Pending": "Closed This Quarter"
+};
+// The agent's column for each stage (guide sections 5 to 7). Read only in this version:
+// ticking them, kept in step with the Follow Up Boss action plans, comes in its own change.
+const BDP_YOU = {
+  "BA Signed": [
+    "Check the lender is selected, or named in the custom field *Lender Name.",
+    "Check the Follow Up Boss lead stage is Buyer A, B, C or Nurture.",
+    "Slide the Follow Up Boss deal card to Actively Showing when you start showing homes."
+  ],
+  "Actively Showing": [
+    "Offer accepted: rename the Follow Up Boss deal card to the property address, update price, closing date and commission to match the contract, then slide it to Pending.",
+    "Send the ratified offer to Transactions: FORWARD OS, Agent Tools, Contract to Close (Buyer's Agent)."
+  ],
+  "Pending": [
+    "Change the Follow Up Boss lead stage to Pending.",
+    "Schedule the home inspection and copy transactions@fwrdrealestate.com once it is confirmed. FORWARD OS can recommend inspectors.",
+    "Add the inspection to your client's calendar, and attend it.",
+    "Next day: review the inspection findings with your buyer.",
+    "Negotiating? Draft the repair or credit addendum and send it with the inspection report to the listing agent within the contract deadline.",
+    "Void only? Tell Transactions whether the deal is moving forward. If it is not, slide the card back to Actively Showing and update the Follow Up Boss lead stage.",
+    "Check whether the appraisal met or exceeded value. Appraisal gap? Coordinate the addendum with Transactions.",
+    "Set the final walkthrough and settlement with Transactions, then attend both.",
+    "Once closed: confirm price, settlement date and commission on the Follow Up Boss deal card, then slide it to Closed This Quarter. This starts post-closing."
+  ]
+};
+// Before BA Signed the Command Center has nothing for a buyer: the stage in Follow Up Boss
+// and the guide for it (DP_PRE's pattern). Buyer Engaged's own section (2) has nothing for
+// the agent; the steps done while the card sits there are section 1's after creating the
+// card, as Listing App. Complete takes its steps from sections 3 and 4. Buyer Consult
+// Complete: the last two steps of section 3, then section 4 (the FWRD Buyer Onboarding tag).
+const BDP_PRE = {
+  "Buyer Engaged": {
+    "trigger": "You create the Follow Up Boss deal card in the Buyers pipeline",
+    "auto": [
+      "A buyer card is created in FORWARD OS under your name."
+    ],
+    "you": [
+      "Schedule the 15 minute pre-qualification call and add it to your client's calendar.",
+      "On the call, gauge how serious the buyer is: do they rent or own, what is their timeline, have they spoken to a lender, have they been to open houses?",
+      "After the call: update the Follow Up Boss deal card with estimated price, estimated close date and estimated commission, and select the Market and Source custom fields.",
+      "In FORWARD OS, open the Buyer Needs Analysis and record a post-meeting recap. FORWARD OS fills in budget, timeline, neighborhoods, pre-approval status and more from it.",
+      "Slide the Follow Up Boss deal card to 15 Min Pre-Qual Complete."
+    ],
+    "concierge": [],
+    "transactions": []
+  },
+  "15 Min Pre-Qual Complete": {
+    "trigger": "You slide the Follow Up Boss deal card to 15 Min Pre-Qual Complete",
+    "auto": [
+      "Follow Up Boss starts your “Buyer 15 Min Pre-Qual Complete” action plan."
+    ],
+    "you": [
+      "Lender: working with our Financial Team? Select the lender under Details. An independent lender? Type the name in the custom field *Lender Name. Undecided? Skip this for now.",
+      "If it was not scheduled on the call: schedule the buyer consultation.",
+      "Send a calendar invite for the consultation to everyone attending.",
+      "Send the “Buyer Consultation Confirmation” email. Do not skip this: it carries the Buyer Needs Questionnaire that trains FORWARD OS on this buyer.",
+      "Check the Buyer Needs Questionnaire came back. If not, remind your client why it matters.",
+      "In FORWARD OS, open the Buyer Consultation Kit, check the information and generate the PDF. Bring it or send it to your client.",
+      "After the consultation: slide the Follow Up Boss deal card to Buyer Consult Complete.",
+      "Ready to sign a Buyer Agreement? Add the tag FWRD Buyer Onboarding, then set the Follow Up Boss lead stage to Buyer A (0 to 60 day timeline) or Buyer B (60 to 120 days).",
+      "Not ready to sign? Set the Follow Up Boss lead stage to Buyer C or Nurture."
+    ],
+    "concierge": [],
+    "transactions": []
+  },
+  "Buyer Consult Complete": {
+    "trigger": "You add the tag FWRD Buyer Onboarding to the Follow Up Boss lead record",
+    "auto": [
+      "Follow Up Boss starts your “Buyer Onboarding” action plan."
+    ],
+    "you": [
+      "Ready to sign a Buyer Agreement? Add the tag FWRD Buyer Onboarding, then set the Follow Up Boss lead stage to Buyer A (0 to 60 day timeline) or Buyer B (60 to 120 days).",
+      "Not ready to sign? Set the Follow Up Boss lead stage to Buyer C or Nurture.",
+      "Request the Buyer Agreement and buyer disclosures: FORWARD OS, Agent Tools, Buyer Representation Agreement Request.",
+      "Review and approve the Buyer Agreement and buyer disclosures PDF that Transactions sends you, so Transactions can send it to your buyer for signatures.",
+      "Not signed within 24 hours? Follow up with your buyer.",
+      "Send the “Buyer Onboarding” email. Do not skip this.",
+      "Check the lender: our Financial Team selected under Details, or the buyer's lender typed in *Lender Name.",
+      "Check the Follow Up Boss lead stage: Buyer A, B, C or Nurture.",
+      "Once the Buyer Agreement is signed: slide the Follow Up Boss deal card to BA Signed, then to Actively Showing."
+    ],
+    "concierge": [],
+    "transactions": [
+      "Prepares the Buyer Agreement and buyer disclosures from your request in FORWARD OS.",
+      "Sends you the PDF of the Buyer Agreement and buyer disclosures to review and approve. Nothing goes to your buyer before you approve.",
+      "Once you approve, sends them to your buyer for signatures."
+    ]
+  }
+};
+const BDP_FUB_AFTER_AGREEMENT = ['BA Signed', 'Actively Showing', 'Pending'];
+function bdpFubNote(stage) {
+  if (BDP_PRE[stage]) return "Concierge's tasks and Transactions' Open To Close file start when the deal card reaches BA Signed.";
+  if (BDP_FUB_AFTER_AGREEMENT.includes(stage)) return 'The Command Center has no buyer file for this Follow Up Boss deal yet. Ask Concierge to check the buyer in the Command Center.';
+  if (DP_FUB_CLOSED.includes(stage)) return 'The Command Center has no post-closing program for this buyer. Ask Concierge.';
+  if (stage === 'Terminated') return 'This deal was terminated in Follow Up Boss.';
+  return '';
+}
+// Open To Close keeps a buyer's file and the seller's file for the same home: a file
+// marked Seller is never this buyer's. Then dpPickOtc's rule: the newest file wins.
+function bdpPickOtc(address, otcProps) {
+  const mine = (otcProps || []).filter(p => !/^\s*seller\s*$/i.test(String(p.client_type || '')));
+  return dpPickOtc(address, mine);
+}
+
 const supaRest = {
   headers() {
     return {
@@ -15388,7 +15736,9 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         if (j.last_run && j.last_run.ran_at) otcNow.lastRunAt = j.last_run.ran_at;
       } catch (e) { /* the button still works; it just shows no countdown until pressed */ }
     }
-    async function dpCheckOtcNow() {
+    // after: what to reload once Open To Close was read (the buyer tab passes its own);
+    // the listing button passes nothing (Vue hands it the click), so it reloads the listing.
+    async function dpCheckOtcNow(after) {
       if (otcNow.busy || dpOtcLeft.value > 0) return;
       const prop = lstActiveProp.value;
       otcNow.busy = true; otcNow.error = ''; otcNow.note = '';
@@ -15413,7 +15763,8 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
           const e0 = (j.errors && j.errors[0] && j.errors[0].error) || 'no reason given';
           otcNow.error = 'Open To Close could not be fully read: ' + e0 + '. What it last showed is below.';
         }
-        if (prop && lstActiveProp.value && lstActiveProp.value.id === prop.id) await dpLoad(prop);
+        if (typeof after === 'function') await after();
+        else if (prop && lstActiveProp.value && lstActiveProp.value.id === prop.id) await dpLoad(prop);
         if (!otcNow.error) otcNow.note = 'Checked Open To Close just now.';
       } catch (e) {
         otcNow.error = 'Open To Close was NOT checked: ' + fosWhy(e) + '. What it last showed is below.';
@@ -15478,6 +15829,117 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
         dp.busy[item.id] = false;
       }
     }
+
+    // ─── Buyer Deal Progress tab (Nov 16, 2026) ─────────────────────────────────
+    // The listing tab mirrored for the buyer folder. READ ONLY in this version: nothing
+    // is written anywhere. Reads: the backend's GET /api/fub/buyer-stage (the buyer's
+    // Follow Up Boss deal: the id the Buyer Engaged webhook stamped, else a Buyers deal
+    // named after this buyer, forward-os-backend fub_deal_stage.pick_buyer_deal), then the
+    // Command Center's buyer file by that deal id (deals, deal_tasks, task_history with
+    // source deal_tasks, buyer_post_closing) and the backend's Open To Close copy
+    // (otc_properties, otc_tasks) at the address on the deal card, which the guide has the
+    // agent put there when the offer is accepted.
+    const byrDetailTab = ref('tools');
+    const bdp = reactive({ forId: null, loading: false, error: '', fub: null, fubError: '', deal: null, closed: null, items: [], history: [],
+      otc: null, otcOthers: 0, otcTasks: [], otcError: '', showAllOtc: false, loadedAt: 0 });
+    function bdpReset() {
+      bdp.forId = null; bdp.loading = false; bdp.error = ''; bdp.fub = null; bdp.fubError = ''; bdp.deal = null; bdp.closed = null; bdp.items = []; bdp.history = [];
+      bdp.otc = null; bdp.otcOthers = 0; bdp.otcTasks = []; bdp.otcError = ''; bdp.showAllOtc = false; bdp.loadedAt = 0;
+    }
+    async function bdpLoad(buyer) {
+      if (!buyer) return;
+      const id = buyer.id;
+      bdpReset(); bdp.forId = id; bdp.loading = true;
+      try {
+        const res = await fetch(RAILWAY_URL + '/api/fub/buyer-stage?buyer_id=' + encodeURIComponent(id));
+        await fosOk(res, 'could not load');
+        const fub = await res.json();
+        if (bdp.forId === id) bdp.fub = fub;
+      } catch (e) {
+        if (bdp.forId === id) bdp.fubError = fosWhy(e);
+      }
+      if (bdp.forId !== id) return;
+      const dealId = bdp.fub && bdp.fub.found ? bdp.fub.deal_id : null;
+      if (dealId !== null && dealId !== undefined && dealId !== '') {
+        try {
+          const did = encodeURIComponent(String(dealId));
+          const deal = (await dpGet('deals?select=*&fub_deal_id=eq.' + did))[0] || null;
+          if (bdp.forId !== id) return;
+          // Closed: the Command Center's buyer post-closing program for this deal.
+          const pcs = await dpGet('buyer_post_closing?select=id,closing_date,created_at&fub_deal_id=eq.' + did);
+          if (bdp.forId !== id) return;
+          pcs.sort((a, b) => String(b.closing_date || b.created_at || '').localeCompare(String(a.closing_date || a.created_at || '')));
+          bdp.closed = pcs[0] || null;
+          bdp.deal = deal;
+          if (deal && !bdp.closed) {
+            bdp.items = await dpGet('deal_tasks?select=*&deal_id=eq.' + encodeURIComponent(deal.id) + '&order=sort_order.asc');
+            bdp.history = await dpGet('task_history?select=owner,stage,title,completed,completed_at,completed_by,removed_at&source=eq.deal_tasks&parent_id=eq.' + encodeURIComponent(deal.id) + '&order=removed_at.desc');
+          }
+        } catch (e) {
+          if (bdp.forId === id) bdp.error = 'Deal Progress could not be loaded: ' + fosWhy(e);
+        }
+      }
+      const address = bdp.fub && bdp.fub.found && bdp.fub.address;
+      if (bdp.forId === id && address && !bdp.closed) {
+        try {
+          const props = await dpGet('otc_properties?select=id,address,status,client_type,task_count,done_count,tasks_polled_at');
+          if (bdp.forId !== id) return;
+          const pick = bdpPickOtc(address, props);
+          bdp.otc = pick.prop; bdp.otcOthers = pick.others;
+          if (pick.prop) bdp.otcTasks = await dpGet('otc_tasks?select=*&property_id=eq.' + pick.prop.id + '&removed_at=is.null&order=position.asc');
+        } catch (e) {
+          if (bdp.forId === id) bdp.otcError = 'Open To Close could not be loaded: ' + fosWhy(e);
+        }
+      }
+      if (bdp.forId === id) { bdp.loading = false; bdp.loadedAt = Date.now(); }
+    }
+    function bdpOpenTab(tab) {
+      byrDetailTab.value = tab;
+      if (tab === 'progress' && byrActiveBuyer.value && bdp.forId !== byrActiveBuyer.value.id) bdpLoad(byrActiveBuyer.value);
+      if (tab === 'progress') dpOtcStatus();
+    }
+    // The shared Check Open To Close now (one countdown for everyone), then this buyer's tab again.
+    function bdpCheckOtcNow() {
+      const b = byrActiveBuyer.value;
+      return dpCheckOtcNow(async () => { if (b && byrActiveBuyer.value && byrActiveBuyer.value.id === b.id) await bdpLoad(b); });
+    }
+    const bdpFubStage = computed(() => (bdp.fub && bdp.fub.found && bdp.fub.stage) || '');
+    // Before the Command Center has the buyer, and whenever Follow Up Boss says the deal is
+    // back before BA Signed: the stage in Follow Up Boss and the guide for it.
+    const bdpPre = computed(() => (!bdp.closed && BDP_PRE[bdpFubStage.value]) || null);
+    const bdpStage = computed(() => (!bdpPre.value && bdp.deal && bdp.deal.stage) || '');
+    const bdpNoFile = computed(() => !bdp.loading && !bdp.error && !bdp.closed && !bdpPre.value && !bdp.deal);
+    const bdpNext = computed(() => {
+      const k = BDP_NEXT_STAGE[bdpStage.value];
+      if (!k || !BDP_AUTOMATIONS[k]) return null;
+      const st = BDP_STAGES.find(x => x.key === k);
+      return { stage: k, label: st ? st.label : k, items: BDP_AUTOMATIONS[k] };
+    });
+    // The guide: when the offer is accepted, the deal card is renamed to the property
+    // address. Open To Close's file is found by that address, so say it when it is missing.
+    const bdpRenameDeal = computed(() => !bdp.closed && !!bdp.fub && bdp.fub.found === true && bdp.fub.name_is_address === false &&
+      (bdpStage.value === 'Pending' || bdpFubStage.value === 'Pending'));
+    const bdpConciergeItems = computed(() => bdp.items.filter(i => i.owner !== 'agent'));
+    const bdpStageSince = computed(() => {
+      if (bdp.deal && bdp.deal.stage_changed_at) return bdp.deal.stage_changed_at;
+      const t = bdp.items.map(i => i.created_at).filter(Boolean).sort();
+      return t[0] || '';
+    });
+    const bdpEarlier = computed(() => {
+      const by = {};
+      for (const r of bdp.history) {
+        const k = r.stage || 'Earlier';
+        if (k === bdpStage.value) continue;
+        if (!by[k]) by[k] = { stage: k, done: 0, total: 0, left: r.removed_at || '', rows: [] };
+        by[k].total++; if (r.completed) by[k].done++;
+        if (r.removed_at > by[k].left) by[k].left = r.removed_at;
+        by[k].rows.push(r);
+      }
+      return Object.values(by).sort((a, b) => (a.left < b.left ? 1 : -1));
+    });
+    const bdpOtcOpen = computed(() => bdp.otcTasks.filter(t => !t.completed));
+    const bdpOtcDone = computed(() => bdp.otcTasks.filter(t => t.completed).sort((a, b) => String(b.completed_seen_at || '').localeCompare(String(a.completed_seen_at || ''))));
+    const bdpOtcLast = computed(() => bdpOtcDone.value.find(t => t.completed_seen_at) || null);
 
     async function lstOpenProperty(prop) {
       // Every card opens its own tools. A tool panel left open on the last listing
@@ -25413,6 +25875,8 @@ No markdown. Valid JSON only.`;
 
     async function byrOpenBuyer(buyer) {
       byrActiveBuyer.value = buyer;
+      // Deal Progress belongs to one buyer: start on Buyer Tools with nothing loaded.
+      byrDetailTab.value = 'tools'; bdpReset();
       mbBuyerOpen.value = false; osgSavedOpen.value = false;
       byrClaimAllTools(buyer.id);   // clears any tool, incl. the Needs Analysis on this card, that belonged to another buyer
       loadByrFiles(buyer);
@@ -27977,6 +28441,17 @@ const CHANGELOG = [
       {
         title: 'Support Team Turnaround Times, in Guides & SOPs',
         detail: 'Guides & SOPs on the Dashboard has a second guide: Support Team Turnaround Times. It says what you can expect from Transactions and Concierge, and by when: the 24-hour clock, the 5 PM cutoff, and which Follow Up Boss deal card moves start each clock.\n\nHow to use: On the Dashboard, press Support Team Turnaround Times under Guides & SOPs. On a computer it opens in a new tab; on a phone it opens inside the OS.\n\nBest practice: Move the deal card the moment the deal changes. Most of the team\'s clocks start only when you do.'
+      }
+    ]
+  },
+  {
+    id: 'v2026-11-17',
+    date: 'November 16, 2026',
+    title: 'Deal Progress for buyers',
+    updates: [
+      {
+        title: 'Deal Progress, inside every buyer',
+        detail: 'Buyers now have the same Deal Progress tab as listings. Open a buyer and you will see two tabs at the top: Buyer Tools, which is everything you had before, unchanged, and Deal Progress. Deal Progress shows where the deal stands in Follow Up Boss and since when, your steps for that stage from the If This, Then That guide, what Concierge has done and what is still open in the Command Center, what Transactions has checked off in Open To Close, and what moving the deal card sets off. Before BA Signed it shows your Follow Up Boss stage and the guide for it. If a buyer is not linked to a Follow Up Boss deal, it tells you so.\n\nHow to use: Open a buyer from Buyer Package and press Deal Progress. Press Check Open To Close now for Transactions\' latest. Press Buyer Tools to go back to your tools.\n\nBest practice: When the offer is accepted, rename the Follow Up Boss deal card to the property address, as the guide says. FORWARD OS finds the Open To Close file by that address.'
       }
     ]
   }
@@ -31406,6 +31881,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstConfirmDelete, lstDeleteProperty, lstConfirmArchive, lstDoArchive, lstArchiveTarget, lstArchiving,
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
       lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, otcNow, dpOtcLeft, dpOtcLeftLabel, dpCheckOtcNow, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
+      byrDetailTab, bdp, bdpLoad, bdpOpenTab, bdpCheckOtcNow, bdpFubStage, bdpPre, bdpStage, bdpNoFile, bdpNext, bdpRenameDeal, bdpConciergeItems, bdpStageSince, bdpEarlier, bdpOtcOpen, bdpOtcDone, bdpOtcLast, BDP_STAGES, BDP_AUTOMATIONS, BDP_YOU, bdpStageIndex, bdpFubNote,
       lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, fosAutoGrow, campNoteParas, campRemoveNotes, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
