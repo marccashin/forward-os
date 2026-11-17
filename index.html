@@ -5040,7 +5040,7 @@ body {
                 Concierge is running the 365 day post-closing program and will notify you when you need to connect with your client. It is now safe to archive this buyer card in FORWARD OS.
               </div>
 
-              <!-- In Follow Up Boss at BA Signed or later, but the Command Center has no buyer file for it -->
+              <!-- In Follow Up Boss at BA Signed or later, but the Command Center has no buyer file (or no stage on the bar) for it -->
               <section v-if="bdpNoFile && bdp.fub && bdp.fub.found" class="dp-stage" aria-label="Where the deal is" data-bdp-nofile>
                 <div class="dp-stage-top">
                   <div>
@@ -5052,7 +5052,7 @@ body {
                 <div v-if="bdpFubNote(bdpFubStage)" class="dp-stage-since" style="margin-top:12px;color:rgba(255,255,255,.82);">{{ bdpFubNote(bdpFubStage) }}</div>
               </section>
 
-              <template v-if="!bdp.closed && bdp.deal && !bdpPre">
+              <template v-if="!bdp.closed && bdpStage">
                 <!-- Where the deal is -->
                 <section class="dp-stage" aria-label="Where the deal is" data-bdp-stage>
                   <div class="dp-stage-top">
@@ -15907,8 +15907,11 @@ C (Conscientious): Data-driven, detail-oriented, analytical, skeptical. Bring fa
     // Before the Command Center has the buyer, and whenever Follow Up Boss says the deal is
     // back before BA Signed: the stage in Follow Up Boss and the guide for it.
     const bdpPre = computed(() => (!bdp.closed && BDP_PRE[bdpFubStage.value]) || null);
-    const bdpStage = computed(() => (!bdpPre.value && bdp.deal && bdp.deal.stage) || '');
-    const bdpNoFile = computed(() => !bdp.loading && !bdp.error && !bdp.closed && !bdpPre.value && !bdp.deal);
+    // The Command Center's stage, when it is one of the bar's. A deal it moved on past
+    // Closed This Quarter (Total Closed This Year...) with no post-closing record shows the
+    // Follow Up Boss stage and its note instead, as for a deal it has no file for.
+    const bdpStage = computed(() => (!bdpPre.value && bdp.deal && bdpStageIndex(bdp.deal.stage) >= 0 && bdp.deal.stage) || '');
+    const bdpNoFile = computed(() => !bdp.loading && !bdp.error && !bdp.closed && !bdpPre.value && !bdpStage.value);
     const bdpNext = computed(() => {
       const k = BDP_NEXT_STAGE[bdpStage.value];
       if (!k || !BDP_AUTOMATIONS[k]) return null;
