@@ -37,8 +37,8 @@ const ago = d => new Date(NOW - d * DAY - 3600000).toISOString();
 const B = (id, name) => ({ id, buyer_name: name, agent_name: 'Marc Cashin', email: '', phone: '', status: 'active', created_at: '2026-10-01T00:00:00Z', subfolder_drive_ids: {} });
 const B1 = B('b1', 'Buyer Pending'), B2 = B('b2', 'Buyer Prequal'), B3 = B('b3', 'Buyer Unlinked'), B4 = B('b4', 'Buyer Twice'),
   B5 = B('b5', 'Buyer Broken'), B6 = B('b6', 'Buyer Closed'), B7 = B('b7', 'Buyer Showing'), B8 = B('b8', 'Buyer Renamelater'),
-  B9 = B('b9', 'Buyer Consult');
-const BUYERS = [B1, B2, B3, B4, B5, B6, B7, B8, B9];
+  B9 = B('b9', 'Buyer Consult'), B10 = B('b10', 'Buyer Closedearlier');
+const BUYERS = [B1, B2, B3, B4, B5, B6, B7, B8, B9, B10];
 const FUB = {
   b1: { status: 200, body: { found: true, how: 'linked', deal_id: 501, pipeline: 'Buyers', stage: 'Pending', entered_stage_at: '2026-11-12T14:05:00Z', name_is_address: true, address: '4410 Garrison St NW' } },
   b2: { status: 200, body: { found: true, how: 'name', deal_id: 502, pipeline: 'Buyers', stage: '15 Min Pre-Qual Complete', entered_stage_at: '2026-11-05T14:00:00Z', name_is_address: false } },
@@ -48,12 +48,14 @@ const FUB = {
   b6: { status: 200, body: { found: true, how: 'linked', deal_id: 506, pipeline: 'Buyers', stage: 'Closed This Quarter', entered_stage_at: '2026-10-01T00:00:00Z', name_is_address: true, address: '9 Sold Ct NW' } },
   b7: { status: 200, body: { found: true, how: 'linked', deal_id: 507, pipeline: 'Buyers', stage: 'Actively Showing', entered_stage_at: '2026-11-11T19:40:00Z', name_is_address: false } },
   b8: { status: 200, body: { found: true, how: 'linked', deal_id: 508, pipeline: 'Buyers', stage: 'Pending', entered_stage_at: '2026-11-14T15:00:00Z', name_is_address: false } },
+  b10: { status: 200, body: { found: true, how: 'name', deal_id: 510, pipeline: 'Buyers', stage: 'Total Closed This Year', entered_stage_at: '2026-07-01T00:00:00Z', name_is_address: true, address: '7 Earlier Way NE' } },
   b9: { status: 200, body: { found: true, how: 'linked', deal_id: 509, pipeline: 'Buyers', stage: 'Buyer Consult Complete', entered_stage_at: '2026-11-09T15:00:00Z', name_is_address: false } }
 };
 const DEALS = [
   { id: 'd1', fub_deal_id: '501', stage: 'Pending', stage_changed_at: '2026-11-12T14:05:00Z', pipeline: 'buyer' },
   { id: 'd6', fub_deal_id: '506', stage: 'Closed This Quarter', stage_changed_at: '2026-10-01T00:00:00Z', pipeline: 'buyer' },
   { id: 'd7', fub_deal_id: '507', stage: 'Actively Showing', stage_changed_at: '2026-11-11T19:40:00Z', pipeline: 'buyer' },
+  { id: 'd10', fub_deal_id: '510', stage: 'Total Closed This Year', stage_changed_at: '2026-07-01T00:00:00Z', pipeline: 'buyer' },
   { id: 'd8', fub_deal_id: '508', stage: 'Pending', stage_changed_at: '2026-11-14T15:00:00Z', pipeline: 'buyer' }
 ];
 const TASKS = [
@@ -275,6 +277,8 @@ const GUIDE = {
   await open(B6); seen.length = 0; await progress(); t = await text();
   ok(/Closed · Oct 30, 2026/i.test(t) && t.includes('It is now safe to archive this buyer card in FORWARD OS.') && await page.locator('[data-bdp-stage]').count() === 0, 'closed: the post-closing note and the closing date as written', t.slice(0, 600));
   ok(!seen.some(s => /deal_tasks|otc_/.test(s.u)), 'a closed buyer reads no tasks');
+  await open(B10); await progress(); t = await text();
+  ok(/Stage in Follow Up Boss\s*Total Closed This Year/i.test(t) && t.includes('The Command Center has no post-closing program for this buyer. Ask Concierge.') && await page.locator('[data-bdp-stage]').count() === 0 && await page.locator('[data-bdp-agent]').count() === 0, 'a deal moved on past Closed with no post-closing record: its stage and the ask-Concierge note, no empty bar', t.slice(0, 700));
 
   // ── one buyer never shows another's ──
   await open(B1); await progress();
