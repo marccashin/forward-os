@@ -8817,6 +8817,7 @@ body {
                     </div>
                     <div v-else-if="!campLetterIncluded" style="padding:10px 18px;font-family:'Montserrat',sans-serif;font-size:7.5px;letter-spacing:0.1em;text-transform:uppercase;color:#bbb;">Excluded from output</div>
                   </div>
+                  <div v-if="campApprovalProblem()" data-camp="approval-needed" style="font-family:'Montserrat',sans-serif;font-size:11px;color:#991b1b;background:#fef2f2;border:1px solid #fecaca;border-radius:2px;padding:10px 12px;margin-bottom:8px;line-height:1.5;">The PDF will not be made: {{ campApprovalProblem() }}. Every campaign PDF needs the description and the flyer version approved. On the listing, open Listing Description, write the flyer version if there is none, check both and press Approve for marketing.</div>
                   <div v-if="lstNotes.listing_remarks" style="border:1px solid rgba(200,169,110,0.2);border-radius:2px;margin-bottom:6px;overflow:hidden;flex-shrink:0;">
                     <div @click="campOpenSection = campOpenSection==='__ld__' ? null : (campLdEditVal=lstNotes.listing_remarks, '__ld__')"
                          style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;cursor:pointer;user-select:none;background:var(--navy);border-left:4px solid transparent;transition:border-color 0.15s;"
@@ -8899,8 +8900,7 @@ body {
                       The Flyer page prints the flyer version approved on the listing, word for word. Edits here do not change the PDF. To change the flyer, edit the flyer version on the listing and approve it again.
                     </div>
                     <div v-else-if="campIsFlyerSec(section) && section.included !== false" data-camp="flyer-unapproved" style="padding:10px 18px;background:#fef2f2;border-top:1px solid #fecaca;font-family:'Montserrat',sans-serif;font-size:11px;line-height:1.5;color:#b91c1c;">
-                      The PDF will not be made until the flyer version is written and approved. On the listing, open Listing Description, write the flyer version and press Approve for marketing. To leave the Flyer page out, untick Include on every Flyer section.
-                    </div>
+                      The PDF will not be made until the description and the flyer version are approved on the listing (see the red note at the top).</div>
                     <!-- Expanded edit area -->
                     <div v-if="campOpenSection===idx" style="padding:16px 18px 20px;border-top:1px solid var(--cream-mid);">
                       <div style="font-family:'Montserrat',sans-serif;font-size:7px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--gold-muted);margin-bottom:10px;">Edit Content</div>
@@ -16500,17 +16500,18 @@ function campFlyerApproved() {
 }
 // The Flyer page is left out only when the campaign has Flyer sections and every one is unticked
 // (the same rule campExportPDF uses for pkg.flyer._skip).
-function campFlyerPrints() {
-  var c = (campParsed.value || []).filter(campIsFlyerSec);
-  return !(c.length > 0 && c.every(function (x) { return x.included === false; }));
+function campDescApproved() {
+  return (lstApprIsOn() && lstAppr.row && lstAppr.row.content) ? String(lstAppr.row.content).trim() : '';
 }
-// Why the PDF cannot be made because of the flyer, or '' when it can.
-function campFlyerProblem() {
-  if (!campFlyerPrints() || campFlyerApproved()) return '';
-  if (lstAppr.state === 'idle' || lstAppr.state === 'loading') return 'the flyer approval is still being read, so wait a moment and try again';
-  if (lstAppr.state === 'error') return 'the flyer approval could not be read (' + (lstAppr.error || 'no answer') + '), so the OS cannot tell whether the flyer version is approved';
-  if (lstAppr.state === 'off') return 'approvals are not set up, so there is no approved flyer version to print';
-  return 'the Flyer page prints only an approved flyer version, and this listing has none';
+// Every campaign PDF needs the description AND the flyer version approved (Marc, Nov 20,
+// 2026: "Agents need to approve both the flyer and description copy"), whatever is ticked.
+function campApprovalProblem() {
+  if (campDescApproved() && campFlyerApproved()) return '';
+  if (lstAppr.state === 'idle' || lstAppr.state === 'loading') return 'the approval is still being read, so wait a moment and try again';
+  if (lstAppr.state === 'error') return 'the approval could not be read (' + (lstAppr.error || 'no answer') + '), so the OS cannot tell whether the description and the flyer version are approved';
+  if (lstAppr.state === 'off') return 'approvals are not set up, so nothing on this listing is approved for marketing';
+  if (campDescApproved()) return 'the description is approved but the flyer version is not (that approval was given before flyer versions existed)';
+  return 'the description and the flyer version are not both approved for marketing on this listing';
 }
 
 function campQueueSave(kind) {
@@ -17140,9 +17141,9 @@ async function campExportPDF() {
     showToast('The PDF was NOT made: ' + _notes.join(', ') + (_notes.length === 1 ? ' has' : ' have') + ' a note to the agent or the seller in it. Open the section and press Remove the note, then try again.', 9000);
     return;
   }
-  var _flyerWhy = campFlyerProblem();
-  if (_flyerWhy) {
-    showToast('The PDF was NOT made: ' + _flyerWhy + '. On the listing, open Listing Description, write the flyer version and press Approve for marketing, then export again. To leave the Flyer page out, untick Include on every Flyer section.', 12000);
+  var _apprWhy = campApprovalProblem();
+  if (_apprWhy) {
+    showToast('The PDF was NOT made: ' + _apprWhy + '. Every campaign PDF needs the description and the flyer version approved. On the listing, open Listing Description, write the flyer version if there is none, check both and press Approve for marketing, then export again.', 12000);
     return;
   }
   var sections = campParsed.value;
@@ -17154,12 +17155,10 @@ async function campExportPDF() {
   if (!prop) { alert('No active property. Please select a listing first.'); return; }
 
   // Collect included sections only
-  // Inject listing description as a synthetic section if not already present
-  var _lstDesc = lstNotes && lstNotes.listing_remarks && lstNotes.listing_remarks.trim();
-  var _hasLstSec = sections.some(function(s) { return /listing.*desc|description|the residence/i.test(s.title || ''); });
-  if (_lstDesc && !_hasLstSec) {
-    sections = [{ title: 'LISTING DESCRIPTION', content: _lstDesc, included: true }].concat(sections);
-  }
+  // The Listing Description page prints the APPROVED description word for word (Marc, Nov 20,
+  // 2026). It goes first, so buildCampPkg's find() takes it over any description section an
+  // older campaign holds (that text was never approved).
+  sections = [{ title: 'LISTING DESCRIPTION', content: campDescApproved(), included: true }].concat(sections);
   var included = sections.filter(function(s) { return s.included !== false; });
   if (!included.length) { showToast('All sections are excluded. Include at least one section.', 5000); return; }
 
@@ -28537,11 +28536,11 @@ const CHANGELOG = [
   {
     id: 'v2026-11-20',
     date: 'November 20, 2026',
-    title: 'Campaign PDF: the flyer must be approved first',
+    title: 'Campaign PDF: approve the description and the flyer first',
     updates: [
       {
-        title: 'No campaign PDF without an approved flyer version',
-        detail: 'The Flyer page of the campaign PDF now prints only the flyer version you approved on the listing. Until today, a listing with no approved flyer version printed the campaign\'s own Flyer Copy, which nobody had approved. Now Export PDF stops and tells you what to do. In the campaign editor, the Flyer Copy section says in red that the flyer needs approval, or, once it is approved, that the approved version is what prints and edits there do not change the PDF.\n\nHow to use: On the listing, open Listing Description, write the flyer version (or let the OS write it from the description), check it and press Approve for marketing. Then open the campaign and export. If you do not want a Flyer page, untick Include on the Flyer section.\n\nBest practice: Approve the description and the flyer together before you build the campaign, so the seller and Concierge see the same flyer text.'
+        title: 'No campaign PDF until the description and the flyer are approved',
+        detail: 'The campaign PDF is now made only when the listing\'s description and its flyer version are both approved for marketing. The Listing Description page prints the approved description word for word, and the Flyer page prints the approved flyer version word for word. Until today the PDF could print text nobody had approved, such as the campaign\'s own Flyer Copy. If either is not approved, Export PDF stops and says why, and a red note at the top of the campaign editor says the same. Once the flyer is approved, the Flyer Copy section says that edits there do not change the PDF.\n\nHow to use: On the listing, open Listing Description, write the flyer version (or let the OS write it from the description), check both and press Approve for marketing. Then open the campaign and export. Unticking a section still leaves its page out.\n\nBest practice: Approve the description and the flyer before you build the campaign, so the seller, Concierge and the PDF all carry the same words. Changing either text clears the approval, so approve again after any edit.'
       }
     ]
   }
@@ -31972,7 +31971,7 @@ ${isContractQuestion ? FORWARD_JURISDICTION_KNOWLEDGE : FORWARD_MARC_METHODS}`;
       lstEditingAddress, lstEditAddressVal, lstSaveAddress, lstNormalizeAddress, mlsEditingAddress, mlsEditAddressVal,
       lstDetailTab, dp, DP_REMINDERS, dpReset, dpLoad, dpOpenTab, dpTick, dpStage, dpNext, otcNow, dpOtcLeft, dpOtcLeftLabel, dpCheckOtcNow, dpAgentItems, dpConciergeItems, dpStageSince, dpEarlier, dpOtcOpen, dpOtcDone, dpOtcLast, DP_STAGES, DP_AUTOMATIONS, dpStageIndex, dpWhen, dpDay, dpClosingDay, DP_PRE, dpFubStage, dpPre, dpFubNote, dpRenameDeal, dpOpenLabel, dpItemOpenLabel, dpIsWaiting, dpDoneLabel, dpOtcDoneLabel,
       byrDetailTab, bdp, bdpLoad, bdpOpenTab, bdpCheckOtcNow, bdpFubStage, bdpPre, bdpStage, bdpNoFile, bdpNext, bdpRenameDeal, bdpConciergeItems, bdpStageSince, bdpEarlier, bdpOtcOpen, bdpOtcDone, bdpOtcLast, BDP_STAGES, BDP_AUTOMATIONS, BDP_YOU, bdpStageIndex, bdpFubNote,
-      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, fosAutoGrow, campNoteParas, campRemoveNotes, campIsFlyerSec, campFlyerApproved, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
+      lstFetchProperties, lstCreateProperty, lstOpenProperty, lstGenerateCampaignInApp, fosAutoGrow, campNoteParas, campRemoveNotes, campIsFlyerSec, campFlyerApproved, campApprovalProblem, campOpenPreview, campApproveAndSend, campCopyToClipboard, campExportPDF, campBrokersOpenDays, campPhotoDays, campVideoDays, campSpecialInstructions, campSections, campParsed, campRawResult, campSaveState, campSavedFlash, campSaveSections, campSaveNow, campQueueSave, campClosePreview, campShowPreview, campOpenSection, campRevOpen, campGenerating, campPdfGenerating, campPipelineStep, campCurrentSection, campShowSettings, campIncludes, lstSaveSellerName, lstSaveNote, lstDescEditing, lstDescEditVal, lstDescSave, campLdIncluded, campLdEditVal, campLdSave, campLetterIncluded, campLetterEditVal, campPrepIncluded, campPrepEditVal, campSetPrepType,
       lstUploadFile, lstHandleDrop, lstHandleFileInput, lstDeleteFile,
       lstSubmitToPipeline, lstStartPolling, lstStopPolling, saveToPropertyFromTool, lstCampaignSendToSeller,
       lstShowCompleteModal, lstPipelineSteps, lstPipelineActiveStep,
